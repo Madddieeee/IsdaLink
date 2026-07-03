@@ -1,0 +1,40 @@
+import 'package:isdalink/models/order_model.dart';
+
+final List<OrderModel> sampleOrders = [
+  OrderModel(
+    orderId: 'ORD-001',
+    supplierName: 'Bayugan Fresh Fish Supplier',
+    productName: 'Bangus',
+    quantity: 10,
+    quantityUnit: 'kilo',
+    totalAmount: 1800,
+    paymentMethod: 'Cash on Delivery',
+    paymentStatus: 'Unpaid',
+    orderStatus: 'Pending',
+    orderDate: DateTime(2026, 4, 20),
+  ),
+  OrderModel(
+    orderId: 'ORD-002',
+    supplierName: 'Caraga Icebox Fish Trading',
+    productName: 'Tuna',
+    quantity: 1,
+    quantityUnit: 'icebox',
+    totalAmount: 3500,
+    paymentMethod: 'Cash on Delivery',
+    paymentStatus: 'Paid',
+    orderStatus: 'Delivered',
+    orderDate: DateTime(2026, 4, 18),
+  ),
+  OrderModel(
+    orderId: 'ORD-003',
+    supplierName: 'Surigao Coastal Fish Supply',
+    productName: 'Maya-Maya',
+    quantity: 5,
+    quantityUnit: 'kilo',
+    totalAmount: 1950,
+    paymentMethod: 'Cash on Delivery',
+    paymentStatus: 'Unpaid',
+    orderStatus: 'Accepted',
+    orderDate: DateTime(2026, 4, 19),
+  ),
+];

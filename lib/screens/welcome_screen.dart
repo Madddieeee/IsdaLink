@@ -1,82 +1,234 @@
 import 'package:flutter/material.dart';
-import 'package:isdalink/core/app_colors.dart';
 import 'package:isdalink/screens/auth/login_screen.dart';
-import 'package:isdalink/screens/auth/register_screen.dart';
 
-class WelcomeScreen extends StatelessWidget {
+class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
 
+  @override
+  State<WelcomeScreen> createState() => _WelcomeScreenState();
+}
+
+class _WelcomeScreenState extends State<WelcomeScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _moveAnimation;
+  late Animation<double> _fadeAnimation;
+
   void goToLogin(BuildContext context) {
-    Navigator.push(
+    Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const LoginScreen()),
     );
   }
 
-  void goToRegister(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const RegisterScreen()),
-    );
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+
+    _moveAnimation = Tween<double>(
+      begin: 0,
+      end: 10,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+
+    _fadeAnimation = Tween<double>(
+      begin: 0.55,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.lightBg,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.set_meal, size: 90, color: AppColors.blue),
-              const SizedBox(height: 20),
-              const Text(
-                'IsdaLink',
-                style: TextStyle(
-                  fontSize: 38,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.darkBlue,
-                ),
+      body: GestureDetector(
+        onTap: () => goToLogin(context),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: Image.asset(
+                'assets/images/login_bg.jpg',
+                fit: BoxFit.cover,
               ),
-              const SizedBox(height: 10),
-              const Text(
-                'Mobile-Based Fish Supply Management System with Sales Analytics',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, color: Color(0xFF333333)),
-              ),
-              const SizedBox(height: 40),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: () => goToLogin(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.blue,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('Login', style: TextStyle(fontSize: 18)),
-                ),
-              ),
-              const SizedBox(height: 14),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: OutlinedButton(
-                  onPressed: () => goToRegister(context),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.blue,
-                    side: const BorderSide(color: AppColors.blue, width: 2),
-                  ),
-                  child: const Text(
-                    'Create Account',
-                    style: TextStyle(fontSize: 18),
+            ),
+
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      const Color(0xFF102C44).withOpacity(0.62),
+                      const Color(0xFF061827).withOpacity(0.82),
+                      const Color(0xFF020712).withOpacity(0.98),
+                    ],
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.center,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.65),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 30),
+                child: Column(
+                  children: [
+                    const Spacer(flex: 3),
+
+                    Container(
+                      width: 76,
+                      height: 76,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF146BFF),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF146BFF).withOpacity(0.45),
+                            blurRadius: 28,
+                            spreadRadius: 1,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.set_meal,
+                        color: Colors.white,
+                        size: 42,
+                      ),
+                    ),
+
+                    const SizedBox(height: 26),
+
+                    const Text(
+                      'Welcome to',
+                      style: TextStyle(
+                        color: Color(0xFFDCE9F5),
+                        fontSize: 19,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+
+                    const SizedBox(height: 4),
+
+                    const Text(
+                      'IsdaLink',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 42,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    const Text(
+                      'FRESH CATCH, DIRECT SOURCE',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Color(0xFFBFD1E3),
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+
+                    const SizedBox(height: 28),
+
+                    const Text(
+                      'A mobile-based fish supply management system for vendor-supplier coordination and sales analytics.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Color(0xFFE4EEF7),
+                        fontSize: 14,
+                        height: 1.6,
+                      ),
+                    ),
+
+                    const Spacer(flex: 4),
+
+                    Container(
+                      width: 90,
+                      height: 2,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.18),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+
+                    const SizedBox(height: 26),
+
+                    AnimatedBuilder(
+                      animation: _controller,
+                      builder: (context, child) {
+                        return Opacity(
+                          opacity: _fadeAnimation.value,
+                          child: Transform.translate(
+                            offset: Offset(0, -_moveAnimation.value),
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: Column(
+                        children: const [
+                          Icon(
+                            Icons.touch_app,
+                            color: Color(0xFF9EC7FF),
+                            size: 22,
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'Tap anywhere to continue',
+                            style: TextStyle(
+                              color: Color(0xFFB8C9DB),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 26),
+
+                    const Text(
+                      'Connecting fish vendors and suppliers in one platform',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Color(0xFF7F96AA), fontSize: 11),
+                    ),
+
+                    const SizedBox(height: 22),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
