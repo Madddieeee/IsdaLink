@@ -68,9 +68,9 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      const Color(0xFF102C44).withOpacity(0.62),
-                      const Color(0xFF061827).withOpacity(0.82),
-                      const Color(0xFF020712).withOpacity(0.98),
+                      const Color(0xFF102C44).withValues(alpha: 0.62),
+                      const Color(0xFF061827).withValues(alpha: 0.82),
+                      const Color(0xFF020712).withValues(alpha: 0.98),
                     ],
                   ),
                 ),
@@ -85,7 +85,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                     end: Alignment.bottomCenter,
                     colors: [
                       Colors.transparent,
-                      Colors.black.withOpacity(0.65),
+                      Colors.black.withValues(alpha: 0.65),
                     ],
                   ),
                 ),
@@ -107,7 +107,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF146BFF).withOpacity(0.45),
+                            color: const Color(0xFF146BFF).withValues(alpha: 0.45),
                             blurRadius: 28,
                             spreadRadius: 1,
                             offset: const Offset(0, 10),
@@ -176,7 +176,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                       width: 90,
                       height: 2,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.18),
+                        color: Colors.white.withValues(alpha: 0.18),
                         borderRadius: BorderRadius.circular(20),
                       ),
                     ),

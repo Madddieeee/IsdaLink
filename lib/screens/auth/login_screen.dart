@@ -216,7 +216,7 @@ class LoginScreen extends StatelessWidget {
       contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 16),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0x334FFFFFF)),
+        borderSide: const BorderSide(color: Color(0x334ffffff)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),

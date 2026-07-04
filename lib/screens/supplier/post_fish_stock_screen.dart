@@ -1,52 +1,85 @@
 import 'package:flutter/material.dart';
 
-import 'supplier_dashboard_screen.dart';
-
-class SupplierActivationScreen
+class PostFishStockScreen
     extends
         StatefulWidget {
-  const SupplierActivationScreen({
+  const PostFishStockScreen({
     super.key,
   });
 
   @override
   State<
-    SupplierActivationScreen
+    PostFishStockScreen
   >
-  createState() => _SupplierActivationScreenState();
+  createState() => _PostFishStockScreenState();
 }
 
-class _SupplierActivationScreenState
+class _PostFishStockScreenState
     extends
         State<
-          SupplierActivationScreen
+          PostFishStockScreen
         > {
-  final businessNameController = TextEditingController();
-  final marketLocationController = TextEditingController();
-  final contactNumberController = TextEditingController();
+  final productNameController = TextEditingController();
+  final priceController = TextEditingController();
+  final quantityController = TextEditingController();
+  final lowStockController = TextEditingController();
+  final descriptionController = TextEditingController();
 
-  String selectedSupplierType = 'Fish Supplier';
-  bool kiloUnit = true;
-  bool tabUnit = true;
-  bool iceboxUnit = true;
+  String selectedCategory = 'Fresh Fish';
+  String selectedUnit = 'kilo';
+  String selectedEmoji = '🐟';
+
+  final List<
+    String
+  >
+  categories = [
+    'Fresh Fish',
+    'Marine Fish',
+    'Aquaculture Fish',
+    'Bulk Fish Supply',
+  ];
+
+  final List<
+    String
+  >
+  units = [
+    'kilo',
+    'tab',
+    'icebox',
+  ];
+
+  final List<
+    String
+  >
+  emojis = [
+    '🐟',
+    '🐠',
+    '🦈',
+    '🦑',
+    '🦐',
+  ];
 
   @override
   void initState() {
     super.initState();
-    businessNameController.text = 'Juan Fresh Fish Supply';
-    marketLocationController.text = 'Caraga Region';
-    contactNumberController.text = '09XXXXXXXXX';
+    productNameController.text = 'Bangus';
+    priceController.text = '180';
+    quantityController.text = '25';
+    lowStockController.text = '5';
+    descriptionController.text = 'Fresh fish stock available for vendor orders within Caraga Region.';
   }
 
   @override
   void dispose() {
-    businessNameController.dispose();
-    marketLocationController.dispose();
-    contactNumberController.dispose();
+    productNameController.dispose();
+    priceController.dispose();
+    quantityController.dispose();
+    lowStockController.dispose();
+    descriptionController.dispose();
     super.dispose();
   }
 
-  void activateSupplierAccount() {
+  void submitPost() {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -61,7 +94,7 @@ class _SupplierActivationScreenState
                 ),
               ),
               title: const Text(
-                'Supplier Activated',
+                'Stock Posted',
                 style: TextStyle(
                   color: Color(
                     0xFF102C44,
@@ -70,8 +103,8 @@ class _SupplierActivationScreenState
                 ),
               ),
               content: const Text(
-                'Your supplier features are now ready in sample/offline mode. '
-                'Later, this activation will be saved to the database.',
+                'Your fish stock post has been created in sample/offline mode. '
+                'Later, this record will be saved to the database and shown to vendors.',
                 style: TextStyle(
                   color: Color(
                     0xFF52677A,
@@ -87,7 +120,7 @@ class _SupplierActivationScreenState
                     );
                   },
                   child: const Text(
-                    'Stay Here',
+                    'Post Another',
                   ),
                 ),
                 ElevatedButton(
@@ -95,14 +128,8 @@ class _SupplierActivationScreenState
                     Navigator.pop(
                       dialogContext,
                     );
-                    Navigator.pushReplacement(
+                    Navigator.pop(
                       context,
-                      MaterialPageRoute(
-                        builder:
-                            (
-                              _,
-                            ) => const SupplierDashboardScreen(),
-                      ),
                     );
                   },
                   style: ElevatedButton.styleFrom(
@@ -112,7 +139,7 @@ class _SupplierActivationScreenState
                     foregroundColor: Colors.white,
                   ),
                   child: const Text(
-                    'Open Dashboard',
+                    'Back to Dashboard',
                   ),
                 ),
               ],
@@ -124,9 +151,11 @@ class _SupplierActivationScreenState
   InputDecoration inputDecoration({
     required String label,
     required IconData icon,
+    String? suffixText,
   }) {
     return InputDecoration(
       labelText: label,
+      suffixText: suffixText,
       labelStyle: const TextStyle(
         color: Color(
           0xFF7B8FA3,
@@ -265,152 +294,157 @@ class _SupplierActivationScreenState
     );
   }
 
-  Widget featureTile({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(
-        bottom: 10,
+  Widget emojiChoice(
+    String emoji,
+  ) {
+    final bool isSelected =
+        selectedEmoji ==
+        emoji;
+
+    return GestureDetector(
+      onTap: () {
+        setState(
+          () {
+            selectedEmoji = emoji;
+          },
+        );
+      },
+      child: Container(
+        width: 52,
+        height: 52,
+        margin: const EdgeInsets.only(
+          right: 10,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? const Color(
+                  0xFF146BFF,
+                )
+              : const Color(
+                  0xFFEAF7FB,
+                ),
+          borderRadius: BorderRadius.circular(
+            18,
+          ),
+          border: Border.all(
+            color: isSelected
+                ? const Color(
+                    0xFF146BFF,
+                  )
+                : const Color(
+                    0xFFE1E9F0,
+                  ),
+            width: 1.4,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            emoji,
+            style: const TextStyle(
+              fontSize: 26,
+            ),
+          ),
+        ),
       ),
+    );
+  }
+
+  Widget previewCard() {
+    return Container(
       padding: const EdgeInsets.all(
-        13,
+        15,
       ),
       decoration: BoxDecoration(
         color: const Color(
           0xFFEAF7FB,
         ),
         borderRadius: BorderRadius.circular(
-          18,
+          20,
+        ),
+        border: Border.all(
+          color:
+              const Color(
+                0xFF146BFF,
+              ).withAlpha(
+                42,
+              ),
         ),
       ),
       child: Row(
         children: [
-          Icon(
-            icon,
-            color: const Color(
+          Container(
+            width: 58,
+            height: 58,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(
+                18,
+              ),
+            ),
+            child: Center(
+              child: Text(
+                selectedEmoji,
+                style: const TextStyle(
+                  fontSize: 32,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(
+            width: 13,
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  productNameController.text.isEmpty
+                      ? 'Fish Product'
+                      : productNameController.text,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(
+                      0xFF102C44,
+                    ),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(
+                  height: 4,
+                ),
+                Text(
+                  selectedCategory,
+                  style: const TextStyle(
+                    color: Color(
+                      0xFF7B8FA3,
+                    ),
+                    fontSize: 11,
+                  ),
+                ),
+                const SizedBox(
+                  height: 7,
+                ),
+                Text(
+                  '₱${priceController.text.isEmpty ? '0' : priceController.text} per $selectedUnit',
+                  style: const TextStyle(
+                    color: Color(
+                      0xFF146BFF,
+                    ),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Icon(
+            Icons.visibility,
+            color: Color(
               0xFF146BFF,
             ),
             size: 22,
-          ),
-          const SizedBox(
-            width: 12,
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Color(
-                      0xFF102C44,
-                    ),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(
-                  height: 2,
-                ),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    color: Color(
-                      0xFF7B8FA3,
-                    ),
-                    fontSize: 11,
-                    height: 1.3,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Icon(
-            Icons.check_circle,
-            color: Color(
-              0xFF2E7D32,
-            ),
-            size: 21,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget unitSwitch({
-    required String title,
-    required String subtitle,
-    required bool value,
-    required ValueChanged<
-      bool
-    >
-    onChanged,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(
-        bottom: 10,
-      ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: 10,
-      ),
-      decoration: BoxDecoration(
-        color: const Color(
-          0xFFF4F8FB,
-        ),
-        borderRadius: BorderRadius.circular(
-          18,
-        ),
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.scale,
-            color: Color(
-              0xFF146BFF,
-            ),
-            size: 21,
-          ),
-          const SizedBox(
-            width: 12,
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Color(
-                      0xFF102C44,
-                    ),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(
-                  height: 2,
-                ),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    color: Color(
-                      0xFF7B8FA3,
-                    ),
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Switch(
-            value: value,
-            activeThumbColor: const Color(
-              0xFF146BFF,
-            ),
-            onChanged: onChanged,
           ),
         ],
       ),
@@ -421,19 +455,6 @@ class _SupplierActivationScreenState
   Widget build(
     BuildContext context,
   ) {
-    final enabledUnitCount =
-        [
-              kiloUnit,
-              tabUnit,
-              iceboxUnit,
-            ]
-            .where(
-              (
-                enabled,
-              ) => enabled,
-            )
-            .length;
-
     return Scaffold(
       backgroundColor: const Color(
         0xFFF4F8FB,
@@ -496,7 +517,7 @@ class _SupplierActivationScreenState
                     ),
                     const Expanded(
                       child: Text(
-                        'Become a Supplier',
+                        'Post Fish Stock',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 23,
@@ -510,7 +531,7 @@ class _SupplierActivationScreenState
                   height: 18,
                 ),
                 const Text(
-                  'Activate supplier tools for posting fish stocks, managing products, and viewing sales analytics.',
+                  'Add fish stock details so vendors can view available supply and place COD orders.',
                   style: TextStyle(
                     color: Color(
                       0xFFDCE9F5,
@@ -539,61 +560,25 @@ class _SupplierActivationScreenState
                       ),
                     ),
                   ),
-                  child: Row(
+                  child: const Row(
                     children: [
-                      Container(
-                        width: 54,
-                        height: 54,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(
-                            18,
-                          ),
-                        ),
-                        child: const Icon(
-                          Icons.storefront,
-                          color: Color(
-                            0xFF146BFF,
-                          ),
-                          size: 30,
-                        ),
+                      Icon(
+                        Icons.payments,
+                        color: Colors.white,
+                        size: 24,
                       ),
-                      const SizedBox(
-                        width: 14,
+                      SizedBox(
+                        width: 12,
                       ),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Supplier Mode',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 17,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            const SizedBox(
-                              height: 4,
-                            ),
-                            Text(
-                              '$enabledUnitCount unit options enabled • COD only',
-                              style: const TextStyle(
-                                color: Color(
-                                  0xFFDCE9F5,
-                                ),
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
+                        child: Text(
+                          'Payment scope: Cash on Delivery only',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
-                      ),
-                      const Icon(
-                        Icons.verified,
-                        color: Color(
-                          0xFF38D39F,
-                        ),
-                        size: 25,
                       ),
                     ],
                   ),
@@ -611,37 +596,22 @@ class _SupplierActivationScreenState
               ),
               children: [
                 sectionCard(
-                  title: 'Supplier Information',
-                  subtitle: 'Set up the basic profile shown to vendors.',
-                  icon: Icons.badge,
+                  title: 'Product Information',
+                  subtitle: 'Enter the fish product details shown to vendors.',
+                  icon: Icons.set_meal,
                   child: Column(
                     children: [
                       TextField(
-                        controller: businessNameController,
+                        controller: productNameController,
+                        onChanged:
+                            (
+                              _,
+                            ) => setState(
+                              () {},
+                            ),
                         decoration: inputDecoration(
-                          label: 'Business or Supplier Name',
-                          icon: Icons.storefront,
-                        ),
-                      ),
-                      const SizedBox(
-                        height: 12,
-                      ),
-                      TextField(
-                        controller: marketLocationController,
-                        decoration: inputDecoration(
-                          label: 'Market Location / Service Area',
-                          icon: Icons.location_on,
-                        ),
-                      ),
-                      const SizedBox(
-                        height: 12,
-                      ),
-                      TextField(
-                        controller: contactNumberController,
-                        keyboardType: TextInputType.phone,
-                        decoration: inputDecoration(
-                          label: 'Contact Number',
-                          icon: Icons.phone,
+                          label: 'Fish Product Name',
+                          icon: Icons.edit,
                         ),
                       ),
                       const SizedBox(
@@ -650,126 +620,209 @@ class _SupplierActivationScreenState
                       DropdownButtonFormField<
                         String
                       >(
-                        value: selectedSupplierType,
+                        value: selectedCategory,
                         decoration: inputDecoration(
-                          label: 'Supplier Type',
+                          label: 'Category',
                           icon: Icons.category,
                         ),
-                        items: const [
-                          DropdownMenuItem(
-                            value: 'Fish Supplier',
-                            child: Text(
-                              'Fish Supplier',
+                        items: categories
+                            .map(
+                              (
+                                category,
+                              ) => DropdownMenuItem(
+                                value: category,
+                                child: Text(
+                                  category,
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged:
+                            (
+                              value,
+                            ) {
+                              setState(
+                                () {
+                                  selectedCategory =
+                                      value ??
+                                      selectedCategory;
+                                },
+                              );
+                            },
+                      ),
+                      const SizedBox(
+                        height: 12,
+                      ),
+                      TextField(
+                        controller: descriptionController,
+                        maxLines: 3,
+                        decoration: inputDecoration(
+                          label: 'Description',
+                          icon: Icons.description,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                sectionCard(
+                  title: 'Product Image Icon',
+                  subtitle: 'Choose a sample icon for the prototype display.',
+                  icon: Icons.image,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: emojis
+                          .map(
+                            emojiChoice,
+                          )
+                          .toList(),
+                    ),
+                  ),
+                ),
+                sectionCard(
+                  title: 'Price and Stock',
+                  subtitle: 'Set product price, unit, quantity, and alert level.',
+                  icon: Icons.inventory_2,
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: priceController,
+                              keyboardType: TextInputType.number,
+                              onChanged:
+                                  (
+                                    _,
+                                  ) => setState(
+                                    () {},
+                                  ),
+                              decoration: inputDecoration(
+                                label: 'Price',
+                                icon: Icons.sell,
+                                suffixText: 'PHP',
+                              ),
                             ),
                           ),
-                          DropdownMenuItem(
-                            value: 'Fish Vendor',
-                            child: Text(
-                              'Fish Vendor',
-                            ),
+                          const SizedBox(
+                            width: 12,
                           ),
-                          DropdownMenuItem(
-                            value: 'Fish Trading Business',
-                            child: Text(
-                              'Fish Trading Business',
-                            ),
+                          Expanded(
+                            child:
+                                DropdownButtonFormField<
+                                  String
+                                >(
+                                  value: selectedUnit,
+                                  decoration: inputDecoration(
+                                    label: 'Unit',
+                                    icon: Icons.scale,
+                                  ),
+                                  items: units
+                                      .map(
+                                        (
+                                          unit,
+                                        ) => DropdownMenuItem(
+                                          value: unit,
+                                          child: Text(
+                                            'per $unit',
+                                          ),
+                                        ),
+                                      )
+                                      .toList(),
+                                  onChanged:
+                                      (
+                                        value,
+                                      ) {
+                                        setState(
+                                          () {
+                                            selectedUnit =
+                                                value ??
+                                                selectedUnit;
+                                          },
+                                        );
+                                      },
+                                ),
                           ),
                         ],
-                        onChanged:
-                            (
-                              value,
-                            ) {
-                              setState(
-                                () {
-                                  selectedSupplierType =
-                                      value ??
-                                      selectedSupplierType;
-                                },
-                              );
-                            },
+                      ),
+                      const SizedBox(
+                        height: 12,
+                      ),
+                      TextField(
+                        controller: quantityController,
+                        keyboardType: TextInputType.number,
+                        decoration: inputDecoration(
+                          label: 'Available Quantity',
+                          icon: Icons.inventory,
+                          suffixText: selectedUnit,
+                        ),
+                      ),
+                      const SizedBox(
+                        height: 12,
+                      ),
+                      TextField(
+                        controller: lowStockController,
+                        keyboardType: TextInputType.number,
+                        decoration: inputDecoration(
+                          label: 'Low Stock Alert Level',
+                          icon: Icons.warning_amber,
+                          suffixText: selectedUnit,
+                        ),
                       ),
                     ],
                   ),
                 ),
                 sectionCard(
-                  title: 'Bulk Unit Options',
-                  subtitle: 'Choose the selling units supported by the supplier.',
-                  icon: Icons.scale,
-                  child: Column(
-                    children: [
-                      unitSwitch(
-                        title: 'Per Kilo',
-                        subtitle: 'For regular fish purchases by kilogram.',
-                        value: kiloUnit,
-                        onChanged:
-                            (
-                              value,
-                            ) {
-                              setState(
-                                () {
-                                  kiloUnit = value;
-                                },
-                              );
-                            },
-                      ),
-                      unitSwitch(
-                        title: 'Per Tab',
-                        subtitle: 'For bulk fish container orders.',
-                        value: tabUnit,
-                        onChanged:
-                            (
-                              value,
-                            ) {
-                              setState(
-                                () {
-                                  tabUnit = value;
-                                },
-                              );
-                            },
-                      ),
-                      unitSwitch(
-                        title: 'Per Icebox',
-                        subtitle: 'For larger fish supply orders.',
-                        value: iceboxUnit,
-                        onChanged:
-                            (
-                              value,
-                            ) {
-                              setState(
-                                () {
-                                  iceboxUnit = value;
-                                },
-                              );
-                            },
-                      ),
-                    ],
-                  ),
+                  title: 'Post Preview',
+                  subtitle: 'Sample preview of how vendors may see this stock.',
+                  icon: Icons.visibility,
+                  child: previewCard(),
                 ),
-                sectionCard(
-                  title: 'Enabled Supplier Features',
-                  subtitle: 'Features available after activation.',
-                  icon: Icons.dashboard_customize,
-                  child: Column(
+                Container(
+                  padding: const EdgeInsets.all(
+                    16,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(
+                      0xFFEAF7FB,
+                    ),
+                    borderRadius: BorderRadius.circular(
+                      22,
+                    ),
+                    border: Border.all(
+                      color:
+                          const Color(
+                            0xFF146BFF,
+                          ).withAlpha(
+                            42,
+                          ),
+                    ),
+                  ),
+                  child: const Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      featureTile(
-                        icon: Icons.add_box,
-                        title: 'Post Fish Stocks',
-                        subtitle: 'Add available fish products and stock levels.',
+                      Icon(
+                        Icons.info,
+                        color: Color(
+                          0xFF146BFF,
+                        ),
+                        size: 22,
                       ),
-                      featureTile(
-                        icon: Icons.inventory_2,
-                        title: 'Manage Products',
-                        subtitle: 'Update price, quantity, and low-stock alerts.',
+                      SizedBox(
+                        width: 10,
                       ),
-                      featureTile(
-                        icon: Icons.receipt_long,
-                        title: 'Track COD Orders',
-                        subtitle: 'View vendor orders using cash on delivery.',
-                      ),
-                      featureTile(
-                        icon: Icons.analytics,
-                        title: 'Sales Analytics',
-                        subtitle: 'View sales trends and restocking insights later.',
+                      Expanded(
+                        child: Text(
+                          'Offline/sample mode: New posts are not saved yet. Database storage will be added later.',
+                          style: TextStyle(
+                            color: Color(
+                              0xFF52677A,
+                            ),
+                            fontSize: 12,
+                            height: 1.4,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -805,12 +858,12 @@ class _SupplierActivationScreenState
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton.icon(
-                  onPressed: activateSupplierAccount,
+                  onPressed: submitPost,
                   icon: const Icon(
-                    Icons.verified,
+                    Icons.add_box,
                   ),
                   label: const Text(
-                    'Activate Supplier Account',
+                    'Post Fish Stock',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
