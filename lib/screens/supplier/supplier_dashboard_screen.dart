@@ -2,8 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../analytics/analytics_screen.dart';
-import '../vendor/my_orders_screen.dart';
 import 'post_fish_stock_screen.dart';
+import 'supplier_cod_orders_screen.dart';
 
 class SupplierDashboardScreen
     extends
@@ -69,7 +69,7 @@ class SupplierDashboardScreen
         builder:
             (
               _,
-            ) => const MyOrdersScreen(),
+            ) => const SupplierCodOrdersScreen(),
       ),
     );
   }
@@ -1169,4 +1169,3 @@ class SupplierDashboardScreen
     );
   }
 }
-  
