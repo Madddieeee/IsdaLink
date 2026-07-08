@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:isdalink/data/sample_data.dart';
 import 'package:isdalink/models/fish_product.dart';
@@ -41,9 +42,18 @@ class HomeScreen
         .snapshots();
   }
 
-  void logout(
+  Future<
+    void
+  >
+  logout(
     BuildContext context,
-  ) {
+  ) async {
+    await FirebaseAuth.instance.signOut();
+
+    if (!context.mounted) {
+      return;
+    }
+
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
@@ -1023,6 +1033,126 @@ class HomeScreen
     );
   }
 
+  Widget userHeaderInfo() {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser ==
+        null) {
+      return const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Guest User',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 28,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          SizedBox(
+            height: 4,
+          ),
+          Text(
+            'Find fresh fish stocks and trusted suppliers.',
+            style: TextStyle(
+              color: Color(
+                0xFFDCE9F5,
+              ),
+              fontSize: 13,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return StreamBuilder<
+      DocumentSnapshot<
+        Map<
+          String,
+          dynamic
+        >
+      >
+    >(
+      stream: FirebaseFirestore.instance
+          .collection(
+            'users',
+          )
+          .doc(
+            currentUser.uid,
+          )
+          .snapshots(),
+      builder:
+          (
+            context,
+            snapshot,
+          ) {
+            final data = snapshot.data?.data();
+
+            final fallbackName =
+                currentUser.displayName?.trim().isNotEmpty ==
+                    true
+                ? currentUser.displayName!.trim()
+                : 'IsdaLink User';
+
+            final name =
+                data ==
+                    null
+                ? fallbackName
+                : getStringValue(
+                    data,
+                    'name',
+                    fallbackName,
+                  );
+
+            final role =
+                data ==
+                    null
+                ? 'vendor'
+                : getStringValue(
+                    data,
+                    'role',
+                    'vendor',
+                  ).toLowerCase();
+
+            final subtitle =
+                role ==
+                    'supplier'
+                ? 'Manage fish stocks and coordinate COD orders.'
+                : 'Find fresh fish stocks and trusted suppliers.';
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name.isEmpty
+                      ? 'IsdaLink User'
+                      : name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(
+                  height: 4,
+                ),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: Color(
+                      0xFFDCE9F5,
+                    ),
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            );
+          },
+    );
+  }
+
   Widget bottomNavItem({
     required IconData icon,
     required String label,
@@ -1258,26 +1388,7 @@ class HomeScreen
                       const SizedBox(
                         height: 16,
                       ),
-                      const Text(
-                        'Juan Dela Cruz',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(
-                        height: 4,
-                      ),
-                      const Text(
-                        'Find fresh fish stocks and trusted suppliers.',
-                        style: TextStyle(
-                          color: Color(
-                            0xFFDCE9F5,
-                          ),
-                          fontSize: 13,
-                        ),
-                      ),
+                      userHeaderInfo(),
                       const SizedBox(
                         height: 20,
                       ),
