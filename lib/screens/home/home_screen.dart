@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:isdalink/data/sample_data.dart';
 import 'package:isdalink/models/fish_product.dart';
@@ -16,6 +17,29 @@ class HomeScreen
   const HomeScreen({
     super.key,
   });
+
+  Stream<
+    QuerySnapshot<
+      Map<
+        String,
+        dynamic
+      >
+    >
+  >
+  get recentFishPostsStream {
+    return FirebaseFirestore.instance
+        .collection(
+          'fishStocks',
+        )
+        .orderBy(
+          'createdAt',
+          descending: true,
+        )
+        .limit(
+          6,
+        )
+        .snapshots();
+  }
 
   void logout(
     BuildContext context,
@@ -126,37 +150,134 @@ class HomeScreen
     );
   }
 
-  List<
+  String getStringValue(
     Map<
       String,
       dynamic
     >
-  >
-  getRecentProducts() {
-    final List<
-      Map<
-        String,
-        dynamic
-      >
+    data,
+    String key,
+    String fallback,
+  ) {
+    final value = data[key];
+
+    if (value ==
+        null) {
+      return fallback;
+    }
+
+    return value.toString();
+  }
+
+  double getDoubleValue(
+    Map<
+      String,
+      dynamic
     >
-    products = [];
+    data,
+    String key,
+  ) {
+    final value = data[key];
+
+    if (value
+        is int) {
+      return value.toDouble();
+    }
+
+    if (value
+        is double) {
+      return value;
+    }
+
+    if (value
+        is String) {
+      return double.tryParse(
+            value,
+          ) ??
+          0;
+    }
+
+    return 0;
+  }
+
+  Supplier? supplierForStock(
+    Map<
+      String,
+      dynamic
+    >
+    data,
+  ) {
+    if (sampleSuppliers.isEmpty) {
+      return null;
+    }
+
+    final supplierName = getStringValue(
+      data,
+      'supplierName',
+      '',
+    );
 
     for (final supplier in sampleSuppliers) {
-      for (final product in supplier.products) {
-        products.add(
-          {
-            'supplier': supplier,
-            'product': product,
-          },
-        );
+      if (supplier.name.toLowerCase() ==
+          supplierName.toLowerCase()) {
+        return supplier;
       }
     }
 
-    return products
-        .take(
-          4,
-        )
-        .toList();
+    return sampleSuppliers.first;
+  }
+
+  FishProduct fishProductFromFirestore(
+    Map<
+      String,
+      dynamic
+    >
+    data,
+  ) {
+    return FishProduct(
+      name: getStringValue(
+        data,
+        'productName',
+        'Fish Product',
+      ),
+      category: getStringValue(
+        data,
+        'category',
+        'Fresh Fish',
+      ),
+      description: getStringValue(
+        data,
+        'description',
+        'Fresh fish stock available for vendor orders.',
+      ),
+      emoji: getStringValue(
+        data,
+        'emoji',
+        '🐟',
+      ),
+      price: getDoubleValue(
+        data,
+        'price',
+      ),
+      priceUnit: getStringValue(
+        data,
+        'priceUnit',
+        'per kilo',
+      ),
+      availableQuantity: getDoubleValue(
+        data,
+        'quantity',
+      ),
+      quantityUnit: getStringValue(
+        data,
+        'quantityUnit',
+        'kilo',
+      ),
+      lowStockThreshold: getDoubleValue(
+        data,
+        'lowStockLevel',
+      ),
+    );
   }
 
   Widget sectionHeader({
@@ -674,6 +795,234 @@ class HomeScreen
     );
   }
 
+  Widget firebaseRecentProductCard(
+    BuildContext context,
+    QueryDocumentSnapshot<
+      Map<
+        String,
+        dynamic
+      >
+    >
+    document,
+  ) {
+    final data = document.data();
+    final product = fishProductFromFirestore(
+      data,
+    );
+    final supplier = supplierForStock(
+      data,
+    );
+
+    return GestureDetector(
+      onTap: () {
+        if (supplier ==
+            null) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Supplier information is not available yet.',
+              ),
+            ),
+          );
+          return;
+        }
+
+        openProductDetails(
+          context,
+          supplier,
+          product,
+        );
+      },
+      child: recentProductCard(
+        context,
+        supplier ??
+            sampleSuppliers.first,
+        product,
+      ),
+    );
+  }
+
+  Widget firebaseRecentPostsList(
+    BuildContext context,
+  ) {
+    return StreamBuilder<
+      QuerySnapshot<
+        Map<
+          String,
+          dynamic
+        >
+      >
+    >(
+      stream: recentFishPostsStream,
+      builder:
+          (
+            context,
+            snapshot,
+          ) {
+            if (snapshot.hasError) {
+              return ListView(
+                padding: const EdgeInsets.only(
+                  left: 20,
+                ),
+                scrollDirection: Axis.horizontal,
+                children: [
+                  Container(
+                    width: 250,
+                    padding: const EdgeInsets.all(
+                      16,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(
+                        22,
+                      ),
+                    ),
+                    child: Text(
+                      'Unable to load recent fish posts: ${snapshot.error}',
+                      style: const TextStyle(
+                        color: Color(
+                          0xFFD32F2F,
+                        ),
+                        fontSize: 12,
+                        height: 1.4,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            if (!snapshot.hasData) {
+              return ListView(
+                padding: const EdgeInsets.only(
+                  left: 20,
+                ),
+                scrollDirection: Axis.horizontal,
+                children: List.generate(
+                  3,
+                  (
+                    index,
+                  ) => Container(
+                    width: 158,
+                    margin: const EdgeInsets.only(
+                      right: 14,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(
+                        22,
+                      ),
+                    ),
+                    child: const Center(
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }
+
+            final documents = snapshot.data!.docs;
+
+            if (documents.isEmpty) {
+              return ListView(
+                padding: const EdgeInsets.only(
+                  left: 20,
+                ),
+                scrollDirection: Axis.horizontal,
+                children: [
+                  Container(
+                    width: 250,
+                    padding: const EdgeInsets.all(
+                      18,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(
+                        22,
+                      ),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(
+                            0x10000000,
+                          ),
+                          blurRadius: 14,
+                          offset: Offset(
+                            0,
+                            7,
+                          ),
+                        ),
+                      ],
+                    ),
+                    child: const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.inventory_2_outlined,
+                          color: Color(
+                            0xFF146BFF,
+                          ),
+                          size: 38,
+                        ),
+                        SizedBox(
+                          height: 10,
+                        ),
+                        Text(
+                          'No recent fish posts yet',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Color(
+                              0xFF102C44,
+                            ),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        SizedBox(
+                          height: 5,
+                        ),
+                        Text(
+                          'Supplier Firebase posts will appear here.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Color(
+                              0xFF7B8FA3,
+                            ),
+                            fontSize: 12,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            return ListView(
+              padding: const EdgeInsets.only(
+                left: 20,
+              ),
+              scrollDirection: Axis.horizontal,
+              children: documents
+                  .map(
+                    (
+                      document,
+                    ) => firebaseRecentProductCard(
+                      context,
+                      document,
+                    ),
+                  )
+                  .toList(),
+            );
+          },
+    );
+  }
+
   Widget bottomNavItem({
     required IconData icon,
     required String label,
@@ -793,7 +1142,6 @@ class HomeScreen
           3,
         )
         .toList();
-    final recentProducts = getRecentProducts();
 
     return Scaffold(
       backgroundColor: const Color(
@@ -1076,24 +1424,8 @@ class HomeScreen
                 ),
                 SizedBox(
                   height: 210,
-                  child: ListView(
-                    padding: const EdgeInsets.only(
-                      left: 20,
-                    ),
-                    scrollDirection: Axis.horizontal,
-                    children: recentProducts.map(
-                      (
-                        item,
-                      ) {
-                        return recentProductCard(
-                          context,
-                          item['supplier']
-                              as Supplier,
-                          item['product']
-                              as FishProduct,
-                        );
-                      },
-                    ).toList(),
+                  child: firebaseRecentPostsList(
+                    context,
                   ),
                 ),
                 const SizedBox(
