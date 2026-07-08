@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:isdalink/models/fish_product.dart';
 import 'package:isdalink/models/supplier.dart';
@@ -13,10 +14,181 @@ class SupplierDetailsScreen
     required this.supplier,
   });
 
+  Stream<
+    QuerySnapshot<
+      Map<
+        String,
+        dynamic
+      >
+    >
+  >
+  get fishStocksStream {
+    return FirebaseFirestore.instance
+        .collection(
+          'fishStocks',
+        )
+        .orderBy(
+          'createdAt',
+          descending: true,
+        )
+        .snapshots();
+  }
+
+  String getStringValue(
+    Map<
+      String,
+      dynamic
+    >
+    data,
+    String key,
+    String fallback,
+  ) {
+    final value = data[key];
+
+    if (value ==
+        null) {
+      return fallback;
+    }
+
+    return value.toString();
+  }
+
+  double getDoubleValue(
+    Map<
+      String,
+      dynamic
+    >
+    data,
+    String key,
+  ) {
+    final value = data[key];
+
+    if (value
+        is int) {
+      return value.toDouble();
+    }
+
+    if (value
+        is double) {
+      return value;
+    }
+
+    if (value
+        is String) {
+      return double.tryParse(
+            value,
+          ) ??
+          0;
+    }
+
+    return 0;
+  }
+
+  Color getStockColor(
+    double quantity,
+    double lowStockLevel,
+  ) {
+    if (quantity <=
+        0) {
+      return const Color(
+        0xFFD32F2F,
+      );
+    }
+
+    if (quantity <=
+        lowStockLevel) {
+      return const Color(
+        0xFFF57C00,
+      );
+    }
+
+    return const Color(
+      0xFF2E7D32,
+    );
+  }
+
+  String getStockStatus(
+    double quantity,
+    double lowStockLevel,
+  ) {
+    if (quantity <=
+        0) {
+      return 'Out of Stock';
+    }
+
+    if (quantity <=
+        lowStockLevel) {
+      return 'Low Stock';
+    }
+
+    return 'Available';
+  }
+
+  FishProduct fishProductFromFirestore(
+    Map<
+      String,
+      dynamic
+    >
+    data,
+  ) {
+    return FishProduct(
+      name: getStringValue(
+        data,
+        'productName',
+        'Fish Product',
+      ),
+      category: getStringValue(
+        data,
+        'category',
+        'Fresh Fish',
+      ),
+      description: getStringValue(
+        data,
+        'description',
+        'Fresh fish stock available for vendor orders.',
+      ),
+      emoji: getStringValue(
+        data,
+        'emoji',
+        '🐟',
+      ),
+      price: getDoubleValue(
+        data,
+        'price',
+      ),
+      priceUnit: getStringValue(
+        data,
+        'priceUnit',
+        'per kilo',
+      ),
+      availableQuantity: getDoubleValue(
+        data,
+        'quantity',
+      ),
+      quantityUnit: getStringValue(
+        data,
+        'quantityUnit',
+        'kilo',
+      ),
+      lowStockThreshold: getDoubleValue(
+        data,
+        'lowStockLevel',
+      ),
+    );
+  }
+
   void openProduct(
     BuildContext context,
-    FishProduct product,
+    Map<
+      String,
+      dynamic
+    >
+    data,
   ) {
+    final product = fishProductFromFirestore(
+      data,
+    );
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -29,32 +201,6 @@ class SupplierDetailsScreen
             ),
       ),
     );
-  }
-
-  int get availableProducts {
-    return supplier.products
-        .where(
-          (
-            product,
-          ) =>
-              product.availableQuantity >
-              0,
-        )
-        .length;
-  }
-
-  int get lowStockProducts {
-    return supplier.products
-        .where(
-          (
-            product,
-          ) =>
-              product.availableQuantity >
-                  0 &&
-              product.availableQuantity <=
-                  product.lowStockThreshold,
-        )
-        .length;
   }
 
   Widget statCard({
@@ -118,12 +264,67 @@ class SupplierDetailsScreen
 
   Widget productCard(
     BuildContext context,
-    FishProduct product,
+    QueryDocumentSnapshot<
+      Map<
+        String,
+        dynamic
+      >
+    >
+    document,
   ) {
+    final data = document.data();
+
+    final productName = getStringValue(
+      data,
+      'productName',
+      'Fish Product',
+    );
+    final category = getStringValue(
+      data,
+      'category',
+      'Fresh Fish',
+    );
+    final emoji = getStringValue(
+      data,
+      'emoji',
+      '🐟',
+    );
+    final price = getDoubleValue(
+      data,
+      'price',
+    );
+    final priceUnit = getStringValue(
+      data,
+      'priceUnit',
+      'per kilo',
+    );
+    final quantity = getDoubleValue(
+      data,
+      'quantity',
+    );
+    final quantityUnit = getStringValue(
+      data,
+      'quantityUnit',
+      'kilo',
+    );
+    final lowStockLevel = getDoubleValue(
+      data,
+      'lowStockLevel',
+    );
+
+    final stockColor = getStockColor(
+      quantity,
+      lowStockLevel,
+    );
+    final stockStatus = getStockStatus(
+      quantity,
+      lowStockLevel,
+    );
+
     return GestureDetector(
       onTap: () => openProduct(
         context,
-        product,
+        data,
       ),
       child: Container(
         margin: const EdgeInsets.only(
@@ -165,7 +366,7 @@ class SupplierDetailsScreen
               ),
               child: Center(
                 child: Text(
-                  product.emoji,
+                  emoji,
                   style: const TextStyle(
                     fontSize: 34,
                   ),
@@ -180,7 +381,7 @@ class SupplierDetailsScreen
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    product.name,
+                    productName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -195,7 +396,7 @@ class SupplierDetailsScreen
                     height: 4,
                   ),
                   Text(
-                    product.category,
+                    category,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -214,7 +415,7 @@ class SupplierDetailsScreen
                         width: 7,
                         height: 7,
                         decoration: BoxDecoration(
-                          color: product.stockColor,
+                          color: stockColor,
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -223,10 +424,10 @@ class SupplierDetailsScreen
                       ),
                       Expanded(
                         child: Text(
-                          '${product.stockStatus} • ${product.availableQuantity} ${product.quantityUnit}',
+                          '$stockStatus • ${quantity.toStringAsFixed(0)} $quantityUnit',
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: product.stockColor,
+                            color: stockColor,
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
                           ),
@@ -244,7 +445,7 @@ class SupplierDetailsScreen
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '₱${product.price.toStringAsFixed(0)}',
+                  '₱${price.toStringAsFixed(0)}',
                   style: const TextStyle(
                     color: Color(
                       0xFF146BFF,
@@ -257,7 +458,7 @@ class SupplierDetailsScreen
                   height: 3,
                 ),
                 Text(
-                  product.priceUnit,
+                  priceUnit,
                   style: const TextStyle(
                     color: Color(
                       0xFF7B8FA3,
@@ -293,286 +494,606 @@ class SupplierDetailsScreen
     );
   }
 
-  @override
-  Widget build(
-    BuildContext context,
-  ) {
-    final firstProduct = supplier.products.isNotEmpty
-        ? supplier.products.first
-        : null;
-
-    return Scaffold(
-      backgroundColor: const Color(
-        0xFFF4F8FB,
+  Widget loadingCard() {
+    return Container(
+      padding: const EdgeInsets.all(
+        18,
       ),
-      body: Column(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(
+          24,
+        ),
+      ),
+      child: const Row(
         children: [
-          Container(
-            padding: const EdgeInsets.fromLTRB(
-              20,
-              54,
-              20,
-              24,
-            ),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(
-                    0xFF102C44,
-                  ),
-                  Color(
-                    0xFF146BFF,
-                  ),
-                ],
-              ),
-              borderRadius: BorderRadius.vertical(
-                bottom: Radius.circular(
-                  32,
-                ),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(
-                        context,
-                      ),
-                      child: Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(
-                            38,
-                          ),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.arrow_back,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(
-                      width: 12,
-                    ),
-                    const Expanded(
-                      child: Text(
-                        'Supplier Details',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 23,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(
-                  height: 22,
-                ),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 78,
-                      height: 78,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(
-                          24,
-                        ),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(
-                              0x22000000,
-                            ),
-                            blurRadius: 16,
-                            offset: Offset(
-                              0,
-                              8,
-                            ),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Text(
-                          firstProduct?.emoji ??
-                              '🐟',
-                          style: const TextStyle(
-                            fontSize: 40,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(
-                      width: 16,
-                    ),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            supplier.name,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w900,
-                              height: 1.1,
-                            ),
-                          ),
-                          const SizedBox(
-                            height: 8,
-                          ),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.location_on,
-                                color: Color(
-                                  0xFFDCE9F5,
-                                ),
-                                size: 15,
-                              ),
-                              const SizedBox(
-                                width: 4,
-                              ),
-                              Expanded(
-                                child: Text(
-                                  supplier.location,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: Color(
-                                      0xFFDCE9F5,
-                                    ),
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(
-                            height: 6,
-                          ),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.star,
-                                color: Color(
-                                  0xFFFFB703,
-                                ),
-                                size: 16,
-                              ),
-                              const SizedBox(
-                                width: 4,
-                              ),
-                              Text(
-                                '${supplier.rating} • ${supplier.reviews} reviews',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(
-                  height: 20,
-                ),
-                Text(
-                  supplier.description,
-                  style: const TextStyle(
-                    color: Color(
-                      0xFFDCE9F5,
-                    ),
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(
-                  height: 18,
-                ),
-                Row(
-                  children: [
-                    statCard(
-                      value: '${supplier.products.length}',
-                      label: 'Products',
-                      icon: Icons.inventory_2,
-                    ),
-                    statCard(
-                      value: '$availableProducts',
-                      label: 'Available',
-                      icon: Icons.check_circle,
-                    ),
-                    statCard(
-                      value: '$lowStockProducts',
-                      label: 'Low Stock',
-                      icon: Icons.warning_amber,
-                    ),
-                  ],
-                ),
-              ],
+          SizedBox(
+            width: 34,
+            height: 34,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
             ),
           ),
+          SizedBox(
+            width: 12,
+          ),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(
-                18,
-                22,
-                18,
-                20,
+            child: Text(
+              'Loading available fish products from Firebase...',
+              style: TextStyle(
+                color: Color(
+                  0xFF7B8FA3,
+                ),
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
               ),
-              children: [
-                const Text(
-                  'Available Fish Products',
-                  style: TextStyle(
-                    color: Color(
-                      0xFF102C44,
-                    ),
-                    fontSize: 19,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(
-                  height: 4,
-                ),
-                const Text(
-                  'Tap a product to view details and place a COD order.',
-                  style: TextStyle(
-                    color: Color(
-                      0xFF7B8FA3,
-                    ),
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(
-                  height: 18,
-                ),
-                ...supplier.products.map(
-                  (
-                    product,
-                  ) => productCard(
-                    context,
-                    product,
-                  ),
-                ),
-              ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget emptyCard() {
+    return Container(
+      padding: const EdgeInsets.all(
+        18,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(
+          24,
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(
+              0x10000000,
+            ),
+            blurRadius: 14,
+            offset: Offset(
+              0,
+              7,
+            ),
+          ),
+        ],
+      ),
+      child: const Column(
+        children: [
+          Icon(
+            Icons.inventory_2_outlined,
+            color: Color(
+              0xFF146BFF,
+            ),
+            size: 42,
+          ),
+          SizedBox(
+            height: 10,
+          ),
+          Text(
+            'No available fish products yet',
+            style: TextStyle(
+              color: Color(
+                0xFF102C44,
+              ),
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          SizedBox(
+            height: 5,
+          ),
+          Text(
+            'Supplier posts from Firebase will appear here after stocks are posted.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Color(
+                0xFF7B8FA3,
+              ),
+              fontSize: 12,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget errorCard(
+    Object error,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(
+        18,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(
+          24,
+        ),
+      ),
+      child: Text(
+        'Unable to load Firebase products: $error',
+        style: const TextStyle(
+          color: Color(
+            0xFFD32F2F,
+          ),
+          fontSize: 12,
+          height: 1.4,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  Widget header(
+    BuildContext context,
+    List<
+      QueryDocumentSnapshot<
+        Map<
+          String,
+          dynamic
+        >
+      >
+    >
+    documents,
+  ) {
+    final availableProducts = documents.where(
+      (
+        document,
+      ) {
+        final quantity = getDoubleValue(
+          document.data(),
+          'quantity',
+        );
+        return quantity >
+            0;
+      },
+    ).length;
+
+    final lowStockProducts = documents.where(
+      (
+        document,
+      ) {
+        final data = document.data();
+        final quantity = getDoubleValue(
+          data,
+          'quantity',
+        );
+        final lowStockLevel = getDoubleValue(
+          data,
+          'lowStockLevel',
+        );
+
+        return quantity >
+                0 &&
+            quantity <=
+                lowStockLevel;
+      },
+    ).length;
+
+    final firstEmoji = documents.isNotEmpty
+        ? getStringValue(
+            documents.first.data(),
+            'emoji',
+            '🐟',
+          )
+        : '🐟';
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(
+        20,
+        54,
+        20,
+        24,
+      ),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(
+              0xFF102C44,
+            ),
+            Color(
+              0xFF146BFF,
+            ),
+          ],
+        ),
+        borderRadius: BorderRadius.vertical(
+          bottom: Radius.circular(
+            32,
+          ),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () => Navigator.pop(
+                  context,
+                ),
+                child: Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha(
+                      38,
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ),
+              const SizedBox(
+                width: 12,
+              ),
+              const Expanded(
+                child: Text(
+                  'Supplier Details',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 23,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(
+            height: 22,
+          ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 78,
+                height: 78,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(
+                    24,
+                  ),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(
+                        0x22000000,
+                      ),
+                      blurRadius: 16,
+                      offset: Offset(
+                        0,
+                        8,
+                      ),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    firstEmoji,
+                    style: const TextStyle(
+                      fontSize: 40,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(
+                width: 16,
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      supplier.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        height: 1.1,
+                      ),
+                    ),
+                    const SizedBox(
+                      height: 8,
+                    ),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on,
+                          color: Color(
+                            0xFFDCE9F5,
+                          ),
+                          size: 15,
+                        ),
+                        const SizedBox(
+                          width: 4,
+                        ),
+                        Expanded(
+                          child: Text(
+                            supplier.location,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Color(
+                                0xFFDCE9F5,
+                              ),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(
+                      height: 6,
+                    ),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.star,
+                          color: Color(
+                            0xFFFFB703,
+                          ),
+                          size: 16,
+                        ),
+                        const SizedBox(
+                          width: 4,
+                        ),
+                        Text(
+                          '${supplier.rating} • ${supplier.reviews} reviews',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(
+            height: 20,
+          ),
+          Text(
+            supplier.description,
+            style: const TextStyle(
+              color: Color(
+                0xFFDCE9F5,
+              ),
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(
+            height: 18,
+          ),
+          Row(
+            children: [
+              statCard(
+                value: '${documents.length}',
+                label: 'Products',
+                icon: Icons.inventory_2,
+              ),
+              statCard(
+                value: '$availableProducts',
+                label: 'Available',
+                icon: Icons.check_circle,
+              ),
+              statCard(
+                value: '$lowStockProducts',
+                label: 'Low Stock',
+                icon: Icons.warning_amber,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget bodyContent(
+    BuildContext context,
+    List<
+      QueryDocumentSnapshot<
+        Map<
+          String,
+          dynamic
+        >
+      >
+    >
+    documents,
+  ) {
+    return Column(
+      children: [
+        header(
+          context,
+          documents,
+        ),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(
+              18,
+              22,
+              18,
+              20,
+            ),
+            children: [
+              const Text(
+                'Available Fish Products',
+                style: TextStyle(
+                  color: Color(
+                    0xFF102C44,
+                  ),
+                  fontSize: 19,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(
+                height: 4,
+              ),
+              const Text(
+                'Live Firebase stock posts. Tap a product to view details and place a COD order.',
+                style: TextStyle(
+                  color: Color(
+                    0xFF7B8FA3,
+                  ),
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(
+                height: 18,
+              ),
+              if (documents.isEmpty)
+                emptyCard()
+              else
+                ...documents.map(
+                  (
+                    document,
+                  ) => productCard(
+                    context,
+                    document,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget loadingBody(
+    BuildContext context,
+  ) {
+    return Column(
+      children: [
+        header(
+          context,
+          const [],
+        ),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(
+              18,
+              22,
+              18,
+              20,
+            ),
+            children: [
+              const Text(
+                'Available Fish Products',
+                style: TextStyle(
+                  color: Color(
+                    0xFF102C44,
+                  ),
+                  fontSize: 19,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(
+                height: 18,
+              ),
+              loadingCard(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget errorBody(
+    BuildContext context,
+    Object error,
+  ) {
+    return Column(
+      children: [
+        header(
+          context,
+          const [],
+        ),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(
+              18,
+              22,
+              18,
+              20,
+            ),
+            children: [
+              const Text(
+                'Available Fish Products',
+                style: TextStyle(
+                  color: Color(
+                    0xFF102C44,
+                  ),
+                  fontSize: 19,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(
+                height: 18,
+              ),
+              errorCard(
+                error,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    return Scaffold(
+      backgroundColor: const Color(
+        0xFFF4F8FB,
+      ),
+      body:
+          StreamBuilder<
+            QuerySnapshot<
+              Map<
+                String,
+                dynamic
+              >
+            >
+          >(
+            stream: fishStocksStream,
+            builder:
+                (
+                  context,
+                  snapshot,
+                ) {
+                  if (snapshot.hasError) {
+                    return errorBody(
+                      context,
+                      snapshot.error!,
+                    );
+                  }
+
+                  if (!snapshot.hasData) {
+                    return loadingBody(
+                      context,
+                    );
+                  }
+
+                  final documents = snapshot.data!.docs;
+
+                  return bodyContent(
+                    context,
+                    documents,
+                  );
+                },
+          ),
     );
   }
 }
