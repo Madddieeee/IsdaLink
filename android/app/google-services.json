@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "486282339489",
+    "project_id": "isdalink-b6744",
+    "storage_bucket": "isdalink-b6744.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:486282339489:android:99e107e1783d6c6feabce0",
+        "android_client_info": {
+          "package_name": "com.example.isdalink"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDUebhFlBIv6itkMZGvTuoAmg2BaVolpKI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 class PostFishStockScreen
@@ -28,6 +29,8 @@ class _PostFishStockScreenState
   String selectedCategory = 'Fresh Fish';
   String selectedUnit = 'kilo';
   String selectedEmoji = '🐟';
+
+  bool isPosting = false;
 
   final List<
     String
@@ -79,72 +82,208 @@ class _PostFishStockScreenState
     super.dispose();
   }
 
-  void submitPost() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder:
-          (
-            dialogContext,
-          ) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(
-                  24,
-                ),
-              ),
-              title: const Text(
-                'Stock Posted',
-                style: TextStyle(
-                  color: Color(
-                    0xFF102C44,
+  Future<
+    void
+  >
+  submitPost() async {
+    final String productName = productNameController.text.trim();
+    final String description = descriptionController.text.trim();
+    final double? price = double.tryParse(
+      priceController.text.trim(),
+    );
+    final double? quantity = double.tryParse(
+      quantityController.text.trim(),
+    );
+    final double? lowStockLevel = double.tryParse(
+      lowStockController.text.trim(),
+    );
+
+    if (productName.isEmpty ||
+        description.isEmpty ||
+        price ==
+            null ||
+        quantity ==
+            null ||
+        lowStockLevel ==
+            null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Please complete all fields with valid values.',
+          ),
+          backgroundColor: Color(
+            0xFFD32F2F,
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (price <=
+            0 ||
+        quantity <=
+            0 ||
+        lowStockLevel <
+            0) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Price and quantity must be valid positive values.',
+          ),
+          backgroundColor: Color(
+            0xFFD32F2F,
+          ),
+        ),
+      );
+      return;
+    }
+
+    setState(
+      () {
+        isPosting = true;
+      },
+    );
+
+    try {
+      await FirebaseFirestore.instance
+          .collection(
+            'fishStocks',
+          )
+          .add(
+            {
+              'productName': productName,
+              'category': selectedCategory,
+              'description': description,
+              'emoji': selectedEmoji,
+              'price': price,
+              'priceUnit': 'per $selectedUnit',
+              'quantity': quantity,
+              'quantityUnit': selectedUnit,
+              'lowStockLevel': lowStockLevel,
+              'paymentMethod': 'COD',
+              'supplierId': 'sample_supplier_001',
+              'supplierName': 'Juan Fresh Fish Supply',
+              'region': 'Caraga Region',
+              'status': 'available',
+              'createdAt': FieldValue.serverTimestamp(),
+              'updatedAt': FieldValue.serverTimestamp(),
+            },
+          );
+
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder:
+            (
+              dialogContext,
+            ) {
+              return AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                    24,
                   ),
-                  fontWeight: FontWeight.w900,
                 ),
-              ),
-              content: const Text(
-                'Your fish stock post has been created in sample/offline mode. '
-                'Later, this record will be saved to the database and shown to vendors.',
-                style: TextStyle(
-                  color: Color(
-                    0xFF52677A,
-                  ),
-                  height: 1.4,
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(
-                      dialogContext,
-                    );
-                  },
-                  child: const Text(
-                    'Post Another',
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(
-                      dialogContext,
-                    );
-                    Navigator.pop(
-                      context,
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(
-                      0xFF146BFF,
+                title: const Text(
+                  'Stock Posted',
+                  style: TextStyle(
+                    color: Color(
+                      0xFF102C44,
                     ),
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text(
-                    'Back to Dashboard',
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
-              ],
-            );
+                content: const Text(
+                  'Your fish stock post has been saved to Firebase Firestore. '
+                  'Vendors can later view this stock from the supplier listing.',
+                  style: TextStyle(
+                    color: Color(
+                      0xFF52677A,
+                    ),
+                    height: 1.4,
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(
+                        dialogContext,
+                      );
+                      clearForm();
+                    },
+                    child: const Text(
+                      'Post Another',
+                    ),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(
+                        dialogContext,
+                      );
+                      Navigator.pop(
+                        context,
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(
+                        0xFF146BFF,
+                      ),
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text(
+                      'Back to Dashboard',
+                    ),
+                  ),
+                ],
+              );
+            },
+      );
+    } catch (
+      error
+    ) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Failed to save stock post: $error',
+          ),
+          backgroundColor: const Color(
+            0xFFD32F2F,
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(
+          () {
+            isPosting = false;
           },
+        );
+      }
+    }
+  }
+
+  void clearForm() {
+    setState(
+      () {
+        productNameController.clear();
+        priceController.clear();
+        quantityController.clear();
+        lowStockController.clear();
+        descriptionController.clear();
+
+        selectedCategory = 'Fresh Fish';
+        selectedUnit = 'kilo';
+        selectedEmoji = '🐟';
+      },
     );
   }
 
@@ -802,7 +941,7 @@ class _PostFishStockScreenState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Icon(
-                        Icons.info,
+                        Icons.cloud_done,
                         color: Color(
                           0xFF146BFF,
                         ),
@@ -813,7 +952,7 @@ class _PostFishStockScreenState
                       ),
                       Expanded(
                         child: Text(
-                          'Offline/sample mode: New posts are not saved yet. Database storage will be added later.',
+                          'Firebase mode: New fish stock posts will be saved to Cloud Firestore under the fishStocks collection.',
                           style: TextStyle(
                             color: Color(
                               0xFF52677A,
@@ -858,13 +997,26 @@ class _PostFishStockScreenState
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton.icon(
-                  onPressed: submitPost,
-                  icon: const Icon(
-                    Icons.add_box,
-                  ),
-                  label: const Text(
-                    'Post Fish Stock',
-                    style: TextStyle(
+                  onPressed: isPosting
+                      ? null
+                      : submitPost,
+                  icon: isPosting
+                      ? const SizedBox(
+                          width: 19,
+                          height: 19,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.add_box,
+                        ),
+                  label: Text(
+                    isPosting
+                        ? 'Saving to Firebase...'
+                        : 'Post Fish Stock',
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
                     ),
@@ -872,6 +1024,9 @@ class _PostFishStockScreenState
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(
                       0xFF146BFF,
+                    ),
+                    disabledBackgroundColor: const Color(
+                      0xFF7B8FA3,
                     ),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
