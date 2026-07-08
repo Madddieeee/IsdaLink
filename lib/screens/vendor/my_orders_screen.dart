@@ -1,6 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:isdalink/data/sample_orders.dart';
-import 'package:isdalink/models/order_model.dart';
 
 class MyOrdersScreen
     extends
@@ -8,6 +7,26 @@ class MyOrdersScreen
   const MyOrdersScreen({
     super.key,
   });
+
+  Stream<
+    QuerySnapshot<
+      Map<
+        String,
+        dynamic
+      >
+    >
+  >
+  get ordersStream {
+    return FirebaseFirestore.instance
+        .collection(
+          'orders',
+        )
+        .orderBy(
+          'createdAt',
+          descending: true,
+        )
+        .snapshots();
+  }
 
   Color statusColor(
     String status,
@@ -53,10 +72,88 @@ class MyOrdersScreen
     }
   }
 
-  String formatDate(
-    DateTime date,
+  String getStringValue(
+    Map<
+      String,
+      dynamic
+    >
+    data,
+    String key,
+    String fallback,
   ) {
-    return '${date.month}/${date.day}/${date.year}';
+    final value = data[key];
+
+    if (value ==
+        null) {
+      return fallback;
+    }
+
+    return value.toString();
+  }
+
+  double getDoubleValue(
+    Map<
+      String,
+      dynamic
+    >
+    data,
+    String key,
+  ) {
+    final value = data[key];
+
+    if (value
+        is int) {
+      return value.toDouble();
+    }
+
+    if (value
+        is double) {
+      return value;
+    }
+
+    if (value
+        is String) {
+      return double.tryParse(
+            value,
+          ) ??
+          0;
+    }
+
+    return 0;
+  }
+
+  String formatNumber(
+    double value,
+  ) {
+    if (value %
+            1 ==
+        0) {
+      return value.toStringAsFixed(
+        0,
+      );
+    }
+
+    return value.toStringAsFixed(
+      2,
+    );
+  }
+
+  String formatDateFromData(
+    Map<
+      String,
+      dynamic
+    >
+    data,
+  ) {
+    final value = data['createdAt'];
+
+    if (value
+        is Timestamp) {
+      final date = value.toDate();
+      return '${date.month}/${date.day}/${date.year}';
+    }
+
+    return 'Just now';
   }
 
   Widget statCard({
@@ -198,6 +295,8 @@ class MyOrdersScreen
       ),
       child: Text(
         paymentStatus,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: TextStyle(
           color: color,
           fontSize: 11,
@@ -208,10 +307,61 @@ class MyOrdersScreen
   }
 
   Widget orderCard(
-    OrderModel order,
+    QueryDocumentSnapshot<
+      Map<
+        String,
+        dynamic
+      >
+    >
+    document,
   ) {
+    final data = document.data();
+
+    final orderId =
+        document.id.length >
+            8
+        ? 'ORD-${document.id.substring(0, 8).toUpperCase()}'
+        : 'ORD-${document.id.toUpperCase()}';
+    final productName = getStringValue(
+      data,
+      'productName',
+      'Fish Product',
+    );
+    final supplierName = getStringValue(
+      data,
+      'supplierName',
+      'Supplier',
+    );
+    final quantity = getDoubleValue(
+      data,
+      'quantity',
+    );
+    final quantityUnit = getStringValue(
+      data,
+      'quantityUnit',
+      'kilo',
+    );
+    final totalAmount = getDoubleValue(
+      data,
+      'totalAmount',
+    );
+    final paymentMethod = getStringValue(
+      data,
+      'paymentMethod',
+      'COD',
+    );
+    final paymentStatus = getStringValue(
+      data,
+      'paymentStatus',
+      'To be paid on delivery',
+    );
+    final orderStatus = getStringValue(
+      data,
+      'orderStatus',
+      'Pending',
+    );
     final color = statusColor(
-      order.orderStatus,
+      orderStatus,
     );
 
     return Container(
@@ -265,7 +415,7 @@ class MyOrdersScreen
                   ),
                   child: Icon(
                     statusIcon(
-                      order.orderStatus,
+                      orderStatus,
                     ),
                     color: Colors.white,
                     size: 24,
@@ -279,7 +429,7 @@ class MyOrdersScreen
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        order.orderId,
+                        orderId,
                         style: const TextStyle(
                           color: Color(
                             0xFF102C44,
@@ -292,8 +442,8 @@ class MyOrdersScreen
                         height: 3,
                       ),
                       Text(
-                        formatDate(
-                          order.orderDate,
+                        formatDateFromData(
+                          data,
                         ),
                         style: const TextStyle(
                           color: Color(
@@ -307,7 +457,7 @@ class MyOrdersScreen
                   ),
                 ),
                 statusChip(
-                  order.orderStatus,
+                  orderStatus,
                 ),
               ],
             ),
@@ -323,7 +473,7 @@ class MyOrdersScreen
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  order.productName,
+                  productName,
                   style: const TextStyle(
                     color: Color(
                       0xFF102C44,
@@ -349,7 +499,7 @@ class MyOrdersScreen
                     ),
                     Expanded(
                       child: Text(
-                        order.supplierName,
+                        supplierName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -396,7 +546,7 @@ class MyOrdersScreen
                               height: 4,
                             ),
                             Text(
-                              '${order.quantity} ${order.quantityUnit}',
+                              '${formatNumber(quantity)} $quantityUnit',
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 color: Color(
@@ -442,7 +592,7 @@ class MyOrdersScreen
                               height: 4,
                             ),
                             Text(
-                              '₱${order.totalAmount.toStringAsFixed(0)}',
+                              '₱${totalAmount.toStringAsFixed(0)}',
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 color: Color(
@@ -489,7 +639,7 @@ class MyOrdersScreen
                             width: 5,
                           ),
                           Text(
-                            order.paymentMethod,
+                            paymentMethod,
                             style: const TextStyle(
                               color: Color(
                                 0xFF146BFF,
@@ -504,19 +654,11 @@ class MyOrdersScreen
                     const SizedBox(
                       width: 8,
                     ),
-                    paymentChip(
-                      order.paymentStatus,
-                    ),
-                    const Spacer(),
-                    TextButton(
-                      onPressed: () {},
-                      child: const Text(
-                        'Details',
-                        style: TextStyle(
-                          color: Color(
-                            0xFF146BFF,
-                          ),
-                          fontWeight: FontWeight.w800,
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: paymentChip(
+                          paymentStatus,
                         ),
                       ),
                     ),
@@ -530,181 +672,475 @@ class MyOrdersScreen
     );
   }
 
-  @override
-  Widget build(
-    BuildContext context,
-  ) {
-    final pendingCount = sampleOrders
-        .where(
-          (
-            order,
-          ) =>
-              order.orderStatus.toLowerCase() ==
-              'pending',
-        )
-        .length;
-    final deliveredCount = sampleOrders
-        .where(
-          (
-            order,
-          ) =>
-              order.orderStatus.toLowerCase() ==
-              'delivered',
-        )
-        .length;
-
-    return Scaffold(
-      backgroundColor: const Color(
-        0xFFF4F8FB,
+  Widget emptyOrdersCard() {
+    return Container(
+      padding: const EdgeInsets.all(
+        18,
       ),
-      body: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.fromLTRB(
-              20,
-              54,
-              20,
-              24,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(
+          24,
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(
+              0x10000000,
             ),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(
-                    0xFF102C44,
-                  ),
-                  Color(
-                    0xFF146BFF,
-                  ),
-                ],
-              ),
-              borderRadius: BorderRadius.vertical(
-                bottom: Radius.circular(
-                  32,
-                ),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(
-                        context,
-                      ),
-                      child: Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(
-                            38,
-                          ),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.arrow_back,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(
-                      width: 12,
-                    ),
-                    const Expanded(
-                      child: Text(
-                        'My Orders',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 23,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(
-                  height: 8,
-                ),
-                const Text(
-                  'Track your COD fish orders and supplier transactions.',
-                  style: TextStyle(
-                    color: Color(
-                      0xFFDCE9F5,
-                    ),
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(
-                  height: 18,
-                ),
-                Row(
-                  children: [
-                    statCard(
-                      value: '${sampleOrders.length}',
-                      label: 'Total',
-                      icon: Icons.receipt_long,
-                    ),
-                    statCard(
-                      value: '$pendingCount',
-                      label: 'Pending',
-                      icon: Icons.schedule,
-                    ),
-                    statCard(
-                      value: '$deliveredCount',
-                      label: 'Delivered',
-                      icon: Icons.local_shipping,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(
-                18,
-                22,
-                18,
-                20,
-              ),
-              children: [
-                const Text(
-                  'Recent Orders',
-                  style: TextStyle(
-                    color: Color(
-                      0xFF102C44,
-                    ),
-                    fontSize: 19,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(
-                  height: 4,
-                ),
-                const Text(
-                  'Sample order records will be connected to the database later.',
-                  style: TextStyle(
-                    color: Color(
-                      0xFF7B8FA3,
-                    ),
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(
-                  height: 18,
-                ),
-                ...sampleOrders.map(
-                  orderCard,
-                ),
-              ],
+            blurRadius: 14,
+            offset: Offset(
+              0,
+              7,
             ),
           ),
         ],
       ),
+      child: const Column(
+        children: [
+          Icon(
+            Icons.receipt_long_outlined,
+            color: Color(
+              0xFF146BFF,
+            ),
+            size: 44,
+          ),
+          SizedBox(
+            height: 10,
+          ),
+          Text(
+            'No orders yet',
+            style: TextStyle(
+              color: Color(
+                0xFF102C44,
+              ),
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          SizedBox(
+            height: 5,
+          ),
+          Text(
+            'Confirmed COD orders from Firebase will appear here.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Color(
+                0xFF7B8FA3,
+              ),
+              fontSize: 12,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget loadingOrdersCard() {
+    return Container(
+      padding: const EdgeInsets.all(
+        18,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(
+          24,
+        ),
+      ),
+      child: const Row(
+        children: [
+          SizedBox(
+            width: 34,
+            height: 34,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+            ),
+          ),
+          SizedBox(
+            width: 12,
+          ),
+          Expanded(
+            child: Text(
+              'Loading orders from Firebase...',
+              style: TextStyle(
+                color: Color(
+                  0xFF7B8FA3,
+                ),
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget errorOrdersCard(
+    Object error,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(
+        18,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(
+          24,
+        ),
+      ),
+      child: Text(
+        'Unable to load Firebase orders: $error',
+        style: const TextStyle(
+          color: Color(
+            0xFFD32F2F,
+          ),
+          fontSize: 12,
+          height: 1.4,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  Widget header(
+    BuildContext context,
+    List<
+      QueryDocumentSnapshot<
+        Map<
+          String,
+          dynamic
+        >
+      >
+    >
+    documents,
+  ) {
+    final pendingCount = documents.where(
+      (
+        document,
+      ) {
+        final status = getStringValue(
+          document.data(),
+          'orderStatus',
+          'Pending',
+        );
+
+        return status.toLowerCase() ==
+            'pending';
+      },
+    ).length;
+
+    final deliveredCount = documents.where(
+      (
+        document,
+      ) {
+        final status = getStringValue(
+          document.data(),
+          'orderStatus',
+          'Pending',
+        );
+
+        return status.toLowerCase() ==
+            'delivered';
+      },
+    ).length;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(
+        20,
+        54,
+        20,
+        24,
+      ),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(
+              0xFF102C44,
+            ),
+            Color(
+              0xFF146BFF,
+            ),
+          ],
+        ),
+        borderRadius: BorderRadius.vertical(
+          bottom: Radius.circular(
+            32,
+          ),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () => Navigator.pop(
+                  context,
+                ),
+                child: Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha(
+                      38,
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ),
+              const SizedBox(
+                width: 12,
+              ),
+              const Expanded(
+                child: Text(
+                  'My Orders',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 23,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(
+            height: 8,
+          ),
+          const Text(
+            'Track your COD fish orders and supplier transactions.',
+            style: TextStyle(
+              color: Color(
+                0xFFDCE9F5,
+              ),
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(
+            height: 18,
+          ),
+          Row(
+            children: [
+              statCard(
+                value: '${documents.length}',
+                label: 'Total',
+                icon: Icons.receipt_long,
+              ),
+              statCard(
+                value: '$pendingCount',
+                label: 'Pending',
+                icon: Icons.schedule,
+              ),
+              statCard(
+                value: '$deliveredCount',
+                label: 'Delivered',
+                icon: Icons.local_shipping,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget bodyContent(
+    BuildContext context,
+    List<
+      QueryDocumentSnapshot<
+        Map<
+          String,
+          dynamic
+        >
+      >
+    >
+    documents,
+  ) {
+    return Column(
+      children: [
+        header(
+          context,
+          documents,
+        ),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(
+              18,
+              22,
+              18,
+              20,
+            ),
+            children: [
+              const Text(
+                'Recent Orders',
+                style: TextStyle(
+                  color: Color(
+                    0xFF102C44,
+                  ),
+                  fontSize: 19,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(
+                height: 4,
+              ),
+              const Text(
+                'Live COD order records loaded from Firebase Firestore.',
+                style: TextStyle(
+                  color: Color(
+                    0xFF7B8FA3,
+                  ),
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(
+                height: 18,
+              ),
+              if (documents.isEmpty)
+                emptyOrdersCard()
+              else
+                ...documents.map(
+                  orderCard,
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget loadingBody(
+    BuildContext context,
+  ) {
+    return Column(
+      children: [
+        header(
+          context,
+          const [],
+        ),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(
+              18,
+              22,
+              18,
+              20,
+            ),
+            children: [
+              const Text(
+                'Recent Orders',
+                style: TextStyle(
+                  color: Color(
+                    0xFF102C44,
+                  ),
+                  fontSize: 19,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(
+                height: 18,
+              ),
+              loadingOrdersCard(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget errorBody(
+    BuildContext context,
+    Object error,
+  ) {
+    return Column(
+      children: [
+        header(
+          context,
+          const [],
+        ),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(
+              18,
+              22,
+              18,
+              20,
+            ),
+            children: [
+              const Text(
+                'Recent Orders',
+                style: TextStyle(
+                  color: Color(
+                    0xFF102C44,
+                  ),
+                  fontSize: 19,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(
+                height: 18,
+              ),
+              errorOrdersCard(
+                error,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    return Scaffold(
+      backgroundColor: const Color(
+        0xFFF4F8FB,
+      ),
+      body:
+          StreamBuilder<
+            QuerySnapshot<
+              Map<
+                String,
+                dynamic
+              >
+            >
+          >(
+            stream: ordersStream,
+            builder:
+                (
+                  context,
+                  snapshot,
+                ) {
+                  if (snapshot.hasError) {
+                    return errorBody(
+                      context,
+                      snapshot.error!,
+                    );
+                  }
+
+                  if (!snapshot.hasData) {
+                    return loadingBody(
+                      context,
+                    );
+                  }
+
+                  final documents = snapshot.data!.docs;
+
+                  return bodyContent(
+                    context,
+                    documents,
+                  );
+                },
+          ),
     );
   }
 }

@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:isdalink/models/fish_product.dart';
 import 'package:isdalink/models/supplier.dart';
@@ -66,102 +67,152 @@ class _PlaceOrderScreenState
     }
   }
 
-  void confirmOrder() async {
+  Future<
+    void
+  >
+  confirmOrder() async {
     setState(
       () {
         isSubmitting = true;
       },
     );
 
-    await Future.delayed(
-      const Duration(
-        milliseconds: 500,
-      ),
-    );
+    try {
+      await FirebaseFirestore.instance
+          .collection(
+            'orders',
+          )
+          .add(
+            {
+              'productName': widget.product.name,
+              'productCategory': widget.product.category,
+              'productEmoji': widget.product.emoji,
+              'productDescription': widget.product.description,
+              'supplierName': widget.supplier.name,
+              'supplierLocation': widget.supplier.location,
+              'vendorId': 'sample_vendor_001',
+              'vendorName': 'Juan Dela Cruz',
+              'quantity': quantity,
+              'quantityUnit': widget.product.quantityUnit,
+              'unitPrice': widget.product.price,
+              'priceUnit': widget.product.priceUnit,
+              'totalAmount': totalAmount,
+              'paymentMethod': 'COD',
+              'paymentStatus': 'To be paid on delivery',
+              'orderStatus': 'Pending',
+              'region': 'Caraga Region',
+              'createdAt': FieldValue.serverTimestamp(),
+              'updatedAt': FieldValue.serverTimestamp(),
+            },
+          );
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(
-      () {
-        isSubmitting = false;
-      },
-    );
+      setState(
+        () {
+          isSubmitting = false;
+        },
+      );
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder:
-          (
-            dialogContext,
-          ) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(
-                  24,
-                ),
-              ),
-              title: const Text(
-                'Order Placed',
-                style: TextStyle(
-                  color: Color(
-                    0xFF102C44,
-                  ),
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              content: Text(
-                'Your COD order for ${widget.product.name} has been placed successfully.\n\n'
-                'Note: This is currently sample/offline mode, so the order list will be connected to the database later.',
-                style: const TextStyle(
-                  color: Color(
-                    0xFF52677A,
-                  ),
-                  height: 1.4,
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(
-                      dialogContext,
-                    );
-                    Navigator.pop(
-                      context,
-                    );
-                  },
-                  child: const Text(
-                    'Back to Product',
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder:
+            (
+              dialogContext,
+            ) {
+              return AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                    24,
                   ),
                 ),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(
-                      dialogContext,
-                    );
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (
-                              _,
-                            ) => const MyOrdersScreen(),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(
-                      0xFF146BFF,
+                title: const Text(
+                  'Order Placed',
+                  style: TextStyle(
+                    color: Color(
+                      0xFF102C44,
                     ),
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text(
-                    'View Orders',
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
-              ],
-            );
-          },
-    );
+                content: Text(
+                  'Your COD order for ${widget.product.name} has been saved to Firebase Firestore.\n\n'
+                  'The supplier can later review this order and update its status.',
+                  style: const TextStyle(
+                    color: Color(
+                      0xFF52677A,
+                    ),
+                    height: 1.4,
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(
+                        dialogContext,
+                      );
+                      Navigator.pop(
+                        context,
+                      );
+                    },
+                    child: const Text(
+                      'Back to Product',
+                    ),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(
+                        dialogContext,
+                      );
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (
+                                _,
+                              ) => const MyOrdersScreen(),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(
+                        0xFF146BFF,
+                      ),
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text(
+                      'View Orders',
+                    ),
+                  ),
+                ],
+              );
+            },
+      );
+    } catch (
+      error
+    ) {
+      if (!mounted) return;
+
+      setState(
+        () {
+          isSubmitting = false;
+        },
+      );
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Failed to place order: $error',
+          ),
+          backgroundColor: const Color(
+            0xFFD32F2F,
+          ),
+        ),
+      );
+    }
   }
 
   Widget quantityButton({
@@ -223,18 +274,22 @@ class _PlaceOrderScreenState
               ),
             ),
           ),
-          Text(
-            value,
-            style: TextStyle(
-              color: const Color(
-                0xFF102C44,
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: const Color(
+                  0xFF102C44,
+                ),
+                fontSize: bold
+                    ? 18
+                    : 13,
+                fontWeight: bold
+                    ? FontWeight.w900
+                    : FontWeight.w700,
               ),
-              fontSize: bold
-                  ? 18
-                  : 13,
-              fontWeight: bold
-                  ? FontWeight.w900
-                  : FontWeight.w700,
             ),
           ),
         ],
@@ -302,14 +357,16 @@ class _PlaceOrderScreenState
               const SizedBox(
                 width: 10,
               ),
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Color(
-                    0xFF102C44,
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: Color(
+                      0xFF102C44,
+                    ),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
                   ),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
                 ),
               ),
             ],
@@ -570,7 +627,7 @@ class _PlaceOrderScreenState
                         height: 14,
                       ),
                       Text(
-                        'Available stock: ${widget.product.availableQuantity} ${widget.product.quantityUnit}',
+                        'Available stock: ${widget.product.availableQuantity.toStringAsFixed(0)} ${widget.product.quantityUnit}',
                         style: const TextStyle(
                           color: Color(
                             0xFF7B8FA3,
@@ -656,7 +713,7 @@ class _PlaceOrderScreenState
                             ],
                           ),
                         ),
-                        Icon(
+                        const Icon(
                           Icons.check_circle,
                           color: Color(
                             0xFF2E7D32,
@@ -699,6 +756,55 @@ class _PlaceOrderScreenState
                         label: 'Total Amount',
                         value: '₱${totalAmount.toStringAsFixed(0)}',
                         bold: true,
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(
+                    16,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(
+                      0xFFEAF7FB,
+                    ),
+                    borderRadius: BorderRadius.circular(
+                      22,
+                    ),
+                    border: Border.all(
+                      color:
+                          const Color(
+                            0xFF146BFF,
+                          ).withAlpha(
+                            42,
+                          ),
+                    ),
+                  ),
+                  child: const Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.cloud_done,
+                        color: Color(
+                          0xFF146BFF,
+                        ),
+                        size: 22,
+                      ),
+                      SizedBox(
+                        width: 10,
+                      ),
+                      Expanded(
+                        child: Text(
+                          'Firebase mode: Confirmed COD orders will be saved to Cloud Firestore under the orders collection.',
+                          style: TextStyle(
+                            color: Color(
+                              0xFF52677A,
+                            ),
+                            fontSize: 12,
+                            height: 1.4,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -751,7 +857,7 @@ class _PlaceOrderScreenState
                         ),
                   label: Text(
                     isSubmitting
-                        ? 'Placing Order...'
+                        ? 'Saving Order...'
                         : 'Confirm COD Order',
                     style: const TextStyle(
                       fontSize: 16,
