@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../analytics/analytics_screen.dart';
 import 'post_fish_stock_screen.dart';
 import 'supplier_cod_orders_screen.dart';
+import 'supplier_manage_products_screen.dart';
 
 class SupplierDashboardScreen
     extends
@@ -42,6 +43,20 @@ class SupplierDashboardScreen
             (
               _,
             ) => const PostFishStockScreen(),
+      ),
+    );
+  }
+
+  void openManageProducts(
+    BuildContext context,
+  ) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (
+              _,
+            ) => const SupplierManageProductsScreen(),
       ),
     );
   }
@@ -502,9 +517,8 @@ class SupplierDashboardScreen
             ),
           ),
           GestureDetector(
-            onTap: () => showComingSoon(
+            onTap: () => openManageProducts(
               context,
-              'Edit Product',
             ),
             child: Container(
               width: 36,
@@ -919,9 +933,8 @@ class SupplierDashboardScreen
                 color: const Color(
                   0xFF00A6A6,
                 ),
-                onTap: () => showComingSoon(
+                onTap: () => openManageProducts(
                   context,
-                  'Manage Products',
                 ),
               ),
               actionTile(
