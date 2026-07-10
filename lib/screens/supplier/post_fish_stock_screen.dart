@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class PostFishStockScreen
@@ -82,10 +83,77 @@ class _PostFishStockScreenState
     super.dispose();
   }
 
+  String getStringValue(
+    Map<
+      String,
+      dynamic
+    >?
+    data,
+    String key,
+    String fallback,
+  ) {
+    if (data ==
+        null) {
+      return fallback;
+    }
+
+    final value = data[key];
+
+    if (value ==
+        null) {
+      return fallback;
+    }
+
+    final text = value.toString().trim();
+
+    if (text.isEmpty) {
+      return fallback;
+    }
+
+    return text;
+  }
+
+  void showMessage(
+    String message, {
+    bool isError = false,
+  }) {
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+        ),
+        backgroundColor: isError
+            ? const Color(
+                0xFFD32F2F,
+              )
+            : const Color(
+                0xFF2E7D32,
+              ),
+      ),
+    );
+  }
+
   Future<
     void
   >
   submitPost() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user ==
+        null) {
+      showMessage(
+        'Please log in first before posting fish stock.',
+        isError: true,
+      );
+      return;
+    }
+
     final String productName = productNameController.text.trim();
     final String description = descriptionController.text.trim();
     final double? price = double.tryParse(
@@ -106,17 +174,9 @@ class _PostFishStockScreenState
             null ||
         lowStockLevel ==
             null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Please complete all fields with valid values.',
-          ),
-          backgroundColor: Color(
-            0xFFD32F2F,
-          ),
-        ),
+      showMessage(
+        'Please complete all fields with valid values.',
+        isError: true,
       );
       return;
     }
@@ -127,17 +187,9 @@ class _PostFishStockScreenState
             0 ||
         lowStockLevel <
             0) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Price and quantity must be valid positive values.',
-          ),
-          backgroundColor: Color(
-            0xFFD32F2F,
-          ),
-        ),
+      showMessage(
+        'Price and quantity must be valid positive values.',
+        isError: true,
       );
       return;
     }
@@ -149,6 +201,90 @@ class _PostFishStockScreenState
     );
 
     try {
+      final userDocument = await FirebaseFirestore.instance
+          .collection(
+            'users',
+          )
+          .doc(
+            user.uid,
+          )
+          .get();
+
+      final supplierProfileDocument = await FirebaseFirestore.instance
+          .collection(
+            'supplierProfiles',
+          )
+          .doc(
+            user.uid,
+          )
+          .get();
+
+      final userData = userDocument.data();
+      final supplierProfileData = supplierProfileDocument.data();
+
+      final role = getStringValue(
+        userData,
+        'role',
+        'vendor',
+      ).toLowerCase();
+      final supplierStatus = getStringValue(
+        userData,
+        'supplierStatus',
+        'not_applicable',
+      ).toLowerCase();
+
+      if (role !=
+              'supplier' &&
+          supplierStatus !=
+              'approved') {
+        showMessage(
+          'Supplier approval is required before posting fish stock.',
+          isError: true,
+        );
+
+        if (mounted) {
+          setState(
+            () {
+              isPosting = false;
+            },
+          );
+        }
+
+        return;
+      }
+
+      final supplierName = getStringValue(
+        supplierProfileData,
+        'supplierName',
+        getStringValue(
+          userData,
+          'name',
+          user.displayName ??
+              user.email ??
+              'Registered Supplier',
+        ),
+      );
+
+      final supplierLocation = getStringValue(
+        supplierProfileData,
+        'location',
+        'Caraga Region',
+      );
+
+      final supplierContactNumber = getStringValue(
+        supplierProfileData,
+        'phone',
+        getStringValue(
+          supplierProfileData,
+          'contactNumber',
+          getStringValue(
+            userData,
+            'phone',
+            '',
+          ),
+        ),
+      );
+
       await FirebaseFirestore.instance
           .collection(
             'fishStocks',
@@ -165,8 +301,10 @@ class _PostFishStockScreenState
               'quantityUnit': selectedUnit,
               'lowStockLevel': lowStockLevel,
               'paymentMethod': 'COD',
-              'supplierId': 'sample_supplier_001',
-              'supplierName': 'Juan Fresh Fish Supply',
+              'supplierId': user.uid,
+              'supplierName': supplierName,
+              'supplierLocation': supplierLocation,
+              'supplierContactNumber': supplierContactNumber,
               'region': 'Caraga Region',
               'status': 'available',
               'createdAt': FieldValue.serverTimestamp(),
@@ -199,8 +337,7 @@ class _PostFishStockScreenState
                   ),
                 ),
                 content: const Text(
-                  'Your fish stock post has been saved to Firebase Firestore. '
-                  'Vendors can later view this stock from the supplier listing.',
+                  'Your fish stock post has been saved under this logged-in supplier account. Vendors can view available posts from approved suppliers.',
                   style: TextStyle(
                     color: Color(
                       0xFF52677A,
@@ -248,17 +385,9 @@ class _PostFishStockScreenState
     ) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Failed to save stock post: $error',
-          ),
-          backgroundColor: const Color(
-            0xFFD32F2F,
-          ),
-        ),
+      showMessage(
+        'Failed to save stock post: $error',
+        isError: true,
       );
     } finally {
       if (mounted) {
@@ -670,7 +799,7 @@ class _PostFishStockScreenState
                   height: 18,
                 ),
                 const Text(
-                  'Add fish stock details so vendors can view available supply and place COD orders.',
+                  'Add fish stock details under this supplier account so vendors can view available supply and place COD orders.',
                   style: TextStyle(
                     color: Color(
                       0xFFDCE9F5,
@@ -952,7 +1081,7 @@ class _PostFishStockScreenState
                       ),
                       Expanded(
                         child: Text(
-                          'Firebase mode: New fish stock posts will be saved to Cloud Firestore under the fishStocks collection.',
+                          'Firebase mode: New fish stock posts are saved with the current supplier UID.',
                           style: TextStyle(
                             color: Color(
                               0xFF52677A,

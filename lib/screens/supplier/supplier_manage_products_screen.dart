@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class SupplierManageProductsScreen
@@ -8,6 +9,8 @@ class SupplierManageProductsScreen
     super.key,
   });
 
+  User? get currentUser => FirebaseAuth.instance.currentUser;
+
   Stream<
     QuerySnapshot<
       Map<
@@ -16,16 +19,77 @@ class SupplierManageProductsScreen
       >
     >
   >
-  get fishStocksStream {
+  fishStocksStream(
+    String supplierId,
+  ) {
     return FirebaseFirestore.instance
         .collection(
           'fishStocks',
         )
-        .orderBy(
-          'createdAt',
-          descending: true,
+        .where(
+          'supplierId',
+          isEqualTo: supplierId,
         )
         .snapshots();
+  }
+
+  int createdAtMillis(
+    QueryDocumentSnapshot<
+      Map<
+        String,
+        dynamic
+      >
+    >
+    document,
+  ) {
+    final value = document.data()['createdAt'];
+
+    if (value
+        is Timestamp) {
+      return value.millisecondsSinceEpoch;
+    }
+
+    return 0;
+  }
+
+  List<
+    QueryDocumentSnapshot<
+      Map<
+        String,
+        dynamic
+      >
+    >
+  >
+  sortStocks(
+    List<
+      QueryDocumentSnapshot<
+        Map<
+          String,
+          dynamic
+        >
+      >
+    >
+    documents,
+  ) {
+    final sortedDocuments = [
+      ...documents,
+    ];
+
+    sortedDocuments.sort(
+      (
+        a,
+        b,
+      ) =>
+          createdAtMillis(
+            b,
+          ).compareTo(
+            createdAtMillis(
+              a,
+            ),
+          ),
+    );
+
+    return sortedDocuments;
   }
 
   String getStringValue(
@@ -44,7 +108,13 @@ class SupplierManageProductsScreen
       return fallback;
     }
 
-    return value.toString();
+    final text = value.toString().trim();
+
+    if (text.isEmpty) {
+      return fallback;
+    }
+
+    return text;
   }
 
   double getDoubleValue(
@@ -404,6 +474,7 @@ class SupplierManageProductsScreen
         '',
       ),
     );
+
     final priceController = TextEditingController(
       text:
           getDoubleValue(
@@ -413,6 +484,7 @@ class SupplierManageProductsScreen
             0,
           ),
     );
+
     final quantityController = TextEditingController(
       text:
           getDoubleValue(
@@ -422,6 +494,7 @@ class SupplierManageProductsScreen
             0,
           ),
     );
+
     final lowStockController = TextEditingController(
       text:
           getDoubleValue(
@@ -572,7 +645,7 @@ class SupplierManageProductsScreen
                 ),
               ),
               content: Text(
-                'Are you sure you want to delete $productName from Firestore?',
+                'Are you sure you want to delete $productName from this supplier account?',
                 style: const TextStyle(
                   color: Color(
                     0xFF52677A,
@@ -990,7 +1063,7 @@ class SupplierManageProductsScreen
             height: 5,
           ),
           Text(
-            'Post fish stock first, then manage the stock record here.',
+            'Only fish stocks posted by this supplier account will appear here.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Color(
@@ -1030,7 +1103,7 @@ class SupplierManageProductsScreen
           ),
           Expanded(
             child: Text(
-              'Loading products from Firebase...',
+              'Loading your products from Firebase...',
               style: TextStyle(
                 color: Color(
                   0xFF7B8FA3,
@@ -1059,7 +1132,7 @@ class SupplierManageProductsScreen
         ),
       ),
       child: Text(
-        'Unable to load Firebase products: $error',
+        'Unable to load your Firebase products: $error',
         style: const TextStyle(
           color: Color(
             0xFFD32F2F,
@@ -1085,6 +1158,7 @@ class SupplierManageProductsScreen
     documents,
   ) {
     final totalProducts = documents.length;
+
     final unavailableCount = documents.where(
       (
         document,
@@ -1198,7 +1272,7 @@ class SupplierManageProductsScreen
             height: 8,
           ),
           const Text(
-            'Update posted fish stock, prices, quantities, and availability.',
+            'Update posted fish stock, prices, quantities, and availability for this account.',
             style: TextStyle(
               color: Color(
                 0xFFDCE9F5,
@@ -1262,7 +1336,7 @@ class SupplierManageProductsScreen
             ),
             children: [
               const Text(
-                'Firebase Product Records',
+                'Your Firebase Product Records',
                 style: TextStyle(
                   color: Color(
                     0xFF102C44,
@@ -1275,7 +1349,7 @@ class SupplierManageProductsScreen
                 height: 4,
               ),
               const Text(
-                'These records come from the fishStocks collection.',
+                'These records belong only to the logged-in supplier account.',
                 style: TextStyle(
                   color: Color(
                     0xFF7B8FA3,
@@ -1323,7 +1397,7 @@ class SupplierManageProductsScreen
             ),
             children: [
               const Text(
-                'Firebase Product Records',
+                'Your Firebase Product Records',
                 style: TextStyle(
                   color: Color(
                     0xFF102C44,
@@ -1363,7 +1437,7 @@ class SupplierManageProductsScreen
             ),
             children: [
               const Text(
-                'Firebase Product Records',
+                'Your Firebase Product Records',
                 style: TextStyle(
                   color: Color(
                     0xFF102C44,
@@ -1385,10 +1459,53 @@ class SupplierManageProductsScreen
     );
   }
 
+  Widget notLoggedInBody() {
+    return Scaffold(
+      backgroundColor: const Color(
+        0xFFF4F8FB,
+      ),
+      body: Center(
+        child: Container(
+          margin: const EdgeInsets.all(
+            22,
+          ),
+          padding: const EdgeInsets.all(
+            18,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(
+              24,
+            ),
+          ),
+          child: const Text(
+            'Please log in first to manage supplier products.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Color(
+                0xFFD32F2F,
+              ),
+              fontSize: 13,
+              height: 1.4,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(
     BuildContext context,
   ) {
+    final user = currentUser;
+
+    if (user ==
+        null) {
+      return notLoggedInBody();
+    }
+
     return Scaffold(
       backgroundColor: const Color(
         0xFFF4F8FB,
@@ -1402,7 +1519,9 @@ class SupplierManageProductsScreen
               >
             >
           >(
-            stream: fishStocksStream,
+            stream: fishStocksStream(
+              user.uid,
+            ),
             builder:
                 (
                   context,
@@ -1421,7 +1540,9 @@ class SupplierManageProductsScreen
                     );
                   }
 
-                  final documents = snapshot.data!.docs;
+                  final documents = sortStocks(
+                    snapshot.data!.docs,
+                  );
 
                   return bodyContent(
                     context,

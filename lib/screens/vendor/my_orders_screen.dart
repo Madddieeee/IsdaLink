@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class MyOrdersScreen
@@ -16,16 +17,77 @@ class MyOrdersScreen
       >
     >
   >
-  get ordersStream {
+  ordersStream(
+    String vendorId,
+  ) {
     return FirebaseFirestore.instance
         .collection(
           'orders',
         )
-        .orderBy(
-          'createdAt',
-          descending: true,
+        .where(
+          'vendorId',
+          isEqualTo: vendorId,
         )
         .snapshots();
+  }
+
+  int createdAtMillis(
+    QueryDocumentSnapshot<
+      Map<
+        String,
+        dynamic
+      >
+    >
+    document,
+  ) {
+    final value = document.data()['createdAt'];
+
+    if (value
+        is Timestamp) {
+      return value.millisecondsSinceEpoch;
+    }
+
+    return 0;
+  }
+
+  List<
+    QueryDocumentSnapshot<
+      Map<
+        String,
+        dynamic
+      >
+    >
+  >
+  sortOrders(
+    List<
+      QueryDocumentSnapshot<
+        Map<
+          String,
+          dynamic
+        >
+      >
+    >
+    documents,
+  ) {
+    final sortedDocuments = [
+      ...documents,
+    ];
+
+    sortedDocuments.sort(
+      (
+        a,
+        b,
+      ) =>
+          createdAtMillis(
+            b,
+          ).compareTo(
+            createdAtMillis(
+              a,
+            ),
+          ),
+    );
+
+    return sortedDocuments;
   }
 
   Color statusColor(
@@ -88,7 +150,13 @@ class MyOrdersScreen
       return fallback;
     }
 
-    return value.toString();
+    final text = value.toString().trim();
+
+    if (text.isEmpty) {
+      return fallback;
+    }
+
+    return text;
   }
 
   double getDoubleValue(
@@ -322,44 +390,53 @@ class MyOrdersScreen
             8
         ? 'ORD-${document.id.substring(0, 8).toUpperCase()}'
         : 'ORD-${document.id.toUpperCase()}';
+
     final productName = getStringValue(
       data,
       'productName',
       'Fish Product',
     );
+
     final supplierName = getStringValue(
       data,
       'supplierName',
       'Supplier',
     );
+
     final quantity = getDoubleValue(
       data,
       'quantity',
     );
+
     final quantityUnit = getStringValue(
       data,
       'quantityUnit',
       'kilo',
     );
+
     final totalAmount = getDoubleValue(
       data,
       'totalAmount',
     );
+
     final paymentMethod = getStringValue(
       data,
       'paymentMethod',
       'COD',
     );
+
     final paymentStatus = getStringValue(
       data,
       'paymentStatus',
       'To be paid on delivery',
     );
+
     final orderStatus = getStringValue(
       data,
       'orderStatus',
       'Pending',
     );
+
     final color = statusColor(
       orderStatus,
     );
@@ -721,7 +798,7 @@ class MyOrdersScreen
             height: 5,
           ),
           Text(
-            'Confirmed COD orders from Firebase will appear here.',
+            'Only COD orders placed by this logged-in account will appear here.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Color(
@@ -761,7 +838,7 @@ class MyOrdersScreen
           ),
           Expanded(
             child: Text(
-              'Loading orders from Firebase...',
+              'Loading your orders from Firebase...',
               style: TextStyle(
                 color: Color(
                   0xFF7B8FA3,
@@ -790,7 +867,7 @@ class MyOrdersScreen
         ),
       ),
       child: Text(
-        'Unable to load Firebase orders: $error',
+        'Unable to load your Firebase orders: $error',
         style: const TextStyle(
           color: Color(
             0xFFD32F2F,
@@ -915,7 +992,7 @@ class MyOrdersScreen
             height: 8,
           ),
           const Text(
-            'Track your COD fish orders and supplier transactions.',
+            'Track your own COD fish orders and supplier transactions.',
             style: TextStyle(
               color: Color(
                 0xFFDCE9F5,
@@ -992,7 +1069,7 @@ class MyOrdersScreen
                 height: 4,
               ),
               const Text(
-                'Live COD order records loaded from Firebase Firestore.',
+                'Live COD order records for the currently logged-in account.',
                 style: TextStyle(
                   color: Color(
                     0xFF7B8FA3,
@@ -1101,6 +1178,21 @@ class MyOrdersScreen
   Widget build(
     BuildContext context,
   ) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user ==
+        null) {
+      return Scaffold(
+        backgroundColor: const Color(
+          0xFFF4F8FB,
+        ),
+        body: errorBody(
+          context,
+          'Please log in first to view your orders.',
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(
         0xFFF4F8FB,
@@ -1114,7 +1206,9 @@ class MyOrdersScreen
               >
             >
           >(
-            stream: ordersStream,
+            stream: ordersStream(
+              user.uid,
+            ),
             builder:
                 (
                   context,
@@ -1133,7 +1227,9 @@ class MyOrdersScreen
                     );
                   }
 
-                  final documents = snapshot.data!.docs;
+                  final documents = sortOrders(
+                    snapshot.data!.docs,
+                  );
 
                   return bodyContent(
                     context,

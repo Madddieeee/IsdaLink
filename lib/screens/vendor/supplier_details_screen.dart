@@ -8,10 +8,12 @@ class SupplierDetailsScreen
     extends
         StatelessWidget {
   final Supplier supplier;
+  final String? supplierId;
 
   const SupplierDetailsScreen({
     super.key,
     required this.supplier,
+    this.supplierId,
   });
 
   Stream<
@@ -50,7 +52,13 @@ class SupplierDetailsScreen
       return fallback;
     }
 
-    return value.toString();
+    final text = value.toString().trim();
+
+    if (text.isEmpty) {
+      return fallback;
+    }
+
+    return text;
   }
 
   double getDoubleValue(
@@ -82,6 +90,96 @@ class SupplierDetailsScreen
     }
 
     return 0;
+  }
+
+  bool matchesSelectedSupplier(
+    Map<
+      String,
+      dynamic
+    >
+    data,
+  ) {
+    final stockSupplierId = getStringValue(
+      data,
+      'supplierId',
+      '',
+    );
+
+    final stockSupplierName = getStringValue(
+      data,
+      'supplierName',
+      '',
+    ).toLowerCase();
+
+    final selectedSupplierName = supplier.name.toLowerCase();
+
+    final hasMatchingId =
+        supplierId !=
+            null &&
+        supplierId!.trim().isNotEmpty &&
+        stockSupplierId ==
+            supplierId;
+
+    final hasMatchingName =
+        stockSupplierName ==
+        selectedSupplierName;
+
+    return hasMatchingId ||
+        hasMatchingName;
+  }
+
+  bool isVisibleStock(
+    Map<
+      String,
+      dynamic
+    >
+    data,
+  ) {
+    final status = getStringValue(
+      data,
+      'status',
+      'available',
+    ).toLowerCase();
+
+    return status ==
+            'available' ||
+        status ==
+            'active';
+  }
+
+  List<
+    QueryDocumentSnapshot<
+      Map<
+        String,
+        dynamic
+      >
+    >
+  >
+  filterSupplierStocks(
+    List<
+      QueryDocumentSnapshot<
+        Map<
+          String,
+          dynamic
+        >
+      >
+    >
+    documents,
+  ) {
+    return documents.where(
+      (
+        document,
+      ) {
+        final data = document.data();
+
+        return matchesSelectedSupplier(
+              data,
+            ) &&
+            isVisibleStock(
+              data,
+            );
+      },
+    ).toList();
   }
 
   Color getStockColor(
@@ -583,7 +681,7 @@ class SupplierDetailsScreen
             height: 5,
           ),
           Text(
-            'Supplier posts from Firebase will appear here after stocks are posted.',
+            'This supplier has no visible Firebase fish stock posts yet.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Color(
@@ -835,7 +933,7 @@ class SupplierDetailsScreen
                     Row(
                       children: [
                         const Icon(
-                          Icons.star,
+                          Icons.payments,
                           color: Color(
                             0xFFFFB703,
                           ),
@@ -845,7 +943,7 @@ class SupplierDetailsScreen
                           width: 4,
                         ),
                         Text(
-                          '${supplier.rating} • ${supplier.reviews} reviews',
+                          'COD only',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 12,
@@ -940,7 +1038,7 @@ class SupplierDetailsScreen
                 height: 4,
               ),
               const Text(
-                'Live Firebase stock posts. Tap a product to view details and place a COD order.',
+                'Live Firebase stock posts for the selected supplier. Tap a product to view details and place a COD order.',
                 style: TextStyle(
                   color: Color(
                     0xFF7B8FA3,
@@ -1086,7 +1184,9 @@ class SupplierDetailsScreen
                     );
                   }
 
-                  final documents = snapshot.data!.docs;
+                  final documents = filterSupplierStocks(
+                    snapshot.data!.docs,
+                  );
 
                   return bodyContent(
                     context,

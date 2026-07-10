@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:isdalink/models/fish_product.dart';
 import 'package:isdalink/models/supplier.dart';
@@ -67,10 +68,77 @@ class _PlaceOrderScreenState
     }
   }
 
+  String getStringValue(
+    Map<
+      String,
+      dynamic
+    >?
+    data,
+    String key,
+    String fallback,
+  ) {
+    if (data ==
+        null) {
+      return fallback;
+    }
+
+    final value = data[key];
+
+    if (value ==
+        null) {
+      return fallback;
+    }
+
+    final text = value.toString().trim();
+
+    if (text.isEmpty) {
+      return fallback;
+    }
+
+    return text;
+  }
+
+  void showMessage(
+    String message, {
+    bool isError = false,
+  }) {
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+        ),
+        backgroundColor: isError
+            ? const Color(
+                0xFFD32F2F,
+              )
+            : const Color(
+                0xFF2E7D32,
+              ),
+      ),
+    );
+  }
+
   Future<
     void
   >
   confirmOrder() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user ==
+        null) {
+      showMessage(
+        'Please log in first before placing an order.',
+        isError: true,
+      );
+      return;
+    }
+
     setState(
       () {
         isSubmitting = true;
@@ -78,6 +146,31 @@ class _PlaceOrderScreenState
     );
 
     try {
+      final userDocument = await FirebaseFirestore.instance
+          .collection(
+            'users',
+          )
+          .doc(
+            user.uid,
+          )
+          .get();
+
+      final userData = userDocument.data();
+
+      final vendorName = getStringValue(
+        userData,
+        'name',
+        user.displayName ??
+            user.email ??
+            'Vendor',
+      );
+
+      final vendorPhone = getStringValue(
+        userData,
+        'phone',
+        '',
+      );
+
       await FirebaseFirestore.instance
           .collection(
             'orders',
@@ -90,8 +183,13 @@ class _PlaceOrderScreenState
               'productDescription': widget.product.description,
               'supplierName': widget.supplier.name,
               'supplierLocation': widget.supplier.location,
-              'vendorId': 'sample_vendor_001',
-              'vendorName': 'Juan Dela Cruz',
+              'supplierContactNumber': widget.supplier.contactNumber,
+              'vendorId': user.uid,
+              'vendorName': vendorName,
+              'vendorEmail':
+                  user.email ??
+                  '',
+              'vendorPhone': vendorPhone,
               'quantity': quantity,
               'quantityUnit': widget.product.quantityUnit,
               'unitPrice': widget.product.price,
@@ -137,8 +235,8 @@ class _PlaceOrderScreenState
                   ),
                 ),
                 content: Text(
-                  'Your COD order for ${widget.product.name} has been saved to Firebase Firestore.\n\n'
-                  'The supplier can later review this order and update its status.',
+                  'Your COD order for ${widget.product.name} has been saved to your Firebase account.\n\n'
+                  'Only this logged-in account can see this order in My Orders.',
                   style: const TextStyle(
                     color: Color(
                       0xFF52677A,
@@ -200,17 +298,9 @@ class _PlaceOrderScreenState
         },
       );
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Failed to place order: $error',
-          ),
-          backgroundColor: const Color(
-            0xFFD32F2F,
-          ),
-        ),
+      showMessage(
+        'Failed to place order: $error',
+        isError: true,
       );
     }
   }
@@ -795,7 +885,7 @@ class _PlaceOrderScreenState
                       ),
                       Expanded(
                         child: Text(
-                          'Firebase mode: Confirmed COD orders will be saved to Cloud Firestore under the orders collection.',
+                          'Firebase mode: This COD order will be saved under the currently logged-in user account.',
                           style: TextStyle(
                             color: Color(
                               0xFF52677A,

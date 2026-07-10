@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:isdalink/screens/admin/admin_dashboard_screen.dart';
 import 'package:isdalink/screens/auth/register_screen.dart';
 import 'package:isdalink/screens/home/home_screen.dart';
 import 'package:isdalink/screens/supplier/supplier_dashboard_screen.dart';
@@ -107,11 +108,32 @@ class _LoginScreenState
                   'vendor')
               .toString()
               .toLowerCase();
+      final supplierStatus =
+          (userData?['supplierStatus'] ??
+                  'not_applicable')
+              .toString()
+              .toLowerCase();
 
       if (!context.mounted) return;
 
       if (role ==
-          'supplier') {
+          'admin') {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder:
+                (
+                  _,
+                ) => const AdminDashboardScreen(),
+          ),
+          (
+            route,
+          ) => false,
+        );
+      } else if (role ==
+              'supplier' ||
+          supplierStatus ==
+              'approved') {
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
@@ -560,7 +582,7 @@ class _LoginScreenState
                       height: 18,
                     ),
                     const Text(
-                      'Login is connected to Firebase Authentication.',
+                      'Login is connected to Firebase Authentication and role routing.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Color(

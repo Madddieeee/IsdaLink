@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:isdalink/screens/home/home_screen.dart';
 
 import '../analytics/analytics_screen.dart';
 import 'post_fish_stock_screen.dart';
@@ -13,6 +15,8 @@ class SupplierDashboardScreen
     super.key,
   });
 
+  User? get currentUser => FirebaseAuth.instance.currentUser;
+
   Stream<
     QuerySnapshot<
       Map<
@@ -21,16 +25,77 @@ class SupplierDashboardScreen
       >
     >
   >
-  get fishStocksStream {
+  fishStocksStream(
+    String supplierId,
+  ) {
     return FirebaseFirestore.instance
         .collection(
           'fishStocks',
         )
-        .orderBy(
-          'createdAt',
-          descending: true,
+        .where(
+          'supplierId',
+          isEqualTo: supplierId,
         )
         .snapshots();
+  }
+
+  int createdAtMillis(
+    QueryDocumentSnapshot<
+      Map<
+        String,
+        dynamic
+      >
+    >
+    document,
+  ) {
+    final value = document.data()['createdAt'];
+
+    if (value
+        is Timestamp) {
+      return value.millisecondsSinceEpoch;
+    }
+
+    return 0;
+  }
+
+  List<
+    QueryDocumentSnapshot<
+      Map<
+        String,
+        dynamic
+      >
+    >
+  >
+  sortStocks(
+    List<
+      QueryDocumentSnapshot<
+        Map<
+          String,
+          dynamic
+        >
+      >
+    >
+    documents,
+  ) {
+    final sortedDocuments = [
+      ...documents,
+    ];
+
+    sortedDocuments.sort(
+      (
+        a,
+        b,
+      ) =>
+          createdAtMillis(
+            b,
+          ).compareTo(
+            createdAtMillis(
+              a,
+            ),
+          ),
+    );
+
+    return sortedDocuments;
   }
 
   void openPostFishStock(
@@ -89,19 +154,39 @@ class SupplierDashboardScreen
     );
   }
 
-  void showComingSoon(
+  void safeBack(
     BuildContext context,
-    String feature,
   ) {
-    ScaffoldMessenger.of(
+    if (Navigator.canPop(
       context,
-    ).showSnackBar(
-      SnackBar(
-        content: Text(
-          '$feature coming soon',
-        ),
+    )) {
+      Navigator.pop(
+        context,
+      );
+      return;
+    }
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder:
+            (
+              _,
+            ) => const HomeScreen(),
       ),
     );
+  }
+
+  Future<
+    bool
+  >
+  handleSystemBack(
+    BuildContext context,
+  ) async {
+    safeBack(
+      context,
+    );
+    return false;
   }
 
   String getStringValue(
@@ -120,7 +205,13 @@ class SupplierDashboardScreen
       return fallback;
     }
 
-    return value.toString();
+    final text = value.toString().trim();
+
+    if (text.isEmpty) {
+      return fallback;
+    }
+
+    return text;
   }
 
   double getDoubleValue(
@@ -157,7 +248,15 @@ class SupplierDashboardScreen
   Color getStockColor(
     double quantity,
     double lowStockLevel,
+    String status,
   ) {
+    if (status.toLowerCase() ==
+        'unavailable') {
+      return const Color(
+        0xFF7B8FA3,
+      );
+    }
+
     if (quantity <=
         0) {
       return const Color(
@@ -180,7 +279,13 @@ class SupplierDashboardScreen
   String getStockStatus(
     double quantity,
     double lowStockLevel,
+    String status,
   ) {
+    if (status.toLowerCase() ==
+        'unavailable') {
+      return 'Hidden';
+    }
+
     if (quantity <=
         0) {
       return 'Out of Stock';
@@ -398,14 +503,21 @@ class SupplierDashboardScreen
       data,
       'lowStockLevel',
     );
+    final status = getStringValue(
+      data,
+      'status',
+      'available',
+    );
 
     final stockColor = getStockColor(
       quantity,
       lowStockLevel,
+      status,
     );
     final stockStatus = getStockStatus(
       quantity,
       lowStockLevel,
+      status,
     );
 
     return Container(
@@ -464,6 +576,8 @@ class SupplierDashboardScreen
               children: [
                 Text(
                   productName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Color(
                       0xFF102C44,
@@ -584,58 +698,6 @@ class SupplierDashboardScreen
     );
   }
 
-  Widget loadingStockCards() {
-    return Column(
-      children: List.generate(
-        3,
-        (
-          index,
-        ) => Container(
-          margin: const EdgeInsets.only(
-            bottom: 12,
-          ),
-          padding: const EdgeInsets.all(
-            14,
-          ),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(
-              22,
-            ),
-          ),
-          child: const Row(
-            children: [
-              SizedBox(
-                width: 54,
-                height: 54,
-                child: Center(
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 12,
-              ),
-              Expanded(
-                child: Text(
-                  'Loading fish stock posts...',
-                  style: TextStyle(
-                    color: Color(
-                      0xFF7B8FA3,
-                    ),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget emptyStocksCard() {
     return Container(
       padding: const EdgeInsets.all(
@@ -685,7 +747,7 @@ class SupplierDashboardScreen
             height: 5,
           ),
           Text(
-            'Tap Post Fish Stock to add your first Firebase stock record.',
+            'Only posts created by this logged-in supplier account will appear here.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Color(
@@ -696,6 +758,58 @@ class SupplierDashboardScreen
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget loadingStockCards() {
+    return Column(
+      children: List.generate(
+        3,
+        (
+          index,
+        ) => Container(
+          margin: const EdgeInsets.only(
+            bottom: 12,
+          ),
+          padding: const EdgeInsets.all(
+            14,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(
+              22,
+            ),
+          ),
+          child: const Row(
+            children: [
+              SizedBox(
+                width: 54,
+                height: 54,
+                child: Center(
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 12,
+              ),
+              Expanded(
+                child: Text(
+                  'Loading your fish stock posts...',
+                  style: TextStyle(
+                    color: Color(
+                      0xFF7B8FA3,
+                    ),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -726,7 +840,7 @@ class SupplierDashboardScreen
         ],
       ),
       child: Text(
-        'Unable to load fish stock posts: $error',
+        'Unable to load your fish stock posts: $error',
         style: const TextStyle(
           color: Color(
             0xFFD32F2F,
@@ -775,6 +889,11 @@ class SupplierDashboardScreen
         document,
       ) {
         final data = document.data();
+        final status = getStringValue(
+          data,
+          'status',
+          'available',
+        );
         final quantity = getDoubleValue(
           data,
           'quantity',
@@ -784,7 +903,9 @@ class SupplierDashboardScreen
           'lowStockLevel',
         );
 
-        return quantity >
+        return status.toLowerCase() !=
+                'unavailable' &&
+            quantity >
                 0 &&
             quantity <=
                 lowStockLevel;
@@ -831,7 +952,7 @@ class SupplierDashboardScreen
               Row(
                 children: [
                   GestureDetector(
-                    onTap: () => Navigator.pop(
+                    onTap: () => safeBack(
                       context,
                     ),
                     child: Container(
@@ -869,7 +990,7 @@ class SupplierDashboardScreen
                 height: 18,
               ),
               const Text(
-                'Manage fish stock posts, COD orders, and supplier analytics.',
+                'Manage fish stock posts, COD orders, and supplier analytics for this account.',
                 style: TextStyle(
                   color: Color(
                     0xFFDCE9F5,
@@ -916,7 +1037,7 @@ class SupplierDashboardScreen
             children: [
               sectionTitle(
                 'Supplier Tools',
-                'These tools support supplier stock visibility and vendor coordination.',
+                'These tools support this supplier account only.',
               ),
               actionTile(
                 icon: Icons.add_box,
@@ -929,7 +1050,7 @@ class SupplierDashboardScreen
               actionTile(
                 icon: Icons.inventory,
                 title: 'Manage Products',
-                subtitle: 'Update stock levels, price, and low-stock alerts.',
+                subtitle: 'Update your own stock levels, price, and low-stock alerts.',
                 color: const Color(
                   0xFF00A6A6,
                 ),
@@ -964,7 +1085,7 @@ class SupplierDashboardScreen
               ),
               sectionTitle(
                 'Current Stock Posts',
-                'Live fish stock posts loaded from Firebase Firestore.',
+                'Only fish stock posts owned by this supplier account are shown.',
               ),
               if (productsToShow.isEmpty)
                 emptyStocksCard()
@@ -1028,7 +1149,7 @@ class SupplierDashboardScreen
                 height: 18,
               ),
               const Text(
-                'Loading stock data from Firebase...',
+                'Loading your supplier stock data from Firebase...',
                 style: TextStyle(
                   color: Color(
                     0xFFDCE9F5,
@@ -1073,9 +1194,108 @@ class SupplierDashboardScreen
             children: [
               sectionTitle(
                 'Current Stock Posts',
-                'Loading live fish stock posts from Firebase Firestore.',
+                'Loading your live fish stock posts from Firebase Firestore.',
               ),
               loadingStockCards(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget notLoggedInBody() {
+    return Scaffold(
+      backgroundColor: const Color(
+        0xFFF4F8FB,
+      ),
+      body: Center(
+        child: Container(
+          margin: const EdgeInsets.all(
+            22,
+          ),
+          padding: const EdgeInsets.all(
+            18,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(
+              24,
+            ),
+          ),
+          child: const Text(
+            'Please log in first to view the Supplier Dashboard.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Color(
+                0xFFD32F2F,
+              ),
+              fontSize: 13,
+              height: 1.4,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget errorDashboard(
+    Object error,
+  ) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.fromLTRB(
+            20,
+            54,
+            20,
+            24,
+          ),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(
+                  0xFF102C44,
+                ),
+                Color(
+                  0xFF146BFF,
+                ),
+              ],
+            ),
+            borderRadius: BorderRadius.vertical(
+              bottom: Radius.circular(
+                32,
+              ),
+            ),
+          ),
+          child: const Text(
+            'Supplier Dashboard',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 23,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(
+              18,
+              22,
+              18,
+              20,
+            ),
+            children: [
+              sectionTitle(
+                'Current Stock Posts',
+                'There was a problem loading this supplier account stock posts.',
+              ),
+              errorStocksCard(
+                error,
+              ),
             ],
           ),
         ),
@@ -1087,98 +1307,59 @@ class SupplierDashboardScreen
   Widget build(
     BuildContext context,
   ) {
-    return Scaffold(
-      backgroundColor: const Color(
-        0xFFF4F8FB,
+    final user = currentUser;
+
+    if (user ==
+        null) {
+      return notLoggedInBody();
+    }
+
+    return WillPopScope(
+      onWillPop: () => handleSystemBack(
+        context,
       ),
-      body:
-          StreamBuilder<
-            QuerySnapshot<
-              Map<
-                String,
-                dynamic
+      child: Scaffold(
+        backgroundColor: const Color(
+          0xFFF4F8FB,
+        ),
+        body:
+            StreamBuilder<
+              QuerySnapshot<
+                Map<
+                  String,
+                  dynamic
+                >
               >
-            >
-          >(
-            stream: fishStocksStream,
-            builder:
-                (
-                  context,
-                  snapshot,
-                ) {
-                  if (snapshot.hasError) {
-                    return Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.fromLTRB(
-                            20,
-                            54,
-                            20,
-                            24,
-                          ),
-                          decoration: const BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                Color(
-                                  0xFF102C44,
-                                ),
-                                Color(
-                                  0xFF146BFF,
-                                ),
-                              ],
-                            ),
-                            borderRadius: BorderRadius.vertical(
-                              bottom: Radius.circular(
-                                32,
-                              ),
-                            ),
-                          ),
-                          child: const Text(
-                            'Supplier Dashboard',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 23,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: ListView(
-                            padding: const EdgeInsets.fromLTRB(
-                              18,
-                              22,
-                              18,
-                              20,
-                            ),
-                            children: [
-                              sectionTitle(
-                                'Current Stock Posts',
-                                'There was a problem loading Firebase stock posts.',
-                              ),
-                              errorStocksCard(
-                                snapshot.error!,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    );
-                  }
-
-                  if (!snapshot.hasData) {
-                    return loadingDashboard();
-                  }
-
-                  final documents = snapshot.data!.docs;
-
-                  return dashboardContent(
+            >(
+              stream: fishStocksStream(
+                user.uid,
+              ),
+              builder:
+                  (
                     context,
-                    documents,
-                  );
-                },
-          ),
+                    snapshot,
+                  ) {
+                    if (snapshot.hasError) {
+                      return errorDashboard(
+                        snapshot.error!,
+                      );
+                    }
+
+                    if (!snapshot.hasData) {
+                      return loadingDashboard();
+                    }
+
+                    final documents = sortStocks(
+                      snapshot.data!.docs,
+                    );
+
+                    return dashboardContent(
+                      context,
+                      documents,
+                    );
+                  },
+            ),
+      ),
     );
   }
 }
