@@ -144,8 +144,10 @@ class HomeScreen
   void openProductDetails(
     BuildContext context,
     Supplier supplier,
-    FishProduct product,
-  ) {
+    FishProduct product, {
+    String stockId = '',
+    String supplierId = '',
+  }) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -155,6 +157,8 @@ class HomeScreen
             ) => ProductDetailsScreen(
               supplier: supplier,
               product: product,
+              stockId: stockId,
+              supplierId: supplierId,
             ),
       ),
     );
@@ -642,13 +646,17 @@ class HomeScreen
   Widget recentProductCard(
     BuildContext context,
     Supplier supplier,
-    FishProduct product,
-  ) {
+    FishProduct product, {
+    String stockId = '',
+    String supplierId = '',
+  }) {
     return GestureDetector(
       onTap: () => openProductDetails(
         context,
         supplier,
         product,
+        stockId: stockId,
+        supplierId: supplierId,
       ),
       child: Container(
         width: 158,
@@ -823,10 +831,16 @@ class HomeScreen
       data,
     );
 
-    return GestureDetector(
-      onTap: () {
-        if (supplier ==
-            null) {
+    final stockSupplierId = getStringValue(
+      data,
+      'supplierId',
+      '',
+    );
+
+    if (supplier ==
+        null) {
+      return GestureDetector(
+        onTap: () {
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(
@@ -836,21 +850,44 @@ class HomeScreen
               ),
             ),
           );
-          return;
-        }
+        },
+        child: Container(
+          width: 158,
+          margin: const EdgeInsets.only(
+            right: 14,
+          ),
+          padding: const EdgeInsets.all(
+            14,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(
+              22,
+            ),
+          ),
+          child: const Center(
+            child: Text(
+              'Supplier information is not available.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Color(
+                  0xFF7B8FA3,
+                ),
+                fontSize: 12,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
-        openProductDetails(
-          context,
-          supplier,
-          product,
-        );
-      },
-      child: recentProductCard(
-        context,
-        supplier ??
-            sampleSuppliers.first,
-        product,
-      ),
+    return recentProductCard(
+      context,
+      supplier,
+      product,
+      stockId: document.id,
+      supplierId: stockSupplierId,
     );
   }
 
@@ -936,7 +973,31 @@ class HomeScreen
               );
             }
 
-            final documents = snapshot.data!.docs;
+            final documents = snapshot.data!.docs.where(
+              (
+                document,
+              ) {
+                final data = document.data();
+
+                final status = getStringValue(
+                  data,
+                  'status',
+                  'available',
+                ).toLowerCase();
+
+                final quantity = getDoubleValue(
+                  data,
+                  'quantity',
+                );
+
+                return (status ==
+                            'available' ||
+                        status ==
+                            'active') &&
+                    quantity >
+                        0;
+              },
+            ).toList();
 
             if (documents.isEmpty) {
               return ListView(

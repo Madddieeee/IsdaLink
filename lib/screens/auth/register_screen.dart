@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:isdalink/screens/home/home_screen.dart';
-import 'package:isdalink/screens/supplier/supplier_dashboard_screen.dart';
 
 class RegisterScreen
     extends
@@ -29,7 +28,6 @@ class _RegisterScreenState
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
 
-  String selectedRole = 'vendor';
   bool isLoading = false;
   bool obscurePassword = true;
   bool obscureConfirmPassword = true;
@@ -118,28 +116,12 @@ class _RegisterScreenState
         'name': fullName,
         'email': email,
         'phone': phone,
-        'role': selectedRole,
+        'role': 'vendor',
+        'supplierStatus': 'not_applicable',
         'region': 'Caraga Region',
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       };
-
-      if (selectedRole ==
-          'supplier') {
-        userData.addAll(
-          {
-            'supplierStatus': 'approved',
-            'supplierName': fullName,
-            'paymentMethod': 'COD',
-          },
-        );
-      } else {
-        userData.addAll(
-          {
-            'supplierStatus': 'not_applicable',
-          },
-        );
-      }
 
       await FirebaseFirestore.instance
           .collection(
@@ -152,60 +134,20 @@ class _RegisterScreenState
             userData,
           );
 
-      if (selectedRole ==
-          'supplier') {
-        await FirebaseFirestore.instance
-            .collection(
-              'supplierProfiles',
-            )
-            .doc(
-              user.uid,
-            )
-            .set(
-              {
-                'uid': user.uid,
-                'supplierName': fullName,
-                'email': email,
-                'phone': phone,
-                'location': 'Caraga Region',
-                'status': 'approved',
-                'paymentMethod': 'COD',
-                'createdAt': FieldValue.serverTimestamp(),
-                'updatedAt': FieldValue.serverTimestamp(),
-              },
-            );
-      }
-
       if (!context.mounted) return;
 
-      if (selectedRole ==
-          'supplier') {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-            builder:
-                (
-                  _,
-                ) => const SupplierDashboardScreen(),
-          ),
-          (
-            route,
-          ) => false,
-        );
-      } else {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-            builder:
-                (
-                  _,
-                ) => const HomeScreen(),
-          ),
-          (
-            route,
-          ) => false,
-        );
-      }
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder:
+              (
+                _,
+              ) => const HomeScreen(),
+        ),
+        (
+          route,
+        ) => false,
+      );
     } on FirebaseAuthException catch (
       error
     ) {
@@ -327,116 +269,10 @@ class _RegisterScreenState
     );
   }
 
-  Widget roleCard({
-    required String role,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
-    final isSelected =
-        selectedRole ==
-        role;
-
-    return Expanded(
-      child: GestureDetector(
-        onTap: isLoading
-            ? null
-            : () {
-                setState(
-                  () {
-                    selectedRole = role;
-                  },
-                );
-              },
-        child: Container(
-          constraints: const BoxConstraints(
-            minHeight: 106,
-          ),
-          padding: const EdgeInsets.all(
-            14,
-          ),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? const Color(
-                    0xFF146BFF,
-                  ).withAlpha(
-                    70,
-                  )
-                : const Color(
-                    0x332E4050,
-                  ),
-            borderRadius: BorderRadius.circular(
-              18,
-            ),
-            border: Border.all(
-              color: isSelected
-                  ? const Color(
-                      0xFF7DB2FF,
-                    )
-                  : const Color(
-                      0x334FFFFFF,
-                    ),
-              width: 1.4,
-            ),
-          ),
-          child: Column(
-            children: [
-              Icon(
-                icon,
-                color: isSelected
-                    ? Colors.white
-                    : const Color(
-                        0xFFCAD6E0,
-                      ),
-                size: 25,
-              ),
-              const SizedBox(
-                height: 8,
-              ),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: isSelected
-                      ? Colors.white
-                      : const Color(
-                          0xFFEAF4FF,
-                        ),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(
-                height: 4,
-              ),
-              Text(
-                subtitle,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Color(
-                    0xFFC9D7E5,
-                  ),
-                  fontSize: 10,
-                  height: 1.25,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(
     BuildContext context,
   ) {
-    final roleNote =
-        selectedRole ==
-            'supplier'
-        ? 'Supplier account will open supplier tools for posting stocks and managing COD orders.'
-        : 'Vendor account can browse suppliers, order fish stocks, and track COD orders.';
-
     return Scaffold(
       body: Stack(
         children: [
@@ -576,7 +412,7 @@ class _RegisterScreenState
                           height: 4,
                         ),
                         const Text(
-                          'Create a vendor or supplier account',
+                          'Create a vendor account',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: Color(
@@ -588,37 +424,79 @@ class _RegisterScreenState
                         const SizedBox(
                           height: 24,
                         ),
-                        Row(
-                          children: [
-                            roleCard(
-                              role: 'vendor',
-                              icon: Icons.shopping_basket,
-                              title: 'Vendor / Buyer',
-                              subtitle: 'Browse and place COD orders',
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(
+                            16,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(
+                              0x332E4050,
                             ),
-                            const SizedBox(
-                              width: 12,
+                            borderRadius: BorderRadius.circular(
+                              18,
                             ),
-                            roleCard(
-                              role: 'supplier',
-                              icon: Icons.storefront,
-                              title: 'Supplier',
-                              subtitle: 'Post stocks and manage orders',
+                            border: Border.all(
+                              color: const Color(
+                                0x334FFFFFF,
+                              ),
+                              width: 1.2,
                             ),
-                          ],
-                        ),
-                        const SizedBox(
-                          height: 10,
-                        ),
-                        Text(
-                          roleNote,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Color(
-                              0xFF8FA8BD,
-                            ),
-                            fontSize: 11,
-                            height: 1.35,
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 46,
+                                height: 46,
+                                decoration: BoxDecoration(
+                                  color:
+                                      const Color(
+                                        0xFF146BFF,
+                                      ).withAlpha(
+                                        50,
+                                      ),
+                                  borderRadius: BorderRadius.circular(
+                                    15,
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.shopping_basket,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(
+                                width: 12,
+                              ),
+                              const Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Vendor Account',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      height: 4,
+                                    ),
+                                    Text(
+                                      'Browse suppliers, place COD orders, and apply to become a supplier later in the Me section.',
+                                      style: TextStyle(
+                                        color: Color(
+                                          0xFFC9D7E5,
+                                        ),
+                                        fontSize: 11,
+                                        height: 1.35,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         const SizedBox(
@@ -630,11 +508,7 @@ class _RegisterScreenState
                             color: Colors.white,
                           ),
                           decoration: inputStyle(
-                            hint:
-                                selectedRole ==
-                                    'supplier'
-                                ? 'Supplier / Business Name'
-                                : 'Full Name',
+                            hint: 'Full Name',
                             icon: Icons.person_outline,
                           ),
                         ),
@@ -780,7 +654,7 @@ class _RegisterScreenState
                           height: 18,
                         ),
                         const Text(
-                          'Registration is connected to Firebase Authentication and Firestore users.',
+                          'Registration creates a vendor account. Supplier access is requested later through the Me section.',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: Color(

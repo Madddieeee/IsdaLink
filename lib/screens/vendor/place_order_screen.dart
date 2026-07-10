@@ -10,11 +10,15 @@ class PlaceOrderScreen
         StatefulWidget {
   final Supplier supplier;
   final FishProduct product;
+  final String stockId;
+  final String supplierId;
 
   const PlaceOrderScreen({
     super.key,
     required this.supplier,
     required this.product,
+    this.stockId = '',
+    this.supplierId = '',
   });
 
   @override
@@ -125,6 +129,125 @@ class _PlaceOrderScreenState
   }
 
   Future<
+    String
+  >
+  resolveStockId() async {
+    if (widget.stockId.trim().isNotEmpty) {
+      return widget.stockId.trim();
+    }
+
+    QuerySnapshot<
+      Map<
+        String,
+        dynamic
+      >
+    >
+    snapshot;
+
+    if (widget.supplierId.trim().isNotEmpty) {
+      snapshot = await FirebaseFirestore.instance
+          .collection(
+            'fishStocks',
+          )
+          .where(
+            'supplierId',
+            isEqualTo: widget.supplierId.trim(),
+          )
+          .where(
+            'productName',
+            isEqualTo: widget.product.name,
+          )
+          .get();
+    } else {
+      snapshot = await FirebaseFirestore.instance
+          .collection(
+            'fishStocks',
+          )
+          .where(
+            'supplierName',
+            isEqualTo: widget.supplier.name,
+          )
+          .where(
+            'productName',
+            isEqualTo: widget.product.name,
+          )
+          .get();
+    }
+
+    final matchingDocuments = snapshot.docs.where(
+      (
+        document,
+      ) {
+        final data = document.data();
+
+        final status = getStringValue(
+          data,
+          'status',
+          'available',
+        ).toLowerCase();
+
+        final quantityValue = data['quantity'];
+        double availableQuantity = 0;
+
+        if (quantityValue
+            is int) {
+          availableQuantity = quantityValue.toDouble();
+        } else if (quantityValue
+            is double) {
+          availableQuantity = quantityValue;
+        } else if (quantityValue
+            is String) {
+          availableQuantity =
+              double.tryParse(
+                quantityValue,
+              ) ??
+              0;
+        }
+
+        return (status ==
+                    'available' ||
+                status ==
+                    'active') &&
+            availableQuantity >
+                0;
+      },
+    ).toList();
+
+    if (matchingDocuments.isEmpty) {
+      throw Exception(
+        'Unable to find the selected stock record. Please go back and select the product again from Browse Suppliers.',
+      );
+    }
+
+    matchingDocuments.sort(
+      (
+        a,
+        b,
+      ) {
+        final aCreatedAt = a.data()['createdAt'];
+        final bCreatedAt = b.data()['createdAt'];
+
+        final aMillis =
+            aCreatedAt
+                is Timestamp
+            ? aCreatedAt.millisecondsSinceEpoch
+            : 0;
+        final bMillis =
+            bCreatedAt
+                is Timestamp
+            ? bCreatedAt.millisecondsSinceEpoch
+            : 0;
+
+        return bMillis.compareTo(
+          aMillis,
+        );
+      },
+    );
+
+    return matchingDocuments.first.id;
+  }
+
+  Future<
     void
   >
   confirmOrder() async {
@@ -146,6 +269,8 @@ class _PlaceOrderScreenState
     );
 
     try {
+      final resolvedStockId = await resolveStockId();
+
       final userDocument = await FirebaseFirestore.instance
           .collection(
             'users',
@@ -171,19 +296,136 @@ class _PlaceOrderScreenState
         '',
       );
 
-      await FirebaseFirestore.instance
+      final stockReference = FirebaseFirestore.instance
+          .collection(
+            'fishStocks',
+          )
+          .doc(
+            resolvedStockId,
+          );
+
+      final orderReference = FirebaseFirestore.instance
           .collection(
             'orders',
           )
-          .add(
+          .doc();
+
+      await FirebaseFirestore.instance.runTransaction(
+        (
+          transaction,
+        ) async {
+          final stockSnapshot = await transaction.get(
+            stockReference,
+          );
+
+          if (!stockSnapshot.exists) {
+            throw Exception(
+              'This fish stock post no longer exists.',
+            );
+          }
+
+          final stockData =
+              stockSnapshot.data() ??
+              <
+                String,
+                dynamic
+              >{};
+
+          final currentStockValue = stockData['quantity'];
+
+          double currentStock = 0;
+
+          if (currentStockValue
+              is int) {
+            currentStock = currentStockValue.toDouble();
+          } else if (currentStockValue
+              is double) {
+            currentStock = currentStockValue;
+          } else if (currentStockValue
+              is String) {
+            currentStock =
+                double.tryParse(
+                  currentStockValue,
+                ) ??
+                0;
+          }
+
+          final currentStatus = getStringValue(
+            stockData,
+            'status',
+            'available',
+          ).toLowerCase();
+
+          if (currentStatus !=
+                  'available' &&
+              currentStatus !=
+                  'active') {
+            throw Exception(
+              'This product is no longer available for ordering.',
+            );
+          }
+
+          if (quantity >
+              currentStock) {
+            throw Exception(
+              'Not enough stock available. Current stock is ${currentStock.toStringAsFixed(0)} ${widget.product.quantityUnit}.',
+            );
+          }
+
+          final remainingStock =
+              currentStock -
+              quantity;
+
+          final realSupplierId = getStringValue(
+            stockData,
+            'supplierId',
+            widget.supplierId,
+          );
+
+          final realSupplierName = getStringValue(
+            stockData,
+            'supplierName',
+            widget.supplier.name,
+          );
+
+          final realSupplierLocation = getStringValue(
+            stockData,
+            'supplierLocation',
+            widget.supplier.location,
+          );
+
+          final realSupplierContact = getStringValue(
+            stockData,
+            'supplierContactNumber',
+            widget.supplier.contactNumber,
+          );
+
+          transaction.update(
+            stockReference,
             {
+              'quantity': remainingStock,
+              'status':
+                  remainingStock <=
+                      0
+                  ? 'unavailable'
+                  : 'available',
+              'updatedAt': FieldValue.serverTimestamp(),
+            },
+          );
+
+          transaction.set(
+            orderReference,
+            {
+              'stockId': resolvedStockId,
+              'fishStockId': resolvedStockId,
+              'supplierId': realSupplierId,
               'productName': widget.product.name,
               'productCategory': widget.product.category,
               'productEmoji': widget.product.emoji,
               'productDescription': widget.product.description,
-              'supplierName': widget.supplier.name,
-              'supplierLocation': widget.supplier.location,
-              'supplierContactNumber': widget.supplier.contactNumber,
+              'supplierName': realSupplierName,
+              'supplierLocation': realSupplierLocation,
+              'supplierContactNumber': realSupplierContact,
               'vendorId': user.uid,
               'vendorName': vendorName,
               'vendorEmail':
@@ -198,11 +440,17 @@ class _PlaceOrderScreenState
               'paymentMethod': 'COD',
               'paymentStatus': 'To be paid on delivery',
               'orderStatus': 'Pending',
+              'stockDeducted': true,
+              'stockRestored': false,
+              'reservedQuantity': quantity,
+              'remainingStockAfterOrder': remainingStock,
               'region': 'Caraga Region',
               'createdAt': FieldValue.serverTimestamp(),
               'updatedAt': FieldValue.serverTimestamp(),
             },
           );
+        },
+      );
 
       if (!mounted) return;
 
@@ -235,8 +483,9 @@ class _PlaceOrderScreenState
                   ),
                 ),
                 content: Text(
-                  'Your COD order for ${widget.product.name} has been saved to your Firebase account.\n\n'
-                  'Only this logged-in account can see this order in My Orders.',
+                  'Your COD order for ${widget.product.name} has been saved.\n\n'
+                  'The ordered quantity has been reserved and deducted from the supplier stock. '
+                  'If the supplier cancels the order, the quantity will be returned to the available stock.',
                   style: const TextStyle(
                     color: Color(
                       0xFF52677A,
@@ -253,9 +502,12 @@ class _PlaceOrderScreenState
                       Navigator.pop(
                         context,
                       );
+                      Navigator.pop(
+                        context,
+                      );
                     },
                     child: const Text(
-                      'Back to Product',
+                      'Back to Products',
                     ),
                   ),
                   ElevatedButton(
@@ -885,7 +1137,7 @@ class _PlaceOrderScreenState
                       ),
                       Expanded(
                         child: Text(
-                          'Firebase mode: This COD order will be saved under the currently logged-in user account.',
+                          'Firebase mode: This COD order will reserve stock immediately. Cancelled orders return the reserved stock.',
                           style: TextStyle(
                             color: Color(
                               0xFF52677A,

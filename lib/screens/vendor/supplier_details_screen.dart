@@ -277,14 +277,25 @@ class SupplierDetailsScreen
 
   void openProduct(
     BuildContext context,
-    Map<
-      String,
-      dynamic
+    QueryDocumentSnapshot<
+      Map<
+        String,
+        dynamic
+      >
     >
-    data,
+    document,
   ) {
+    final data = document.data();
+
     final product = fishProductFromFirestore(
       data,
+    );
+
+    final stockSupplierId = getStringValue(
+      data,
+      'supplierId',
+      supplierId ??
+          '',
     );
 
     Navigator.push(
@@ -296,6 +307,8 @@ class SupplierDetailsScreen
             ) => ProductDetailsScreen(
               supplier: supplier,
               product: product,
+              stockId: document.id,
+              supplierId: stockSupplierId,
             ),
       ),
     );
@@ -422,7 +435,7 @@ class SupplierDetailsScreen
     return GestureDetector(
       onTap: () => openProduct(
         context,
-        data,
+        document,
       ),
       child: Container(
         margin: const EdgeInsets.only(

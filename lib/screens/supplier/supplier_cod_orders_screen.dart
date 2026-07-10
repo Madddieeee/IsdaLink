@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class SupplierCodOrdersScreen
@@ -8,6 +9,8 @@ class SupplierCodOrdersScreen
     super.key,
   });
 
+  User? get currentUser => FirebaseAuth.instance.currentUser;
+
   Stream<
     QuerySnapshot<
       Map<
@@ -16,16 +19,77 @@ class SupplierCodOrdersScreen
       >
     >
   >
-  get ordersStream {
+  ordersStream(
+    String supplierId,
+  ) {
     return FirebaseFirestore.instance
         .collection(
           'orders',
         )
-        .orderBy(
-          'createdAt',
-          descending: true,
+        .where(
+          'supplierId',
+          isEqualTo: supplierId,
         )
         .snapshots();
+  }
+
+  int createdAtMillis(
+    QueryDocumentSnapshot<
+      Map<
+        String,
+        dynamic
+      >
+    >
+    document,
+  ) {
+    final value = document.data()['createdAt'];
+
+    if (value
+        is Timestamp) {
+      return value.millisecondsSinceEpoch;
+    }
+
+    return 0;
+  }
+
+  List<
+    QueryDocumentSnapshot<
+      Map<
+        String,
+        dynamic
+      >
+    >
+  >
+  sortOrders(
+    List<
+      QueryDocumentSnapshot<
+        Map<
+          String,
+          dynamic
+        >
+      >
+    >
+    documents,
+  ) {
+    final sortedDocuments = [
+      ...documents,
+    ];
+
+    sortedDocuments.sort(
+      (
+        a,
+        b,
+      ) =>
+          createdAtMillis(
+            b,
+          ).compareTo(
+            createdAtMillis(
+              a,
+            ),
+          ),
+    );
+
+    return sortedDocuments;
   }
 
   String getStringValue(
@@ -44,7 +108,13 @@ class SupplierCodOrdersScreen
       return fallback;
     }
 
-    return value.toString();
+    final text = value.toString().trim();
+
+    if (text.isEmpty) {
+      return fallback;
+    }
+
+    return text;
   }
 
   double getDoubleValue(
@@ -156,6 +226,97 @@ class SupplierCodOrdersScreen
     }
   }
 
+  String notificationTitle(
+    String status,
+  ) {
+    switch (status.toLowerCase()) {
+      case 'accepted':
+        return 'Order Accepted';
+      case 'delivered':
+        return 'Order Delivered';
+      case 'cancelled':
+        return 'Order Cancelled';
+      default:
+        return 'Order Updated';
+    }
+  }
+
+  String notificationMessage({
+    required String status,
+    required String productName,
+    required String supplierName,
+  }) {
+    switch (status.toLowerCase()) {
+      case 'accepted':
+        return 'Your COD order for $productName was accepted by $supplierName.';
+      case 'delivered':
+        return 'Your COD order for $productName was marked as delivered by $supplierName.';
+      case 'cancelled':
+        return 'Your COD order for $productName was cancelled by $supplierName. The reserved stock was returned.';
+      default:
+        return 'Your COD order for $productName was updated by $supplierName.';
+    }
+  }
+
+  void createNotificationInTransaction({
+    required Transaction transaction,
+    required Map<
+      String,
+      dynamic
+    >
+    orderData,
+    required String orderId,
+    required String newStatus,
+  }) {
+    final vendorId = getStringValue(
+      orderData,
+      'vendorId',
+      '',
+    );
+
+    if (vendorId.isEmpty) {
+      return;
+    }
+
+    final productName = getStringValue(
+      orderData,
+      'productName',
+      'Fish Product',
+    );
+
+    final supplierName = getStringValue(
+      orderData,
+      'supplierName',
+      'Supplier',
+    );
+
+    final notificationReference = FirebaseFirestore.instance
+        .collection(
+          'notifications',
+        )
+        .doc();
+
+    transaction.set(
+      notificationReference,
+      {
+        'vendorId': vendorId,
+        'orderId': orderId,
+        'title': notificationTitle(
+          newStatus,
+        ),
+        'message': notificationMessage(
+          status: newStatus,
+          productName: productName,
+          supplierName: supplierName,
+        ),
+        'status': newStatus,
+        'type': 'order_status',
+        'isRead': false,
+        'createdAt': FieldValue.serverTimestamp(),
+      },
+    );
+  }
+
   Future<
     void
   >
@@ -166,20 +327,150 @@ class SupplierCodOrdersScreen
     String paymentStatus,
   ) async {
     try {
-      await FirebaseFirestore.instance
+      final orderReference = FirebaseFirestore.instance
           .collection(
             'orders',
           )
           .doc(
             documentId,
-          )
-          .update(
-            {
-              'orderStatus': newStatus,
-              'paymentStatus': paymentStatus,
-              'updatedAt': FieldValue.serverTimestamp(),
-            },
           );
+
+      await FirebaseFirestore.instance.runTransaction(
+        (
+          transaction,
+        ) async {
+          final orderSnapshot = await transaction.get(
+            orderReference,
+          );
+
+          if (!orderSnapshot.exists) {
+            throw Exception(
+              'This order no longer exists.',
+            );
+          }
+
+          final orderData =
+              orderSnapshot.data() ??
+              <
+                String,
+                dynamic
+              >{};
+
+          final currentStatus = getStringValue(
+            orderData,
+            'orderStatus',
+            'Pending',
+          ).toLowerCase();
+
+          if (currentStatus ==
+              newStatus.toLowerCase()) {
+            return;
+          }
+
+          if (newStatus.toLowerCase() ==
+              'cancelled') {
+            final stockRestored =
+                orderData['stockRestored'] ==
+                true;
+            final stockDeducted =
+                orderData['stockDeducted'] ==
+                true;
+
+            final stockId = getStringValue(
+              orderData,
+              'stockId',
+              getStringValue(
+                orderData,
+                'fishStockId',
+                '',
+              ),
+            );
+
+            final orderedQuantity = getDoubleValue(
+              orderData,
+              'quantity',
+            );
+
+            if (!stockRestored &&
+                stockDeducted &&
+                stockId.isNotEmpty &&
+                orderedQuantity >
+                    0) {
+              final stockReference = FirebaseFirestore.instance
+                  .collection(
+                    'fishStocks',
+                  )
+                  .doc(
+                    stockId,
+                  );
+
+              final stockSnapshot = await transaction.get(
+                stockReference,
+              );
+
+              if (stockSnapshot.exists) {
+                final stockData =
+                    stockSnapshot.data() ??
+                    <
+                      String,
+                      dynamic
+                    >{};
+
+                final currentStock = getDoubleValue(
+                  stockData,
+                  'quantity',
+                );
+
+                final restoredStock =
+                    currentStock +
+                    orderedQuantity;
+
+                transaction.update(
+                  stockReference,
+                  {
+                    'quantity': restoredStock,
+                    'status': 'available',
+                    'updatedAt': FieldValue.serverTimestamp(),
+                  },
+                );
+              }
+            }
+
+            transaction.update(
+              orderReference,
+              {
+                'orderStatus': newStatus,
+                'paymentStatus': paymentStatus,
+                'stockRestored': true,
+                'restoredAt': FieldValue.serverTimestamp(),
+                'updatedAt': FieldValue.serverTimestamp(),
+              },
+            );
+          } else {
+            transaction.update(
+              orderReference,
+              {
+                'orderStatus': newStatus,
+                'paymentStatus': paymentStatus,
+                'updatedAt': FieldValue.serverTimestamp(),
+                if (newStatus.toLowerCase() ==
+                    'accepted')
+                  'acceptedAt': FieldValue.serverTimestamp(),
+                if (newStatus.toLowerCase() ==
+                    'delivered')
+                  'deliveredAt': FieldValue.serverTimestamp(),
+              },
+            );
+          }
+
+          createNotificationInTransaction(
+            transaction: transaction,
+            orderData: orderData,
+            orderId: documentId,
+            newStatus: newStatus,
+          );
+        },
+      );
 
       if (!context.mounted) return;
 
@@ -188,7 +479,10 @@ class SupplierCodOrdersScreen
       ).showSnackBar(
         SnackBar(
           content: Text(
-            'Order marked as $newStatus.',
+            newStatus.toLowerCase() ==
+                    'cancelled'
+                ? 'Order cancelled. Reserved stock has been returned and the vendor was notified.'
+                : 'Order marked as $newStatus. The vendor was notified.',
           ),
           backgroundColor: statusColor(
             newStatus,
@@ -379,44 +673,53 @@ class SupplierCodOrdersScreen
       'productName',
       'Fish Product',
     );
+
     final supplierName = getStringValue(
       data,
       'supplierName',
       'Supplier',
     );
+
     final vendorName = getStringValue(
       data,
       'vendorName',
       'Vendor',
     );
+
     final quantity = getDoubleValue(
       data,
       'quantity',
     );
+
     final quantityUnit = getStringValue(
       data,
       'quantityUnit',
       'kilo',
     );
+
     final totalAmount = getDoubleValue(
       data,
       'totalAmount',
     );
+
     final paymentMethod = getStringValue(
       data,
       'paymentMethod',
       'COD',
     );
+
     final paymentStatus = getStringValue(
       data,
       'paymentStatus',
       'To be paid on delivery',
     );
+
     final orderStatus = getStringValue(
       data,
       'orderStatus',
       'Pending',
     );
+
     final color = statusColor(
       orderStatus,
     );
@@ -807,7 +1110,7 @@ class SupplierCodOrdersScreen
             height: 5,
           ),
           Text(
-            'Vendor COD orders from Firebase will appear here.',
+            'Vendor COD orders for this supplier account will appear here.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Color(
@@ -1107,7 +1410,7 @@ class SupplierCodOrdersScreen
                 height: 4,
               ),
               const Text(
-                'Live vendor COD orders loaded from Firebase Firestore.',
+                'Live vendor COD orders for this supplier account loaded from Firebase Firestore.',
                 style: TextStyle(
                   color: Color(
                     0xFF7B8FA3,
@@ -1221,6 +1524,45 @@ class SupplierCodOrdersScreen
   Widget build(
     BuildContext context,
   ) {
+    final user = currentUser;
+
+    if (user ==
+        null) {
+      return Scaffold(
+        backgroundColor: const Color(
+          0xFFF4F8FB,
+        ),
+        body: Center(
+          child: Container(
+            margin: const EdgeInsets.all(
+              22,
+            ),
+            padding: const EdgeInsets.all(
+              18,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(
+                24,
+              ),
+            ),
+            child: const Text(
+              'Please log in first to view incoming COD orders.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Color(
+                  0xFFD32F2F,
+                ),
+                fontSize: 13,
+                height: 1.4,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(
         0xFFF4F8FB,
@@ -1234,7 +1576,9 @@ class SupplierCodOrdersScreen
               >
             >
           >(
-            stream: ordersStream,
+            stream: ordersStream(
+              user.uid,
+            ),
             builder:
                 (
                   context,
@@ -1253,7 +1597,9 @@ class SupplierCodOrdersScreen
                     );
                   }
 
-                  final documents = snapshot.data!.docs;
+                  final documents = sortOrders(
+                    snapshot.data!.docs,
+                  );
 
                   return bodyContent(
                     context,

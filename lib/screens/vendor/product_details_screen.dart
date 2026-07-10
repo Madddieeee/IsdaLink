@@ -8,11 +8,15 @@ class ProductDetailsScreen
         StatelessWidget {
   final Supplier supplier;
   final FishProduct product;
+  final String stockId;
+  final String supplierId;
 
   const ProductDetailsScreen({
     super.key,
     required this.supplier,
     required this.product,
+    this.stockId = '',
+    this.supplierId = '',
   });
 
   void placeOrder(
@@ -41,6 +45,8 @@ class ProductDetailsScreen
             ) => PlaceOrderScreen(
               supplier: supplier,
               product: product,
+              stockId: stockId,
+              supplierId: supplierId,
             ),
       ),
     );

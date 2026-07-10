@@ -4,10 +4,35 @@ import 'package:flutter/material.dart';
 
 class MyOrdersScreen
     extends
-        StatelessWidget {
+        StatefulWidget {
   const MyOrdersScreen({
     super.key,
   });
+
+  @override
+  State<
+    MyOrdersScreen
+  >
+  createState() => _MyOrdersScreenState();
+}
+
+class _MyOrdersScreenState
+    extends
+        State<
+          MyOrdersScreen
+        > {
+  String selectedFilter = 'All';
+
+  final List<
+    String
+  >
+  orderFilters = const [
+    'All',
+    'Pending',
+    'Accepted',
+    'Delivered',
+    'Cancelled',
+  ];
 
   Stream<
     QuerySnapshot<
@@ -23,6 +48,28 @@ class MyOrdersScreen
     return FirebaseFirestore.instance
         .collection(
           'orders',
+        )
+        .where(
+          'vendorId',
+          isEqualTo: vendorId,
+        )
+        .snapshots();
+  }
+
+  Stream<
+    QuerySnapshot<
+      Map<
+        String,
+        dynamic
+      >
+    >
+  >
+  notificationsStream(
+    String vendorId,
+  ) {
+    return FirebaseFirestore.instance
+        .collection(
+          'notifications',
         )
         .where(
           'vendorId',
@@ -58,7 +105,7 @@ class MyOrdersScreen
       >
     >
   >
-  sortOrders(
+  sortDocuments(
     List<
       QueryDocumentSnapshot<
         Map<
@@ -94,6 +141,10 @@ class MyOrdersScreen
     String status,
   ) {
     switch (status.toLowerCase()) {
+      case 'all':
+        return const Color(
+          0xFF102C44,
+        );
       case 'pending':
         return const Color(
           0xFFFF7A1A,
@@ -121,6 +172,8 @@ class MyOrdersScreen
     String status,
   ) {
     switch (status.toLowerCase()) {
+      case 'all':
+        return Icons.list_alt;
       case 'pending':
         return Icons.schedule;
       case 'accepted':
@@ -131,6 +184,25 @@ class MyOrdersScreen
         return Icons.cancel;
       default:
         return Icons.receipt_long;
+    }
+  }
+
+  String filterDescription(
+    String status,
+  ) {
+    switch (status.toLowerCase()) {
+      case 'all':
+        return 'All COD order records from your account.';
+      case 'pending':
+        return 'Orders waiting for supplier response.';
+      case 'accepted':
+        return 'Orders approved by the supplier.';
+      case 'delivered':
+        return 'Completed COD orders.';
+      case 'cancelled':
+        return 'Declined or cancelled orders.';
+      default:
+        return 'Order records.';
     }
   }
 
@@ -222,6 +294,79 @@ class MyOrdersScreen
     }
 
     return 'Just now';
+  }
+
+  int countByStatus(
+    List<
+      QueryDocumentSnapshot<
+        Map<
+          String,
+          dynamic
+        >
+      >
+    >
+    documents,
+    String status,
+  ) {
+    if (status.toLowerCase() ==
+        'all') {
+      return documents.length;
+    }
+
+    return documents.where(
+      (
+        document,
+      ) {
+        final orderStatus = getStringValue(
+          document.data(),
+          'orderStatus',
+          'Pending',
+        );
+
+        return orderStatus.toLowerCase() ==
+            status.toLowerCase();
+      },
+    ).length;
+  }
+
+  List<
+    QueryDocumentSnapshot<
+      Map<
+        String,
+        dynamic
+      >
+    >
+  >
+  filteredOrders(
+    List<
+      QueryDocumentSnapshot<
+        Map<
+          String,
+          dynamic
+        >
+      >
+    >
+    documents,
+  ) {
+    if (selectedFilter.toLowerCase() ==
+        'all') {
+      return documents;
+    }
+
+    return documents.where(
+      (
+        document,
+      ) {
+        final orderStatus = getStringValue(
+          document.data(),
+          'orderStatus',
+          'Pending',
+        );
+
+        return orderStatus.toLowerCase() ==
+            selectedFilter.toLowerCase();
+      },
+    ).toList();
   }
 
   Widget statCard({
@@ -551,6 +696,8 @@ class MyOrdersScreen
               children: [
                 Text(
                   productName,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Color(
                       0xFF102C44,
@@ -749,7 +896,9 @@ class MyOrdersScreen
     );
   }
 
-  Widget emptyOrdersCard() {
+  Widget emptyOrdersCard(
+    String filter,
+  ) {
     return Container(
       padding: const EdgeInsets.all(
         18,
@@ -772,21 +921,26 @@ class MyOrdersScreen
           ),
         ],
       ),
-      child: const Column(
+      child: Column(
         children: [
           Icon(
-            Icons.receipt_long_outlined,
-            color: Color(
-              0xFF146BFF,
+            statusIcon(
+              filter,
+            ),
+            color: statusColor(
+              filter,
             ),
             size: 44,
           ),
-          SizedBox(
+          const SizedBox(
             height: 10,
           ),
           Text(
-            'No orders yet',
-            style: TextStyle(
+            filter ==
+                    'All'
+                ? 'No orders yet'
+                : 'No $filter orders',
+            style: const TextStyle(
               color: Color(
                 0xFF102C44,
               ),
@@ -794,13 +948,15 @@ class MyOrdersScreen
               fontWeight: FontWeight.w900,
             ),
           ),
-          SizedBox(
+          const SizedBox(
             height: 5,
           ),
           Text(
-            'Only COD orders placed by this logged-in account will appear here.',
+            filterDescription(
+              filter,
+            ),
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: Color(
                 0xFF7B8FA3,
               ),
@@ -892,35 +1048,22 @@ class MyOrdersScreen
     >
     documents,
   ) {
-    final pendingCount = documents.where(
-      (
-        document,
-      ) {
-        final status = getStringValue(
-          document.data(),
-          'orderStatus',
-          'Pending',
-        );
-
-        return status.toLowerCase() ==
-            'pending';
-      },
-    ).length;
-
-    final deliveredCount = documents.where(
-      (
-        document,
-      ) {
-        final status = getStringValue(
-          document.data(),
-          'orderStatus',
-          'Pending',
-        );
-
-        return status.toLowerCase() ==
-            'delivered';
-      },
-    ).length;
+    final pendingCount = countByStatus(
+      documents,
+      'Pending',
+    );
+    final acceptedCount = countByStatus(
+      documents,
+      'Accepted',
+    );
+    final deliveredCount = countByStatus(
+      documents,
+      'Delivered',
+    );
+    final cancelledCount = countByStatus(
+      documents,
+      'Cancelled',
+    );
 
     return Container(
       padding: const EdgeInsets.fromLTRB(
@@ -992,7 +1135,7 @@ class MyOrdersScreen
             height: 8,
           ),
           const Text(
-            'Track your own COD fish orders and supplier transactions.',
+            'Track your COD fish orders by status.',
             style: TextStyle(
               color: Color(
                 0xFFDCE9F5,
@@ -1007,14 +1150,14 @@ class MyOrdersScreen
           Row(
             children: [
               statCard(
-                value: '${documents.length}',
-                label: 'Total',
-                icon: Icons.receipt_long,
-              ),
-              statCard(
                 value: '$pendingCount',
                 label: 'Pending',
                 icon: Icons.schedule,
+              ),
+              statCard(
+                value: '$acceptedCount',
+                label: 'Accepted',
+                icon: Icons.check_circle,
               ),
               statCard(
                 value: '$deliveredCount',
@@ -1023,6 +1166,689 @@ class MyOrdersScreen
               ),
             ],
           ),
+          const SizedBox(
+            height: 8,
+          ),
+          Row(
+            children: [
+              statCard(
+                value: '$cancelledCount',
+                label: 'Cancelled',
+                icon: Icons.cancel,
+              ),
+              statCard(
+                value: '${documents.length}',
+                label: 'Total',
+                icon: Icons.receipt_long,
+              ),
+              const Spacer(),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<
+    void
+  >
+  markNotificationsRead(
+    List<
+      QueryDocumentSnapshot<
+        Map<
+          String,
+          dynamic
+        >
+      >
+    >
+    notifications,
+  ) async {
+    final batch = FirebaseFirestore.instance.batch();
+
+    for (final notification in notifications) {
+      batch.update(
+        notification.reference,
+        {
+          'isRead': true,
+          'readAt': FieldValue.serverTimestamp(),
+        },
+      );
+    }
+
+    await batch.commit();
+  }
+
+  Widget notificationPanel(
+    String vendorId,
+  ) {
+    return StreamBuilder<
+      QuerySnapshot<
+        Map<
+          String,
+          dynamic
+        >
+      >
+    >(
+      stream: notificationsStream(
+        vendorId,
+      ),
+      builder:
+          (
+            context,
+            snapshot,
+          ) {
+            if (!snapshot.hasData) {
+              return const SizedBox.shrink();
+            }
+
+            final unreadNotifications = sortDocuments(
+              snapshot.data!.docs.where(
+                (
+                  document,
+                ) {
+                  final data = document.data();
+                  return data['isRead'] !=
+                      true;
+                },
+              ).toList(),
+            );
+
+            if (unreadNotifications.isEmpty) {
+              return const SizedBox.shrink();
+            }
+
+            final notificationsToShow = unreadNotifications
+                .take(
+                  3,
+                )
+                .toList();
+
+            return Container(
+              margin: const EdgeInsets.only(
+                bottom: 16,
+              ),
+              padding: const EdgeInsets.all(
+                14,
+              ),
+              decoration: BoxDecoration(
+                color: const Color(
+                  0xFFFFF7E8,
+                ),
+                borderRadius: BorderRadius.circular(
+                  22,
+                ),
+                border: Border.all(
+                  color:
+                      const Color(
+                        0xFFFFB703,
+                      ).withAlpha(
+                        80,
+                      ),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.notifications_active,
+                        color: Color(
+                          0xFFFF7A1A,
+                        ),
+                        size: 20,
+                      ),
+                      const SizedBox(
+                        width: 8,
+                      ),
+                      const Expanded(
+                        child: Text(
+                          'Order Updates',
+                          style: TextStyle(
+                            color: Color(
+                              0xFF102C44,
+                            ),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => markNotificationsRead(
+                          unreadNotifications,
+                        ),
+                        child: const Text(
+                          'Mark read',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(
+                    height: 4,
+                  ),
+                  ...notificationsToShow.map(
+                    (
+                      notification,
+                    ) {
+                      final data = notification.data();
+
+                      final title = getStringValue(
+                        data,
+                        'title',
+                        'Order Update',
+                      );
+
+                      final message = getStringValue(
+                        data,
+                        'message',
+                        'Your order status has changed.',
+                      );
+
+                      final status = getStringValue(
+                        data,
+                        'status',
+                        'Pending',
+                      );
+
+                      return Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(
+                          top: 8,
+                        ),
+                        padding: const EdgeInsets.all(
+                          12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(
+                            18,
+                          ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              statusIcon(
+                                status,
+                              ),
+                              color: statusColor(
+                                status,
+                              ),
+                              size: 20,
+                            ),
+                            const SizedBox(
+                              width: 8,
+                            ),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    title,
+                                    style: const TextStyle(
+                                      color: Color(
+                                        0xFF102C44,
+                                      ),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                  const SizedBox(
+                                    height: 3,
+                                  ),
+                                  Text(
+                                    message,
+                                    style: const TextStyle(
+                                      color: Color(
+                                        0xFF52677A,
+                                      ),
+                                      fontSize: 11,
+                                      height: 1.35,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            );
+          },
+    );
+  }
+
+  Widget filterOptionTile({
+    required BuildContext sheetContext,
+    required String filter,
+    required int count,
+  }) {
+    final bool isSelected =
+        selectedFilter ==
+        filter;
+    final color = statusColor(
+      filter,
+    );
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(
+        18,
+      ),
+      onTap: () {
+        setState(
+          () {
+            selectedFilter = filter;
+          },
+        );
+
+        Navigator.pop(
+          sheetContext,
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(
+          bottom: 8,
+        ),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 13,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? color.withAlpha(
+                  22,
+                )
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(
+            18,
+          ),
+          border: Border.all(
+            color: isSelected
+                ? color.withAlpha(
+                    70,
+                  )
+                : const Color(
+                    0xFFE1E9F0,
+                  ),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isSelected
+                  ? Icons.radio_button_checked
+                  : Icons.radio_button_unchecked,
+              color: color,
+              size: 20,
+            ),
+            const SizedBox(
+              width: 10,
+            ),
+            Icon(
+              statusIcon(
+                filter,
+              ),
+              color: color,
+              size: 20,
+            ),
+            const SizedBox(
+              width: 10,
+            ),
+            Expanded(
+              child: Text(
+                filter ==
+                        'All'
+                    ? 'All Orders'
+                    : filter,
+                style: TextStyle(
+                  color: isSelected
+                      ? color
+                      : const Color(
+                          0xFF102C44,
+                        ),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 9,
+                vertical: 5,
+              ),
+              decoration: BoxDecoration(
+                color: color.withAlpha(
+                  22,
+                ),
+                borderRadius: BorderRadius.circular(
+                  14,
+                ),
+              ),
+              child: Text(
+                '$count',
+                style: TextStyle(
+                  color: color,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void showFilterOptions(
+    List<
+      QueryDocumentSnapshot<
+        Map<
+          String,
+          dynamic
+        >
+      >
+    >
+    documents,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(
+            28,
+          ),
+        ),
+      ),
+      builder:
+          (
+            sheetContext,
+          ) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  18,
+                  16,
+                  18,
+                  18,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: const Color(
+                          0xFFD5E0EA,
+                        ),
+                        borderRadius: BorderRadius.circular(
+                          10,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(
+                      height: 16,
+                    ),
+                    Row(
+                      children: [
+                        Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color:
+                                const Color(
+                                  0xFF146BFF,
+                                ).withAlpha(
+                                  22,
+                                ),
+                            borderRadius: BorderRadius.circular(
+                              14,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.filter_list,
+                            color: Color(
+                              0xFF146BFF,
+                            ),
+                            size: 21,
+                          ),
+                        ),
+                        const SizedBox(
+                          width: 10,
+                        ),
+                        const Expanded(
+                          child: Text(
+                            'Filter Orders',
+                            style: TextStyle(
+                              color: Color(
+                                0xFF102C44,
+                              ),
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(
+                      height: 14,
+                    ),
+                    ...orderFilters.map(
+                      (
+                        filter,
+                      ) => filterOptionTile(
+                        sheetContext: sheetContext,
+                        filter: filter,
+                        count: countByStatus(
+                          documents,
+                          filter,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+    );
+  }
+
+  Widget filterButton(
+    List<
+      QueryDocumentSnapshot<
+        Map<
+          String,
+          dynamic
+        >
+      >
+    >
+    documents,
+  ) {
+    final count = countByStatus(
+      documents,
+      selectedFilter,
+    );
+
+    final color = statusColor(
+      selectedFilter,
+    );
+
+    return GestureDetector(
+      onTap: () => showFilterOptions(
+        documents,
+      ),
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(
+          18,
+          16,
+          18,
+          0,
+        ),
+        padding: const EdgeInsets.all(
+          14,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(
+            22,
+          ),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(
+                0x0E000000,
+              ),
+              blurRadius: 12,
+              offset: Offset(
+                0,
+                6,
+              ),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: color.withAlpha(
+                  24,
+                ),
+                borderRadius: BorderRadius.circular(
+                  15,
+                ),
+              ),
+              child: Icon(
+                statusIcon(
+                  selectedFilter,
+                ),
+                color: color,
+                size: 22,
+              ),
+            ),
+            const SizedBox(
+              width: 12,
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    selectedFilter ==
+                            'All'
+                        ? 'Showing: All Orders'
+                        : 'Showing: $selectedFilter Orders',
+                    style: const TextStyle(
+                      color: Color(
+                        0xFF102C44,
+                      ),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(
+                    height: 3,
+                  ),
+                  Text(
+                    '$count result${count == 1 ? '' : 's'} • Tap to change filter',
+                    style: const TextStyle(
+                      color: Color(
+                        0xFF7B8FA3,
+                      ),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.keyboard_arrow_down,
+              color: Color(
+                0xFF7B8FA3,
+              ),
+              size: 26,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget ordersList(
+    String vendorId,
+    List<
+      QueryDocumentSnapshot<
+        Map<
+          String,
+          dynamic
+        >
+      >
+    >
+    documents,
+  ) {
+    final orders = filteredOrders(
+      documents,
+    );
+
+    return Expanded(
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(
+          18,
+          18,
+          18,
+          20,
+        ),
+        children: [
+          notificationPanel(
+            vendorId,
+          ),
+          Text(
+            selectedFilter ==
+                    'All'
+                ? 'All Orders'
+                : '$selectedFilter Orders',
+            style: const TextStyle(
+              color: Color(
+                0xFF102C44,
+              ),
+              fontSize: 19,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(
+            height: 4,
+          ),
+          Text(
+            filterDescription(
+              selectedFilter,
+            ),
+            style: const TextStyle(
+              color: Color(
+                0xFF7B8FA3,
+              ),
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(
+            height: 18,
+          ),
+          if (orders.isEmpty)
+            emptyOrdersCard(
+              selectedFilter,
+            )
+          else
+            ...orders.map(
+              orderCard,
+            ),
         ],
       ),
     );
@@ -1030,6 +1856,7 @@ class MyOrdersScreen
 
   Widget bodyContent(
     BuildContext context,
+    String vendorId,
     List<
       QueryDocumentSnapshot<
         Map<
@@ -1046,48 +1873,12 @@ class MyOrdersScreen
           context,
           documents,
         ),
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(
-              18,
-              22,
-              18,
-              20,
-            ),
-            children: [
-              const Text(
-                'Recent Orders',
-                style: TextStyle(
-                  color: Color(
-                    0xFF102C44,
-                  ),
-                  fontSize: 19,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(
-                height: 4,
-              ),
-              const Text(
-                'Live COD order records for the currently logged-in account.',
-                style: TextStyle(
-                  color: Color(
-                    0xFF7B8FA3,
-                  ),
-                  fontSize: 12,
-                ),
-              ),
-              const SizedBox(
-                height: 18,
-              ),
-              if (documents.isEmpty)
-                emptyOrdersCard()
-              else
-                ...documents.map(
-                  orderCard,
-                ),
-            ],
-          ),
+        filterButton(
+          documents,
+        ),
+        ordersList(
+          vendorId,
+          documents,
         ),
       ],
     );
@@ -1112,7 +1903,7 @@ class MyOrdersScreen
             ),
             children: [
               const Text(
-                'Recent Orders',
+                'My Orders',
                 style: TextStyle(
                   color: Color(
                     0xFF102C44,
@@ -1152,7 +1943,7 @@ class MyOrdersScreen
             ),
             children: [
               const Text(
-                'Recent Orders',
+                'My Orders',
                 style: TextStyle(
                   color: Color(
                     0xFF102C44,
@@ -1227,12 +2018,13 @@ class MyOrdersScreen
                     );
                   }
 
-                  final documents = sortOrders(
+                  final documents = sortDocuments(
                     snapshot.data!.docs,
                   );
 
                   return bodyContent(
                     context,
+                    user.uid,
                     documents,
                   );
                 },
