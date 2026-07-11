@@ -1,6 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:isdalink/screens/supplier/cod_orders/widgets/supplier_order_card.dart';
+import 'package:isdalink/screens/supplier/cod_orders/widgets/supplier_orders_header.dart';
+import 'package:isdalink/services/supplier_order_service.dart';
+import 'package:isdalink/utils/order_helpers.dart';
 
 class SupplierCodOrdersScreen
     extends
@@ -11,465 +15,22 @@ class SupplierCodOrdersScreen
 
   User? get currentUser => FirebaseAuth.instance.currentUser;
 
-  Stream<
-    QuerySnapshot<
-      Map<
-        String,
-        dynamic
-      >
-    >
-  >
-  ordersStream(
-    String supplierId,
-  ) {
-    return FirebaseFirestore.instance
-        .collection(
-          'orders',
-        )
-        .where(
-          'supplierId',
-          isEqualTo: supplierId,
-        )
-        .snapshots();
-  }
-
-  int createdAtMillis(
-    QueryDocumentSnapshot<
-      Map<
-        String,
-        dynamic
-      >
-    >
-    document,
-  ) {
-    final value = document.data()['createdAt'];
-
-    if (value
-        is Timestamp) {
-      return value.millisecondsSinceEpoch;
-    }
-
-    return 0;
-  }
-
-  List<
-    QueryDocumentSnapshot<
-      Map<
-        String,
-        dynamic
-      >
-    >
-  >
-  sortOrders(
-    List<
-      QueryDocumentSnapshot<
-        Map<
-          String,
-          dynamic
-        >
-      >
-    >
-    documents,
-  ) {
-    final sortedDocuments = [
-      ...documents,
-    ];
-
-    sortedDocuments.sort(
-      (
-        a,
-        b,
-      ) =>
-          createdAtMillis(
-            b,
-          ).compareTo(
-            createdAtMillis(
-              a,
-            ),
-          ),
-    );
-
-    return sortedDocuments;
-  }
-
-  String getStringValue(
-    Map<
-      String,
-      dynamic
-    >
-    data,
-    String key,
-    String fallback,
-  ) {
-    final value = data[key];
-
-    if (value ==
-        null) {
-      return fallback;
-    }
-
-    final text = value.toString().trim();
-
-    if (text.isEmpty) {
-      return fallback;
-    }
-
-    return text;
-  }
-
-  double getDoubleValue(
-    Map<
-      String,
-      dynamic
-    >
-    data,
-    String key,
-  ) {
-    final value = data[key];
-
-    if (value
-        is int) {
-      return value.toDouble();
-    }
-
-    if (value
-        is double) {
-      return value;
-    }
-
-    if (value
-        is String) {
-      return double.tryParse(
-            value,
-          ) ??
-          0;
-    }
-
-    return 0;
-  }
-
-  String formatNumber(
-    double value,
-  ) {
-    if (value %
-            1 ==
-        0) {
-      return value.toStringAsFixed(
-        0,
-      );
-    }
-
-    return value.toStringAsFixed(
-      2,
-    );
-  }
-
-  String formatDateFromData(
-    Map<
-      String,
-      dynamic
-    >
-    data,
-  ) {
-    final value = data['createdAt'];
-
-    if (value
-        is Timestamp) {
-      final date = value.toDate();
-      return '${date.month}/${date.day}/${date.year}';
-    }
-
-    return 'Just now';
-  }
-
-  Color statusColor(
-    String status,
-  ) {
-    switch (status.toLowerCase()) {
-      case 'pending':
-        return const Color(
-          0xFFFF7A1A,
-        );
-      case 'accepted':
-        return const Color(
-          0xFF146BFF,
-        );
-      case 'delivered':
-        return const Color(
-          0xFF2E7D32,
-        );
-      case 'cancelled':
-        return const Color(
-          0xFFD32F2F,
-        );
-      default:
-        return const Color(
-          0xFF7B8FA3,
-        );
-    }
-  }
-
-  IconData statusIcon(
-    String status,
-  ) {
-    switch (status.toLowerCase()) {
-      case 'pending':
-        return Icons.schedule;
-      case 'accepted':
-        return Icons.check_circle;
-      case 'delivered':
-        return Icons.local_shipping;
-      case 'cancelled':
-        return Icons.cancel;
-      default:
-        return Icons.receipt_long;
-    }
-  }
-
-  String notificationTitle(
-    String status,
-  ) {
-    switch (status.toLowerCase()) {
-      case 'accepted':
-        return 'Order Accepted';
-      case 'delivered':
-        return 'Order Delivered';
-      case 'cancelled':
-        return 'Order Cancelled';
-      default:
-        return 'Order Updated';
-    }
-  }
-
-  String notificationMessage({
-    required String status,
-    required String productName,
-    required String supplierName,
-  }) {
-    switch (status.toLowerCase()) {
-      case 'accepted':
-        return 'Your COD order for $productName was accepted by $supplierName.';
-      case 'delivered':
-        return 'Your COD order for $productName was marked as delivered by $supplierName.';
-      case 'cancelled':
-        return 'Your COD order for $productName was cancelled by $supplierName. The reserved stock was returned.';
-      default:
-        return 'Your COD order for $productName was updated by $supplierName.';
-    }
-  }
-
-  void createNotificationInTransaction({
-    required Transaction transaction,
-    required Map<
-      String,
-      dynamic
-    >
-    orderData,
-    required String orderId,
-    required String newStatus,
-  }) {
-    final vendorId = getStringValue(
-      orderData,
-      'vendorId',
-      '',
-    );
-
-    if (vendorId.isEmpty) {
-      return;
-    }
-
-    final productName = getStringValue(
-      orderData,
-      'productName',
-      'Fish Product',
-    );
-
-    final supplierName = getStringValue(
-      orderData,
-      'supplierName',
-      'Supplier',
-    );
-
-    final notificationReference = FirebaseFirestore.instance
-        .collection(
-          'notifications',
-        )
-        .doc();
-
-    transaction.set(
-      notificationReference,
-      {
-        'vendorId': vendorId,
-        'orderId': orderId,
-        'title': notificationTitle(
-          newStatus,
-        ),
-        'message': notificationMessage(
-          status: newStatus,
-          productName: productName,
-          supplierName: supplierName,
-        ),
-        'status': newStatus,
-        'type': 'order_status',
-        'isRead': false,
-        'createdAt': FieldValue.serverTimestamp(),
-      },
-    );
-  }
+  SupplierOrderService get orderService => const SupplierOrderService();
 
   Future<
     void
   >
-  updateOrderStatus(
-    BuildContext context,
-    String documentId,
-    String newStatus,
-    String paymentStatus,
-  ) async {
+  updateOrderStatus({
+    required BuildContext context,
+    required String documentId,
+    required String newStatus,
+    required String paymentStatus,
+  }) async {
     try {
-      final orderReference = FirebaseFirestore.instance
-          .collection(
-            'orders',
-          )
-          .doc(
-            documentId,
-          );
-
-      await FirebaseFirestore.instance.runTransaction(
-        (
-          transaction,
-        ) async {
-          final orderSnapshot = await transaction.get(
-            orderReference,
-          );
-
-          if (!orderSnapshot.exists) {
-            throw Exception(
-              'This order no longer exists.',
-            );
-          }
-
-          final orderData =
-              orderSnapshot.data() ??
-              <
-                String,
-                dynamic
-              >{};
-
-          final currentStatus = getStringValue(
-            orderData,
-            'orderStatus',
-            'Pending',
-          ).toLowerCase();
-
-          if (currentStatus ==
-              newStatus.toLowerCase()) {
-            return;
-          }
-
-          if (newStatus.toLowerCase() ==
-              'cancelled') {
-            final stockRestored =
-                orderData['stockRestored'] ==
-                true;
-            final stockDeducted =
-                orderData['stockDeducted'] ==
-                true;
-
-            final stockId = getStringValue(
-              orderData,
-              'stockId',
-              getStringValue(
-                orderData,
-                'fishStockId',
-                '',
-              ),
-            );
-
-            final orderedQuantity = getDoubleValue(
-              orderData,
-              'quantity',
-            );
-
-            if (!stockRestored &&
-                stockDeducted &&
-                stockId.isNotEmpty &&
-                orderedQuantity >
-                    0) {
-              final stockReference = FirebaseFirestore.instance
-                  .collection(
-                    'fishStocks',
-                  )
-                  .doc(
-                    stockId,
-                  );
-
-              final stockSnapshot = await transaction.get(
-                stockReference,
-              );
-
-              if (stockSnapshot.exists) {
-                final stockData =
-                    stockSnapshot.data() ??
-                    <
-                      String,
-                      dynamic
-                    >{};
-
-                final currentStock = getDoubleValue(
-                  stockData,
-                  'quantity',
-                );
-
-                final restoredStock =
-                    currentStock +
-                    orderedQuantity;
-
-                transaction.update(
-                  stockReference,
-                  {
-                    'quantity': restoredStock,
-                    'status': 'available',
-                    'updatedAt': FieldValue.serverTimestamp(),
-                  },
-                );
-              }
-            }
-
-            transaction.update(
-              orderReference,
-              {
-                'orderStatus': newStatus,
-                'paymentStatus': paymentStatus,
-                'stockRestored': true,
-                'restoredAt': FieldValue.serverTimestamp(),
-                'updatedAt': FieldValue.serverTimestamp(),
-              },
-            );
-          } else {
-            transaction.update(
-              orderReference,
-              {
-                'orderStatus': newStatus,
-                'paymentStatus': paymentStatus,
-                'updatedAt': FieldValue.serverTimestamp(),
-                if (newStatus.toLowerCase() ==
-                    'accepted')
-                  'acceptedAt': FieldValue.serverTimestamp(),
-                if (newStatus.toLowerCase() ==
-                    'delivered')
-                  'deliveredAt': FieldValue.serverTimestamp(),
-              },
-            );
-          }
-
-          createNotificationInTransaction(
-            transaction: transaction,
-            orderData: orderData,
-            orderId: documentId,
-            newStatus: newStatus,
-          );
-        },
+      await orderService.updateOrderStatus(
+        documentId: documentId,
+        newStatus: newStatus,
+        paymentStatus: paymentStatus,
       );
 
       if (!context.mounted) return;
@@ -484,7 +45,7 @@ class SupplierCodOrdersScreen
                 ? 'Order cancelled. Reserved stock has been returned and the vendor was notified.'
                 : 'Order marked as $newStatus. The vendor was notified.',
           ),
-          backgroundColor: statusColor(
+          backgroundColor: OrderHelpers.statusColor(
             newStatus,
           ),
         ),
@@ -507,558 +68,6 @@ class SupplierCodOrdersScreen
         ),
       );
     }
-  }
-
-  Widget statCard({
-    required String value,
-    required String label,
-    required IconData icon,
-  }) {
-    return Expanded(
-      child: Container(
-        height: 72,
-        margin: const EdgeInsets.symmetric(
-          horizontal: 4,
-        ),
-        decoration: BoxDecoration(
-          color: Colors.white.withAlpha(
-            38,
-          ),
-          borderRadius: BorderRadius.circular(
-            18,
-          ),
-          border: Border.all(
-            color: Colors.white.withAlpha(
-              36,
-            ),
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              color: Colors.white,
-              size: 20,
-            ),
-            const SizedBox(
-              height: 5,
-            ),
-            Text(
-              value,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Color(
-                  0xFFDCE9F5,
-                ),
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget statusChip(
-    String status,
-  ) {
-    final color = statusColor(
-      status,
-    );
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 7,
-      ),
-      decoration: BoxDecoration(
-        color: color.withAlpha(
-          24,
-        ),
-        borderRadius: BorderRadius.circular(
-          18,
-        ),
-        border: Border.all(
-          color: color.withAlpha(
-            60,
-          ),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            statusIcon(
-              status,
-            ),
-            color: color,
-            size: 14,
-          ),
-          const SizedBox(
-            width: 5,
-          ),
-          Text(
-            status,
-            style: TextStyle(
-              color: color,
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget orderActionButton({
-    required String label,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Expanded(
-      child: SizedBox(
-        height: 40,
-        child: ElevatedButton.icon(
-          onPressed: onTap,
-          icon: Icon(
-            icon,
-            size: 16,
-          ),
-          label: Text(
-            label,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: color,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(
-                14,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget orderCard(
-    BuildContext context,
-    QueryDocumentSnapshot<
-      Map<
-        String,
-        dynamic
-      >
-    >
-    document,
-  ) {
-    final data = document.data();
-
-    final productName = getStringValue(
-      data,
-      'productName',
-      'Fish Product',
-    );
-
-    final supplierName = getStringValue(
-      data,
-      'supplierName',
-      'Supplier',
-    );
-
-    final vendorName = getStringValue(
-      data,
-      'vendorName',
-      'Vendor',
-    );
-
-    final quantity = getDoubleValue(
-      data,
-      'quantity',
-    );
-
-    final quantityUnit = getStringValue(
-      data,
-      'quantityUnit',
-      'kilo',
-    );
-
-    final totalAmount = getDoubleValue(
-      data,
-      'totalAmount',
-    );
-
-    final paymentMethod = getStringValue(
-      data,
-      'paymentMethod',
-      'COD',
-    );
-
-    final paymentStatus = getStringValue(
-      data,
-      'paymentStatus',
-      'To be paid on delivery',
-    );
-
-    final orderStatus = getStringValue(
-      data,
-      'orderStatus',
-      'Pending',
-    );
-
-    final color = statusColor(
-      orderStatus,
-    );
-
-    return Container(
-      margin: const EdgeInsets.only(
-        bottom: 16,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(
-          24,
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(
-              0x12000000,
-            ),
-            blurRadius: 14,
-            offset: Offset(
-              0,
-              7,
-            ),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(
-              16,
-            ),
-            decoration: BoxDecoration(
-              color: color.withAlpha(
-                20,
-              ),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(
-                  24,
-                ),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(
-                      16,
-                    ),
-                  ),
-                  child: Icon(
-                    statusIcon(
-                      orderStatus,
-                    ),
-                    color: Colors.white,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(
-                  width: 12,
-                ),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        productName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(
-                            0xFF102C44,
-                          ),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(
-                        height: 3,
-                      ),
-                      Text(
-                        'Ordered by $vendorName • ${formatDateFromData(data)}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(
-                            0xFF7B8FA3,
-                          ),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                statusChip(
-                  orderStatus,
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              16,
-              16,
-              16,
-              18,
-            ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.storefront,
-                      color: Color(
-                        0xFF7B8FA3,
-                      ),
-                      size: 16,
-                    ),
-                    const SizedBox(
-                      width: 5,
-                    ),
-                    Expanded(
-                      child: Text(
-                        supplierName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(
-                            0xFF7B8FA3,
-                          ),
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 7,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(
-                          0xFFEAF7FB,
-                        ),
-                        borderRadius: BorderRadius.circular(
-                          18,
-                        ),
-                      ),
-                      child: Text(
-                        paymentMethod,
-                        style: const TextStyle(
-                          color: Color(
-                            0xFF146BFF,
-                          ),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(
-                  height: 14,
-                ),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.all(
-                          12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(
-                            0xFFEAF7FB,
-                          ),
-                          borderRadius: BorderRadius.circular(
-                            16,
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            const Text(
-                              'Quantity',
-                              style: TextStyle(
-                                color: Color(
-                                  0xFF7B8FA3,
-                                ),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(
-                              height: 4,
-                            ),
-                            Text(
-                              '${formatNumber(quantity)} $quantityUnit',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                color: Color(
-                                  0xFF102C44,
-                                ),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(
-                      width: 10,
-                    ),
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.all(
-                          12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(
-                            0xFFEAF7FB,
-                          ),
-                          borderRadius: BorderRadius.circular(
-                            16,
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            const Text(
-                              'Total',
-                              style: TextStyle(
-                                color: Color(
-                                  0xFF7B8FA3,
-                                ),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(
-                              height: 4,
-                            ),
-                            Text(
-                              '₱${totalAmount.toStringAsFixed(0)}',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                color: Color(
-                                  0xFF146BFF,
-                                ),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(
-                  height: 12,
-                ),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Payment: $paymentStatus',
-                    style: const TextStyle(
-                      color: Color(
-                        0xFF7B8FA3,
-                      ),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                const SizedBox(
-                  height: 14,
-                ),
-                if (orderStatus.toLowerCase() ==
-                    'pending')
-                  Row(
-                    children: [
-                      orderActionButton(
-                        label: 'Accept',
-                        icon: Icons.check_circle,
-                        color: const Color(
-                          0xFF146BFF,
-                        ),
-                        onTap: () => updateOrderStatus(
-                          context,
-                          document.id,
-                          'Accepted',
-                          'To be paid on delivery',
-                        ),
-                      ),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      orderActionButton(
-                        label: 'Cancel',
-                        icon: Icons.cancel,
-                        color: const Color(
-                          0xFFD32F2F,
-                        ),
-                        onTap: () => updateOrderStatus(
-                          context,
-                          document.id,
-                          'Cancelled',
-                          'Cancelled',
-                        ),
-                      ),
-                    ],
-                  )
-                else if (orderStatus.toLowerCase() ==
-                    'accepted')
-                  Row(
-                    children: [
-                      orderActionButton(
-                        label: 'Mark Delivered',
-                        icon: Icons.local_shipping,
-                        color: const Color(
-                          0xFF2E7D32,
-                        ),
-                        onTap: () => updateOrderStatus(
-                          context,
-                          document.id,
-                          'Delivered',
-                          'Paid',
-                        ),
-                      ),
-                    ],
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget emptyOrdersCard() {
@@ -1192,9 +201,9 @@ class SupplierCodOrdersScreen
     );
   }
 
-  Widget header(
-    BuildContext context,
-    List<
+  Widget bodyContent({
+    required BuildContext context,
+    required List<
       QueryDocumentSnapshot<
         Map<
           String,
@@ -1203,189 +212,11 @@ class SupplierCodOrdersScreen
       >
     >
     documents,
-  ) {
-    final pendingCount = documents.where(
-      (
-        document,
-      ) {
-        final status = getStringValue(
-          document.data(),
-          'orderStatus',
-          'Pending',
-        );
-
-        return status.toLowerCase() ==
-            'pending';
-      },
-    ).length;
-
-    final acceptedCount = documents.where(
-      (
-        document,
-      ) {
-        final status = getStringValue(
-          document.data(),
-          'orderStatus',
-          'Pending',
-        );
-
-        return status.toLowerCase() ==
-            'accepted';
-      },
-    ).length;
-
-    final deliveredCount = documents.where(
-      (
-        document,
-      ) {
-        final status = getStringValue(
-          document.data(),
-          'orderStatus',
-          'Pending',
-        );
-
-        return status.toLowerCase() ==
-            'delivered';
-      },
-    ).length;
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(
-        20,
-        54,
-        20,
-        24,
-      ),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(
-              0xFF102C44,
-            ),
-            Color(
-              0xFF146BFF,
-            ),
-          ],
-        ),
-        borderRadius: BorderRadius.vertical(
-          bottom: Radius.circular(
-            32,
-          ),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              GestureDetector(
-                onTap: () => Navigator.pop(
-                  context,
-                ),
-                child: Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(
-                      38,
-                    ),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.arrow_back,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-              ),
-              const SizedBox(
-                width: 12,
-              ),
-              const Expanded(
-                child: Text(
-                  'Incoming COD Orders',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 23,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(
-            height: 8,
-          ),
-          const Text(
-            'Review vendor orders, accept requests, and mark delivered COD transactions.',
-            style: TextStyle(
-              color: Color(
-                0xFFDCE9F5,
-              ),
-              fontSize: 13,
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(
-            height: 18,
-          ),
-          Row(
-            children: [
-              statCard(
-                value: '${documents.length}',
-                label: 'Total',
-                icon: Icons.receipt_long,
-              ),
-              statCard(
-                value: '$pendingCount',
-                label: 'Pending',
-                icon: Icons.schedule,
-              ),
-              statCard(
-                value: '$acceptedCount',
-                label: 'Accepted',
-                icon: Icons.check_circle,
-              ),
-            ],
-          ),
-          const SizedBox(
-            height: 8,
-          ),
-          Row(
-            children: [
-              statCard(
-                value: '$deliveredCount',
-                label: 'Delivered',
-                icon: Icons.local_shipping,
-              ),
-              const Spacer(),
-              const Spacer(),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget bodyContent(
-    BuildContext context,
-    List<
-      QueryDocumentSnapshot<
-        Map<
-          String,
-          dynamic
-        >
-      >
-    >
-    documents,
-  ) {
+  }) {
     return Column(
       children: [
-        header(
-          context,
-          documents,
+        SupplierOrdersHeader(
+          documents: documents,
         ),
         Expanded(
           child: ListView(
@@ -1427,9 +258,26 @@ class SupplierCodOrdersScreen
                 ...documents.map(
                   (
                     document,
-                  ) => orderCard(
-                    context,
-                    document,
+                  ) => SupplierOrderCard(
+                    document: document,
+                    onAccept: () => updateOrderStatus(
+                      context: context,
+                      documentId: document.id,
+                      newStatus: 'Accepted',
+                      paymentStatus: 'To be paid on delivery',
+                    ),
+                    onCancel: () => updateOrderStatus(
+                      context: context,
+                      documentId: document.id,
+                      newStatus: 'Cancelled',
+                      paymentStatus: 'Cancelled',
+                    ),
+                    onMarkDelivered: () => updateOrderStatus(
+                      context: context,
+                      documentId: document.id,
+                      newStatus: 'Delivered',
+                      paymentStatus: 'Paid',
+                    ),
                   ),
                 ),
             ],
@@ -1444,9 +292,8 @@ class SupplierCodOrdersScreen
   ) {
     return Column(
       children: [
-        header(
-          context,
-          const [],
+        const SupplierOrdersHeader(
+          documents: [],
         ),
         Expanded(
           child: ListView(
@@ -1484,9 +331,8 @@ class SupplierCodOrdersScreen
   ) {
     return Column(
       children: [
-        header(
-          context,
-          const [],
+        const SupplierOrdersHeader(
+          documents: [],
         ),
         Expanded(
           child: ListView(
@@ -1520,6 +366,37 @@ class SupplierCodOrdersScreen
     );
   }
 
+  Widget loggedOutBody() {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.all(
+          22,
+        ),
+        padding: const EdgeInsets.all(
+          18,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(
+            24,
+          ),
+        ),
+        child: const Text(
+          'Please log in first to view incoming COD orders.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Color(
+              0xFFD32F2F,
+            ),
+            fontSize: 13,
+            height: 1.4,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(
     BuildContext context,
@@ -1532,34 +409,7 @@ class SupplierCodOrdersScreen
         backgroundColor: const Color(
           0xFFF4F8FB,
         ),
-        body: Center(
-          child: Container(
-            margin: const EdgeInsets.all(
-              22,
-            ),
-            padding: const EdgeInsets.all(
-              18,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(
-                24,
-              ),
-            ),
-            child: const Text(
-              'Please log in first to view incoming COD orders.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Color(
-                  0xFFD32F2F,
-                ),
-                fontSize: 13,
-                height: 1.4,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ),
+        body: loggedOutBody(),
       );
     }
 
@@ -1576,7 +426,7 @@ class SupplierCodOrdersScreen
               >
             >
           >(
-            stream: ordersStream(
+            stream: orderService.ordersStream(
               user.uid,
             ),
             builder:
@@ -1597,13 +447,13 @@ class SupplierCodOrdersScreen
                     );
                   }
 
-                  final documents = sortOrders(
+                  final documents = OrderHelpers.sortDocuments(
                     snapshot.data!.docs,
                   );
 
                   return bodyContent(
-                    context,
-                    documents,
+                    context: context,
+                    documents: documents,
                   );
                 },
           ),
