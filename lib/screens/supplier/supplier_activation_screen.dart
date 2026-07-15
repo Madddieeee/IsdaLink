@@ -1,34 +1,61 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:isdalink/screens/supplier/activation/widgets/supplier_activation_feature_card.dart';
+import 'package:isdalink/screens/supplier/activation/widgets/supplier_activation_header.dart';
+import 'package:isdalink/screens/supplier/activation/widgets/supplier_activation_info_card.dart';
+import 'package:isdalink/screens/supplier/activation/widgets/supplier_activation_submit_button.dart';
+import 'package:isdalink/screens/supplier/activation/widgets/supplier_activation_unit_card.dart';
+import 'package:isdalink/services/supplier_activation_service.dart';
 
-import 'supplier_dashboard_screen.dart';
-
-class SupplierActivationScreen
-    extends
-        StatefulWidget {
+class SupplierActivationScreen extends StatefulWidget {
   const SupplierActivationScreen({
     super.key,
   });
 
   @override
-  State<
-    SupplierActivationScreen
-  >
-  createState() => _SupplierActivationScreenState();
+  State<SupplierActivationScreen> createState() =>
+      _SupplierActivationScreenState();
 }
 
-class _SupplierActivationScreenState
-    extends
-        State<
-          SupplierActivationScreen
-        > {
+class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
   final businessNameController = TextEditingController();
   final marketLocationController = TextEditingController();
   final contactNumberController = TextEditingController();
+
+  final SupplierActivationService activationService =
+      const SupplierActivationService();
 
   String selectedSupplierType = 'Fish Supplier';
   bool kiloUnit = true;
   bool tabUnit = true;
   bool iceboxUnit = true;
+  bool isSubmitting = false;
+
+  int get enabledUnitCount {
+    return [
+      kiloUnit,
+      tabUnit,
+      iceboxUnit,
+    ].where((enabled) => enabled).length;
+  }
+
+  List<String> get supportedUnits {
+    final units = <String>[];
+
+    if (kiloUnit) {
+      units.add('kilo');
+    }
+
+    if (tabUnit) {
+      units.add('tab');
+    }
+
+    if (iceboxUnit) {
+      units.add('icebox');
+    }
+
+    return units;
+  }
 
   @override
   void initState() {
@@ -46,374 +73,143 @@ class _SupplierActivationScreenState
     super.dispose();
   }
 
-  void activateSupplierAccount() {
+  void showMessage(
+    String message, {
+    bool isError = false,
+  }) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError
+            ? const Color(0xFFD32F2F)
+            : const Color(0xFF2E7D32),
+      ),
+    );
+  }
+
+  SupplierApplicationInput? buildApplicationInput() {
+    final businessName = businessNameController.text.trim();
+    final marketLocation = marketLocationController.text.trim();
+    final contactNumber = contactNumberController.text.trim();
+
+    if (businessName.isEmpty ||
+        marketLocation.isEmpty ||
+        contactNumber.isEmpty) {
+      showMessage(
+        'Please complete all supplier application fields.',
+        isError: true,
+      );
+      return null;
+    }
+
+    if (supportedUnits.isEmpty) {
+      showMessage(
+        'Please select at least one supported selling unit.',
+        isError: true,
+      );
+      return null;
+    }
+
+    return SupplierApplicationInput(
+      businessName: businessName,
+      marketLocation: marketLocation,
+      contactNumber: contactNumber,
+      supplierType: selectedSupplierType,
+      supportedUnits: supportedUnits,
+    );
+  }
+
+  Future<void> submitSupplierApplication() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      showMessage(
+        'Please log in first before submitting a supplier application.',
+        isError: true,
+      );
+      return;
+    }
+
+    final input = buildApplicationInput();
+
+    if (input == null) {
+      return;
+    }
+
+    setState(() {
+      isSubmitting = true;
+    });
+
+    try {
+      await activationService.submitSupplierApplication(
+        user: user,
+        input: input,
+      );
+
+      if (!mounted) return;
+
+      showApplicationSubmittedDialog();
+    } catch (error) {
+      if (!mounted) return;
+
+      showMessage(
+        'Failed to submit supplier application: $error',
+        isError: true,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isSubmitting = false;
+        });
+      }
+    }
+  }
+
+  void showApplicationSubmittedDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder:
-          (
-            dialogContext,
-          ) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(
-                  24,
-                ),
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          title: const Text(
+            'Application Submitted',
+            style: TextStyle(
+              color: Color(0xFF102C44),
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          content: const Text(
+            'Your supplier application has been submitted for admin review. '
+            'Supplier features will become available after your application is approved.',
+            style: TextStyle(
+              color: Color(0xFF52677A),
+              height: 1.4,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Stay Here'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF146BFF),
+                foregroundColor: Colors.white,
               ),
-              title: const Text(
-                'Supplier Activated',
-                style: TextStyle(
-                  color: Color(
-                    0xFF102C44,
-                  ),
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              content: const Text(
-                'Your supplier features are now ready in sample/offline mode. '
-                'Later, this activation will be saved to the database.',
-                style: TextStyle(
-                  color: Color(
-                    0xFF52677A,
-                  ),
-                  height: 1.4,
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(
-                      dialogContext,
-                    );
-                  },
-                  child: const Text(
-                    'Stay Here',
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(
-                      dialogContext,
-                    );
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (
-                              _,
-                            ) => const SupplierDashboardScreen(),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(
-                      0xFF146BFF,
-                    ),
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text(
-                    'Open Dashboard',
-                  ),
-                ),
-              ],
-            );
-          },
-    );
-  }
-
-  InputDecoration inputDecoration({
-    required String label,
-    required IconData icon,
-  }) {
-    return InputDecoration(
-      labelText: label,
-      labelStyle: const TextStyle(
-        color: Color(
-          0xFF7B8FA3,
-        ),
-        fontSize: 13,
-      ),
-      prefixIcon: Icon(
-        icon,
-        color: const Color(
-          0xFF146BFF,
-        ),
-      ),
-      filled: true,
-      fillColor: const Color(
-        0xFFF4F8FB,
-      ),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(
-          18,
-        ),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(
-          18,
-        ),
-        borderSide: const BorderSide(
-          color: Color(
-            0xFF146BFF,
-          ),
-          width: 1.4,
-        ),
-      ),
-    );
-  }
-
-  Widget sectionCard({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required Widget child,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(
-        bottom: 16,
-      ),
-      padding: const EdgeInsets.all(
-        18,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(
-          24,
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(
-              0x10000000,
+              child: const Text('Back to Profile'),
             ),
-            blurRadius: 14,
-            offset: Offset(
-              0,
-              7,
-            ),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color:
-                      const Color(
-                        0xFF146BFF,
-                      ).withAlpha(
-                        24,
-                      ),
-                  borderRadius: BorderRadius.circular(
-                    14,
-                  ),
-                ),
-                child: Icon(
-                  icon,
-                  color: const Color(
-                    0xFF146BFF,
-                  ),
-                  size: 22,
-                ),
-              ),
-              const SizedBox(
-                width: 12,
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Color(
-                          0xFF102C44,
-                        ),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(
-                      height: 3,
-                    ),
-                    Text(
-                      subtitle,
-                      style: const TextStyle(
-                        color: Color(
-                          0xFF7B8FA3,
-                        ),
-                        fontSize: 12,
-                        height: 1.3,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(
-            height: 16,
-          ),
-          child,
-        ],
-      ),
-    );
-  }
-
-  Widget featureTile({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(
-        bottom: 10,
-      ),
-      padding: const EdgeInsets.all(
-        13,
-      ),
-      decoration: BoxDecoration(
-        color: const Color(
-          0xFFEAF7FB,
-        ),
-        borderRadius: BorderRadius.circular(
-          18,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            color: const Color(
-              0xFF146BFF,
-            ),
-            size: 22,
-          ),
-          const SizedBox(
-            width: 12,
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Color(
-                      0xFF102C44,
-                    ),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(
-                  height: 2,
-                ),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    color: Color(
-                      0xFF7B8FA3,
-                    ),
-                    fontSize: 11,
-                    height: 1.3,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Icon(
-            Icons.check_circle,
-            color: Color(
-              0xFF2E7D32,
-            ),
-            size: 21,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget unitSwitch({
-    required String title,
-    required String subtitle,
-    required bool value,
-    required ValueChanged<
-      bool
-    >
-    onChanged,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(
-        bottom: 10,
-      ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: 10,
-      ),
-      decoration: BoxDecoration(
-        color: const Color(
-          0xFFF4F8FB,
-        ),
-        borderRadius: BorderRadius.circular(
-          18,
-        ),
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.scale,
-            color: Color(
-              0xFF146BFF,
-            ),
-            size: 21,
-          ),
-          const SizedBox(
-            width: 12,
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Color(
-                      0xFF102C44,
-                    ),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(
-                  height: 2,
-                ),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    color: Color(
-                      0xFF7B8FA3,
-                    ),
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Switch(
-            value: value,
-            activeThumbColor: const Color(
-              0xFF146BFF,
-            ),
-            onChanged: onChanged,
-          ),
-        ],
-      ),
+          ],
+        );
+      },
     );
   }
 
@@ -421,415 +217,56 @@ class _SupplierActivationScreenState
   Widget build(
     BuildContext context,
   ) {
-    final enabledUnitCount =
-        [
-              kiloUnit,
-              tabUnit,
-              iceboxUnit,
-            ]
-            .where(
-              (
-                enabled,
-              ) => enabled,
-            )
-            .length;
-
     return Scaffold(
-      backgroundColor: const Color(
-        0xFFF4F8FB,
-      ),
+      backgroundColor: const Color(0xFFF4F8FB),
       body: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.fromLTRB(
-              20,
-              54,
-              20,
-              24,
-            ),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(
-                    0xFF102C44,
-                  ),
-                  Color(
-                    0xFF146BFF,
-                  ),
-                ],
-              ),
-              borderRadius: BorderRadius.vertical(
-                bottom: Radius.circular(
-                  32,
-                ),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(
-                        context,
-                      ),
-                      child: Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(
-                            38,
-                          ),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.arrow_back,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(
-                      width: 12,
-                    ),
-                    const Expanded(
-                      child: Text(
-                        'Become a Supplier',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 23,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(
-                  height: 18,
-                ),
-                const Text(
-                  'Activate supplier tools for posting fish stocks, managing products, and viewing sales analytics.',
-                  style: TextStyle(
-                    color: Color(
-                      0xFFDCE9F5,
-                    ),
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(
-                  height: 18,
-                ),
-                Container(
-                  padding: const EdgeInsets.all(
-                    15,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(
-                      34,
-                    ),
-                    borderRadius: BorderRadius.circular(
-                      22,
-                    ),
-                    border: Border.all(
-                      color: Colors.white.withAlpha(
-                        34,
-                      ),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 54,
-                        height: 54,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(
-                            18,
-                          ),
-                        ),
-                        child: const Icon(
-                          Icons.storefront,
-                          color: Color(
-                            0xFF146BFF,
-                          ),
-                          size: 30,
-                        ),
-                      ),
-                      const SizedBox(
-                        width: 14,
-                      ),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Supplier Mode',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 17,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            const SizedBox(
-                              height: 4,
-                            ),
-                            Text(
-                              '$enabledUnitCount unit options enabled • COD only',
-                              style: const TextStyle(
-                                color: Color(
-                                  0xFFDCE9F5,
-                                ),
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(
-                        Icons.verified,
-                        color: Color(
-                          0xFF38D39F,
-                        ),
-                        size: 25,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+          SupplierActivationHeader(
+            enabledUnitCount: enabledUnitCount,
+            onBack: () => Navigator.pop(context),
           ),
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(
-                18,
-                22,
-                18,
-                20,
-              ),
+              padding: const EdgeInsets.fromLTRB(18, 22, 18, 20),
               children: [
-                sectionCard(
-                  title: 'Supplier Information',
-                  subtitle: 'Set up the basic profile shown to vendors.',
-                  icon: Icons.badge,
-                  child: Column(
-                    children: [
-                      TextField(
-                        controller: businessNameController,
-                        decoration: inputDecoration(
-                          label: 'Business or Supplier Name',
-                          icon: Icons.storefront,
-                        ),
-                      ),
-                      const SizedBox(
-                        height: 12,
-                      ),
-                      TextField(
-                        controller: marketLocationController,
-                        decoration: inputDecoration(
-                          label: 'Market Location / Service Area',
-                          icon: Icons.location_on,
-                        ),
-                      ),
-                      const SizedBox(
-                        height: 12,
-                      ),
-                      TextField(
-                        controller: contactNumberController,
-                        keyboardType: TextInputType.phone,
-                        decoration: inputDecoration(
-                          label: 'Contact Number',
-                          icon: Icons.phone,
-                        ),
-                      ),
-                      const SizedBox(
-                        height: 12,
-                      ),
-                      DropdownButtonFormField<
-                        String
-                      >(
-                        value: selectedSupplierType,
-                        decoration: inputDecoration(
-                          label: 'Supplier Type',
-                          icon: Icons.category,
-                        ),
-                        items: const [
-                          DropdownMenuItem(
-                            value: 'Fish Supplier',
-                            child: Text(
-                              'Fish Supplier',
-                            ),
-                          ),
-                          DropdownMenuItem(
-                            value: 'Fish Vendor',
-                            child: Text(
-                              'Fish Vendor',
-                            ),
-                          ),
-                          DropdownMenuItem(
-                            value: 'Fish Trading Business',
-                            child: Text(
-                              'Fish Trading Business',
-                            ),
-                          ),
-                        ],
-                        onChanged:
-                            (
-                              value,
-                            ) {
-                              setState(
-                                () {
-                                  selectedSupplierType =
-                                      value ??
-                                      selectedSupplierType;
-                                },
-                              );
-                            },
-                      ),
-                    ],
-                  ),
+                SupplierActivationInfoCard(
+                  businessNameController: businessNameController,
+                  marketLocationController: marketLocationController,
+                  contactNumberController: contactNumberController,
+                  selectedSupplierType: selectedSupplierType,
+                  onSupplierTypeChanged: (value) {
+                    setState(() {
+                      selectedSupplierType = value;
+                    });
+                  },
                 ),
-                sectionCard(
-                  title: 'Bulk Unit Options',
-                  subtitle: 'Choose the selling units supported by the supplier.',
-                  icon: Icons.scale,
-                  child: Column(
-                    children: [
-                      unitSwitch(
-                        title: 'Per Kilo',
-                        subtitle: 'For regular fish purchases by kilogram.',
-                        value: kiloUnit,
-                        onChanged:
-                            (
-                              value,
-                            ) {
-                              setState(
-                                () {
-                                  kiloUnit = value;
-                                },
-                              );
-                            },
-                      ),
-                      unitSwitch(
-                        title: 'Per Tab',
-                        subtitle: 'For bulk fish container orders.',
-                        value: tabUnit,
-                        onChanged:
-                            (
-                              value,
-                            ) {
-                              setState(
-                                () {
-                                  tabUnit = value;
-                                },
-                              );
-                            },
-                      ),
-                      unitSwitch(
-                        title: 'Per Icebox',
-                        subtitle: 'For larger fish supply orders.',
-                        value: iceboxUnit,
-                        onChanged:
-                            (
-                              value,
-                            ) {
-                              setState(
-                                () {
-                                  iceboxUnit = value;
-                                },
-                              );
-                            },
-                      ),
-                    ],
-                  ),
+                SupplierActivationUnitCard(
+                  kiloUnit: kiloUnit,
+                  tabUnit: tabUnit,
+                  iceboxUnit: iceboxUnit,
+                  onKiloChanged: (value) {
+                    setState(() {
+                      kiloUnit = value;
+                    });
+                  },
+                  onTabChanged: (value) {
+                    setState(() {
+                      tabUnit = value;
+                    });
+                  },
+                  onIceboxChanged: (value) {
+                    setState(() {
+                      iceboxUnit = value;
+                    });
+                  },
                 ),
-                sectionCard(
-                  title: 'Enabled Supplier Features',
-                  subtitle: 'Features available after activation.',
-                  icon: Icons.dashboard_customize,
-                  child: Column(
-                    children: [
-                      featureTile(
-                        icon: Icons.add_box,
-                        title: 'Post Fish Stocks',
-                        subtitle: 'Add available fish products and stock levels.',
-                      ),
-                      featureTile(
-                        icon: Icons.inventory_2,
-                        title: 'Manage Products',
-                        subtitle: 'Update price, quantity, and low-stock alerts.',
-                      ),
-                      featureTile(
-                        icon: Icons.receipt_long,
-                        title: 'Track COD Orders',
-                        subtitle: 'View vendor orders using cash on delivery.',
-                      ),
-                      featureTile(
-                        icon: Icons.analytics,
-                        title: 'Sales Analytics',
-                        subtitle: 'View sales trends and restocking insights later.',
-                      ),
-                    ],
-                  ),
-                ),
+                const SupplierActivationFeatureCard(),
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.fromLTRB(
-              18,
-              12,
-              18,
-              18,
-            ),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Color(
-                    0x14000000,
-                  ),
-                  blurRadius: 14,
-                  offset: Offset(
-                    0,
-                    -4,
-                  ),
-                ),
-              ],
-            ),
-            child: SafeArea(
-              top: false,
-              child: SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton.icon(
-                  onPressed: activateSupplierAccount,
-                  icon: const Icon(
-                    Icons.verified,
-                  ),
-                  label: const Text(
-                    'Activate Supplier Account',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(
-                      0xFF146BFF,
-                    ),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                        16,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
+          SupplierActivationSubmitButton(
+            isSubmitting: isSubmitting,
+            onPressed: submitSupplierApplication,
           ),
         ],
       ),
