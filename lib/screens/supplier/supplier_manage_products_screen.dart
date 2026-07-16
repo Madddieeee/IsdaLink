@@ -24,7 +24,9 @@ class SupplierManageProductsScreen
     String message, {
     bool isError = false,
   }) {
-    if (!context.mounted) return;
+    if (!context.mounted) {
+      return;
+    }
 
     ScaffoldMessenger.of(
       context,
@@ -62,6 +64,10 @@ class SupplierManageProductsScreen
       document: document,
     );
 
+    if (!context.mounted) {
+      return;
+    }
+
     if (input ==
         null) {
       return;
@@ -73,6 +79,10 @@ class SupplierManageProductsScreen
         input: input,
       );
 
+      if (!context.mounted) {
+        return;
+      }
+
       showMessage(
         context,
         'Product updated successfully.',
@@ -80,6 +90,10 @@ class SupplierManageProductsScreen
     } catch (
       error
     ) {
+      if (!context.mounted) {
+        return;
+      }
+
       showMessage(
         context,
         'Failed to update product: $error',
@@ -108,6 +122,10 @@ class SupplierManageProductsScreen
         currentStatus: currentStatus,
       );
 
+      if (!context.mounted) {
+        return;
+      }
+
       showMessage(
         context,
         'Product marked as $newStatus.',
@@ -115,6 +133,10 @@ class SupplierManageProductsScreen
     } catch (
       error
     ) {
+      if (!context.mounted) {
+        return;
+      }
+
       showMessage(
         context,
         'Failed to update availability: $error',
@@ -136,6 +158,10 @@ class SupplierManageProductsScreen
       productName: productName,
     );
 
+    if (!context.mounted) {
+      return;
+    }
+
     if (!shouldDelete) {
       return;
     }
@@ -145,6 +171,10 @@ class SupplierManageProductsScreen
         documentId,
       );
 
+      if (!context.mounted) {
+        return;
+      }
+
       showMessage(
         context,
         'Product deleted from Firebase.',
@@ -153,6 +183,10 @@ class SupplierManageProductsScreen
     } catch (
       error
     ) {
+      if (!context.mounted) {
+        return;
+      }
+
       showMessage(
         context,
         'Failed to delete product: $error',

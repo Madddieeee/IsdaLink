@@ -888,7 +888,7 @@ class _PostFishStockScreenState
                       DropdownButtonFormField<
                         String
                       >(
-                        value: selectedCategory,
+                        initialValue: selectedCategory,
                         decoration: inputDecoration(
                           label: 'Category',
                           icon: Icons.category,
@@ -980,7 +980,7 @@ class _PostFishStockScreenState
                                 DropdownButtonFormField<
                                   String
                                 >(
-                                  value: selectedUnit,
+                                  initialValue: selectedUnit,
                                   decoration: inputDecoration(
                                     label: 'Unit',
                                     icon: Icons.scale,

@@ -103,18 +103,6 @@ class SupplierDashboardScreen
     );
   }
 
-  Future<
-    bool
-  >
-  handleSystemBack(
-    BuildContext context,
-  ) async {
-    safeBack(
-      context,
-    );
-    return false;
-  }
-
   Widget dashboardContent({
     required BuildContext context,
     required List<
@@ -307,10 +295,21 @@ class SupplierDashboardScreen
       return notLoggedInBody();
     }
 
-    return WillPopScope(
-      onWillPop: () => handleSystemBack(
-        context,
-      ),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult:
+          (
+            didPop,
+            result,
+          ) {
+            if (didPop) {
+              return;
+            }
+
+            safeBack(
+              context,
+            );
+          },
       child: Scaffold(
         backgroundColor: const Color(
           0xFFF4F8FB,

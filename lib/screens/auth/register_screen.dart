@@ -251,7 +251,7 @@ class _RegisterScreenState
         ),
         borderSide: const BorderSide(
           color: Color(
-            0x334FFFFFF,
+            0x33FFFFFF,
           ),
         ),
       ),
@@ -438,7 +438,7 @@ class _RegisterScreenState
                             ),
                             border: Border.all(
                               color: const Color(
-                                0x334FFFFFF,
+                                0x33FFFFFF,
                               ),
                               width: 1.2,
                             ),

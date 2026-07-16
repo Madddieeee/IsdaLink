@@ -95,12 +95,12 @@ class SupplierDashboardService {
         documents.fold<
           double
         >(
-          0,
+          0.0,
           (
-            sum,
+            total,
             document,
           ) {
-            return sum +
+            return total +
                 OrderHelpers.getDoubleValue(
                   document.data(),
                   'quantity',

@@ -103,11 +103,13 @@ class _LoginScreenState
           .get();
 
       final userData = userDoc.data();
+
       final role =
           (userData?['role'] ??
                   'vendor')
               .toString()
               .toLowerCase();
+
       final supplierStatus =
           (userData?['supplierStatus'] ??
                   'not_applicable')
@@ -308,7 +310,7 @@ class _LoginScreenState
         ),
         borderSide: const BorderSide(
           color: Color(
-            0x334FFFFFF,
+            0x33FFFFFF,
           ),
         ),
       ),
