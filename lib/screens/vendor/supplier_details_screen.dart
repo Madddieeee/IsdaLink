@@ -5,11 +5,10 @@ import 'package:isdalink/screens/vendor/product_details_screen.dart';
 import 'package:isdalink/screens/vendor/supplier_details/widgets/supplier_details_header.dart';
 import 'package:isdalink/screens/vendor/supplier_details/widgets/supplier_details_status_cards.dart';
 import 'package:isdalink/screens/vendor/supplier_details/widgets/supplier_product_card.dart';
+import 'package:isdalink/screens/vendor/supplier_details/widgets/supplier_reviews_section.dart';
 import 'package:isdalink/services/supplier_details_service.dart';
 
-class SupplierDetailsScreen
-    extends
-        StatelessWidget {
+class SupplierDetailsScreen extends StatelessWidget {
   const SupplierDetailsScreen({
     super.key,
     required this.supplier,
@@ -23,13 +22,7 @@ class SupplierDetailsScreen
 
   void openProduct({
     required BuildContext context,
-    required QueryDocumentSnapshot<
-      Map<
-        String,
-        dynamic
-      >
-    >
-    document,
+    required QueryDocumentSnapshot<Map<String, dynamic>> document,
   }) {
     final data = document.data();
 
@@ -40,35 +33,25 @@ class SupplierDetailsScreen
     final stockSupplierId = detailsService.getStringValue(
       data,
       'supplierId',
-      supplierId ??
-          '',
+      supplierId ?? '',
     );
 
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder:
-            (
-              _,
-            ) => ProductDetailsScreen(
-              supplier: supplier,
-              product: product,
-              stockId: document.id,
-              supplierId: stockSupplierId,
-            ),
+        builder: (_) => ProductDetailsScreen(
+          supplier: supplier,
+          product: product,
+          stockId: document.id,
+          supplierId: stockSupplierId,
+        ),
       ),
     );
   }
 
   Widget productCard({
     required BuildContext context,
-    required QueryDocumentSnapshot<
-      Map<
-        String,
-        dynamic
-      >
-    >
-    document,
+    required QueryDocumentSnapshot<Map<String, dynamic>> document,
   }) {
     final data = document.data();
 
@@ -146,15 +129,7 @@ class SupplierDetailsScreen
 
   Widget bodyContent({
     required BuildContext context,
-    required List<
-      QueryDocumentSnapshot<
-        Map<
-          String,
-          dynamic
-        >
-      >
-    >
-    documents,
+    required List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
   }) {
     final stats = detailsService.calculateStats(
       documents,
@@ -207,13 +182,14 @@ class SupplierDetailsScreen
                 const SupplierDetailsEmptyCard()
               else
                 ...documents.map(
-                  (
-                    document,
-                  ) => productCard(
+                  (document) => productCard(
                     context: context,
                     document: document,
                   ),
                 ),
+              SupplierReviewsSection(
+                supplierId: supplierId,
+              ),
             ],
           ),
         ),
@@ -324,46 +300,34 @@ class SupplierDetailsScreen
       backgroundColor: const Color(
         0xFFF4F8FB,
       ),
-      body:
-          StreamBuilder<
-            QuerySnapshot<
-              Map<
-                String,
-                dynamic
-              >
-            >
-          >(
-            stream: detailsService.fishStocksStream,
-            builder:
-                (
-                  context,
-                  snapshot,
-                ) {
-                  if (snapshot.hasError) {
-                    return errorBody(
-                      context: context,
-                      error: snapshot.error!,
-                    );
-                  }
+      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: detailsService.fishStocksStream,
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return errorBody(
+              context: context,
+              error: snapshot.error!,
+            );
+          }
 
-                  if (!snapshot.hasData) {
-                    return loadingBody(
-                      context,
-                    );
-                  }
+          if (!snapshot.hasData) {
+            return loadingBody(
+              context,
+            );
+          }
 
-                  final documents = detailsService.filterSupplierStocks(
-                    documents: snapshot.data!.docs,
-                    supplier: supplier,
-                    supplierId: supplierId,
-                  );
+          final documents = detailsService.filterSupplierStocks(
+            documents: snapshot.data!.docs,
+            supplier: supplier,
+            supplierId: supplierId,
+          );
 
-                  return bodyContent(
-                    context: context,
-                    documents: documents,
-                  );
-                },
-          ),
+          return bodyContent(
+            context: context,
+            documents: documents,
+          );
+        },
+      ),
     );
   }
 }

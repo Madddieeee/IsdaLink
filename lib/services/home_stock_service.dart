@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:isdalink/data/sample_data.dart';
 import 'package:isdalink/models/fish_product.dart';
 import 'package:isdalink/models/supplier.dart';
 import 'package:isdalink/utils/order_helpers.dart';
@@ -67,24 +66,41 @@ class HomeStockService {
     >
     data,
   ) {
-    if (sampleSuppliers.isEmpty) {
-      return null;
-    }
-
     final supplierName = OrderHelpers.getStringValue(
       data,
       'supplierName',
-      '',
+      'Registered Supplier',
     );
 
-    for (final supplier in sampleSuppliers) {
-      if (supplier.name.toLowerCase() ==
-          supplierName.toLowerCase()) {
-        return supplier;
-      }
-    }
+    final supplierLocation = OrderHelpers.getStringValue(
+      data,
+      'supplierLocation',
+      OrderHelpers.getStringValue(
+        data,
+        'location',
+        'Caraga Region',
+      ),
+    );
 
-    return sampleSuppliers.first;
+    final supplierContactNumber = OrderHelpers.getStringValue(
+      data,
+      'supplierContactNumber',
+      OrderHelpers.getStringValue(
+        data,
+        'contactNumber',
+        'No contact number',
+      ),
+    );
+
+    return Supplier(
+      name: supplierName,
+      location: supplierLocation,
+      contactNumber: supplierContactNumber,
+      description: 'Registered fish supplier in the IsdaLink platform for vendor-supplier coordination.',
+      rating: 4.5,
+      reviews: 0,
+      products: const [],
+    );
   }
 
   FishProduct fishProductFromFirestore(

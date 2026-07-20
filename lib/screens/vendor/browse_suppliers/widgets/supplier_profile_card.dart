@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:isdalink/models/supplier.dart';
 
-class SupplierProfileCard
-    extends
-        StatelessWidget {
+class SupplierProfileCard extends StatelessWidget {
   const SupplierProfileCard({
     super.key,
     required this.supplier,
@@ -21,9 +19,7 @@ class SupplierProfileCard
   Widget build(
     BuildContext context,
   ) {
-    final statusLabel =
-        status.toLowerCase() ==
-            'approved'
+    final statusLabel = status.toLowerCase() == 'approved'
         ? 'APPROVED'
         : status.toUpperCase();
 
@@ -210,6 +206,33 @@ class SupplierProfileCard
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(
+                    height: 8,
+                  ),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.star,
+                        color: Color(
+                          0xFFFFB703,
+                        ),
+                        size: 16,
+                      ),
+                      const SizedBox(
+                        width: 5,
+                      ),
+                      Text(
+                        '${supplier.rating.toStringAsFixed(1)} (${supplier.reviews} review${supplier.reviews == 1 ? '' : 's'})',
+                        style: const TextStyle(
+                          color: Color(
+                            0xFF52677A,
+                          ),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ],

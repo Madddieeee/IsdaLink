@@ -2,23 +2,24 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:isdalink/utils/order_helpers.dart';
 
-class VendorOrderCard
-    extends
-        StatelessWidget {
+class VendorOrderCard extends StatelessWidget {
   const VendorOrderCard({
     super.key,
     required this.document,
     required this.onCancelPendingOrder,
+    required this.onReviewOrder,
   });
 
-  final QueryDocumentSnapshot<
-    Map<
-      String,
-      dynamic
-    >
-  >
-  document;
+  final QueryDocumentSnapshot<Map<String, dynamic>> document;
   final VoidCallback onCancelPendingOrder;
+  final VoidCallback onReviewOrder;
+
+  bool isCompletedOrder(
+    String status,
+  ) {
+    final lowerStatus = status.toLowerCase();
+    return lowerStatus == 'delivered' || lowerStatus == 'completed';
+  }
 
   Widget statusChip(
     String status,
@@ -74,9 +75,7 @@ class VendorOrderCard
   Widget paymentChip(
     String paymentStatus,
   ) {
-    final bool isPaid =
-        paymentStatus.toLowerCase() ==
-        'paid';
+    final bool isPaid = paymentStatus.toLowerCase() == 'paid';
     final color = isPaid
         ? const Color(
             0xFF2E7D32,
@@ -111,15 +110,58 @@ class VendorOrderCard
     );
   }
 
+  Widget reviewSubmittedChip() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 12,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(
+          0xFF2E7D32,
+        ).withAlpha(
+          24,
+        ),
+        borderRadius: BorderRadius.circular(
+          14,
+        ),
+      ),
+      child: const Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.rate_review,
+            color: Color(
+              0xFF2E7D32,
+            ),
+            size: 18,
+          ),
+          SizedBox(
+            width: 8,
+          ),
+          Text(
+            'Review Submitted',
+            style: TextStyle(
+              color: Color(
+                0xFF2E7D32,
+              ),
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(
     BuildContext context,
   ) {
     final data = document.data();
 
-    final orderId =
-        document.id.length >
-            8
+    final orderId = document.id.length > 8
         ? 'ORD-${document.id.substring(0, 8).toUpperCase()}'
         : 'ORD-${document.id.toUpperCase()}';
 
@@ -168,6 +210,8 @@ class VendorOrderCard
       'orderStatus',
       'Pending',
     );
+
+    final reviewSubmitted = data['reviewSubmitted'] == true;
 
     final color = OrderHelpers.statusColor(
       orderStatus,
@@ -475,8 +519,7 @@ class VendorOrderCard
                     ),
                   ],
                 ),
-                if (orderStatus.toLowerCase() ==
-                    'pending') ...[
+                if (orderStatus.toLowerCase() == 'pending') ...[
                   const SizedBox(
                     height: 14,
                   ),
@@ -514,6 +557,45 @@ class VendorOrderCard
                       ),
                     ),
                   ),
+                ],
+                if (isCompletedOrder(orderStatus)) ...[
+                  const SizedBox(
+                    height: 14,
+                  ),
+                  if (reviewSubmitted)
+                    reviewSubmittedChip()
+                  else
+                    SizedBox(
+                      width: double.infinity,
+                      height: 42,
+                      child: ElevatedButton.icon(
+                        onPressed: onReviewOrder,
+                        icon: const Icon(
+                          Icons.star,
+                          size: 18,
+                        ),
+                        label: const Text(
+                          'Rate and Review Supplier',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(
+                            0xFFFFB703,
+                          ),
+                          foregroundColor: const Color(
+                            0xFF102C44,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              14,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ],
             ),

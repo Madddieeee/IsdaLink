@@ -212,6 +212,7 @@ class SupplierDashboardScreen
   }
 
   Widget errorDashboard(
+    BuildContext context,
     Object error,
   ) {
     return Column(
@@ -222,8 +223,9 @@ class SupplierDashboardScreen
             totalStocks: 0,
             lowStockCount: 0,
           ),
-          onBack: () {},
-          isLoading: true,
+          onBack: () => safeBack(
+            context,
+          ),
         ),
         Expanded(
           child: ListView(
@@ -333,6 +335,7 @@ class SupplierDashboardScreen
                   ) {
                     if (snapshot.hasError) {
                       return errorDashboard(
+                        context,
                         snapshot.error!,
                       );
                     }

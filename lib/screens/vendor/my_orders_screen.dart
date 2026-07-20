@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:isdalink/screens/vendor/my_orders/widgets/order_filter_selector.dart';
 import 'package:isdalink/screens/vendor/my_orders/widgets/order_notification_panel.dart';
 import 'package:isdalink/screens/vendor/my_orders/widgets/vendor_order_card.dart';
+import 'package:isdalink/services/review_service.dart';
 import 'package:isdalink/services/vendor_order_service.dart';
 import 'package:isdalink/utils/order_helpers.dart';
 
@@ -27,6 +28,7 @@ class _MyOrdersScreenState
           MyOrdersScreen
         > {
   final VendorOrderService orderService = const VendorOrderService();
+  final ReviewService reviewService = const ReviewService();
 
   String selectedFilter = 'All';
 
@@ -140,6 +142,10 @@ class _MyOrdersScreenState
               },
         );
 
+    if (!mounted) {
+      return;
+    }
+
     if (confirmCancel !=
         true) {
       return;
@@ -151,17 +157,278 @@ class _MyOrdersScreenState
         document: document,
       );
 
+      if (!mounted) {
+        return;
+      }
+
       showMessage(
         'Order cancelled. Reserved stock has been returned.',
       );
     } catch (
       error
     ) {
+      if (!mounted) {
+        return;
+      }
+
       showMessage(
         'Failed to cancel order: $error',
         isError: true,
       );
     }
+  }
+
+  Future<
+    void
+  >
+  reviewCompletedOrder(
+    QueryDocumentSnapshot<
+      Map<
+        String,
+        dynamic
+      >
+    >
+    document,
+  ) async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user ==
+        null) {
+      showMessage(
+        'Please log in first to submit a review.',
+        isError: true,
+      );
+      return;
+    }
+
+    final data = document.data();
+
+    final productName = OrderHelpers.getStringValue(
+      data,
+      'productName',
+      'Fish Product',
+    );
+
+    final supplierName = OrderHelpers.getStringValue(
+      data,
+      'supplierName',
+      'Supplier',
+    );
+
+    final result = await showReviewDialog(
+      productName: productName,
+      supplierName: supplierName,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    if (result ==
+        null) {
+      return;
+    }
+
+    try {
+      await reviewService.submitOrderReview(
+        user: user,
+        orderDocument: document,
+        input: ReviewInput(
+          rating: result.rating,
+          comment: result.comment,
+        ),
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      showMessage(
+        'Review submitted. Thank you for rating the supplier.',
+      );
+    } catch (
+      error
+    ) {
+      if (!mounted) {
+        return;
+      }
+
+      showMessage(
+        'Failed to submit review: $error',
+        isError: true,
+      );
+    }
+  }
+
+  Future<
+    ReviewDialogResult?
+  >
+  showReviewDialog({
+    required String productName,
+    required String supplierName,
+  }) async {
+    int selectedRating = 5;
+    String reviewComment = '';
+
+    return showDialog<
+      ReviewDialogResult
+    >(
+      context: context,
+      barrierDismissible: true,
+      builder:
+          (
+            dialogContext,
+          ) {
+            return StatefulBuilder(
+              builder:
+                  (
+                    dialogContext,
+                    setDialogState,
+                  ) {
+                    return AlertDialog(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          24,
+                        ),
+                      ),
+                      title: const Text(
+                        'Rate Supplier',
+                        style: TextStyle(
+                          color: Color(
+                            0xFF102C44,
+                          ),
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      content: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              supplierName,
+                              style: const TextStyle(
+                                color: Color(
+                                  0xFF146BFF,
+                                ),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(
+                              height: 4,
+                            ),
+                            Text(
+                              'Order item: $productName',
+                              style: const TextStyle(
+                                color: Color(
+                                  0xFF7B8FA3,
+                                ),
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(
+                              height: 16,
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(
+                                5,
+                                (
+                                  index,
+                                ) {
+                                  final starValue =
+                                      index +
+                                      1;
+                                  final isSelected =
+                                      starValue <=
+                                      selectedRating;
+
+                                  return IconButton(
+                                    onPressed: () {
+                                      setDialogState(
+                                        () {
+                                          selectedRating = starValue;
+                                        },
+                                      );
+                                    },
+                                    icon: Icon(
+                                      isSelected
+                                          ? Icons.star
+                                          : Icons.star_border,
+                                      color: const Color(
+                                        0xFFFFB703,
+                                      ),
+                                      size: 32,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(
+                              height: 12,
+                            ),
+                            TextField(
+                              maxLines: 3,
+                              onChanged:
+                                  (
+                                    value,
+                                  ) {
+                                    reviewComment = value;
+                                  },
+                              decoration: InputDecoration(
+                                labelText: 'Optional written review',
+                                alignLabelWithHint: true,
+                                filled: true,
+                                fillColor: const Color(
+                                  0xFFF4F8FB,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    16,
+                                  ),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(
+                            dialogContext,
+                          ).pop(),
+                          child: const Text(
+                            'Cancel',
+                          ),
+                        ),
+                        ElevatedButton(
+                          onPressed: () =>
+                              Navigator.of(
+                                dialogContext,
+                              ).pop(
+                                ReviewDialogResult(
+                                  rating: selectedRating,
+                                  comment: reviewComment,
+                                ),
+                              ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(
+                              0xFF146BFF,
+                            ),
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text(
+                            'Submit Review',
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+            );
+          },
+    );
   }
 
   void showMessage(
@@ -349,7 +616,7 @@ class _MyOrdersScreenState
             height: 8,
           ),
           const Text(
-            'Track your COD fish orders by status.',
+            'Track your COD fish orders by status and review completed orders.',
             style: TextStyle(
               color: Color(
                 0xFFDCE9F5,
@@ -616,6 +883,9 @@ class _MyOrdersScreenState
                 onCancelPendingOrder: () => cancelPendingOrder(
                   document,
                 ),
+                onReviewOrder: () => reviewCompletedOrder(
+                  document,
+                ),
               ),
             ),
         ],
@@ -811,4 +1081,14 @@ class _MyOrdersScreenState
           ),
     );
   }
+}
+
+class ReviewDialogResult {
+  const ReviewDialogResult({
+    required this.rating,
+    required this.comment,
+  });
+
+  final int rating;
+  final String comment;
 }
