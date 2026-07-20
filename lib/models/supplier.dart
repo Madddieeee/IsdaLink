@@ -8,6 +8,7 @@ class Supplier {
   final double rating;
   final int reviews;
   final List<FishProduct> products;
+  final String profileImageUrl;
 
   const Supplier({
     required this.name,
@@ -17,5 +18,6 @@ class Supplier {
     required this.rating,
     required this.reviews,
     required this.products,
+    this.profileImageUrl = '',
   });
 }

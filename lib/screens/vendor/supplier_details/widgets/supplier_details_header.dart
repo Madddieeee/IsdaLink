@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:isdalink/models/supplier.dart';
 import 'package:isdalink/services/supplier_details_service.dart';
 
-class SupplierDetailsHeader
-    extends
-        StatelessWidget {
+class SupplierDetailsHeader extends StatelessWidget {
   const SupplierDetailsHeader({
     super.key,
     required this.supplier,
@@ -16,6 +14,46 @@ class SupplierDetailsHeader
   final SupplierDetailsStats stats;
   final VoidCallback onBack;
 
+  bool get hasProfileImage {
+    return supplier.profileImageUrl.trim().isNotEmpty &&
+        (supplier.profileImageUrl.startsWith('http://') ||
+            supplier.profileImageUrl.startsWith('https://'));
+  }
+
+  Widget supplierAvatar() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(22),
+      child: Container(
+        width: 78,
+        height: 78,
+        color: Colors.white,
+        child: hasProfileImage
+            ? Image.network(
+                supplier.profileImageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Center(
+                    child: Text(
+                      stats.firstEmoji,
+                      style: const TextStyle(
+                        fontSize: 40,
+                      ),
+                    ),
+                  );
+                },
+              )
+            : Center(
+                child: Text(
+                  stats.firstEmoji,
+                  style: const TextStyle(
+                    fontSize: 40,
+                  ),
+                ),
+              ),
+      ),
+    );
+  }
+
   Widget statCard({
     required String value,
     required String label,
@@ -24,20 +62,12 @@ class SupplierDetailsHeader
     return Expanded(
       child: Container(
         height: 72,
-        margin: const EdgeInsets.symmetric(
-          horizontal: 4,
-        ),
+        margin: const EdgeInsets.symmetric(horizontal: 4),
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha(
-            38,
-          ),
-          borderRadius: BorderRadius.circular(
-            18,
-          ),
+          color: Colors.white.withAlpha(38),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: Colors.white.withAlpha(
-              36,
-            ),
+            color: Colors.white.withAlpha(36),
           ),
         ),
         child: Column(
@@ -48,9 +78,7 @@ class SupplierDetailsHeader
               color: Colors.white,
               size: 20,
             ),
-            const SizedBox(
-              height: 5,
-            ),
+            const SizedBox(height: 5),
             Text(
               value,
               style: const TextStyle(
@@ -62,9 +90,7 @@ class SupplierDetailsHeader
             Text(
               label,
               style: const TextStyle(
-                color: Color(
-                  0xFFDCE9F5,
-                ),
+                color: Color(0xFFDCE9F5),
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
               ),
@@ -80,29 +106,18 @@ class SupplierDetailsHeader
     BuildContext context,
   ) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(
-        20,
-        54,
-        20,
-        24,
-      ),
+      padding: const EdgeInsets.fromLTRB(20, 54, 20, 24),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(
-              0xFF102C44,
-            ),
-            Color(
-              0xFF146BFF,
-            ),
+            Color(0xFF102C44),
+            Color(0xFF146BFF),
           ],
         ),
         borderRadius: BorderRadius.vertical(
-          bottom: Radius.circular(
-            32,
-          ),
+          bottom: Radius.circular(32),
         ),
       ),
       child: Column(
@@ -116,9 +131,7 @@ class SupplierDetailsHeader
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(
-                      38,
-                    ),
+                    color: Colors.white.withAlpha(38),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -128,9 +141,7 @@ class SupplierDetailsHeader
                   ),
                 ),
               ),
-              const SizedBox(
-                width: 12,
-              ),
+              const SizedBox(width: 12),
               const Expanded(
                 child: Text(
                   'Supplier Details',
@@ -143,9 +154,7 @@ class SupplierDetailsHeader
               ),
             ],
           ),
-          const SizedBox(
-            height: 22,
-          ),
+          const SizedBox(height: 22),
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -154,34 +163,18 @@ class SupplierDetailsHeader
                 height: 78,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(
-                    24,
-                  ),
+                  borderRadius: BorderRadius.circular(24),
                   boxShadow: const [
                     BoxShadow(
-                      color: Color(
-                        0x22000000,
-                      ),
+                      color: Color(0x22000000),
                       blurRadius: 16,
-                      offset: Offset(
-                        0,
-                        8,
-                      ),
+                      offset: Offset(0, 8),
                     ),
                   ],
                 ),
-                child: Center(
-                  child: Text(
-                    stats.firstEmoji,
-                    style: const TextStyle(
-                      fontSize: 40,
-                    ),
-                  ),
-                ),
+                child: supplierAvatar(),
               ),
-              const SizedBox(
-                width: 16,
-              ),
+              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -197,51 +190,37 @@ class SupplierDetailsHeader
                         height: 1.1,
                       ),
                     ),
-                    const SizedBox(
-                      height: 8,
-                    ),
+                    const SizedBox(height: 8),
                     Row(
                       children: [
                         const Icon(
                           Icons.location_on,
-                          color: Color(
-                            0xFFDCE9F5,
-                          ),
+                          color: Color(0xFFDCE9F5),
                           size: 15,
                         ),
-                        const SizedBox(
-                          width: 4,
-                        ),
+                        const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             supplier.location,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              color: Color(
-                                0xFFDCE9F5,
-                              ),
+                              color: Color(0xFFDCE9F5),
                               fontSize: 12,
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(
-                      height: 6,
-                    ),
+                    const SizedBox(height: 6),
                     const Row(
                       children: [
                         Icon(
                           Icons.payments,
-                          color: Color(
-                            0xFFFFB703,
-                          ),
+                          color: Color(0xFFFFB703),
                           size: 16,
                         ),
-                        SizedBox(
-                          width: 4,
-                        ),
+                        SizedBox(width: 4),
                         Text(
                           'COD only',
                           style: TextStyle(
@@ -257,22 +236,16 @@ class SupplierDetailsHeader
               ),
             ],
           ),
-          const SizedBox(
-            height: 20,
-          ),
+          const SizedBox(height: 20),
           Text(
             supplier.description,
             style: const TextStyle(
-              color: Color(
-                0xFFDCE9F5,
-              ),
+              color: Color(0xFFDCE9F5),
               fontSize: 13,
               height: 1.4,
             ),
           ),
-          const SizedBox(
-            height: 18,
-          ),
+          const SizedBox(height: 18),
           Row(
             children: [
               statCard(

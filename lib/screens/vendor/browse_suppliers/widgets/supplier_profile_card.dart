@@ -15,35 +15,65 @@ class SupplierProfileCard extends StatelessWidget {
   final String status;
   final VoidCallback onTap;
 
+  bool get hasProfileImage {
+    return supplier.profileImageUrl.trim().isNotEmpty &&
+        (supplier.profileImageUrl.startsWith('http://') ||
+            supplier.profileImageUrl.startsWith('https://'));
+  }
+
+  Widget supplierAvatar() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        width: 70,
+        height: 70,
+        color: const Color(0xFFEAF7FB),
+        child: hasProfileImage
+            ? Image.network(
+                supplier.profileImageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Center(
+                    child: Text(
+                      '🐟',
+                      style: TextStyle(
+                        fontSize: 34,
+                      ),
+                    ),
+                  );
+                },
+              )
+            : const Center(
+                child: Text(
+                  '🐟',
+                  style: TextStyle(
+                    fontSize: 34,
+                  ),
+                ),
+              ),
+      ),
+    );
+  }
+
   @override
   Widget build(
     BuildContext context,
   ) {
-    final statusLabel = status.toLowerCase() == 'approved'
-        ? 'APPROVED'
-        : status.toUpperCase();
+    final statusLabel =
+        status.toLowerCase() == 'approved' ? 'APPROVED' : status.toUpperCase();
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.only(
-          bottom: 16,
-        ),
+        margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(
-            24,
-          ),
+          borderRadius: BorderRadius.circular(24),
           boxShadow: const [
             BoxShadow(
-              color: Color(
-                0x14000000,
-              ),
+              color: Color(0x14000000),
               blurRadius: 16,
-              offset: Offset(
-                0,
-                8,
-              ),
+              offset: Offset(0, 8),
             ),
           ],
         ),
@@ -53,20 +83,14 @@ class SupplierProfileCard extends StatelessWidget {
               height: 96,
               decoration: const BoxDecoration(
                 borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(
-                    24,
-                  ),
+                  top: Radius.circular(24),
                 ),
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Color(
-                      0xFF102C44,
-                    ),
-                    Color(
-                      0xFF146BFF,
-                    ),
+                    Color(0xFF102C44),
+                    Color(0xFF146BFF),
                   ],
                 ),
               ),
@@ -79,9 +103,7 @@ class SupplierProfileCard extends StatelessWidget {
                       width: 110,
                       height: 110,
                       decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(
-                          28,
-                        ),
+                        color: Colors.white.withAlpha(28),
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -90,28 +112,17 @@ class SupplierProfileCard extends StatelessWidget {
                     left: 18,
                     bottom: -28,
                     child: Container(
-                      width: 70,
-                      height: 70,
+                      width: 78,
+                      height: 78,
                       decoration: BoxDecoration(
-                        color: const Color(
-                          0xFFEAF7FB,
-                        ),
-                        borderRadius: BorderRadius.circular(
-                          20,
-                        ),
+                        color: const Color(0xFFEAF7FB),
+                        borderRadius: BorderRadius.circular(22),
                         border: Border.all(
                           color: Colors.white,
                           width: 4,
                         ),
                       ),
-                      child: const Center(
-                        child: Text(
-                          '🐟',
-                          style: TextStyle(
-                            fontSize: 34,
-                          ),
-                        ),
-                      ),
+                      child: supplierAvatar(),
                     ),
                   ),
                   Positioned(
@@ -123,25 +134,17 @@ class SupplierProfileCard extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(
-                          42,
-                        ),
-                        borderRadius: BorderRadius.circular(
-                          20,
-                        ),
+                        color: Colors.white.withAlpha(42),
+                        borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
                         children: [
                           const Icon(
                             Icons.verified,
-                            color: Color(
-                              0xFFFFB703,
-                            ),
+                            color: Color(0xFFFFB703),
                             size: 14,
                           ),
-                          const SizedBox(
-                            width: 4,
-                          ),
+                          const SizedBox(width: 4),
                           Text(
                             statusLabel,
                             style: const TextStyle(
@@ -158,12 +161,7 @@ class SupplierProfileCard extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(
-                18,
-                36,
-                18,
-                18,
-              ),
+              padding: const EdgeInsets.fromLTRB(18, 36, 18, 18),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -172,37 +170,27 @@ class SupplierProfileCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      color: Color(
-                        0xFF102C44,
-                      ),
+                      color: Color(0xFF102C44),
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                  const SizedBox(
-                    height: 8,
-                  ),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       const Icon(
                         Icons.location_on,
-                        color: Color(
-                          0xFF7B8FA3,
-                        ),
+                        color: Color(0xFF7B8FA3),
                         size: 16,
                       ),
-                      const SizedBox(
-                        width: 5,
-                      ),
+                      const SizedBox(width: 5),
                       Expanded(
                         child: Text(
                           supplier.location,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            color: Color(
-                              0xFF7B8FA3,
-                            ),
+                            color: Color(0xFF7B8FA3),
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),
@@ -210,51 +198,18 @@ class SupplierProfileCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(
-                    height: 8,
-                  ),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.star,
-                        color: Color(
-                          0xFFFFB703,
-                        ),
-                        size: 16,
-                      ),
-                      const SizedBox(
-                        width: 5,
-                      ),
-                      Text(
-                        '${supplier.rating.toStringAsFixed(1)} (${supplier.reviews} review${supplier.reviews == 1 ? '' : 's'})',
-                        style: const TextStyle(
-                          color: Color(
-                            0xFF52677A,
-                          ),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(
-                    height: 8,
-                  ),
+                  const SizedBox(height: 8),
                   Text(
                     supplier.description,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      color: Color(
-                        0xFF52677A,
-                      ),
+                      color: Color(0xFF52677A),
                       fontSize: 12,
                       height: 1.4,
                     ),
                   ),
-                  const SizedBox(
-                    height: 14,
-                  ),
+                  const SizedBox(height: 14),
                   Row(
                     children: [
                       Container(
@@ -263,96 +218,74 @@ class SupplierProfileCard extends StatelessWidget {
                           vertical: 7,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(
-                            0xFFEAF7FB,
-                          ),
-                          borderRadius: BorderRadius.circular(
-                            14,
-                          ),
+                          color: const Color(0xFFEAF7FB),
+                          borderRadius: BorderRadius.circular(14),
                         ),
                         child: const Row(
                           children: [
                             Icon(
                               Icons.cloud_done,
-                              color: Color(
-                                0xFF146BFF,
-                              ),
+                              color: Color(0xFF146BFF),
                               size: 15,
                             ),
-                            SizedBox(
-                              width: 5,
-                            ),
+                            SizedBox(width: 5),
                             Text(
-                              'Firebase profile',
+                              'Firebase',
                               style: TextStyle(
-                                color: Color(
-                                  0xFF146BFF,
-                                ),
+                                color: Color(0xFF146BFF),
                                 fontSize: 11,
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(
-                        width: 8,
-                      ),
+                      const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 10,
                           vertical: 7,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(
-                            0xFFFFF4E8,
-                          ),
-                          borderRadius: BorderRadius.circular(
-                            14,
-                          ),
+                          color: const Color(0xFFFFF4E8),
+                          borderRadius: BorderRadius.circular(14),
                         ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.payments,
-                              color: Color(
-                                0xFFFF7A1A,
-                              ),
-                              size: 15,
-                            ),
-                            const SizedBox(
-                              width: 5,
-                            ),
-                            Text(
-                              paymentMethod,
-                              style: const TextStyle(
-                                color: Color(
-                                  0xFFFF7A1A,
-                                ),
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
+                        child: Text(
+                          paymentMethod,
+                          style: const TextStyle(
+                            color: Color(0xFFFF7A1A),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                       ),
                       const Spacer(),
-                      Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          color: const Color(
-                            0xFF146BFF,
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.star,
+                            color: Color(0xFFFFB703),
+                            size: 17,
                           ),
-                          borderRadius: BorderRadius.circular(
-                            14,
+                          const SizedBox(width: 3),
+                          Text(
+                            supplier.rating.toStringAsFixed(1),
+                            style: const TextStyle(
+                              color: Color(0xFF102C44),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
-                        ),
-                        child: const Icon(
-                          Icons.arrow_forward,
-                          color: Colors.white,
-                          size: 19,
-                        ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '(${supplier.reviews})',
+                            style: const TextStyle(
+                              color: Color(0xFF7B8FA3),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

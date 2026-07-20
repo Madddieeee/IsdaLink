@@ -4,90 +4,34 @@ import 'package:firebase_auth/firebase_auth.dart';
 class AdminDashboardService {
   const AdminDashboardService();
 
-  Stream<
-    QuerySnapshot<
-      Map<
-        String,
-        dynamic
-      >
-    >
-  >
-  get usersStream {
-    return FirebaseFirestore.instance
-        .collection(
-          'users',
-        )
-        .snapshots();
+  Stream<QuerySnapshot<Map<String, dynamic>>> get usersStream {
+    return FirebaseFirestore.instance.collection('users').snapshots();
   }
 
-  Stream<
-    QuerySnapshot<
-      Map<
-        String,
-        dynamic
-      >
-    >
-  >
-  get supplierProfilesStream {
-    return FirebaseFirestore.instance
-        .collection(
-          'supplierProfiles',
-        )
-        .snapshots();
+  Stream<QuerySnapshot<Map<String, dynamic>>> get supplierProfilesStream {
+    return FirebaseFirestore.instance.collection('supplierProfiles').snapshots();
   }
 
-  Stream<
-    QuerySnapshot<
-      Map<
-        String,
-        dynamic
-      >
-    >
-  >
-  get fishStocksStream {
-    return FirebaseFirestore.instance
-        .collection(
-          'fishStocks',
-        )
-        .snapshots();
+  Stream<QuerySnapshot<Map<String, dynamic>>> get fishStocksStream {
+    return FirebaseFirestore.instance.collection('fishStocks').snapshots();
   }
 
-  Stream<
-    QuerySnapshot<
-      Map<
-        String,
-        dynamic
-      >
-    >
-  >
-  get ordersStream {
-    return FirebaseFirestore.instance
-        .collection(
-          'orders',
-        )
-        .snapshots();
+  Stream<QuerySnapshot<Map<String, dynamic>>> get ordersStream {
+    return FirebaseFirestore.instance.collection('orders').snapshots();
   }
 
-  Future<
-    void
-  >
-  logout() async {
+  Future<void> logout() async {
     await FirebaseAuth.instance.signOut();
   }
 
   String getStringValue(
-    Map<
-      String,
-      dynamic
-    >
-    data,
+    Map<String, dynamic> data,
     String key,
     String fallback,
   ) {
     final value = data[key];
 
-    if (value ==
-        null) {
+    if (value == null) {
       return fallback;
     }
 
@@ -100,89 +44,40 @@ class AdminDashboardService {
     return text;
   }
 
-  List<
-    QueryDocumentSnapshot<
-      Map<
-        String,
-        dynamic
-      >
-    >
-  >
-  pendingSuppliers(
-    List<
-      QueryDocumentSnapshot<
-        Map<
-          String,
-          dynamic
-        >
-      >
-    >
-    suppliers,
+  List<QueryDocumentSnapshot<Map<String, dynamic>>> pendingSuppliers(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> suppliers,
   ) {
     return suppliers.where(
-      (
-        document,
-      ) {
+      (document) {
         final status = getStringValue(
           document.data(),
           'status',
           'pending',
         ).toLowerCase();
 
-        return status ==
-            'pending';
+        return status == 'pending';
       },
     ).toList();
   }
 
-  List<
-    QueryDocumentSnapshot<
-      Map<
-        String,
-        dynamic
-      >
-    >
-  >
-  approvedSuppliers(
-    List<
-      QueryDocumentSnapshot<
-        Map<
-          String,
-          dynamic
-        >
-      >
-    >
-    suppliers,
+  List<QueryDocumentSnapshot<Map<String, dynamic>>> approvedSuppliers(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> suppliers,
   ) {
     return suppliers.where(
-      (
-        document,
-      ) {
+      (document) {
         final status = getStringValue(
           document.data(),
           'status',
           'pending',
         ).toLowerCase();
 
-        return status ==
-                'approved' ||
-            status ==
-                'active';
+        return status == 'approved' || status == 'active';
       },
     ).toList();
   }
 
-  Future<
-    void
-  >
-  approveSupplier(
-    QueryDocumentSnapshot<
-      Map<
-        String,
-        dynamic
-      >
-    >
-    supplierDocument,
+  Future<void> approveSupplier(
+    QueryDocumentSnapshot<Map<String, dynamic>> supplierDocument,
   ) async {
     final data = supplierDocument.data();
 
@@ -194,20 +89,9 @@ class AdminDashboardService {
 
     final batch = FirebaseFirestore.instance.batch();
 
-    final userRef = FirebaseFirestore.instance
-        .collection(
-          'users',
-        )
-        .doc(
-          uid,
-        );
-    final supplierRef = FirebaseFirestore.instance
-        .collection(
-          'supplierProfiles',
-        )
-        .doc(
-          uid,
-        );
+    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
+    final supplierRef =
+        FirebaseFirestore.instance.collection('supplierProfiles').doc(uid);
 
     batch.set(
       userRef,
@@ -216,37 +100,26 @@ class AdminDashboardService {
         'supplierStatus': 'approved',
         'updatedAt': FieldValue.serverTimestamp(),
       },
-      SetOptions(
-        merge: true,
-      ),
+      SetOptions(merge: true),
     );
 
     batch.set(
       supplierRef,
       {
         'status': 'approved',
+        'verificationStatus': 'approved',
         'approvedAt': FieldValue.serverTimestamp(),
+        'verifiedAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       },
-      SetOptions(
-        merge: true,
-      ),
+      SetOptions(merge: true),
     );
 
     await batch.commit();
   }
 
-  Future<
-    void
-  >
-  rejectSupplier(
-    QueryDocumentSnapshot<
-      Map<
-        String,
-        dynamic
-      >
-    >
-    supplierDocument,
+  Future<void> rejectSupplier(
+    QueryDocumentSnapshot<Map<String, dynamic>> supplierDocument,
   ) async {
     final data = supplierDocument.data();
 
@@ -258,20 +131,9 @@ class AdminDashboardService {
 
     final batch = FirebaseFirestore.instance.batch();
 
-    final userRef = FirebaseFirestore.instance
-        .collection(
-          'users',
-        )
-        .doc(
-          uid,
-        );
-    final supplierRef = FirebaseFirestore.instance
-        .collection(
-          'supplierProfiles',
-        )
-        .doc(
-          uid,
-        );
+    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
+    final supplierRef =
+        FirebaseFirestore.instance.collection('supplierProfiles').doc(uid);
 
     batch.set(
       userRef,
@@ -280,21 +142,18 @@ class AdminDashboardService {
         'supplierStatus': 'rejected',
         'updatedAt': FieldValue.serverTimestamp(),
       },
-      SetOptions(
-        merge: true,
-      ),
+      SetOptions(merge: true),
     );
 
     batch.set(
       supplierRef,
       {
         'status': 'rejected',
+        'verificationStatus': 'rejected',
         'rejectedAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       },
-      SetOptions(
-        merge: true,
-      ),
+      SetOptions(merge: true),
     );
 
     await batch.commit();

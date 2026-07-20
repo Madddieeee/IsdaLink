@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:isdalink/screens/profile/manage_profile_screen.dart';
 import 'package:isdalink/screens/profile/widgets/me_header.dart';
 import 'package:isdalink/screens/profile/widgets/me_loading_body.dart';
 import 'package:isdalink/screens/profile/widgets/me_menu_tile.dart';
@@ -9,9 +10,7 @@ import 'package:isdalink/screens/supplier/supplier_dashboard_screen.dart';
 import 'package:isdalink/screens/welcome_screen.dart';
 import 'package:isdalink/services/user_profile_service.dart';
 
-class MeScreen
-    extends
-        StatelessWidget {
+class MeScreen extends StatelessWidget {
   const MeScreen({
     super.key,
   });
@@ -23,20 +22,12 @@ class MeScreen
     String message, {
     bool isError = false,
   }) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(
+    ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          message,
-        ),
+        content: Text(message),
         backgroundColor: isError
-            ? const Color(
-                0xFFD32F2F,
-              )
-            : const Color(
-                0xFF2E7D32,
-              ),
+            ? const Color(0xFFD32F2F)
+            : const Color(0xFF2E7D32),
       ),
     );
   }
@@ -47,10 +38,7 @@ class MeScreen
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder:
-            (
-              _,
-            ) => const SupplierDashboardScreen(),
+        builder: (_) => const SupplierDashboardScreen(),
       ),
     );
   }
@@ -61,18 +49,25 @@ class MeScreen
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder:
-            (
-              _,
-            ) => const SupplierActivationScreen(),
+        builder: (_) => const SupplierActivationScreen(),
       ),
     );
   }
 
-  Future<
-    void
-  >
-  logout(
+  void openManageProfile(
+    BuildContext context,
+  ) {
+    ScaffoldMessenger.of(context).clearSnackBars();
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const ManageProfileScreen(),
+      ),
+    );
+  }
+
+  Future<void> logout(
     BuildContext context,
   ) async {
     await profileService.logout();
@@ -84,30 +79,19 @@ class MeScreen
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
-        builder:
-            (
-              _,
-            ) => const WelcomeScreen(),
+        builder: (_) => const WelcomeScreen(),
       ),
-      (
-        route,
-      ) => false,
+      (route) => false,
     );
   }
 
   Widget bodyContent(
     BuildContext context,
-    Map<
-      String,
-      dynamic
-    >?
-    profileData,
+    Map<String, dynamic>? profileData,
   ) {
     final user = profileService.currentUser;
 
-    final fallbackName =
-        user?.displayName?.trim().isNotEmpty ==
-            true
+    final fallbackName = user?.displayName?.trim().isNotEmpty == true
         ? user!.displayName!.trim()
         : 'IsdaLink User';
 
@@ -134,29 +118,20 @@ class MeScreen
         .toLowerCase();
 
     final canOpenSupplierDashboard =
-        role ==
-            'supplier' ||
-        supplierStatus ==
-            'approved';
+        role == 'supplier' || supplierStatus == 'approved';
 
-    final isPendingSupplier =
-        supplierStatus ==
-        'pending';
+    final isPendingSupplier = supplierStatus == 'pending';
 
     return Column(
       children: [
         MeHeader(
           name: name,
           supplierStatus: supplierStatus,
-          onBack: () => Navigator.pop(
-            context,
-          ),
+          onBack: () => Navigator.pop(context),
         ),
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.all(
-              18,
-            ),
+            padding: const EdgeInsets.all(18),
             children: [
               ProfileStatusCard(
                 supplierStatus: supplierStatus,
@@ -165,22 +140,18 @@ class MeScreen
                 MeMenuTile(
                   icon: Icons.dashboard_customize,
                   title: 'Supplier Dashboard',
-                  subtitle: 'Open approved supplier tools for stocks, COD orders, and analytics.',
-                  iconColor: const Color(
-                    0xFF7B61FF,
-                  ),
-                  onTap: () => openSupplierDashboard(
-                    context,
-                  ),
+                  subtitle:
+                      'Open approved supplier tools for stocks, COD orders, and analytics.',
+                  iconColor: const Color(0xFF7B61FF),
+                  onTap: () => openSupplierDashboard(context),
                 )
               else if (isPendingSupplier)
                 MeMenuTile(
                   icon: Icons.hourglass_top,
                   title: 'Supplier Application Pending',
-                  subtitle: 'Admin approval is required before supplier tools become available.',
-                  iconColor: const Color(
-                    0xFFFF7A1A,
-                  ),
+                  subtitle:
+                      'Admin approval is required before supplier tools become available.',
+                  iconColor: const Color(0xFFFF7A1A),
                   onTap: () {
                     showMessage(
                       context,
@@ -194,31 +165,19 @@ class MeScreen
                   icon: Icons.inventory_2,
                   title: 'Become a Supplier',
                   subtitle: 'Submit store details for admin approval.',
-                  onTap: () => openSupplierApplication(
-                    context,
-                  ),
+                  onTap: () => openSupplierApplication(context),
                 ),
               MeMenuTile(
                 icon: Icons.person_outline,
                 title: 'Account Information',
                 subtitle: 'View or update your profile information.',
-                onTap: () {
-                  showMessage(
-                    context,
-                    'Account information coming soon',
-                  );
-                },
+                onTap: () => openManageProfile(context),
               ),
               MeMenuTile(
                 icon: Icons.location_on_outlined,
                 title: 'Region and Location',
                 subtitle: 'Manage your market location and service area.',
-                onTap: () {
-                  showMessage(
-                    context,
-                    'Location settings coming soon',
-                  );
-                },
+                onTap: () => openManageProfile(context),
               ),
               MeMenuTile(
                 icon: Icons.help_outline,
@@ -235,12 +194,8 @@ class MeScreen
                 icon: Icons.logout,
                 title: 'Logout',
                 subtitle: 'Return to the welcome screen.',
-                iconColor: const Color(
-                  0xFFD32F2F,
-                ),
-                onTap: () => logout(
-                  context,
-                ),
+                iconColor: const Color(0xFFD32F2F),
+                onTap: () => logout(context),
               ),
             ],
           ),
@@ -255,12 +210,9 @@ class MeScreen
   ) {
     final stream = profileService.profileStream();
 
-    if (stream ==
-        null) {
+    if (stream == null) {
       return Scaffold(
-        backgroundColor: const Color(
-          0xFFF4F8FB,
-        ),
+        backgroundColor: const Color(0xFFF4F8FB),
         body: bodyContent(
           context,
           null,
@@ -269,34 +221,20 @@ class MeScreen
     }
 
     return Scaffold(
-      backgroundColor: const Color(
-        0xFFF4F8FB,
-      ),
-      body:
-          StreamBuilder<
-            DocumentSnapshot<
-              Map<
-                String,
-                dynamic
-              >
-            >
-          >(
-            stream: stream,
-            builder:
-                (
-                  context,
-                  snapshot,
-                ) {
-                  if (!snapshot.hasData) {
-                    return const MeLoadingBody();
-                  }
+      backgroundColor: const Color(0xFFF4F8FB),
+      body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+        stream: stream,
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const MeLoadingBody();
+          }
 
-                  return bodyContent(
-                    context,
-                    snapshot.data?.data(),
-                  );
-                },
-          ),
+          return bodyContent(
+            context,
+            snapshot.data?.data(),
+          );
+        },
+      ),
     );
   }
 }

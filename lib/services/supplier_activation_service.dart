@@ -3,44 +3,49 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class SupplierApplicationInput {
   const SupplierApplicationInput({
-    required this.businessName,
-    required this.marketLocation,
+    required this.ownerName,
+    required this.ownerAddress,
+    required this.email,
     required this.contactNumber,
-    required this.supplierType,
+    required this.businessName,
+    required this.storeLocation,
+    required this.serviceArea,
+    required this.storeDescription,
     required this.supportedUnits,
+    required this.businessPermitNumber,
+    required this.businessPermitUrl,
+    required this.storePhotoUrl,
   });
 
-  final String businessName;
-  final String marketLocation;
+  final String ownerName;
+  final String ownerAddress;
+  final String email;
   final String contactNumber;
-  final String supplierType;
-  final List<
-    String
-  >
-  supportedUnits;
+  final String businessName;
+  final String storeLocation;
+  final String serviceArea;
+  final String storeDescription;
+  final List<String> supportedUnits;
+  final String businessPermitNumber;
+  final String businessPermitUrl;
+  final String storePhotoUrl;
 }
 
 class SupplierActivationService {
   const SupplierActivationService();
 
   String getStringValue(
-    Map<
-      String,
-      dynamic
-    >?
-    data,
+    Map<String, dynamic>? data,
     String key,
     String fallback,
   ) {
-    if (data ==
-        null) {
+    if (data == null) {
       return fallback;
     }
 
     final value = data[key];
 
-    if (value ==
-        null) {
+    if (value == null) {
       return fallback;
     }
 
@@ -53,28 +58,17 @@ class SupplierActivationService {
     return text;
   }
 
-  Future<
-    void
-  >
-  submitSupplierApplication({
+  Future<void> submitSupplierApplication({
     required User user,
     required SupplierApplicationInput input,
   }) async {
     final userReference = FirebaseFirestore.instance
-        .collection(
-          'users',
-        )
-        .doc(
-          user.uid,
-        );
+        .collection('users')
+        .doc(user.uid);
 
     final supplierProfileReference = FirebaseFirestore.instance
-        .collection(
-          'supplierProfiles',
-        )
-        .doc(
-          user.uid,
-        );
+        .collection('supplierProfiles')
+        .doc(user.uid);
 
     final userDocument = await userReference.get();
     final userData = userDocument.data();
@@ -85,78 +79,93 @@ class SupplierActivationService {
       'not_applicable',
     ).toLowerCase();
 
-    if (currentSupplierStatus ==
-        'approved') {
+    if (currentSupplierStatus == 'approved') {
       throw Exception(
         'This account is already approved as a supplier.',
       );
     }
 
-    final ownerName = getStringValue(
-      userData,
-      'name',
-      user.displayName ??
-          user.email ??
-          'Registered User',
-    );
-
-    final email = getStringValue(
-      userData,
-      'email',
-      user.email ??
-          '',
-    );
+    if (currentSupplierStatus == 'pending') {
+      throw Exception(
+        'This account already has a pending supplier application.',
+      );
+    }
 
     final applicationData = {
-      'storeName': input.businessName,
-      'supplierName': input.businessName,
-      'supplierType': input.supplierType,
+      'ownerName': input.ownerName,
+      'ownerAddress': input.ownerAddress,
+      'email': input.email,
       'contactNumber': input.contactNumber,
       'phone': input.contactNumber,
-      'location': input.marketLocation,
-      'description': '${input.supplierType} applying to sell fish supply through IsdaLink.',
+      'storeName': input.businessName,
+      'supplierName': input.businessName,
+      'businessName': input.businessName,
+      'supplierType': 'Fish Supplier',
+      'location': input.storeLocation,
+      'storeLocation': input.storeLocation,
+      'serviceArea': input.serviceArea,
+      'description': input.storeDescription,
       'supportedUnits': input.supportedUnits,
+      'businessPermitNumber': input.businessPermitNumber,
+      'businessPermitUrl': input.businessPermitUrl,
+      'storePhotoUrl': input.storePhotoUrl,
+      'profileImageUrl': input.storePhotoUrl,
+      'hasBusinessPermit': true,
+      'hasStorePhoto': true,
+      'verificationStatus': 'pending',
       'paymentMethod': 'COD',
       'submittedAt': FieldValue.serverTimestamp(),
     };
 
     await FirebaseFirestore.instance.runTransaction(
-      (
-        transaction,
-      ) async {
+      (transaction) async {
         transaction.set(
           supplierProfileReference,
           {
             'uid': user.uid,
             'supplierName': input.businessName,
-            'ownerName': ownerName,
-            'email': email,
+            'storeName': input.businessName,
+            'businessName': input.businessName,
+            'supplierType': 'Fish Supplier',
+            'ownerName': input.ownerName,
+            'ownerAddress': input.ownerAddress,
+            'email': input.email,
             'phone': input.contactNumber,
             'contactNumber': input.contactNumber,
-            'location': input.marketLocation,
-            'description': '${input.supplierType} applying to sell fish supply through IsdaLink.',
-            'supplierType': input.supplierType,
+            'location': input.storeLocation,
+            'storeLocation': input.storeLocation,
+            'serviceArea': input.serviceArea,
+            'description': input.storeDescription,
             'supportedUnits': input.supportedUnits,
+            'businessPermitNumber': input.businessPermitNumber,
+            'businessPermitUrl': input.businessPermitUrl,
+            'storePhotoUrl': input.storePhotoUrl,
+            'profileImageUrl': input.storePhotoUrl,
+            'hasBusinessPermit': true,
+            'hasStorePhoto': true,
+            'verificationStatus': 'pending',
             'paymentMethod': 'COD',
             'status': 'pending',
-            'updatedAt': FieldValue.serverTimestamp(),
+            'submittedAt': FieldValue.serverTimestamp(),
             'createdAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
           },
-          SetOptions(
-            merge: true,
-          ),
+          SetOptions(merge: true),
         );
 
         transaction.set(
           userReference,
           {
+            'name': input.ownerName,
+            'email': input.email,
+            'phone': input.contactNumber,
+            'location': input.storeLocation,
+            'region': 'Caraga Region',
             'supplierStatus': 'pending',
             'supplierApplication': applicationData,
             'updatedAt': FieldValue.serverTimestamp(),
           },
-          SetOptions(
-            merge: true,
-          ),
+          SetOptions(merge: true),
         );
       },
     );
