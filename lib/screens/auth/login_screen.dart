@@ -4,27 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:isdalink/screens/admin/admin_dashboard_screen.dart';
 import 'package:isdalink/screens/auth/register_screen.dart';
 import 'package:isdalink/screens/home/home_screen.dart';
-import 'package:isdalink/screens/supplier/supplier_dashboard_screen.dart';
 
-class LoginScreen
-    extends
-        StatefulWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({
     super.key,
   });
 
   @override
-  State<
-    LoginScreen
-  >
-  createState() => _LoginScreenState();
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState
-    extends
-        State<
-          LoginScreen
-        > {
+class _LoginScreenState extends State<LoginScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
@@ -44,25 +34,18 @@ class _LoginScreenState
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder:
-            (
-              _,
-            ) => const RegisterScreen(),
+        builder: (_) => const RegisterScreen(),
       ),
     );
   }
 
-  Future<
-    void
-  >
-  login(
+  Future<void> login(
     BuildContext context,
   ) async {
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
 
-    if (email.isEmpty ||
-        password.isEmpty) {
+    if (email.isEmpty || password.isEmpty) {
       showMessage(
         'Please enter your email and password.',
         isError: true,
@@ -70,11 +53,9 @@ class _LoginScreenState
       return;
     }
 
-    setState(
-      () {
-        isLoading = true;
-      },
-    );
+    setState(() {
+      isLoading = true;
+    });
 
     try {
       final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
@@ -84,8 +65,7 @@ class _LoginScreenState
 
       final user = credential.user;
 
-      if (user ==
-          null) {
+      if (user == null) {
         showMessage(
           'Login failed. Please try again.',
           isError: true,
@@ -94,105 +74,55 @@ class _LoginScreenState
       }
 
       final userDoc = await FirebaseFirestore.instance
-          .collection(
-            'users',
-          )
-          .doc(
-            user.uid,
-          )
+          .collection('users')
+          .doc(user.uid)
           .get();
 
       final userData = userDoc.data();
 
-      final role =
-          (userData?['role'] ??
-                  'vendor')
-              .toString()
-              .toLowerCase();
+      final role = (userData?['role'] ?? 'vendor').toString().toLowerCase();
 
-      final supplierStatus =
-          (userData?['supplierStatus'] ??
-                  'not_applicable')
-              .toString()
-              .toLowerCase();
+      if (!context.mounted) {
+        return;
+      }
 
-      if (!context.mounted) return;
-
-      if (role ==
-          'admin') {
+      if (role == 'admin') {
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
-            builder:
-                (
-                  _,
-                ) => const AdminDashboardScreen(),
+            builder: (_) => const AdminDashboardScreen(),
           ),
-          (
-            route,
-          ) => false,
-        );
-      } else if (role ==
-              'supplier' ||
-          supplierStatus ==
-              'approved') {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-            builder:
-                (
-                  _,
-                ) => const SupplierDashboardScreen(),
-          ),
-          (
-            route,
-          ) => false,
+          (route) => false,
         );
       } else {
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
-            builder:
-                (
-                  _,
-                ) => const HomeScreen(),
+            builder: (_) => const HomeScreen(),
           ),
-          (
-            route,
-          ) => false,
+          (route) => false,
         );
       }
-    } on FirebaseAuthException catch (
-      error
-    ) {
+    } on FirebaseAuthException catch (error) {
       showMessage(
-        authErrorMessage(
-          error,
-        ),
+        authErrorMessage(error),
         isError: true,
       );
-    } catch (
-      error
-    ) {
+    } catch (error) {
       showMessage(
         'Login failed: $error',
         isError: true,
       );
     } finally {
       if (mounted) {
-        setState(
-          () {
-            isLoading = false;
-          },
-        );
+        setState(() {
+          isLoading = false;
+        });
       }
     }
   }
 
-  Future<
-    void
-  >
-  resetPassword() async {
+  Future<void> resetPassword() async {
     final email = emailController.text.trim();
 
     if (email.isEmpty) {
@@ -211,18 +141,12 @@ class _LoginScreenState
       showMessage(
         'Password reset email sent. Please check your inbox.',
       );
-    } on FirebaseAuthException catch (
-      error
-    ) {
+    } on FirebaseAuthException catch (error) {
       showMessage(
-        authErrorMessage(
-          error,
-        ),
+        authErrorMessage(error),
         isError: true,
       );
-    } catch (
-      error
-    ) {
+    } catch (error) {
       showMessage(
         'Failed to send reset email: $error',
         isError: true,
@@ -247,8 +171,7 @@ class _LoginScreenState
       case 'network-request-failed':
         return 'Network error. Please check your internet connection.';
       default:
-        return error.message ??
-            'Authentication failed.';
+        return error.message ?? 'Authentication failed.';
     }
   }
 
@@ -256,22 +179,16 @@ class _LoginScreenState
     String message, {
     bool isError = false,
   }) {
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(
+    ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          message,
-        ),
+        content: Text(message),
         backgroundColor: isError
-            ? const Color(
-                0xFFD32F2F,
-              )
-            : const Color(
-                0xFF2E7D32,
-              ),
+            ? const Color(0xFFD32F2F)
+            : const Color(0xFF2E7D32),
       ),
     );
   }
@@ -284,44 +201,30 @@ class _LoginScreenState
     return InputDecoration(
       hintText: hint,
       hintStyle: const TextStyle(
-        color: Color(
-          0xFFCAD6E0,
-        ),
+        color: Color(0xFFCAD6E0),
         fontSize: 14,
       ),
       prefixIcon: Icon(
         icon,
-        color: const Color(
-          0xFFCAD6E0,
-        ),
+        color: const Color(0xFFCAD6E0),
       ),
       suffixIcon: suffixIcon,
       filled: true,
-      fillColor: const Color(
-        0x332E4050,
-      ),
+      fillColor: const Color(0x332E4050),
       contentPadding: const EdgeInsets.symmetric(
         vertical: 15,
         horizontal: 16,
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(
-          12,
-        ),
+        borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(
-          color: Color(
-            0x33FFFFFF,
-          ),
+          color: Color(0x33FFFFFF),
         ),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(
-          12,
-        ),
+        borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(
-          color: Color(
-            0xFF146BFF,
-          ),
+          color: Color(0xFF146BFF),
           width: 1.5,
         ),
       ),
@@ -343,9 +246,7 @@ class _LoginScreenState
           ),
           Positioned.fill(
             child: Container(
-              color: const Color(
-                0xCC061827,
-              ),
+              color: const Color(0xCC061827),
             ),
           ),
           Positioned.fill(
@@ -355,15 +256,9 @@ class _LoginScreenState
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Color(
-                      0x33102C44,
-                    ),
-                    Color(
-                      0xDD061827,
-                    ),
-                    Color(
-                      0xFF020712,
-                    ),
+                    Color(0x33102C44),
+                    Color(0xDD061827),
+                    Color(0xFF020712),
                   ],
                 ),
               ),
@@ -382,22 +277,13 @@ class _LoginScreenState
                       width: 58,
                       height: 58,
                       decoration: BoxDecoration(
-                        color: const Color(
-                          0xFF146BFF,
-                        ),
-                        borderRadius: BorderRadius.circular(
-                          14,
-                        ),
+                        color: const Color(0xFF146BFF),
+                        borderRadius: BorderRadius.circular(14),
                         boxShadow: const [
                           BoxShadow(
-                            color: Color(
-                              0x73146BFF,
-                            ),
+                            color: Color(0x73146BFF),
                             blurRadius: 18,
-                            offset: Offset(
-                              0,
-                              6,
-                            ),
+                            offset: Offset(0, 6),
                           ),
                         ],
                       ),
@@ -407,9 +293,7 @@ class _LoginScreenState
                         size: 32,
                       ),
                     ),
-                    const SizedBox(
-                      height: 14,
-                    ),
+                    const SizedBox(height: 14),
                     const Text(
                       'IsdaLink',
                       style: TextStyle(
@@ -419,23 +303,17 @@ class _LoginScreenState
                         letterSpacing: 0.2,
                       ),
                     ),
-                    const SizedBox(
-                      height: 3,
-                    ),
+                    const SizedBox(height: 3),
                     const Text(
                       'FRESH CATCH, DIRECT SOURCE',
                       style: TextStyle(
-                        color: Color(
-                          0xFFC9D7E5,
-                        ),
+                        color: Color(0xFFC9D7E5),
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.2,
                       ),
                     ),
-                    const SizedBox(
-                      height: 36,
-                    ),
+                    const SizedBox(height: 36),
                     TextField(
                       controller: emailController,
                       style: const TextStyle(
@@ -447,9 +325,7 @@ class _LoginScreenState
                         icon: Icons.email_outlined,
                       ),
                     ),
-                    const SizedBox(
-                      height: 14,
-                    ),
+                    const SizedBox(height: 14),
                     TextField(
                       controller: passwordController,
                       style: const TextStyle(
@@ -461,46 +337,34 @@ class _LoginScreenState
                         icon: Icons.lock_outline,
                         suffixIcon: IconButton(
                           onPressed: () {
-                            setState(
-                              () {
-                                obscurePassword = !obscurePassword;
-                              },
-                            );
+                            setState(() {
+                              obscurePassword = !obscurePassword;
+                            });
                           },
                           icon: Icon(
                             obscurePassword
                                 ? Icons.visibility
                                 : Icons.visibility_off,
-                            color: const Color(
-                              0xFFCAD6E0,
-                            ),
+                            color: const Color(0xFFCAD6E0),
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(
-                      height: 8,
-                    ),
+                    const SizedBox(height: 8),
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: isLoading
-                            ? null
-                            : resetPassword,
+                        onPressed: isLoading ? null : resetPassword,
                         child: const Text(
                           'Forgot password?',
                           style: TextStyle(
-                            color: Color(
-                              0xFF7DB2FF,
-                            ),
+                            color: Color(0xFF7DB2FF),
                             fontSize: 12,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(
-                      height: 8,
-                    ),
+                    const SizedBox(height: 8),
                     SizedBox(
                       width: double.infinity,
                       height: 48,
@@ -508,24 +372,16 @@ class _LoginScreenState
                         onPressed: isLoading
                             ? null
                             : () => login(
-                                context,
-                              ),
+                                  context,
+                                ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(
-                            0xFF146BFF,
-                          ),
+                          backgroundColor: const Color(0xFF146BFF),
                           foregroundColor: Colors.white,
-                          disabledBackgroundColor: const Color(
-                            0xFF7B8FA3,
-                          ),
+                          disabledBackgroundColor: const Color(0xFF7B8FA3),
                           elevation: 6,
-                          shadowColor: const Color(
-                            0x73146BFF,
-                          ),
+                          shadowColor: const Color(0x73146BFF),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              12,
-                            ),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
                         child: isLoading
@@ -546,18 +402,14 @@ class _LoginScreenState
                               ),
                       ),
                     ),
-                    const SizedBox(
-                      height: 22,
-                    ),
+                    const SizedBox(height: 22),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const Text(
                           "Don't have an account? ",
                           style: TextStyle(
-                            color: Color(
-                              0xFFC9D7E5,
-                            ),
+                            color: Color(0xFFC9D7E5),
                             fontSize: 12,
                           ),
                         ),
@@ -565,14 +417,12 @@ class _LoginScreenState
                           onTap: isLoading
                               ? null
                               : () => goToRegister(
-                                  context,
-                                ),
+                                    context,
+                                  ),
                           child: const Text(
                             'Create Account',
                             style: TextStyle(
-                              color: Color(
-                                0xFF7DB2FF,
-                              ),
+                              color: Color(0xFF7DB2FF),
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                             ),
@@ -580,16 +430,12 @@ class _LoginScreenState
                         ),
                       ],
                     ),
-                    const SizedBox(
-                      height: 18,
-                    ),
+                    const SizedBox(height: 18),
                     const Text(
                       'Login is connected to Firebase Authentication and role routing.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Color(
-                          0xFF8FA8BD,
-                        ),
+                        color: Color(0xFF8FA8BD),
                         fontSize: 11,
                       ),
                     ),

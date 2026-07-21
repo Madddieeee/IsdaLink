@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:isdalink/screens/admin/widgets/admin_status_chip.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -446,16 +447,49 @@ class VerificationLinkButton extends StatelessWidget {
       return;
     }
 
-    final launched = await launchUrl(
-      uri,
-      mode: LaunchMode.externalApplication,
-    );
+    try {
+      final openedInWebView = await launchUrl(
+        uri,
+        mode: LaunchMode.inAppWebView,
+        webViewConfiguration: const WebViewConfiguration(
+          enableJavaScript: true,
+          enableDomStorage: true,
+        ),
+      );
 
-    if (!launched && context.mounted) {
+      if (openedInWebView) {
+        return;
+      }
+
+      await Clipboard.setData(
+        ClipboardData(
+          text: url.trim(),
+        ),
+      );
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not open link. Link copied instead.'),
+            backgroundColor: Color(0xFFFF7A1A),
+          ),
+        );
+      }
+    } catch (_) {
+      await Clipboard.setData(
+        ClipboardData(
+          text: url.trim(),
+        ),
+      );
+
+      if (!context.mounted) {
+        return;
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Could not open verification link.'),
-          backgroundColor: Color(0xFFD32F2F),
+          content: Text('Could not open link. Link copied instead.'),
+          backgroundColor: Color(0xFFFF7A1A),
         ),
       );
     }
@@ -497,9 +531,42 @@ class SupplierPhotoPreview extends StatelessWidget {
   final Color fallbackColor;
   final Color iconColor;
 
+  String get cleanedUrl {
+    return imageUrl.trim();
+  }
+
+  String get imagePreviewUrl {
+    final fileId = googleDriveFileId(cleanedUrl);
+
+    if (fileId.isNotEmpty) {
+      return 'https://drive.google.com/thumbnail?id=$fileId&sz=w1000';
+    }
+
+    return cleanedUrl;
+  }
+
+  String googleDriveFileId(
+    String url,
+  ) {
+    final filePattern = RegExp(r'/file/d/([^/]+)');
+    final fileMatch = filePattern.firstMatch(url);
+
+    if (fileMatch != null) {
+      return fileMatch.group(1) ?? '';
+    }
+
+    final uri = Uri.tryParse(url);
+
+    if (uri == null) {
+      return '';
+    }
+
+    return uri.queryParameters['id'] ?? '';
+  }
+
   bool get hasImage {
-    return imageUrl.trim().isNotEmpty &&
-        (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'));
+    return cleanedUrl.isNotEmpty &&
+        (cleanedUrl.startsWith('http://') || cleanedUrl.startsWith('https://'));
   }
 
   @override
@@ -514,7 +581,7 @@ class SupplierPhotoPreview extends StatelessWidget {
         color: fallbackColor,
         child: hasImage
             ? Image.network(
-                imageUrl,
+                imagePreviewUrl,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return Icon(

@@ -73,17 +73,6 @@ class _PostFishStockScreenState
   ];
 
   @override
-  void initState() {
-    super.initState();
-
-    productNameController.text = 'Bangus';
-    priceController.text = '180';
-    quantityController.text = '25';
-    lowStockController.text = '5';
-    descriptionController.text = 'Fresh fish stock available for vendor orders within Caraga Region.';
-  }
-
-  @override
   void dispose() {
     productNameController.dispose();
     priceController.dispose();
