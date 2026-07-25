@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
-class HomeBottomNav
-    extends
-        StatelessWidget {
+class HomeBottomNav extends StatelessWidget {
   const HomeBottomNav({
     super.key,
     required this.onMyOrders,
@@ -20,42 +18,43 @@ class HomeBottomNav
     required bool active,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            color: active
-                ? const Color(
-                    0xFF146BFF,
-                  )
-                : const Color(
-                    0xFF9AAABD,
-                  ),
-            size: 22,
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.symmetric(
+            vertical: 8,
+            horizontal: 4,
           ),
-          const SizedBox(
-            height: 4,
+          decoration: BoxDecoration(
+            color: active ? const Color(0xFFE6F9FF) : Colors.transparent,
+            borderRadius: BorderRadius.circular(18),
           ),
-          Text(
-            label,
-            style: TextStyle(
-              color: active
-                  ? const Color(
-                      0xFF146BFF,
-                    )
-                  : const Color(
-                      0xFF9AAABD,
-                    ),
-              fontSize: 10,
-              fontWeight: active
-                  ? FontWeight.bold
-                  : FontWeight.w500,
-            ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                color: active
+                    ? const Color(0xFF087AC0)
+                    : const Color(0xFF9AAABD),
+                size: 22,
+              ),
+              const SizedBox(height: 3),
+              Text(
+                label,
+                style: TextStyle(
+                  color: active
+                      ? const Color(0xFF087AC0)
+                      : const Color(0xFF9AAABD),
+                  fontSize: 10,
+                  fontWeight: active ? FontWeight.w900 : FontWeight.w600,
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -65,29 +64,20 @@ class HomeBottomNav
     BuildContext context,
   ) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 10,
-      ),
+      padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
       decoration: const BoxDecoration(
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Color(
-              0x14000000,
-            ),
+            color: Color(0x14000000),
             blurRadius: 14,
-            offset: Offset(
-              0,
-              -4,
-            ),
+            offset: Offset(0, -4),
           ),
         ],
       ),
       child: SafeArea(
         top: false,
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             bottomNavItem(
               icon: Icons.home,

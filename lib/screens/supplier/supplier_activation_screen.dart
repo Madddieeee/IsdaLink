@@ -1420,3 +1420,4 @@ class SummaryRow extends StatelessWidget {
     );
   }
 }
+  

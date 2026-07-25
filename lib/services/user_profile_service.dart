@@ -35,6 +35,121 @@ class UserProfileService {
   Future<
     void
   >
+  updateProfileImageUrl({
+    required String imageUrl,
+    required bool isApprovedSupplier,
+  }) async {
+    final user = currentUser;
+
+    if (user ==
+        null) {
+      throw Exception(
+        'Please log in first.',
+      );
+    }
+
+    await FirebaseFirestore.instance
+        .collection(
+          'users',
+        )
+        .doc(
+          user.uid,
+        )
+        .set(
+          {
+            'profileImageUrl': imageUrl,
+            'photoUrl': imageUrl,
+            'updatedAt': FieldValue.serverTimestamp(),
+          },
+          SetOptions(
+            merge: true,
+          ),
+        );
+
+    await user.updatePhotoURL(
+      imageUrl,
+    );
+
+    if (isApprovedSupplier) {
+      await FirebaseFirestore.instance
+          .collection(
+            'supplierProfiles',
+          )
+          .doc(
+            user.uid,
+          )
+          .set(
+            {
+              'profileImageUrl': imageUrl,
+              'updatedAt': FieldValue.serverTimestamp(),
+            },
+            SetOptions(
+              merge: true,
+            ),
+          );
+    }
+  }
+
+  Future<
+    void
+  >
+  removeProfileImageUrl({
+    required bool isApprovedSupplier,
+  }) async {
+    final user = currentUser;
+
+    if (user ==
+        null) {
+      throw Exception(
+        'Please log in first.',
+      );
+    }
+
+    await FirebaseFirestore.instance
+        .collection(
+          'users',
+        )
+        .doc(
+          user.uid,
+        )
+        .set(
+          {
+            'profileImageUrl': FieldValue.delete(),
+            'photoUrl': FieldValue.delete(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          },
+          SetOptions(
+            merge: true,
+          ),
+        );
+
+    await user.updatePhotoURL(
+      null,
+    );
+
+    if (isApprovedSupplier) {
+      await FirebaseFirestore.instance
+          .collection(
+            'supplierProfiles',
+          )
+          .doc(
+            user.uid,
+          )
+          .set(
+            {
+              'profileImageUrl': FieldValue.delete(),
+              'updatedAt': FieldValue.serverTimestamp(),
+            },
+            SetOptions(
+              merge: true,
+            ),
+          );
+    }
+  }
+
+  Future<
+    void
+  >
   logout() async {
     await FirebaseAuth.instance.signOut();
   }

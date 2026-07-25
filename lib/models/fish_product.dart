@@ -11,6 +11,7 @@ class FishProduct {
   final String quantityUnit;
   final double lowStockThreshold;
   final String emoji;
+  final String imageUrl;
 
   const FishProduct({
     required this.name,
@@ -22,7 +23,13 @@ class FishProduct {
     required this.quantityUnit,
     required this.lowStockThreshold,
     required this.emoji,
+    this.imageUrl = '',
   });
+
+  bool get hasImage {
+    return imageUrl.trim().isNotEmpty &&
+        (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'));
+  }
 
   String get stockStatus {
     if (availableQuantity <= 0) {

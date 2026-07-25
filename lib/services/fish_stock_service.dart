@@ -12,6 +12,7 @@ class FishStockInput {
     required this.price,
     required this.quantity,
     required this.lowStockLevel,
+    required this.productImageUrl,
   });
 
   final String productName;
@@ -22,48 +23,28 @@ class FishStockInput {
   final double price;
   final double quantity;
   final double lowStockLevel;
+  final String productImageUrl;
 }
 
 class FishStockService {
   const FishStockService();
 
-  Future<
-    void
-  >
-  createFishStockPost({
+  Future<void> createFishStockPost({
     required User user,
     required FishStockInput input,
   }) async {
     final userDocument = await FirebaseFirestore.instance
-        .collection(
-          'users',
-        )
-        .doc(
-          user.uid,
-        )
+        .collection('users')
+        .doc(user.uid)
         .get();
 
     final supplierProfileDocument = await FirebaseFirestore.instance
-        .collection(
-          'supplierProfiles',
-        )
-        .doc(
-          user.uid,
-        )
+        .collection('supplierProfiles')
+        .doc(user.uid)
         .get();
 
-    final userData =
-        userDocument.data() ??
-        <
-          String,
-          dynamic
-        >{};
-    final supplierProfileData =
-        supplierProfileDocument.data() ??
-        <
-          String,
-          dynamic
-        >{};
+    final userData = userDocument.data() ?? <String, dynamic>{};
+    final supplierProfileData = supplierProfileDocument.data() ?? <String, dynamic>{};
 
     final role = OrderHelpers.getStringValue(
       userData,
@@ -77,13 +58,8 @@ class FishStockService {
       'not_applicable',
     ).toLowerCase();
 
-    if (role !=
-            'supplier' &&
-        supplierStatus !=
-            'approved') {
-      throw Exception(
-        'Supplier approval is required before posting fish stock.',
-      );
+    if (role != 'supplier' && supplierStatus != 'approved') {
+      throw Exception('Supplier approval is required before posting fish stock.');
     }
 
     final supplierName = OrderHelpers.getStringValue(
@@ -92,9 +68,7 @@ class FishStockService {
       OrderHelpers.getStringValue(
         userData,
         'name',
-        user.displayName ??
-            user.email ??
-            'Registered Supplier',
+        user.displayName ?? user.email ?? 'Registered Supplier',
       ),
     );
 
@@ -110,39 +84,30 @@ class FishStockService {
       OrderHelpers.getStringValue(
         supplierProfileData,
         'contactNumber',
-        OrderHelpers.getStringValue(
-          userData,
-          'phone',
-          '',
-        ),
+        OrderHelpers.getStringValue(userData, 'phone', ''),
       ),
     );
 
-    await FirebaseFirestore.instance
-        .collection(
-          'fishStocks',
-        )
-        .add(
-          {
-            'productName': input.productName,
-            'category': input.category,
-            'description': input.description,
-            'emoji': input.emoji,
-            'price': input.price,
-            'priceUnit': 'per ${input.unit}',
-            'quantity': input.quantity,
-            'quantityUnit': input.unit,
-            'lowStockLevel': input.lowStockLevel,
-            'paymentMethod': 'COD',
-            'supplierId': user.uid,
-            'supplierName': supplierName,
-            'supplierLocation': supplierLocation,
-            'supplierContactNumber': supplierContactNumber,
-            'region': 'Caraga Region',
-            'status': 'available',
-            'createdAt': FieldValue.serverTimestamp(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
-        );
+    await FirebaseFirestore.instance.collection('fishStocks').add({
+      'productName': input.productName,
+      'category': input.category,
+      'description': input.description,
+      'emoji': input.emoji,
+      'productImageUrl': input.productImageUrl,
+      'price': input.price,
+      'priceUnit': 'per ${input.unit}',
+      'quantity': input.quantity,
+      'quantityUnit': input.unit,
+      'lowStockLevel': input.lowStockLevel,
+      'paymentMethod': 'COD',
+      'supplierId': user.uid,
+      'supplierName': supplierName,
+      'supplierLocation': supplierLocation,
+      'supplierContactNumber': supplierContactNumber,
+      'region': 'Caraga Region',
+      'status': 'available',
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
   }
 }

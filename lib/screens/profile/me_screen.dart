@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:isdalink/config/cloudinary_config.dart';
 import 'package:isdalink/screens/analytics/analytics_screen.dart';
 import 'package:isdalink/screens/profile/manage_profile_screen.dart';
 import 'package:isdalink/screens/supplier/post_fish_stock_screen.dart';
@@ -10,6 +12,7 @@ import 'package:isdalink/screens/supplier/supplier_manage_products_screen.dart';
 import 'package:isdalink/screens/vendor/browse_suppliers_screen.dart';
 import 'package:isdalink/screens/vendor/my_orders_screen.dart';
 import 'package:isdalink/screens/welcome_screen.dart';
+import 'package:isdalink/services/cloudinary_upload_service.dart';
 import 'package:isdalink/services/user_profile_service.dart';
 
 class MeScreen extends StatefulWidget {
@@ -23,8 +26,12 @@ class MeScreen extends StatefulWidget {
 
 class _MeScreenState extends State<MeScreen> {
   final UserProfileService profileService = const UserProfileService();
+  final CloudinaryUploadService cloudinaryUploadService =
+      const CloudinaryUploadService();
+  final ImagePicker imagePicker = ImagePicker();
 
   bool approvalDialogScheduled = false;
+  bool isUploadingProfileImage = false;
 
   void showMessage(
     BuildContext context,
@@ -79,6 +86,213 @@ class _MeScreenState extends State<MeScreen> {
     openScreen(
       context,
       const ManageProfileScreen(),
+    );
+  }
+
+  Future<void> uploadProfilePhoto(
+    bool canOpenSupplierDashboard,
+  ) async {
+    try {
+      final image = await imagePicker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 82,
+        maxWidth: 1200,
+      );
+
+      if (image == null) {
+        return;
+      }
+
+      setState(() {
+        isUploadingProfileImage = true;
+      });
+
+      final imageUrl = await cloudinaryUploadService.uploadImage(
+        image,
+        folder: CloudinaryConfig.profileFolder,
+      );
+
+      await profileService.updateProfileImageUrl(
+        imageUrl: imageUrl,
+        isApprovedSupplier: canOpenSupplierDashboard,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      showMessage(
+        context,
+        'Profile photo updated successfully.',
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      showMessage(
+        context,
+        'Failed to update profile photo: $error',
+        isError: true,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isUploadingProfileImage = false;
+        });
+      }
+    }
+  }
+
+  Future<void> removeProfilePhoto(
+    bool canOpenSupplierDashboard,
+  ) async {
+    try {
+      setState(() {
+        isUploadingProfileImage = true;
+      });
+
+      await profileService.removeProfileImageUrl(
+        isApprovedSupplier: canOpenSupplierDashboard,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      showMessage(
+        context,
+        'Profile photo removed.',
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      showMessage(
+        context,
+        'Failed to remove profile photo: $error',
+        isError: true,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isUploadingProfileImage = false;
+        });
+      }
+    }
+  }
+
+  void showProfilePhotoOptions({
+    required String profileImageUrl,
+    required bool canOpenSupplierDashboard,
+  }) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Container(
+          padding: const EdgeInsets.fromLTRB(18, 12, 18, 22),
+          decoration: const BoxDecoration(
+            color: Color(0xFFF4F8FB),
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(28),
+            ),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 44,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFC9DDEA),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Container(
+                  width: 86,
+                  height: 86,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFFEAF7FB),
+                      width: 4,
+                    ),
+                  ),
+                  child: ClipOval(
+                    child: profileImageUrl.trim().isNotEmpty
+                        ? Image.network(
+                            profileImageUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(
+                                Icons.person,
+                                color: Color(0xFF146BFF),
+                                size: 42,
+                              );
+                            },
+                          )
+                        : Icon(
+                            canOpenSupplierDashboard
+                                ? Icons.storefront
+                                : Icons.person,
+                            color: const Color(0xFF146BFF),
+                            size: 42,
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Profile Photo',
+                  style: TextStyle(
+                    color: Color(0xFF102C44),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                const Text(
+                  'Update the photo shown on your account profile.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFF7B8FA3),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                ProfilePhotoActionButton(
+                  icon: Icons.photo_library_outlined,
+                  title: 'Upload New Photo',
+                  subtitle: 'Choose an image from your gallery',
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    uploadProfilePhoto(canOpenSupplierDashboard);
+                  },
+                ),
+                if (profileImageUrl.trim().isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  ProfilePhotoActionButton(
+                    icon: Icons.delete_outline,
+                    title: 'Remove Photo',
+                    subtitle: 'Use the default profile icon again',
+                    isDanger: true,
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                      removeProfilePhoto(canOpenSupplierDashboard);
+                    },
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -336,6 +550,7 @@ class _MeScreenState extends State<MeScreen> {
     required String email,
     required String location,
     required String supplierStatus,
+    required String profileImageUrl,
     required bool canOpenSupplierDashboard,
     required bool isPendingSupplier,
     required bool isRejectedSupplier,
@@ -441,28 +656,13 @@ class _MeScreenState extends State<MeScreen> {
           const SizedBox(height: 24),
           Row(
             children: [
-              Container(
-                width: 76,
-                height: 76,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white,
-                    width: 3,
-                  ),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x26000000),
-                      blurRadius: 14,
-                      offset: Offset(0, 7),
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  canOpenSupplierDashboard ? Icons.storefront : Icons.person,
-                  color: const Color(0xFF146BFF),
-                  size: 42,
+              ProfileAvatarButton(
+                imageUrl: profileImageUrl,
+                isSupplier: canOpenSupplierDashboard,
+                isUploading: isUploadingProfileImage,
+                onTap: () => showProfilePhotoOptions(
+                  profileImageUrl: profileImageUrl,
+                  canOpenSupplierDashboard: canOpenSupplierDashboard,
                 ),
               ),
               const SizedBox(width: 15),
@@ -928,6 +1128,16 @@ class _MeScreenState extends State<MeScreen> {
         )
         .toLowerCase();
 
+    final profileImageUrl = profileService.getStringValue(
+      profileData,
+      'profileImageUrl',
+      profileService.getStringValue(
+        profileData,
+        'photoUrl',
+        user?.photoURL ?? '',
+      ),
+    );
+
     final canOpenSupplierDashboard =
         role == 'supplier' || supplierStatus == 'approved';
 
@@ -941,6 +1151,7 @@ class _MeScreenState extends State<MeScreen> {
           email: email,
           location: location,
           supplierStatus: supplierStatus,
+          profileImageUrl: profileImageUrl,
           canOpenSupplierDashboard: canOpenSupplierDashboard,
           isPendingSupplier: isPendingSupplier,
           isRejectedSupplier: isRejectedSupplier,
@@ -1003,6 +1214,208 @@ class _MeScreenState extends State<MeScreen> {
             snapshot.data?.data(),
           );
         },
+      ),
+    );
+  }
+}
+
+class ProfileAvatarButton extends StatelessWidget {
+  const ProfileAvatarButton({
+    super.key,
+    required this.imageUrl,
+    required this.isSupplier,
+    required this.isUploading,
+    required this.onTap,
+  });
+
+  final String imageUrl;
+  final bool isSupplier;
+  final bool isUploading;
+  final VoidCallback onTap;
+
+  bool get hasImage {
+    return imageUrl.trim().isNotEmpty &&
+        (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'));
+  }
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    return GestureDetector(
+      onTap: isUploading ? null : onTap,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 76,
+            height: 76,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.white,
+                width: 3,
+              ),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x26000000),
+                  blurRadius: 14,
+                  offset: Offset(0, 7),
+                ),
+              ],
+            ),
+            child: ClipOval(
+              child: hasImage
+                  ? Image.network(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Icon(
+                          isSupplier ? Icons.storefront : Icons.person,
+                          color: const Color(0xFF146BFF),
+                          size: 42,
+                        );
+                      },
+                    )
+                  : Icon(
+                      isSupplier ? Icons.storefront : Icons.person,
+                      color: const Color(0xFF146BFF),
+                      size: 42,
+                    ),
+            ),
+          ),
+          if (isUploading)
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withAlpha(55),
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          Positioned(
+            right: -2,
+            bottom: -2,
+            child: Container(
+              width: 27,
+              height: 27,
+              decoration: BoxDecoration(
+                color: const Color(0xFF146BFF),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white,
+                  width: 2,
+                ),
+              ),
+              child: const Icon(
+                Icons.camera_alt,
+                color: Colors.white,
+                size: 14,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ProfilePhotoActionButton extends StatelessWidget {
+  const ProfilePhotoActionButton({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.isDanger = false,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  final bool isDanger;
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    final color = isDanger ? const Color(0xFFD32F2F) : const Color(0xFF146BFF);
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isDanger
+                ? const Color(0xFFFFCDD2)
+                : const Color(0xFFEAF7FB),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: isDanger
+                    ? const Color(0xFFFFEBEE)
+                    : const Color(0xFFEAF7FB),
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Icon(
+                icon,
+                color: color,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: Color(0xFF7B8FA3),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              color: color,
+              size: 21,
+            ),
+          ],
+        ),
       ),
     );
   }
