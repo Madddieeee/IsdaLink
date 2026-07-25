@@ -24,6 +24,8 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
   final storeLocationController = TextEditingController();
   final serviceAreaController = TextEditingController();
   final storeDescriptionController = TextEditingController();
+  final latitudeController = TextEditingController();
+  final longitudeController = TextEditingController();
 
   final businessPermitNumberController = TextEditingController();
   final businessPermitUrlController = TextEditingController();
@@ -107,6 +109,8 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
     storeLocationController.dispose();
     serviceAreaController.dispose();
     storeDescriptionController.dispose();
+    latitudeController.dispose();
+    longitudeController.dispose();
 
     businessPermitNumberController.dispose();
     businessPermitUrlController.dispose();
@@ -182,18 +186,52 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
     return true;
   }
 
+  double? parseCoordinate(
+    String value,
+  ) {
+    return double.tryParse(
+      value.trim(),
+    );
+  }
+
   bool validateStoreStep() {
     final businessName = businessNameController.text.trim();
     final storeLocation = storeLocationController.text.trim();
     final serviceArea = serviceAreaController.text.trim();
     final storeDescription = storeDescriptionController.text.trim();
 
+    final latitude = parseCoordinate(
+      latitudeController.text,
+    );
+
+    final longitude = parseCoordinate(
+      longitudeController.text,
+    );
+
     if (businessName.isEmpty ||
         storeLocation.isEmpty ||
         serviceArea.isEmpty ||
-        storeDescription.isEmpty) {
+        storeDescription.isEmpty ||
+        latitude == null ||
+        longitude == null) {
       showMessage(
-        'Please complete all store information fields.',
+        'Please complete all store information and map coordinate fields.',
+        isError: true,
+      );
+      return false;
+    }
+
+    if (latitude < -90 || latitude > 90) {
+      showMessage(
+        'Latitude must be between -90 and 90.',
+        isError: true,
+      );
+      return false;
+    }
+
+    if (longitude < -180 || longitude > 180) {
+      showMessage(
+        'Longitude must be between -180 and 180.',
         isError: true,
       );
       return false;
@@ -337,6 +375,8 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
       storeLocation: storeLocationController.text.trim(),
       serviceArea: serviceAreaController.text.trim(),
       storeDescription: storeDescriptionController.text.trim(),
+      latitude: parseCoordinate(latitudeController.text)!,
+      longitude: parseCoordinate(longitudeController.text)!,
       supportedUnits: supportedUnits,
       businessPermitNumber: businessPermitNumberController.text.trim(),
       businessPermitUrl: businessPermitUrlController.text.trim(),
@@ -845,6 +885,77 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
               decoration: inputDecoration(
                 label: 'Store Location',
                 icon: Icons.location_on,
+                helperText:
+                    'Example: Butuan City, Agusan del Norte',
+              ),
+            ),
+            verticalGap(),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: latitudeController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                      signed: true,
+                    ),
+                    textInputAction: TextInputAction.next,
+                    decoration: inputDecoration(
+                      label: 'Latitude',
+                      icon: Icons.pin_drop,
+                      helperText: 'Example: 8.9475',
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextField(
+                    controller: longitudeController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                      signed: true,
+                    ),
+                    textInputAction: TextInputAction.next,
+                    decoration: inputDecoration(
+                      label: 'Longitude',
+                      icon: Icons.pin_drop_outlined,
+                      helperText: 'Example: 125.5406',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            verticalGap(),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEAF7FB),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: const Color(0xFF146BFF).withAlpha(34),
+                ),
+              ),
+              child: const Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.map_outlined,
+                    color: Color(0xFF146BFF),
+                    size: 19,
+                  ),
+                  SizedBox(width: 9),
+                  Expanded(
+                    child: Text(
+                      'To get coordinates, open the store location in Google Maps, tap and hold the exact location, then copy the latitude and longitude.',
+                      style: TextStyle(
+                        color: Color(0xFF52677A),
+                        fontSize: 11,
+                        height: 1.35,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             verticalGap(),
@@ -1024,6 +1135,14 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
             SummaryRow(
               label: 'Location',
               value: storeLocationController.text.trim(),
+            ),
+            SummaryRow(
+              label: 'Latitude',
+              value: latitudeController.text.trim(),
+            ),
+            SummaryRow(
+              label: 'Longitude',
+              value: longitudeController.text.trim(),
             ),
             SummaryRow(
               label: 'Service Area',

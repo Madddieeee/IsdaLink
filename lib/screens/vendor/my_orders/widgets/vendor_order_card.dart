@@ -155,6 +155,238 @@ class VendorOrderCard extends StatelessWidget {
     );
   }
 
+
+  int timelineStepIndex({
+    required String orderStatus,
+    required bool reviewSubmitted,
+  }) {
+    final lowerStatus = orderStatus.toLowerCase();
+
+    if (lowerStatus == 'cancelled') {
+      return -1;
+    }
+
+    if (lowerStatus == 'pending') {
+      return 0;
+    }
+
+    if (lowerStatus == 'accepted') {
+      return 1;
+    }
+
+    if (lowerStatus == 'delivered' || lowerStatus == 'completed') {
+      return reviewSubmitted ? 4 : 3;
+    }
+
+    return 0;
+  }
+
+  String timelineMessage({
+    required String orderStatus,
+    required bool reviewSubmitted,
+  }) {
+    final lowerStatus = orderStatus.toLowerCase();
+
+    if (lowerStatus == 'cancelled') {
+      return 'This COD order was cancelled. Any reserved stock was returned to the supplier inventory.';
+    }
+
+    if (lowerStatus == 'pending') {
+      return 'Your order was placed and is waiting for supplier confirmation.';
+    }
+
+    if (lowerStatus == 'accepted') {
+      return 'The supplier accepted your order and is preparing it for delivery.';
+    }
+
+    if ((lowerStatus == 'delivered' || lowerStatus == 'completed') &&
+        !reviewSubmitted) {
+      return 'Your order was delivered. You can now rate and review the supplier.';
+    }
+
+    if ((lowerStatus == 'delivered' || lowerStatus == 'completed') &&
+        reviewSubmitted) {
+      return 'Your order was completed and your supplier review has been submitted.';
+    }
+
+    return 'Track this COD order from placement to supplier review.';
+  }
+
+  Widget trackingTimeline({
+    required String orderStatus,
+    required bool reviewSubmitted,
+  }) {
+    final lowerStatus = orderStatus.toLowerCase();
+    final currentStep = timelineStepIndex(
+      orderStatus: orderStatus,
+      reviewSubmitted: reviewSubmitted,
+    );
+
+    if (lowerStatus == 'cancelled') {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(
+          13,
+        ),
+        decoration: BoxDecoration(
+          color: const Color(
+            0xFFFFEEF0,
+          ),
+          borderRadius: BorderRadius.circular(
+            18,
+          ),
+          border: Border.all(
+            color: const Color(
+              0xFFD32F2F,
+            ).withAlpha(
+              50,
+            ),
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(
+              Icons.cancel_outlined,
+              color: Color(
+                0xFFD32F2F,
+              ),
+              size: 22,
+            ),
+            const SizedBox(
+              width: 10,
+            ),
+            Expanded(
+              child: Text(
+                timelineMessage(
+                  orderStatus: orderStatus,
+                  reviewSubmitted: reviewSubmitted,
+                ),
+                style: const TextStyle(
+                  color: Color(
+                    0xFF52677A,
+                  ),
+                  fontSize: 11.5,
+                  height: 1.35,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(
+        13,
+        14,
+        13,
+        13,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(
+          0xFFF4F8FB,
+        ),
+        borderRadius: BorderRadius.circular(
+          20,
+        ),
+        border: Border.all(
+          color: const Color(
+            0xFFE1ECF5,
+          ),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(
+                Icons.route_outlined,
+                color: Color(
+                  0xFF146BFF,
+                ),
+                size: 18,
+              ),
+              SizedBox(
+                width: 7,
+              ),
+              Text(
+                'Order Tracking',
+                style: TextStyle(
+                  color: Color(
+                    0xFF102C44,
+                  ),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(
+            height: 12,
+          ),
+          Row(
+            children: [
+              TimelineStepItem(
+                icon: Icons.payments_outlined,
+                label: 'To Pay',
+                isActive: currentStep == 0,
+                isDone: currentStep > 0,
+              ),
+              TimelineConnector(
+                isDone: currentStep > 0,
+              ),
+              TimelineStepItem(
+                icon: Icons.inventory_2_outlined,
+                label: 'To Ship',
+                isActive: currentStep == 1,
+                isDone: currentStep > 1,
+              ),
+              TimelineConnector(
+                isDone: currentStep > 1,
+              ),
+              TimelineStepItem(
+                icon: Icons.local_shipping_outlined,
+                label: 'To Receive',
+                isActive: currentStep == 2,
+                isDone: currentStep > 2,
+              ),
+              TimelineConnector(
+                isDone: currentStep > 2,
+              ),
+              TimelineStepItem(
+                icon: Icons.star_border,
+                label: reviewSubmitted ? 'Rated' : 'To Rate',
+                isActive: currentStep == 3,
+                isDone: currentStep >= 4,
+              ),
+            ],
+          ),
+          const SizedBox(
+            height: 12,
+          ),
+          Text(
+            timelineMessage(
+              orderStatus: orderStatus,
+              reviewSubmitted: reviewSubmitted,
+            ),
+            style: const TextStyle(
+              color: Color(
+                0xFF52677A,
+              ),
+              fontSize: 11.5,
+              height: 1.35,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(
     BuildContext context,
@@ -519,6 +751,13 @@ class VendorOrderCard extends StatelessWidget {
                     ),
                   ],
                 ),
+                const SizedBox(
+                  height: 14,
+                ),
+                trackingTimeline(
+                  orderStatus: orderStatus,
+                  reviewSubmitted: reviewSubmitted,
+                ),
                 if (orderStatus.toLowerCase() == 'pending') ...[
                   const SizedBox(
                     height: 14,
@@ -601,6 +840,133 @@ class VendorOrderCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+
+class TimelineStepItem extends StatelessWidget {
+  const TimelineStepItem({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.isActive,
+    required this.isDone,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool isActive;
+  final bool isDone;
+
+  Color get stepColor {
+    if (isDone) {
+      return const Color(
+        0xFF2E7D32,
+      );
+    }
+
+    if (isActive) {
+      return const Color(
+        0xFF146BFF,
+      );
+    }
+
+    return const Color(
+      0xFFB7C6D3,
+    );
+  }
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    return SizedBox(
+      width: 48,
+      child: Column(
+        children: [
+          AnimatedContainer(
+            duration: const Duration(
+              milliseconds: 180,
+            ),
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: stepColor,
+              shape: BoxShape.circle,
+              boxShadow: isActive
+                  ? [
+                      BoxShadow(
+                        color: stepColor.withAlpha(
+                          58,
+                        ),
+                        blurRadius: 10,
+                        offset: const Offset(
+                          0,
+                          4,
+                        ),
+                      ),
+                    ]
+                  : const [],
+            ),
+            child: Icon(
+              isDone ? Icons.check : icon,
+              color: Colors.white,
+              size: 18,
+            ),
+          ),
+          const SizedBox(
+            height: 6,
+          ),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: stepColor,
+              fontSize: 9.5,
+              height: 1.05,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class TimelineConnector extends StatelessWidget {
+  const TimelineConnector({
+    super.key,
+    required this.isDone,
+  });
+
+  final bool isDone;
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    return Expanded(
+      child: Container(
+        height: 3,
+        margin: const EdgeInsets.only(
+          bottom: 27,
+        ),
+        decoration: BoxDecoration(
+          color: isDone
+              ? const Color(
+                  0xFF2E7D32,
+                )
+              : const Color(
+                  0xFFD8E3EC,
+                ),
+          borderRadius: BorderRadius.circular(
+            99,
+          ),
+        ),
       ),
     );
   }

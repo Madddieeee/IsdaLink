@@ -616,7 +616,7 @@ class _MyOrdersScreenState
             height: 8,
           ),
           const Text(
-            'Track your COD fish orders by status and review completed orders.',
+            'Track your COD fish orders from payment, supplier preparation, delivery, and rating.',
             style: TextStyle(
               color: Color(
                 0xFFDCE9F5,
@@ -632,17 +632,17 @@ class _MyOrdersScreenState
             children: [
               statCard(
                 value: '$pendingCount',
-                label: 'Pending',
+                label: 'To Pay',
                 icon: Icons.schedule,
               ),
               statCard(
                 value: '$acceptedCount',
-                label: 'Accepted',
+                label: 'To Ship',
                 icon: Icons.check_circle,
               ),
               statCard(
                 value: '$deliveredCount',
-                label: 'Delivered',
+                label: 'To Receive',
                 icon: Icons.local_shipping,
               ),
             ],

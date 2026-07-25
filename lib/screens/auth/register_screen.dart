@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -42,12 +44,24 @@ class _RegisterScreenState
     super.dispose();
   }
 
+  bool isValidEmail(
+    String email,
+  ) {
+    return RegExp(
+      r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
+    ).hasMatch(email);
+  }
+
   Future<
     void
   >
   createAccount(
     BuildContext context,
   ) async {
+    if (isLoading) {
+      return;
+    }
+
     final fullName = fullNameController.text.trim();
     final email = emailController.text.trim();
     final phone = phoneController.text.trim();
@@ -61,6 +75,22 @@ class _RegisterScreenState
         confirmPassword.isEmpty) {
       showMessage(
         'Please complete all fields.',
+        isError: true,
+      );
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      showMessage(
+        'Please enter a valid email address.',
+        isError: true,
+      );
+      return;
+    }
+
+    if (phone.length < 7) {
+      showMessage(
+        'Please enter a valid phone number.',
         isError: true,
       );
       return;
@@ -83,6 +113,8 @@ class _RegisterScreenState
       );
       return;
     }
+
+    FocusScope.of(context).unfocus();
 
     setState(
       () {
@@ -157,11 +189,16 @@ class _RegisterScreenState
         ),
         isError: true,
       );
+    } on SocketException {
+      showMessage(
+        'No internet connection. Please check your Wi-Fi or mobile data.',
+        isError: true,
+      );
     } catch (
       error
     ) {
       showMessage(
-        'Failed to create account: $error',
+        generalErrorMessage(error),
         isError: true,
       );
     } finally {
@@ -184,13 +221,51 @@ class _RegisterScreenState
       case 'invalid-email':
         return 'The email address is invalid.';
       case 'weak-password':
-        return 'Password is too weak.';
+        return 'Password is too weak. Use at least 6 characters.';
+      case 'operation-not-allowed':
+        return 'Email registration is not enabled in Firebase.';
+      case 'too-many-requests':
+        return 'Too many attempts. Please wait a moment and try again.';
       case 'network-request-failed':
         return 'Network error. Please check your internet connection.';
+      case 'internal-error':
+        return 'Firebase connection was interrupted. Please check your internet and try again.';
       default:
-        return error.message ??
-            'Registration failed.';
+        return friendlyFirebaseMessage(
+          error.message,
+          fallback: 'Registration failed. Please try again.',
+        );
     }
+  }
+
+  String generalErrorMessage(
+    Object error,
+  ) {
+    return friendlyFirebaseMessage(
+      error.toString(),
+      fallback: 'Something went wrong. Please try again.',
+    );
+  }
+
+  String friendlyFirebaseMessage(
+    String? message, {
+    required String fallback,
+  }) {
+    final lowerMessage = (message ?? '').toLowerCase();
+
+    if (lowerMessage.contains('unexpected end of stream') ||
+        lowerMessage.contains('network') ||
+        lowerMessage.contains('timeout') ||
+        lowerMessage.contains('host lookup') ||
+        lowerMessage.contains('connection')) {
+      return 'Connection problem. Please check your internet and try again.';
+    }
+
+    if (lowerMessage.contains('email') && lowerMessage.contains('already')) {
+      return 'This email is already registered.';
+    }
+
+    return fallback;
   }
 
   void showMessage(
@@ -201,11 +276,15 @@ class _RegisterScreenState
 
     ScaffoldMessenger.of(
       context,
+    ).clearSnackBars();
+    ScaffoldMessenger.of(
+      context,
     ).showSnackBar(
       SnackBar(
         content: Text(
           message,
         ),
+        behavior: SnackBarBehavior.floating,
         backgroundColor: isError
             ? const Color(
                 0xFFD32F2F,
@@ -504,6 +583,9 @@ class _RegisterScreenState
                         ),
                         TextField(
                           controller: fullNameController,
+                          enabled: !isLoading,
+                          textInputAction: TextInputAction.next,
+                          autofillHints: const [AutofillHints.name],
                           style: const TextStyle(
                             color: Colors.white,
                           ),
@@ -517,6 +599,10 @@ class _RegisterScreenState
                         ),
                         TextField(
                           controller: emailController,
+                          enabled: !isLoading,
+                          textInputAction: TextInputAction.next,
+                          autofillHints: const [AutofillHints.email],
+                          autocorrect: false,
                           style: const TextStyle(
                             color: Colors.white,
                           ),
@@ -531,6 +617,9 @@ class _RegisterScreenState
                         ),
                         TextField(
                           controller: phoneController,
+                          enabled: !isLoading,
+                          textInputAction: TextInputAction.next,
+                          autofillHints: const [AutofillHints.telephoneNumber],
                           style: const TextStyle(
                             color: Colors.white,
                           ),
@@ -545,6 +634,9 @@ class _RegisterScreenState
                         ),
                         TextField(
                           controller: passwordController,
+                          enabled: !isLoading,
+                          textInputAction: TextInputAction.next,
+                          autofillHints: const [AutofillHints.newPassword],
                           style: const TextStyle(
                             color: Colors.white,
                           ),
@@ -553,8 +645,10 @@ class _RegisterScreenState
                             hint: 'Password',
                             icon: Icons.lock_outline,
                             suffixIcon: IconButton(
-                              onPressed: () {
-                                setState(
+                              onPressed: isLoading
+                                  ? null
+                                  : () {
+                                      setState(
                                   () {
                                     obscurePassword = !obscurePassword;
                                   },
@@ -576,6 +670,10 @@ class _RegisterScreenState
                         ),
                         TextField(
                           controller: confirmPasswordController,
+                          enabled: !isLoading,
+                          textInputAction: TextInputAction.done,
+                          autofillHints: const [AutofillHints.newPassword],
+                          onSubmitted: (_) => createAccount(context),
                           style: const TextStyle(
                             color: Colors.white,
                           ),
@@ -584,8 +682,10 @@ class _RegisterScreenState
                             hint: 'Confirm Password',
                             icon: Icons.lock_outline,
                             suffixIcon: IconButton(
-                              onPressed: () {
-                                setState(
+                              onPressed: isLoading
+                                  ? null
+                                  : () {
+                                      setState(
                                   () {
                                     obscureConfirmPassword = !obscureConfirmPassword;
                                   },
@@ -633,13 +733,26 @@ class _RegisterScreenState
                               ),
                             ),
                             child: isLoading
-                                ? const SizedBox(
-                                    width: 19,
-                                    height: 19,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2.2,
-                                    ),
+                                ? const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      SizedBox(
+                                        width: 19,
+                                        height: 19,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2.2,
+                                        ),
+                                      ),
+                                      SizedBox(width: 10),
+                                      Text(
+                                        'Creating...',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
                                   )
                                 : const Text(
                                     'Create Account',

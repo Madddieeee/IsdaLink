@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -39,9 +41,21 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  bool isValidEmail(
+    String email,
+  ) {
+    return RegExp(
+      r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
+    ).hasMatch(email);
+  }
+
   Future<void> login(
     BuildContext context,
   ) async {
+    if (isLoading) {
+      return;
+    }
+
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
 
@@ -52,6 +66,16 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       return;
     }
+
+    if (!isValidEmail(email)) {
+      showMessage(
+        'Please enter a valid email address.',
+        isError: true,
+      );
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
 
     setState(() {
       isLoading = true;
@@ -108,9 +132,14 @@ class _LoginScreenState extends State<LoginScreen> {
         authErrorMessage(error),
         isError: true,
       );
+    } on SocketException {
+      showMessage(
+        'No internet connection. Please check your Wi-Fi or mobile data.',
+        isError: true,
+      );
     } catch (error) {
       showMessage(
-        'Login failed: $error',
+        generalErrorMessage(error),
         isError: true,
       );
     } finally {
@@ -123,6 +152,10 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> resetPassword() async {
+    if (isLoading) {
+      return;
+    }
+
     final email = emailController.text.trim();
 
     if (email.isEmpty) {
@@ -132,6 +165,16 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       return;
     }
+
+    if (!isValidEmail(email)) {
+      showMessage(
+        'Please enter a valid email address.',
+        isError: true,
+      );
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
 
     try {
       await FirebaseAuth.instance.sendPasswordResetEmail(
@@ -146,9 +189,14 @@ class _LoginScreenState extends State<LoginScreen> {
         authErrorMessage(error),
         isError: true,
       );
+    } on SocketException {
+      showMessage(
+        'No internet connection. Please check your Wi-Fi or mobile data.',
+        isError: true,
+      );
     } catch (error) {
       showMessage(
-        'Failed to send reset email: $error',
+        generalErrorMessage(error),
         isError: true,
       );
     }
@@ -167,12 +215,50 @@ class _LoginScreenState extends State<LoginScreen> {
       case 'wrong-password':
         return 'Incorrect password.';
       case 'invalid-credential':
-        return 'Invalid email or password.';
+        return 'Incorrect email or password.';
+      case 'too-many-requests':
+        return 'Too many attempts. Please wait a moment and try again.';
       case 'network-request-failed':
         return 'Network error. Please check your internet connection.';
+      case 'internal-error':
+        return 'Firebase connection was interrupted. Please check your internet and try again.';
       default:
-        return error.message ?? 'Authentication failed.';
+        return friendlyFirebaseMessage(
+          error.message,
+          fallback: 'Authentication failed. Please try again.',
+        );
     }
+  }
+
+  String generalErrorMessage(
+    Object error,
+  ) {
+    return friendlyFirebaseMessage(
+      error.toString(),
+      fallback: 'Something went wrong. Please try again.',
+    );
+  }
+
+  String friendlyFirebaseMessage(
+    String? message, {
+    required String fallback,
+  }) {
+    final lowerMessage = (message ?? '').toLowerCase();
+
+    if (lowerMessage.contains('unexpected end of stream') ||
+        lowerMessage.contains('network') ||
+        lowerMessage.contains('timeout') ||
+        lowerMessage.contains('host lookup') ||
+        lowerMessage.contains('connection')) {
+      return 'Connection problem. Please check your internet and try again.';
+    }
+
+    if (lowerMessage.contains('password') ||
+        lowerMessage.contains('credential')) {
+      return 'Incorrect email or password.';
+    }
+
+    return fallback;
   }
 
   void showMessage(
@@ -183,9 +269,11 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
+        behavior: SnackBarBehavior.floating,
         backgroundColor: isError
             ? const Color(0xFFD32F2F)
             : const Color(0xFF2E7D32),
@@ -316,10 +404,16 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 36),
                     TextField(
                       controller: emailController,
+                      enabled: !isLoading,
                       style: const TextStyle(
                         color: Colors.white,
                       ),
                       keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
+                      autocorrect: false,
+                      autofillHints: const [
+                        AutofillHints.email,
+                      ],
                       decoration: inputStyle(
                         hint: 'vendor@isdalink.com',
                         icon: Icons.email_outlined,
@@ -328,19 +422,27 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 14),
                     TextField(
                       controller: passwordController,
+                      enabled: !isLoading,
                       style: const TextStyle(
                         color: Colors.white,
                       ),
                       obscureText: obscurePassword,
+                      textInputAction: TextInputAction.done,
+                      autofillHints: const [
+                        AutofillHints.password,
+                      ],
+                      onSubmitted: (_) => login(context),
                       decoration: inputStyle(
                         hint: '••••••••',
                         icon: Icons.lock_outline,
                         suffixIcon: IconButton(
-                          onPressed: () {
-                            setState(() {
-                              obscurePassword = !obscurePassword;
-                            });
-                          },
+                          onPressed: isLoading
+                              ? null
+                              : () {
+                                  setState(() {
+                                    obscurePassword = !obscurePassword;
+                                  });
+                                },
                           icon: Icon(
                             obscurePassword
                                 ? Icons.visibility

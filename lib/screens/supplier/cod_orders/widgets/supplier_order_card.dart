@@ -102,12 +102,6 @@ class SupplierOrderCard extends StatelessWidget {
       'Fish Product',
     );
 
-    final supplierName = OrderHelpers.getStringValue(
-      data,
-      'supplierName',
-      'Supplier',
-    );
-
     final vendorId = OrderHelpers.getStringValue(
       data,
       'vendorId',
