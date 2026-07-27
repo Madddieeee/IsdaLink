@@ -14,9 +14,18 @@ class AnalyticsData {
   final int completedOrders;
   final double totalQuantity;
   final double totalRevenue;
-  final List<ProductSalesSummary> topProducts;
-  final List<StockAlertSummary> stockAlerts;
-  final List<DailySalesPoint> dailySales;
+  final List<
+    ProductSalesSummary
+  >
+  topProducts;
+  final List<
+    StockAlertSummary
+  >
+  stockAlerts;
+  final List<
+    DailySalesPoint
+  >
+  dailySales;
   final double simpleForecast;
   final double seasonalForecast;
   final ForecastEvaluation evaluation;

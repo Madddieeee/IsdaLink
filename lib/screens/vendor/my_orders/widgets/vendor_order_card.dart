@@ -21,140 +21,55 @@ class VendorOrderCard extends StatelessWidget {
     return lowerStatus == 'delivered' || lowerStatus == 'completed';
   }
 
-  Widget statusChip(
+  Color statusColor(
     String status,
   ) {
-    final color = OrderHelpers.statusColor(
+    final lowerStatus = status.toLowerCase();
+
+    if (lowerStatus == 'completed') {
+      return const Color(
+        0xFF2E7D32,
+      );
+    }
+
+    return OrderHelpers.statusColor(
       status,
     );
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 7,
-      ),
-      decoration: BoxDecoration(
-        color: color.withAlpha(
-          24,
-        ),
-        borderRadius: BorderRadius.circular(
-          18,
-        ),
-        border: Border.all(
-          color: color.withAlpha(
-            60,
-          ),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            OrderHelpers.statusIcon(
-              status,
-            ),
-            color: color,
-            size: 14,
-          ),
-          const SizedBox(
-            width: 5,
-          ),
-          Text(
-            status,
-            style: TextStyle(
-              color: color,
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
-  Widget paymentChip(
-    String paymentStatus,
+  IconData statusIcon(
+    String status,
   ) {
-    final bool isPaid = paymentStatus.toLowerCase() == 'paid';
-    final color = isPaid
-        ? const Color(
-            0xFF2E7D32,
-          )
-        : const Color(
-            0xFFFF7A1A,
-          );
+    final lowerStatus = status.toLowerCase();
 
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 7,
-      ),
-      decoration: BoxDecoration(
-        color: color.withAlpha(
-          24,
-        ),
-        borderRadius: BorderRadius.circular(
-          18,
-        ),
-      ),
-      child: Text(
-        paymentStatus,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          color: color,
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
+    if (lowerStatus == 'completed') {
+      return Icons.check_circle;
+    }
+
+    return OrderHelpers.statusIcon(
+      status,
     );
   }
 
-  Widget reviewSubmittedChip() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 12,
-      ),
-      decoration: BoxDecoration(
-        color: const Color(
-          0xFF2E7D32,
-        ).withAlpha(
-          24,
-        ),
-        borderRadius: BorderRadius.circular(
-          14,
-        ),
-      ),
-      child: const Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.rate_review,
-            color: Color(
-              0xFF2E7D32,
-            ),
-            size: 18,
-          ),
-          SizedBox(
-            width: 8,
-          ),
-          Text(
-            'Review Submitted',
-            style: TextStyle(
-              color: Color(
-                0xFF2E7D32,
-              ),
-              fontSize: 12,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  String statusLabel(
+    String status,
+  ) {
+    final lowerStatus = status.toLowerCase();
 
+    if (lowerStatus == 'pending') {
+      return 'To Pay';
+    }
+
+    if (lowerStatus == 'accepted') {
+      return 'To Ship';
+    }
+
+    if (lowerStatus == 'delivered' || lowerStatus == 'completed') {
+      return 'Delivered';
+    }
+
+    return status;
+  }
 
   int timelineStepIndex({
     required String orderStatus,
@@ -188,73 +103,224 @@ class VendorOrderCard extends StatelessWidget {
     final lowerStatus = orderStatus.toLowerCase();
 
     if (lowerStatus == 'cancelled') {
-      return 'This COD order was cancelled. Any reserved stock was returned to the supplier inventory.';
+      return 'Order cancelled. The reserved stock was returned to supplier inventory.';
     }
 
     if (lowerStatus == 'pending') {
-      return 'Your order was placed and is waiting for supplier confirmation.';
+      return 'Waiting for supplier confirmation.';
     }
 
     if (lowerStatus == 'accepted') {
-      return 'The supplier accepted your order and is preparing it for delivery.';
+      return 'Supplier accepted your order and is preparing delivery.';
     }
 
     if ((lowerStatus == 'delivered' || lowerStatus == 'completed') &&
         !reviewSubmitted) {
-      return 'Your order was delivered. You can now rate and review the supplier.';
+      return 'Order delivered. You can now rate the supplier.';
     }
 
     if ((lowerStatus == 'delivered' || lowerStatus == 'completed') &&
         reviewSubmitted) {
-      return 'Your order was completed and your supplier review has been submitted.';
+      return 'Order completed and supplier review submitted.';
     }
 
-    return 'Track this COD order from placement to supplier review.';
+    return 'Track this COD order from placement to rating.';
   }
 
-  Widget trackingTimeline({
+  Widget statusChip(
+    String status,
+  ) {
+    final color = statusColor(
+      status,
+    );
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 7,
+      ),
+      decoration: BoxDecoration(
+        color: color.withAlpha(
+          24,
+        ),
+        borderRadius: BorderRadius.circular(
+          99,
+        ),
+        border: Border.all(
+          color: color.withAlpha(
+            60,
+          ),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            statusIcon(
+              status,
+            ),
+            color: color,
+            size: 13,
+          ),
+          const SizedBox(
+            width: 5,
+          ),
+          Text(
+            statusLabel(
+              status,
+            ),
+            style: TextStyle(
+              color: color,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget paymentPill(
+    String paymentMethod,
+    String paymentStatus,
+  ) {
+    final bool isPaid = paymentStatus.toLowerCase() == 'paid';
+    final color = isPaid
+        ? const Color(
+            0xFF2E7D32,
+          )
+        : const Color(
+            0xFFFF7A1A,
+          );
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 9,
+        vertical: 6,
+      ),
+      decoration: BoxDecoration(
+        color: color.withAlpha(
+          22,
+        ),
+        borderRadius: BorderRadius.circular(
+          99,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.payments_outlined,
+            color: color,
+            size: 13,
+          ),
+          const SizedBox(
+            width: 5,
+          ),
+          Text(
+            paymentMethod,
+            style: TextStyle(
+              color: color,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget infoBox({
+    required String label,
+    required String value,
+  }) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 10,
+          vertical: 12,
+        ),
+        decoration: BoxDecoration(
+          color: const Color(
+            0xFFEAF8FC,
+          ),
+          borderRadius: BorderRadius.circular(
+            16,
+          ),
+        ),
+        child: Column(
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                color: Color(
+                  0xFF7B8FA3,
+                ),
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(
+              height: 4,
+            ),
+            Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Color(
+                  0xFF102C44,
+                ),
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget orderTimeline({
     required String orderStatus,
     required bool reviewSubmitted,
   }) {
-    final lowerStatus = orderStatus.toLowerCase();
-    final currentStep = timelineStepIndex(
+    final step = timelineStepIndex(
       orderStatus: orderStatus,
       reviewSubmitted: reviewSubmitted,
     );
 
-    if (lowerStatus == 'cancelled') {
+    if (step < 0) {
       return Container(
-        width: double.infinity,
         padding: const EdgeInsets.all(
-          13,
+          12,
         ),
         decoration: BoxDecoration(
           color: const Color(
             0xFFFFEEF0,
           ),
           borderRadius: BorderRadius.circular(
-            18,
+            17,
           ),
           border: Border.all(
             color: const Color(
               0xFFD32F2F,
             ).withAlpha(
-              50,
+              40,
             ),
           ),
         ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Icon(
               Icons.cancel_outlined,
               color: Color(
                 0xFFD32F2F,
               ),
-              size: 22,
+              size: 18,
             ),
             const SizedBox(
-              width: 10,
+              width: 8,
             ),
             Expanded(
               child: Text(
@@ -266,8 +332,8 @@ class VendorOrderCard extends StatelessWidget {
                   color: Color(
                     0xFF52677A,
                   ),
-                  fontSize: 11.5,
-                  height: 1.35,
+                  fontSize: 11,
+                  height: 1.3,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -278,108 +344,129 @@ class VendorOrderCard extends StatelessWidget {
     }
 
     return Container(
-      width: double.infinity,
       padding: const EdgeInsets.fromLTRB(
-        13,
-        14,
-        13,
-        13,
+        12,
+        12,
+        12,
+        11,
       ),
       decoration: BoxDecoration(
         color: const Color(
-          0xFFF4F8FB,
+          0xFFF4FAFF,
         ),
         borderRadius: BorderRadius.circular(
-          20,
+          18,
         ),
         border: Border.all(
           color: const Color(
-            0xFFE1ECF5,
+            0xFFDDECF5,
           ),
         ),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
-            children: [
-              Icon(
-                Icons.route_outlined,
-                color: Color(
-                  0xFF146BFF,
-                ),
-                size: 18,
-              ),
-              SizedBox(
-                width: 7,
-              ),
-              Text(
-                'Order Tracking',
-                style: TextStyle(
-                  color: Color(
-                    0xFF102C44,
-                  ),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(
-            height: 12,
-          ),
           Row(
             children: [
-              TimelineStepItem(
-                icon: Icons.payments_outlined,
+              MiniTimelineStep(
                 label: 'To Pay',
-                isActive: currentStep == 0,
-                isDone: currentStep > 0,
+                icon: Icons.payments_outlined,
+                isDone: step > 0,
+                isActive: step == 0,
               ),
-              TimelineConnector(
-                isDone: currentStep > 0,
+              MiniTimelineConnector(
+                isDone: step > 0,
               ),
-              TimelineStepItem(
-                icon: Icons.inventory_2_outlined,
+              MiniTimelineStep(
                 label: 'To Ship',
-                isActive: currentStep == 1,
-                isDone: currentStep > 1,
+                icon: Icons.inventory_2_outlined,
+                isDone: step > 1,
+                isActive: step == 1,
               ),
-              TimelineConnector(
-                isDone: currentStep > 1,
+              MiniTimelineConnector(
+                isDone: step > 1,
               ),
-              TimelineStepItem(
+              MiniTimelineStep(
+                label: 'Receive',
                 icon: Icons.local_shipping_outlined,
-                label: 'To Receive',
-                isActive: currentStep == 2,
-                isDone: currentStep > 2,
+                isDone: step > 2,
+                isActive: step == 2,
               ),
-              TimelineConnector(
-                isDone: currentStep > 2,
+              MiniTimelineConnector(
+                isDone: step > 2,
               ),
-              TimelineStepItem(
-                icon: Icons.star_border,
+              MiniTimelineStep(
                 label: reviewSubmitted ? 'Rated' : 'To Rate',
-                isActive: currentStep == 3,
-                isDone: currentStep >= 4,
+                icon: Icons.star_border,
+                isDone: step >= 4,
+                isActive: step == 3,
               ),
             ],
           ),
           const SizedBox(
-            height: 12,
+            height: 9,
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              timelineMessage(
+                orderStatus: orderStatus,
+                reviewSubmitted: reviewSubmitted,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Color(
+                  0xFF52677A,
+                ),
+                fontSize: 10.5,
+                height: 1.25,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget reviewSubmittedChip() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 11,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(
+          0xFF2E7D32,
+        ).withAlpha(
+          24,
+        ),
+        borderRadius: BorderRadius.circular(
+          14,
+        ),
+      ),
+      child: const Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.rate_review,
+            color: Color(
+              0xFF2E7D32,
+            ),
+            size: 17,
+          ),
+          SizedBox(
+            width: 8,
           ),
           Text(
-            timelineMessage(
-              orderStatus: orderStatus,
-              reviewSubmitted: reviewSubmitted,
-            ),
-            style: const TextStyle(
+            'Review Submitted',
+            style: TextStyle(
               color: Color(
-                0xFF52677A,
+                0xFF2E7D32,
               ),
               fontSize: 11.5,
-              height: 1.35,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w900,
             ),
           ),
         ],
@@ -403,10 +490,20 @@ class VendorOrderCard extends StatelessWidget {
       'Fish Product',
     );
 
+    final productEmoji = OrderHelpers.getStringValue(
+      data,
+      'productEmoji',
+      OrderHelpers.getStringValue(
+        data,
+        'emoji',
+        '🐟',
+      ),
+    );
+
     final supplierName = OrderHelpers.getStringValue(
       data,
       'supplierName',
-      'Supplier',
+      'Verified Supplier',
     );
 
     final quantity = OrderHelpers.getDoubleValue(
@@ -444,26 +541,33 @@ class VendorOrderCard extends StatelessWidget {
     );
 
     final reviewSubmitted = data['reviewSubmitted'] == true;
-
-    final color = OrderHelpers.statusColor(
+    final createdDate = OrderHelpers.formatDateFromData(
+      data,
+    );
+    final color = statusColor(
       orderStatus,
     );
 
     return Container(
       margin: const EdgeInsets.only(
-        bottom: 16,
+        bottom: 14,
       ),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(
           24,
         ),
+        border: Border.all(
+          color: const Color(
+            0xFFE1EEF6,
+          ),
+        ),
         boxShadow: const [
           BoxShadow(
             color: Color(
-              0x12000000,
+              0x0F000000,
             ),
-            blurRadius: 14,
+            blurRadius: 13,
             offset: Offset(
               0,
               7,
@@ -471,342 +575,214 @@ class VendorOrderCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(
-              16,
-            ),
-            decoration: BoxDecoration(
-              color: color.withAlpha(
-                20,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(
+          24,
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.fromLTRB(
+                14,
+                13,
+                14,
+                13,
               ),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(
-                  24,
+              decoration: BoxDecoration(
+                color: color.withAlpha(
+                  18,
                 ),
               ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(
-                      16,
+              child: Row(
+                children: [
+                  Container(
+                    width: 47,
+                    height: 47,
+                    decoration: BoxDecoration(
+                      color: color.withAlpha(
+                        28,
+                      ),
+                      borderRadius: BorderRadius.circular(
+                        16,
+                      ),
                     ),
-                  ),
-                  child: Icon(
-                    OrderHelpers.statusIcon(
-                      orderStatus,
-                    ),
-                    color: Colors.white,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(
-                  width: 12,
-                ),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        orderId,
+                    child: Center(
+                      child: Text(
+                        productEmoji,
                         style: const TextStyle(
-                          color: Color(
-                            0xFF102C44,
-                          ),
-                          fontSize: 15,
-                          fontWeight: FontWeight.w900,
+                          fontSize: 24,
                         ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(
+                    width: 11,
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          orderId,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(
+                              0xFF102C44,
+                            ),
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(
+                          height: 3,
+                        ),
+                        Text(
+                          createdDate,
+                          style: const TextStyle(
+                            color: Color(
+                              0xFF7B8FA3,
+                            ),
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  statusChip(
+                    orderStatus,
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                14,
+                14,
+                14,
+                14,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    productName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(
+                        0xFF102C44,
+                      ),
+                      fontSize: 17,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(
+                    height: 6,
+                  ),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.storefront,
+                        color: Color(
+                          0xFF7B8FA3,
+                        ),
+                        size: 15,
                       ),
                       const SizedBox(
-                        height: 3,
+                        width: 5,
                       ),
-                      Text(
-                        OrderHelpers.formatDateFromData(
-                          data,
-                        ),
-                        style: const TextStyle(
-                          color: Color(
-                            0xFF7B8FA3,
+                      Expanded(
+                        child: Text(
+                          supplierName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(
+                              0xFF7B8FA3,
+                            ),
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
                           ),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
                         ),
+                      ),
+                      paymentPill(
+                        paymentMethod,
+                        paymentStatus,
                       ),
                     ],
                   ),
-                ),
-                statusChip(
-                  orderStatus,
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              16,
-              16,
-              16,
-              18,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  productName,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(
-                      0xFF102C44,
-                    ),
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(
-                  height: 7,
-                ),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.storefront,
-                      color: Color(
-                        0xFF7B8FA3,
-                      ),
-                      size: 16,
-                    ),
-                    const SizedBox(
-                      width: 5,
-                    ),
-                    Expanded(
-                      child: Text(
-                        supplierName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(
-                            0xFF7B8FA3,
-                          ),
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(
-                  height: 14,
-                ),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.all(
-                          12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(
-                            0xFFEAF7FB,
-                          ),
-                          borderRadius: BorderRadius.circular(
-                            16,
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            const Text(
-                              'Quantity',
-                              style: TextStyle(
-                                color: Color(
-                                  0xFF7B8FA3,
-                                ),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(
-                              height: 4,
-                            ),
-                            Text(
-                              '${OrderHelpers.formatNumber(quantity)} $quantityUnit',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                color: Color(
-                                  0xFF102C44,
-                                ),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(
-                      width: 10,
-                    ),
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.all(
-                          12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(
-                            0xFFEAF7FB,
-                          ),
-                          borderRadius: BorderRadius.circular(
-                            16,
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            const Text(
-                              'Total',
-                              style: TextStyle(
-                                color: Color(
-                                  0xFF7B8FA3,
-                                ),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(
-                              height: 4,
-                            ),
-                            Text(
-                              '₱${totalAmount.toStringAsFixed(0)}',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                color: Color(
-                                  0xFF146BFF,
-                                ),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(
-                  height: 14,
-                ),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 7,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(
-                          0xFFEAF7FB,
-                        ),
-                        borderRadius: BorderRadius.circular(
-                          18,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.payments,
-                            color: Color(
-                              0xFF146BFF,
-                            ),
-                            size: 14,
-                          ),
-                          const SizedBox(
-                            width: 5,
-                          ),
-                          Text(
-                            paymentMethod,
-                            style: const TextStyle(
-                              color: Color(
-                                0xFF146BFF,
-                              ),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(
-                      width: 8,
-                    ),
-                    Expanded(
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: paymentChip(
-                          paymentStatus,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(
-                  height: 14,
-                ),
-                trackingTimeline(
-                  orderStatus: orderStatus,
-                  reviewSubmitted: reviewSubmitted,
-                ),
-                if (orderStatus.toLowerCase() == 'pending') ...[
                   const SizedBox(
-                    height: 14,
+                    height: 13,
                   ),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 42,
-                    child: OutlinedButton.icon(
-                      onPressed: onCancelPendingOrder,
-                      icon: const Icon(
-                        Icons.cancel_outlined,
-                        size: 18,
+                  Row(
+                    children: [
+                      infoBox(
+                        label: 'Quantity',
+                        value:
+                            '${OrderHelpers.formatNumber(quantity)} $quantityUnit',
                       ),
-                      label: const Text(
-                        'Cancel Pending Order',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w900,
-                        ),
+                      const SizedBox(
+                        width: 10,
                       ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(
-                          0xFFD32F2F,
-                        ),
-                        side: const BorderSide(
-                          color: Color(
-                            0xFFD32F2F,
-                          ),
-                          width: 1.2,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            14,
-                          ),
-                        ),
+                      infoBox(
+                        label: 'Total',
+                        value: '₱${OrderHelpers.formatNumber(totalAmount)}',
                       ),
-                    ),
+                    ],
                   ),
-                ],
-                if (isCompletedOrder(orderStatus)) ...[
                   const SizedBox(
-                    height: 14,
+                    height: 13,
                   ),
-                  if (reviewSubmitted)
-                    reviewSubmittedChip()
-                  else
+                  orderTimeline(
+                    orderStatus: orderStatus,
+                    reviewSubmitted: reviewSubmitted,
+                  ),
+                  if (orderStatus.toLowerCase() == 'pending') ...[
+                    const SizedBox(
+                      height: 13,
+                    ),
                     SizedBox(
                       width: double.infinity,
-                      height: 42,
+                      height: 44,
+                      child: OutlinedButton.icon(
+                        onPressed: onCancelPendingOrder,
+                        icon: const Icon(
+                          Icons.cancel_outlined,
+                          size: 18,
+                        ),
+                        label: const Text(
+                          'Cancel Pending Order',
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(
+                            0xFFD32F2F,
+                          ),
+                          side: const BorderSide(
+                            color: Color(
+                              0xFFD32F2F,
+                            ),
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              15,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (isCompletedOrder(
+                        orderStatus,
+                      ) &&
+                      !reviewSubmitted) ...[
+                    const SizedBox(
+                      height: 13,
+                    ),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 44,
                       child: ElevatedButton.icon(
                         onPressed: onReviewOrder,
                         icon: const Icon(
@@ -814,11 +790,7 @@ class VendorOrderCard extends StatelessWidget {
                           size: 18,
                         ),
                         label: const Text(
-                          'Rate and Review Supplier',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w900,
-                          ),
+                          'Rate Supplier',
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(
@@ -829,38 +801,47 @@ class VendorOrderCard extends StatelessWidget {
                           ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(
-                              14,
+                              15,
                             ),
                           ),
                         ),
                       ),
                     ),
+                  ],
+                  if (isCompletedOrder(
+                        orderStatus,
+                      ) &&
+                      reviewSubmitted) ...[
+                    const SizedBox(
+                      height: 13,
+                    ),
+                    reviewSubmittedChip(),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-
-class TimelineStepItem extends StatelessWidget {
-  const TimelineStepItem({
+class MiniTimelineStep extends StatelessWidget {
+  const MiniTimelineStep({
     super.key,
-    required this.icon,
     required this.label,
-    required this.isActive,
+    required this.icon,
     required this.isDone,
+    required this.isActive,
   });
 
-  final IconData icon;
   final String label;
-  final bool isActive;
+  final IconData icon;
   final bool isDone;
+  final bool isActive;
 
-  Color get stepColor {
+  Color get color {
     if (isDone) {
       return const Color(
         0xFF2E7D32,
@@ -886,48 +867,30 @@ class TimelineStepItem extends StatelessWidget {
       width: 48,
       child: Column(
         children: [
-          AnimatedContainer(
-            duration: const Duration(
-              milliseconds: 180,
-            ),
-            width: 34,
-            height: 34,
+          Container(
+            width: 29,
+            height: 29,
             decoration: BoxDecoration(
-              color: stepColor,
+              color: color,
               shape: BoxShape.circle,
-              boxShadow: isActive
-                  ? [
-                      BoxShadow(
-                        color: stepColor.withAlpha(
-                          58,
-                        ),
-                        blurRadius: 10,
-                        offset: const Offset(
-                          0,
-                          4,
-                        ),
-                      ),
-                    ]
-                  : const [],
             ),
             child: Icon(
               isDone ? Icons.check : icon,
               color: Colors.white,
-              size: 18,
+              size: 15,
             ),
           ),
           const SizedBox(
-            height: 6,
+            height: 5,
           ),
           Text(
             label,
-            textAlign: TextAlign.center,
-            maxLines: 2,
+            maxLines: 1,
             overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
             style: TextStyle(
-              color: stepColor,
-              fontSize: 9.5,
-              height: 1.05,
+              color: color,
+              fontSize: 8.8,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -937,8 +900,8 @@ class TimelineStepItem extends StatelessWidget {
   }
 }
 
-class TimelineConnector extends StatelessWidget {
-  const TimelineConnector({
+class MiniTimelineConnector extends StatelessWidget {
+  const MiniTimelineConnector({
     super.key,
     required this.isDone,
   });
@@ -953,7 +916,7 @@ class TimelineConnector extends StatelessWidget {
       child: Container(
         height: 3,
         margin: const EdgeInsets.only(
-          bottom: 27,
+          bottom: 22,
         ),
         decoration: BoxDecoration(
           color: isDone

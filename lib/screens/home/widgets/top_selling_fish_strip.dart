@@ -5,7 +5,7 @@ import 'package:isdalink/models/supplier.dart';
 import 'package:isdalink/services/home_stock_service.dart';
 import 'package:isdalink/utils/order_helpers.dart';
 
-class TopSellingFishStrip extends StatelessWidget {
+class TopSellingFishStrip extends StatefulWidget {
   const TopSellingFishStrip({
     super.key,
     required this.onProductTap,
@@ -18,6 +18,11 @@ class TopSellingFishStrip extends StatelessWidget {
     String supplierId,
   ) onProductTap;
 
+  @override
+  State<TopSellingFishStrip> createState() => _TopSellingFishStripState();
+}
+
+class _TopSellingFishStripState extends State<TopSellingFishStrip> {
   HomeStockService get stockService => const HomeStockService();
 
   bool isCompletedOrder(
@@ -49,6 +54,10 @@ class TopSellingFishStrip extends StatelessWidget {
         'productName',
         'Fish Product',
       );
+
+      if (FishNameHelper.isTestLike(rawProductName)) {
+        continue;
+      }
 
       final fishName = FishNameHelper.canonicalDisplayName(rawProductName);
       final fishKey = FishNameHelper.canonicalKey(rawProductName);
@@ -290,7 +299,7 @@ class TopSellingFishStrip extends StatelessWidget {
                           onTap: () {
                             Navigator.pop(sheetContext);
 
-                            onProductTap(
+                            widget.onProductTap(
                               supplier,
                               product,
                               document.id,
@@ -437,142 +446,145 @@ class TopSellingFishStrip extends StatelessWidget {
       stream: FirebaseFirestore.instance.collection('orders').snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return TopSellingStateCard(
-            icon: Icons.error_outline,
-            title: 'Unable to load top-selling fish',
-            subtitle: '${snapshot.error}',
+          return TopSellingStateLine(
+            text: 'Unable to load top-selling fish',
             isError: true,
           );
         }
 
         if (!snapshot.hasData) {
-          return const TopSellingLoadingStrip();
+          return const TopSellingLoadingLine();
         }
 
         final allFish = buildTopSellingFish(snapshot.data!.docs);
-        final topSevenFish = allFish.take(7).toList();
+        final topFiveFish = allFish.take(5).toList();
+
+        if (topFiveFish.isEmpty) {
+          return const TopSellingStateLine(
+            text: 'Top-selling fish will appear after completed orders.',
+          );
+        }
 
         return Container(
+          height: 40,
           margin: const EdgeInsets.symmetric(horizontal: 14),
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 13),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: const Color(0xFFD7EEF6),
-            ),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x0D000000),
-                blurRadius: 10,
-                offset: Offset(0, 5),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Stack(
+            clipBehavior: Clip.none,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 31,
-                    height: 31,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [
-                          Color(0xFFFFB703),
-                          Color(0xFFFF7A1A),
-                        ],
+              Container(
+                height: 40,
+                padding: const EdgeInsets.fromLTRB(
+                  8,
+                  6,
+                  44,
+                  6,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE6F9FF),
+                  borderRadius: BorderRadius.circular(99),
+                  border: Border.all(
+                    color: const Color(0xFFC9EDF7),
+                  ),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x0D000000),
+                      blurRadius: 8,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => showAllFishSheet(
+                        context,
+                        allFish,
                       ),
-                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        height: 28,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [
+                              Color(0xFFFF7A1A),
+                              Color(0xFFFFB703),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(99),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(
+                              Icons.local_fire_department,
+                              color: Colors.white,
+                              size: 13,
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              'Top Selling Fish',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TopSellingFishMarqueeLine(
+                        fishList: topFiveFish,
+                        onFishTap: (
+                          fish,
+                        ) {
+                          showAvailableFishSheet(
+                            context,
+                            fish,
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Positioned(
+                right: -1,
+                top: -1,
+                child: GestureDetector(
+                  onTap: () => showAllFishSheet(
+                    context,
+                    allFish,
+                  ),
+                  child: Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF4E0),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFFFFDFA8),
+                        width: 1.2,
+                      ),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x18FF7A1A),
+                          blurRadius: 8,
+                          offset: Offset(0, 3),
+                        ),
+                      ],
                     ),
                     child: const Icon(
-                      Icons.local_fire_department,
-                      color: Colors.white,
+                      Icons.format_list_bulleted,
+                      color: Color(0xFFFF7A1A),
                       size: 18,
                     ),
                   ),
-                  const SizedBox(width: 9),
-                  const Expanded(
-                    child: Text(
-                      'Top-Selling Fish',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: Color(0xFF102C44),
-                        fontSize: 15.5,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () => showAllFishSheet(
-                      context,
-                      allFish,
-                    ),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 7,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF4E0),
-                        borderRadius: BorderRadius.circular(99),
-                      ),
-                      child: const Row(
-                        children: [
-                          Text(
-                            'All',
-                            style: TextStyle(
-                              color: Color(0xFFFF7A1A),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          SizedBox(width: 3),
-                          Icon(
-                            Icons.chevron_right,
-                            color: Color(0xFFFF7A1A),
-                            size: 16,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 11),
-              if (topSevenFish.isEmpty)
-                const Text(
-                  'No completed vendor purchases yet. Top-selling fish will appear after orders are delivered or completed.',
-                  style: TextStyle(
-                    color: Color(0xFF7B8FA3),
-                    fontSize: 12,
-                    height: 1.35,
-                    fontWeight: FontWeight.w600,
-                  ),
-                )
-              else
-                SizedBox(
-                  height: 45,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: topSevenFish.length,
-                    separatorBuilder: (context, index) {
-                      return const SizedBox(width: 8);
-                    },
-                    itemBuilder: (context, index) {
-                      return TopSellingFishChip(
-                        rank: index + 1,
-                        fish: topSevenFish[index],
-                        onTap: () => showAvailableFishSheet(
-                          context,
-                          topSevenFish[index],
-                        ),
-                      );
-                    },
-                  ),
                 ),
+              ),
             ],
           ),
         );
@@ -581,63 +593,110 @@ class TopSellingFishStrip extends StatelessWidget {
   }
 }
 
-class TopSellingFishChip extends StatelessWidget {
-  const TopSellingFishChip({
+class TopSellingFishMarqueeLine extends StatefulWidget {
+  const TopSellingFishMarqueeLine({
     super.key,
-    required this.rank,
-    required this.fish,
-    required this.onTap,
+    required this.fishList,
+    required this.onFishTap,
   });
 
-  final int rank;
-  final TopSellingFish fish;
-  final VoidCallback onTap;
+  final List<TopSellingFish> fishList;
+  final void Function(TopSellingFish fish) onFishTap;
+
+  @override
+  State<TopSellingFishMarqueeLine> createState() =>
+      _TopSellingFishMarqueeLineState();
+}
+
+class _TopSellingFishMarqueeLineState extends State<TopSellingFishMarqueeLine>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController controller;
+
+  @override
+  void initState() {
+    super.initState();
+
+    controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 12),
+    )..repeat();
+  }
+
+  @override
+  void didUpdateWidget(
+    TopSellingFishMarqueeLine oldWidget,
+  ) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.fishList.length != widget.fishList.length) {
+      controller
+        ..reset()
+        ..repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  String marqueeText() {
+    return widget.fishList.asMap().entries.map(
+      (entry) {
+        final rank = entry.key + 1;
+        final fish = entry.value;
+        return '#$rank ${fish.emoji} ${fish.name}';
+      },
+    ).join('   •   ');
+  }
 
   @override
   Widget build(
     BuildContext context,
   ) {
+    final displayText = marqueeText();
+
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 11,
-          vertical: 8,
-        ),
-        decoration: BoxDecoration(
-          color: const Color(0xFFE6F9FF),
-          borderRadius: BorderRadius.circular(99),
-          border: Border.all(
-            color: const Color(0xFFC9EDF7),
+      onTap: () {
+        if (widget.fishList.isNotEmpty) {
+          widget.onFishTap(
+            widget.fishList.first,
+          );
+        }
+      },
+      child: SizedBox(
+        height: 28,
+        child: ClipRect(
+          child: AnimatedBuilder(
+            animation: controller,
+            builder: (context, child) {
+              final width = MediaQuery.of(context).size.width;
+              final offset = width - (controller.value * width * 2);
+
+              return Transform.translate(
+                offset: Offset(
+                  offset,
+                  0,
+                ),
+                child: child,
+              );
+            },
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                '$displayText   •   $displayText',
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.visible,
+                style: const TextStyle(
+                  color: Color(0xFF102C44),
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
           ),
-        ),
-        child: Row(
-          children: [
-            Text(
-              '#$rank',
-              style: const TextStyle(
-                color: Color(0xFF087AC0),
-                fontSize: 11,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              fish.emoji,
-              style: const TextStyle(
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(width: 5),
-            Text(
-              fish.name,
-              style: const TextStyle(
-                color: Color(0xFF102C44),
-                fontSize: 11.5,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ],
         ),
       ),
     );
@@ -885,8 +944,8 @@ class AvailableFishMarketTile extends StatelessWidget {
   }
 }
 
-class TopSellingLoadingStrip extends StatelessWidget {
-  const TopSellingLoadingStrip({
+class TopSellingLoadingLine extends StatelessWidget {
+  const TopSellingLoadingLine({
     super.key,
   });
 
@@ -895,33 +954,33 @@ class TopSellingLoadingStrip extends StatelessWidget {
     BuildContext context,
   ) {
     return Container(
-      height: 94,
+      height: 42,
       margin: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(99),
       ),
       child: const Center(
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
+        child: SizedBox(
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+          ),
         ),
       ),
     );
   }
 }
 
-class TopSellingStateCard extends StatelessWidget {
-  const TopSellingStateCard({
+class TopSellingStateLine extends StatelessWidget {
+  const TopSellingStateLine({
     super.key,
-    required this.icon,
-    required this.title,
-    required this.subtitle,
+    required this.text,
     this.isError = false,
   });
 
-  final IconData icon;
-  final String title;
-  final String subtitle;
+  final String text;
   final bool isError;
 
   @override
@@ -929,44 +988,34 @@ class TopSellingStateCard extends StatelessWidget {
     BuildContext context,
   ) {
     return Container(
+      height: 42,
       margin: const EdgeInsets.symmetric(horizontal: 14),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(99),
+        border: Border.all(
+          color: const Color(0xFFD7EEF6),
+        ),
       ),
       child: Row(
         children: [
           Icon(
-            icon,
-            color: isError ? const Color(0xFFD32F2F) : const Color(0xFF087AC0),
-            size: 28,
+            isError ? Icons.error_outline : Icons.local_fire_department,
+            color: isError ? const Color(0xFFD32F2F) : const Color(0xFFFF7A1A),
+            size: 18,
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Color(0xFF102C44),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  subtitle,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF7B8FA3),
-                    fontSize: 11,
-                    height: 1.35,
-                  ),
-                ),
-              ],
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Color(0xFF7B8FA3),
+                fontSize: 11.5,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ],
@@ -993,6 +1042,18 @@ class TopSellingFish {
 
 class FishNameHelper {
   const FishNameHelper();
+
+  static bool isTestLike(
+    String rawName,
+  ) {
+    final value = rawName.trim().toLowerCase();
+
+    return value == 'test' ||
+        value == 'testing' ||
+        value == 'asdw' ||
+        value == 'asdf' ||
+        value == 'sample';
+  }
 
   static String canonicalDisplayName(
     String rawName,

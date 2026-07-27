@@ -904,62 +904,98 @@ class _MeScreenState extends State<MeScreen> {
     required bool isRejectedSupplier,
   }) {
     if (canOpenSupplierDashboard) {
-      return WhiteSectionCard(
-        title: 'Supplier Center',
-        actionLabel: 'Open Dashboard',
-        onActionTap: () => openSupplierDashboard(context),
-        child: Column(
-          children: [
-            Row(
+      return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: FirebaseFirestore.instance
+            .collection('orders')
+            .where(
+              'supplierId',
+              isEqualTo: uid,
+            )
+            .snapshots(),
+        builder: (context, snapshot) {
+          final orders = snapshot.data?.docs ?? [];
+
+          final pendingCodOrders = orders.where(
+            (document) {
+              final status = (document.data()['orderStatus'] ?? '')
+                  .toString()
+                  .toLowerCase();
+
+              return status == 'pending';
+            },
+          ).length;
+
+          return WhiteSectionCard(
+            title: 'Supplier Center',
+            actionLabel: pendingCodOrders > 0
+                ? '$pendingCodOrders new COD'
+                : 'Open Dashboard',
+            onActionTap: () => openSupplierDashboard(context),
+            child: Column(
               children: [
-                Expanded(
-                  child: SupplierToolShortcut(
-                    icon: Icons.add_box_outlined,
-                    label: 'Post Stock',
-                    onTap: () => openScreen(
-                      context,
-                      const PostFishStockScreen(),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: SupplierToolShortcut(
-                    icon: Icons.inventory_outlined,
-                    label: 'Products',
-                    onTap: () => openScreen(
-                      context,
-                      const SupplierManageProductsScreen(),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: SupplierToolShortcut(
-                    icon: Icons.receipt_long_outlined,
-                    label: 'COD Orders',
+                if (pendingCodOrders > 0) ...[
+                  SupplierOrderNotificationCard(
+                    count: pendingCodOrders,
                     onTap: () => openScreen(
                       context,
                       const SupplierCodOrdersScreen(),
                     ),
                   ),
-                ),
-                Expanded(
-                  child: SupplierToolShortcut(
-                    icon: Icons.bar_chart,
-                    label: 'Analytics',
-                    onTap: () => openScreen(
-                      context,
-                      const AnalyticsScreen(),
+                  const SizedBox(height: 14),
+                ],
+                Row(
+                  children: [
+                    Expanded(
+                      child: SupplierToolShortcut(
+                        icon: Icons.add_box_outlined,
+                        label: 'Post Stock',
+                        onTap: () => openScreen(
+                          context,
+                          const PostFishStockScreen(),
+                        ),
+                      ),
                     ),
-                  ),
+                    Expanded(
+                      child: SupplierToolShortcut(
+                        icon: Icons.inventory_outlined,
+                        label: 'Products',
+                        onTap: () => openScreen(
+                          context,
+                          const SupplierManageProductsScreen(),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: SupplierToolShortcut(
+                        icon: Icons.receipt_long_outlined,
+                        label: 'COD Orders',
+                        count: pendingCodOrders,
+                        onTap: () => openScreen(
+                          context,
+                          const SupplierCodOrdersScreen(),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: SupplierToolShortcut(
+                        icon: Icons.bar_chart,
+                        label: 'Analytics',
+                        onTap: () => openScreen(
+                          context,
+                          const AnalyticsScreen(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                SupplierMiniStats(
+                  uid: uid,
                 ),
               ],
             ),
-            const SizedBox(height: 14),
-            SupplierMiniStats(
-              uid: uid,
-            ),
-          ],
-        ),
+          );
+        },
       );
     }
 
@@ -1642,11 +1678,13 @@ class SupplierToolShortcut extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.count = 0,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final int count;
 
   @override
   Widget build(
@@ -1656,18 +1694,31 @@ class SupplierToolShortcut extends StatelessWidget {
       onTap: onTap,
       child: Column(
         children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: const Color(0xFFEAF7FB),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Icon(
-              icon,
-              color: const Color(0xFF146BFF),
-              size: 25,
-            ),
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEAF7FB),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Icon(
+                  icon,
+                  color: const Color(0xFF146BFF),
+                  size: 25,
+                ),
+              ),
+              if (count > 0)
+                Positioned(
+                  top: -7,
+                  right: -8,
+                  child: CountBadge(
+                    count: count,
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 8),
           Text(
@@ -1838,6 +1889,107 @@ class ApplySupplierCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class SupplierOrderNotificationCard extends StatelessWidget {
+  const SupplierOrderNotificationCard({
+    super.key,
+    required this.count,
+    required this.onTap,
+  });
+
+  final int count;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(13),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [
+              Color(0xFFFFF4E0),
+              Color(0xFFFFFBF3),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: const Color(0xFFFFDFA8),
+          ),
+        ),
+        child: Row(
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF7A1A),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: const Icon(
+                    Icons.notifications_active,
+                    color: Colors.white,
+                    size: 23,
+                  ),
+                ),
+                Positioned(
+                  right: -7,
+                  top: -7,
+                  child: CountBadge(
+                    count: count,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    count == 1
+                        ? '1 pending COD order'
+                        : '$count pending COD orders',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFF102C44),
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  const Text(
+                    'Review and accept new vendor orders.',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Color(0xFF7B8FA3),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(
+              Icons.chevron_right,
+              color: Color(0xFFFF7A1A),
+              size: 22,
+            ),
+          ],
+        ),
       ),
     );
   }

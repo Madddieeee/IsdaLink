@@ -11,8 +11,6 @@ class SupplierApplicationInput {
     required this.storeLocation,
     required this.serviceArea,
     required this.storeDescription,
-    required this.latitude,
-    required this.longitude,
     required this.supportedUnits,
     required this.businessPermitNumber,
     required this.businessPermitUrl,
@@ -27,8 +25,6 @@ class SupplierApplicationInput {
   final String storeLocation;
   final String serviceArea;
   final String storeDescription;
-  final double latitude;
-  final double longitude;
   final List<String> supportedUnits;
   final String businessPermitNumber;
   final String businessPermitUrl;
@@ -109,9 +105,6 @@ class SupplierActivationService {
       'storeLocation': input.storeLocation,
       'serviceArea': input.serviceArea,
       'description': input.storeDescription,
-      'latitude': input.latitude,
-      'longitude': input.longitude,
-      'mapLocation': GeoPoint(input.latitude, input.longitude),
       'supportedUnits': input.supportedUnits,
       'businessPermitNumber': input.businessPermitNumber,
       'businessPermitUrl': input.businessPermitUrl,
@@ -143,9 +136,6 @@ class SupplierActivationService {
             'storeLocation': input.storeLocation,
             'serviceArea': input.serviceArea,
             'description': input.storeDescription,
-            'latitude': input.latitude,
-            'longitude': input.longitude,
-            'mapLocation': GeoPoint(input.latitude, input.longitude),
             'supportedUnits': input.supportedUnits,
             'businessPermitNumber': input.businessPermitNumber,
             'businessPermitUrl': input.businessPermitUrl,
@@ -160,7 +150,9 @@ class SupplierActivationService {
             'createdAt': FieldValue.serverTimestamp(),
             'updatedAt': FieldValue.serverTimestamp(),
           },
-          SetOptions(merge: true),
+          SetOptions(
+            merge: true,
+          ),
         );
 
         transaction.set(
@@ -175,7 +167,9 @@ class SupplierActivationService {
             'supplierApplication': applicationData,
             'updatedAt': FieldValue.serverTimestamp(),
           },
-          SetOptions(merge: true),
+          SetOptions(
+            merge: true,
+          ),
         );
       },
     );

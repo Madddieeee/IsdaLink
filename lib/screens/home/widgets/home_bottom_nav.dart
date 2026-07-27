@@ -6,17 +6,22 @@ class HomeBottomNav extends StatelessWidget {
     required this.onMyOrders,
     required this.onAnalytics,
     required this.onMe,
+    this.activeOrderCount = 0,
+    this.supplierNotificationCount = 0,
   });
 
   final VoidCallback onMyOrders;
   final VoidCallback onAnalytics;
   final VoidCallback onMe;
+  final int activeOrderCount;
+  final int supplierNotificationCount;
 
   Widget bottomNavItem({
     required IconData icon,
     required String label,
     required bool active,
     required VoidCallback onTap,
+    int badgeCount = 0,
   }) {
     return Expanded(
       child: GestureDetector(
@@ -34,12 +39,50 @@ class HomeBottomNav extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                icon,
-                color: active
-                    ? const Color(0xFF087AC0)
-                    : const Color(0xFF9AAABD),
-                size: 22,
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(
+                    icon,
+                    color: active
+                        ? const Color(0xFF087AC0)
+                        : const Color(0xFF9AAABD),
+                    size: 22,
+                  ),
+                  if (badgeCount > 0)
+                    Positioned(
+                      right: -9,
+                      top: -8,
+                      child: Container(
+                        constraints: const BoxConstraints(
+                          minWidth: 17,
+                          minHeight: 17,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFF4D4D),
+                          borderRadius: BorderRadius.circular(99),
+                          border: Border.all(
+                            color: Colors.white,
+                            width: 1.4,
+                          ),
+                        ),
+                        child: Text(
+                          badgeCount > 9 ? '9+' : '$badgeCount',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 8.5,
+                            fontWeight: FontWeight.w900,
+                            height: 1,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(height: 3),
               Text(
@@ -89,6 +132,7 @@ class HomeBottomNav extends StatelessWidget {
               icon: Icons.receipt_long,
               label: 'Orders',
               active: false,
+              badgeCount: activeOrderCount,
               onTap: onMyOrders,
             ),
             bottomNavItem(
@@ -101,6 +145,7 @@ class HomeBottomNav extends StatelessWidget {
               icon: Icons.person,
               label: 'Me',
               active: false,
+              badgeCount: supplierNotificationCount,
               onTap: onMe,
             ),
           ],

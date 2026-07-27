@@ -201,6 +201,125 @@ class SupplierCodOrdersScreen
     );
   }
 
+  Widget pendingOrdersNotice(
+    int pendingCount,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(
+        14,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(
+          0xFFFFF4E0,
+        ),
+        borderRadius: BorderRadius.circular(
+          20,
+        ),
+        border: Border.all(
+          color: const Color(
+            0xFFFFDFA8,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: const Color(
+                    0xFFFF7A1A,
+                  ),
+                  borderRadius: BorderRadius.circular(
+                    15,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.notifications_active,
+                  color: Colors.white,
+                  size: 22,
+                ),
+              ),
+              Positioned(
+                right: -7,
+                top: -7,
+                child: Container(
+                  constraints: const BoxConstraints(
+                    minWidth: 21,
+                  ),
+                  height: 21,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(
+                      0xFFFF4D2D,
+                    ),
+                    borderRadius: BorderRadius.circular(
+                      99,
+                    ),
+                    border: Border.all(
+                      color: Colors.white,
+                      width: 2,
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      pendingCount > 99 ? '99+' : '$pendingCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(
+            width: 12,
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  pendingCount == 1
+                      ? '1 new COD order needs review'
+                      : '$pendingCount new COD orders need review',
+                  style: const TextStyle(
+                    color: Color(
+                      0xFF102C44,
+                    ),
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(
+                  height: 3,
+                ),
+                const Text(
+                  'Accept or cancel pending vendor requests below.',
+                  style: TextStyle(
+                    color: Color(
+                      0xFF7B8FA3,
+                    ),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget bodyContent({
     required BuildContext context,
     required List<
@@ -213,6 +332,18 @@ class SupplierCodOrdersScreen
     >
     documents,
   }) {
+    final pendingCount = documents.where(
+      (
+        document,
+      ) {
+        final status = (document.data()['orderStatus'] ?? '')
+            .toString()
+            .toLowerCase();
+
+        return status == 'pending';
+      },
+    ).length;
+
     return Column(
       children: [
         SupplierOrdersHeader(
@@ -252,6 +383,14 @@ class SupplierCodOrdersScreen
               const SizedBox(
                 height: 18,
               ),
+              if (pendingCount > 0) ...[
+                pendingOrdersNotice(
+                  pendingCount,
+                ),
+                const SizedBox(
+                  height: 14,
+                ),
+              ],
               if (documents.isEmpty)
                 emptyOrdersCard()
               else

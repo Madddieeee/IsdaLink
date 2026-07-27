@@ -455,57 +455,188 @@ class _MyOrdersScreenState
     );
   }
 
-  Widget statCard({
+  Widget headerMetricCard({
     required String value,
     required String label,
     required IconData icon,
+    required Color accentColor,
   }) {
     return Expanded(
       child: Container(
-        height: 72,
-        margin: const EdgeInsets.symmetric(
-          horizontal: 4,
+        height: 58,
+        padding: const EdgeInsets.symmetric(
+          horizontal: 8,
+          vertical: 8,
         ),
         decoration: BoxDecoration(
           color: Colors.white.withAlpha(
-            38,
+            36,
           ),
           borderRadius: BorderRadius.circular(
-            18,
+            17,
           ),
           border: Border.all(
             color: Colors.white.withAlpha(
-              36,
+              32,
+            ),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 31,
+              height: 31,
+              decoration: BoxDecoration(
+                color: accentColor.withAlpha(
+                  42,
+                ),
+                borderRadius: BorderRadius.circular(
+                  11,
+                ),
+              ),
+              child: Icon(
+                icon,
+                color: Colors.white,
+                size: 16,
+              ),
+            ),
+            const SizedBox(
+              width: 7,
+            ),
+            Flexible(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(
+                        0xFFE6F9FF,
+                      ),
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget statusProgressItem({
+    required String label,
+    required int count,
+    required IconData icon,
+    required bool highlight,
+  }) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 7,
+          vertical: 9,
+        ),
+        decoration: BoxDecoration(
+          color: highlight
+              ? Colors.white
+              : Colors.white.withAlpha(
+                  30,
+                ),
+          borderRadius: BorderRadius.circular(
+            16,
+          ),
+          border: Border.all(
+            color: Colors.white.withAlpha(
+              34,
             ),
           ),
         ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              color: Colors.white,
-              size: 20,
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  icon,
+                  color: highlight
+                      ? const Color(
+                          0xFF146BFF,
+                        )
+                      : Colors.white,
+                  size: 20,
+                ),
+                if (count > 0)
+                  Positioned(
+                    right: -9,
+                    top: -7,
+                    child: Container(
+                      constraints: const BoxConstraints(
+                        minWidth: 18,
+                      ),
+                      height: 18,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(
+                          0xFFFF4D2D,
+                        ),
+                        borderRadius: BorderRadius.circular(
+                          99,
+                        ),
+                        border: Border.all(
+                          color: Colors.white,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          count > 9 ? '9+' : '$count',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 8.5,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(
               height: 5,
             ),
             Text(
-              value,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            Text(
               label,
-              style: const TextStyle(
-                color: Color(
-                  0xFFDCE9F5,
-                ),
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: highlight
+                    ? const Color(
+                        0xFF102C44,
+                      )
+                    : const Color(
+                        0xFFE6F9FF,
+                      ),
+                fontSize: 9.5,
+                fontWeight: FontWeight.w800,
               ),
             ),
           ],
@@ -526,17 +657,17 @@ class _MyOrdersScreenState
     >
     documents,
   ) {
-    final pendingCount = OrderHelpers.countByStatus(
+    final toPayCount = OrderHelpers.countByStatus(
       documents,
       'Pending',
     );
 
-    final acceptedCount = OrderHelpers.countByStatus(
+    final toShipCount = OrderHelpers.countByStatus(
       documents,
       'Accepted',
     );
 
-    final deliveredCount = OrderHelpers.countByStatus(
+    final toReceiveCount = OrderHelpers.countByStatus(
       documents,
       'Delivered',
     );
@@ -546,12 +677,45 @@ class _MyOrdersScreenState
       'Cancelled',
     );
 
+    final toRateCount = documents.where(
+      (
+        document,
+      ) {
+        final data = document.data();
+
+        final status = OrderHelpers.getStringValue(
+          data,
+          'orderStatus',
+          'Pending',
+        ).toLowerCase();
+
+        final reviewed = data['reviewSubmitted'] == true;
+
+        return (status == 'delivered' || status == 'completed') && !reviewed;
+      },
+    ).length;
+
+    final activeCount = toPayCount + toShipCount;
+    final completedCount = documents.where(
+      (
+        document,
+      ) {
+        final status = OrderHelpers.getStringValue(
+          document.data(),
+          'orderStatus',
+          'Pending',
+        ).toLowerCase();
+
+        return status == 'delivered' || status == 'completed';
+      },
+    ).length;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(
         20,
-        54,
+        52,
         20,
-        24,
+        22,
       ),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -564,105 +728,284 @@ class _MyOrdersScreenState
             Color(
               0xFF146BFF,
             ),
+            Color(
+              0xFF0F7BFF,
+            ),
           ],
         ),
         borderRadius: BorderRadius.vertical(
           bottom: Radius.circular(
-            32,
+            34,
           ),
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Row(
-            children: [
-              GestureDetector(
-                onTap: () => Navigator.pop(
-                  context,
+          Positioned(
+            right: -42,
+            top: 6,
+            child: Container(
+              width: 128,
+              height: 128,
+              decoration: BoxDecoration(
+                color: Colors.white.withAlpha(
+                  22,
                 ),
-                child: Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(
-                      38,
-                    ),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.arrow_back,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
+                shape: BoxShape.circle,
               ),
-              const SizedBox(
-                width: 12,
-              ),
-              const Expanded(
-                child: Text(
-                  'My Orders',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 23,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(
-            height: 8,
-          ),
-          const Text(
-            'Track your COD fish orders from payment, supplier preparation, delivery, and rating.',
-            style: TextStyle(
-              color: Color(
-                0xFFDCE9F5,
-              ),
-              fontSize: 13,
-              height: 1.4,
             ),
           ),
-          const SizedBox(
-            height: 18,
+          Positioned(
+            left: -58,
+            bottom: 18,
+            child: Container(
+              width: 108,
+              height: 108,
+              decoration: BoxDecoration(
+                color: Colors.white.withAlpha(
+                  15,
+                ),
+                shape: BoxShape.circle,
+              ),
+            ),
           ),
-          Row(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              statCard(
-                value: '$pendingCount',
-                label: 'To Pay',
-                icon: Icons.schedule,
+              Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.pop(
+                      context,
+                    ),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(
+                          42,
+                        ),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withAlpha(
+                            35,
+                          ),
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(
+                    width: 12,
+                  ),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'My Purchases',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        SizedBox(
+                          height: 2,
+                        ),
+                        Text(
+                          'Track COD orders from placement to rating.',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Color(
+                              0xFFE6F9FF,
+                            ),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 7,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha(
+                        38,
+                      ),
+                      borderRadius: BorderRadius.circular(
+                        99,
+                      ),
+                      border: Border.all(
+                        color: Colors.white.withAlpha(
+                          30,
+                        ),
+                      ),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(
+                          Icons.payments,
+                          color: Colors.white,
+                          size: 14,
+                        ),
+                        SizedBox(
+                          width: 5,
+                        ),
+                        Text(
+                          'COD',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              statCard(
-                value: '$acceptedCount',
-                label: 'To Ship',
-                icon: Icons.check_circle,
+              const SizedBox(
+                height: 18,
               ),
-              statCard(
-                value: '$deliveredCount',
-                label: 'To Receive',
-                icon: Icons.local_shipping,
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(
+                  13,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(
+                    28,
+                  ),
+                  borderRadius: BorderRadius.circular(
+                    23,
+                  ),
+                  border: Border.all(
+                    color: Colors.white.withAlpha(
+                      28,
+                    ),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        headerMetricCard(
+                          value: '$activeCount',
+                          label: 'Active',
+                          icon: Icons.local_shipping_outlined,
+                          accentColor: const Color(
+                            0xFF10B7D4,
+                          ),
+                        ),
+                        const SizedBox(
+                          width: 8,
+                        ),
+                        headerMetricCard(
+                          value: '$completedCount',
+                          label: 'Completed',
+                          icon: Icons.check_circle_outline,
+                          accentColor: const Color(
+                            0xFF2E7D32,
+                          ),
+                        ),
+                        const SizedBox(
+                          width: 8,
+                        ),
+                        headerMetricCard(
+                          value: '${documents.length}',
+                          label: 'Total',
+                          icon: Icons.receipt_long,
+                          accentColor: const Color(
+                            0xFFFFB703,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(
+                      height: 12,
+                    ),
+                    Row(
+                      children: [
+                        statusProgressItem(
+                          label: 'To Pay',
+                          count: toPayCount,
+                          icon: Icons.payments_outlined,
+                          highlight: toPayCount > 0,
+                        ),
+                        const SizedBox(
+                          width: 7,
+                        ),
+                        statusProgressItem(
+                          label: 'To Ship',
+                          count: toShipCount,
+                          icon: Icons.inventory_2_outlined,
+                          highlight: toShipCount > 0,
+                        ),
+                        const SizedBox(
+                          width: 7,
+                        ),
+                        statusProgressItem(
+                          label: 'To Receive',
+                          count: toReceiveCount,
+                          icon: Icons.local_shipping_outlined,
+                          highlight: toReceiveCount > 0,
+                        ),
+                        const SizedBox(
+                          width: 7,
+                        ),
+                        statusProgressItem(
+                          label: 'To Rate',
+                          count: toRateCount,
+                          icon: Icons.star_border,
+                          highlight: toRateCount > 0,
+                        ),
+                      ],
+                    ),
+                    if (cancelledCount > 0) ...[
+                      const SizedBox(
+                        height: 10,
+                      ),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.info_outline,
+                            color: Color(
+                              0xFFFFE4B7,
+                            ),
+                            size: 15,
+                          ),
+                          const SizedBox(
+                            width: 6,
+                          ),
+                          Expanded(
+                            child: Text(
+                              '$cancelledCount cancelled order${cancelledCount == 1 ? '' : 's'} kept in history.',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(
+                                  0xFFFFE4B7,
+                                ),
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
               ),
-            ],
-          ),
-          const SizedBox(
-            height: 8,
-          ),
-          Row(
-            children: [
-              statCard(
-                value: '$cancelledCount',
-                label: 'Cancelled',
-                icon: Icons.cancel,
-              ),
-              statCard(
-                value: '${documents.length}',
-                label: 'Total',
-                icon: Icons.receipt_long,
-              ),
-              const Spacer(),
             ],
           ),
         ],
@@ -830,45 +1173,118 @@ class _MyOrdersScreenState
     return Expanded(
       child: ListView(
         padding: const EdgeInsets.fromLTRB(
-          18,
-          18,
-          18,
-          20,
+          16,
+          14,
+          16,
+          22,
         ),
         children: [
           OrderNotificationPanel(
             vendorId: vendorId,
             service: orderService,
           ),
-          Text(
-            selectedFilter ==
-                    'All'
-                ? 'All Orders'
-                : '$selectedFilter Orders',
-            style: const TextStyle(
-              color: Color(
-                0xFF102C44,
+          Container(
+            padding: const EdgeInsets.all(
+              14,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(
+                22,
               ),
-              fontSize: 19,
-              fontWeight: FontWeight.w900,
+              border: Border.all(
+                color: const Color(
+                  0xFFE1EEF6,
+                ),
+              ),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(
+                    0x0D000000,
+                  ),
+                  blurRadius: 10,
+                  offset: Offset(
+                    0,
+                    5,
+                  ),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [
+                        Color(
+                          0xFF087AC0,
+                        ),
+                        Color(
+                          0xFF10B7D4,
+                        ),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(
+                      15,
+                    ),
+                  ),
+                  child: Icon(
+                    selectedFilter == 'All'
+                        ? Icons.receipt_long
+                        : OrderHelpers.statusIcon(
+                            selectedFilter,
+                          ),
+                    color: Colors.white,
+                    size: 21,
+                  ),
+                ),
+                const SizedBox(
+                  width: 12,
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        selectedFilter == 'All'
+                            ? 'All COD Orders'
+                            : '$selectedFilter Orders',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(
+                            0xFF102C44,
+                          ),
+                          fontSize: 17,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(
+                        height: 3,
+                      ),
+                      Text(
+                        '${orders.length} result${orders.length == 1 ? '' : 's'} • ${OrderHelpers.filterDescription(selectedFilter)}',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(
+                            0xFF7B8FA3,
+                          ),
+                          fontSize: 11.5,
+                          height: 1.25,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(
-            height: 4,
-          ),
-          Text(
-            OrderHelpers.filterDescription(
-              selectedFilter,
-            ),
-            style: const TextStyle(
-              color: Color(
-                0xFF7B8FA3,
-              ),
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(
-            height: 18,
+            height: 14,
           ),
           if (orders.isEmpty)
             emptyOrdersCard(
