@@ -2,14 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:isdalink/models/supplier.dart';
 import 'package:isdalink/screens/vendor/product_details_screen.dart';
-import 'package:isdalink/screens/vendor/supplier_map_screen.dart';
 import 'package:isdalink/screens/vendor/supplier_details/widgets/supplier_details_header.dart';
 import 'package:isdalink/screens/vendor/supplier_details/widgets/supplier_details_status_cards.dart';
 import 'package:isdalink/screens/vendor/supplier_details/widgets/supplier_product_card.dart';
 import 'package:isdalink/screens/vendor/supplier_details/widgets/supplier_reviews_section.dart';
 import 'package:isdalink/services/supplier_details_service.dart';
 
-class SupplierDetailsScreen extends StatelessWidget {
+class SupplierDetailsScreen extends StatefulWidget {
   const SupplierDetailsScreen({
     super.key,
     required this.supplier,
@@ -19,12 +18,35 @@ class SupplierDetailsScreen extends StatelessWidget {
   final Supplier supplier;
   final String? supplierId;
 
-  SupplierDetailsService get detailsService => const SupplierDetailsService();
+  @override
+  State<SupplierDetailsScreen> createState() =>
+      _SupplierDetailsScreenState();
+}
 
-  void openProduct({
-    required BuildContext context,
-    required QueryDocumentSnapshot<Map<String, dynamic>> document,
-  }) {
+class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
+  final SupplierDetailsService detailsService =
+      const SupplierDetailsService();
+
+  final TextEditingController searchController =
+      TextEditingController();
+
+  String searchQuery = '';
+  String selectedUnit = 'all';
+  String sortMode = 'latest';
+  int selectedTab = 0;
+
+  Supplier get supplier => widget.supplier;
+  String? get supplierId => widget.supplierId;
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
+
+  void openProduct(
+    QueryDocumentSnapshot<Map<String, dynamic>> document,
+  ) {
     final data = document.data();
 
     final product = detailsService.fishProductFromFirestore(
@@ -50,256 +72,572 @@ class SupplierDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget productCard({
-    required BuildContext context,
-    required QueryDocumentSnapshot<Map<String, dynamic>> document,
-  }) {
-    final data = document.data();
+  String sortLabel(
+    String value,
+  ) {
+    switch (value) {
+      case 'price_low':
+        return 'Price: low to high';
+      case 'price_high':
+        return 'Price: high to low';
+      case 'name':
+        return 'Fish name';
+      case 'latest':
+      default:
+        return 'Latest posts';
+    }
+  }
 
-    final productName = detailsService.getStringValue(
-      data,
-      'productName',
-      'Fish Product',
-    );
-
-    final category = detailsService.getStringValue(
-      data,
-      'category',
-      'Fresh Fish',
-    );
-
-    final emoji = detailsService.getStringValue(
-      data,
-      'emoji',
-      '🐟',
-    );
-
-    final price = detailsService.getDoubleValue(
-      data,
-      'price',
-    );
-
-    final priceUnit = detailsService.getStringValue(
-      data,
-      'priceUnit',
-      'per kilo',
-    );
-
-    final quantity = detailsService.getDoubleValue(
-      data,
-      'quantity',
-    );
-
-    final quantityUnit = detailsService.getStringValue(
-      data,
-      'quantityUnit',
-      'kilo',
-    );
-
-    final lowStockLevel = detailsService.getDoubleValue(
-      data,
-      'lowStockLevel',
-    );
-
-    final stockColor = detailsService.getStockColor(
-      quantity: quantity,
-      lowStockLevel: lowStockLevel,
-    );
-
-    final stockStatus = detailsService.getStockStatus(
-      quantity: quantity,
-      lowStockLevel: lowStockLevel,
-    );
-
-    return SupplierProductCard(
-      productName: productName,
-      category: category,
-      emoji: emoji,
-      price: price,
-      priceUnit: priceUnit,
-      quantity: quantity,
-      quantityUnit: quantityUnit,
-      stockColor: stockColor,
-      stockStatus: stockStatus,
-      onTap: () => openProduct(
-        context: context,
-        document: document,
+  Widget storeTabs() {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(18, 10, 18, 10),
+      child: Container(
+        height: 46,
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0F6FA),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: storeTabButton(
+                label: 'Fish Listings',
+                icon: Icons.set_meal_outlined,
+                index: 0,
+              ),
+            ),
+            Expanded(
+              child: storeTabButton(
+                label: 'Store Reviews',
+                icon: Icons.star_outline_rounded,
+                index: 1,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  double? doubleValueFromProfile(
-    Map<String, dynamic>? data,
-    String key,
-  ) {
-    if (data == null) {
-      return null;
-    }
+  Widget storeTabButton({
+    required String label,
+    required IconData icon,
+    required int index,
+  }) {
+    final selected = selectedTab == index;
 
-    final value = data[key];
-
-    if (value is int) {
-      return value.toDouble();
-    }
-
-    if (value is double) {
-      return value;
-    }
-
-    if (value is String) {
-      return double.tryParse(
-        value.trim(),
-      );
-    }
-
-    return null;
-  }
-
-  Widget supplierMapLocationCard(
-    BuildContext context,
-  ) {
-    if (supplierId == null || supplierId!.trim().isEmpty) {
-      return const SupplierMapUnavailableCard();
-    }
-
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('supplierProfiles')
-          .doc(supplierId)
-          .snapshots(),
-      builder: (context, profileSnapshot) {
-        final data = profileSnapshot.data?.data();
-
-        final latitude = doubleValueFromProfile(
-          data,
-          'latitude',
-        );
-
-        final longitude = doubleValueFromProfile(
-          data,
-          'longitude',
-        );
-
-        final profileData = data ?? <String, dynamic>{};
-
-        final supplierName = detailsService.getStringValue(
-          profileData,
-          'supplierName',
-          supplier.name,
-        );
-
-        final location = detailsService.getStringValue(
-          profileData,
-          'location',
-          supplier.location,
-        );
-
-        if (latitude == null || longitude == null) {
-          return const SupplierMapUnavailableCard();
-        }
-
-        return SupplierMapLocationCard(
-          supplierName: supplierName,
-          location: location,
-          latitude: latitude,
-          longitude: longitude,
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => SupplierMapScreen(
-                  supplierName: supplierName,
-                  location: location,
-                  latitude: latitude,
-                  longitude: longitude,
+    return Material(
+      color: selected ? Colors.white : Colors.transparent,
+      borderRadius: BorderRadius.circular(13),
+      child: InkWell(
+        onTap: () {
+          setState(
+            () {
+              selectedTab = index;
+            },
+          );
+        },
+        borderRadius: BorderRadius.circular(13),
+        child: Container(
+          alignment: Alignment.center,
+          decoration: selected
+              ? BoxDecoration(
+                  borderRadius: BorderRadius.circular(13),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x10000000),
+                      blurRadius: 8,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                )
+              : null,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 17,
+                color: selected
+                    ? const Color(0xFF087AC0)
+                    : const Color(0xFF7B8FA3),
+              ),
+              const SizedBox(width: 7),
+              Text(
+                label,
+                style: TextStyle(
+                  color: selected
+                      ? const Color(0xFF102C44)
+                      : const Color(0xFF7B8FA3),
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w900,
                 ),
               ),
-            );
-          },
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget searchAndFilterCard(
+    List<String> units,
+  ) {
+    final unitOptions = [
+      'all',
+      ...units,
+    ];
+
+    if (!unitOptions.contains(selectedUnit)) {
+      selectedUnit = 'all';
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(23),
+        border: Border.all(
+          color: const Color(0xFFE0EEF5),
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0E000000),
+            blurRadius: 12,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          TextField(
+            controller: searchController,
+            onChanged: (value) {
+              setState(
+                () {
+                  searchQuery = value;
+                },
+              );
+            },
+            textInputAction: TextInputAction.search,
+            decoration: InputDecoration(
+              hintText: 'Search fish in this store',
+              hintStyle: const TextStyle(
+                color: Color(0xFF9AAEBD),
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+              prefixIcon: const Icon(
+                Icons.search_rounded,
+                color: Color(0xFF6E90A6),
+              ),
+              suffixIcon: searchQuery.trim().isEmpty
+                  ? null
+                  : IconButton(
+                      onPressed: () {
+                        searchController.clear();
+
+                        setState(
+                          () {
+                            searchQuery = '';
+                          },
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        size: 19,
+                        color: Color(0xFF7B8FA3),
+                      ),
+                    ),
+              filled: true,
+              fillColor: const Color(0xFFF4F8FB),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 12,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(17),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(17),
+                borderSide: const BorderSide(
+                  color: Color(0xFFE1EEF6),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(17),
+                borderSide: const BorderSide(
+                  color: Color(0xFF16A9D1),
+                  width: 1.3,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 35,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: unitOptions.length,
+                    separatorBuilder: (_, _) =>
+                        const SizedBox(width: 7),
+                    itemBuilder: (context, index) {
+                      final unit = unitOptions[index];
+                      final selected = selectedUnit == unit;
+
+                      return ChoiceChip(
+                        selected: selected,
+                        onSelected: (_) {
+                          setState(
+                            () {
+                              selectedUnit = unit;
+                            },
+                          );
+                        },
+                        label: Text(
+                          unit == 'all'
+                              ? 'All units'
+                              : unit[0].toUpperCase() +
+                                  unit.substring(1),
+                        ),
+                        labelStyle: TextStyle(
+                          color: selected
+                              ? Colors.white
+                              : const Color(0xFF52677A),
+                          fontSize: 10.3,
+                          fontWeight: FontWeight.w900,
+                        ),
+                        selectedColor: const Color(0xFF087AC0),
+                        backgroundColor: const Color(0xFFF0F6FA),
+                        side: BorderSide(
+                          color: selected
+                              ? const Color(0xFF087AC0)
+                              : const Color(0xFFE0EEF5),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        showCheckmark: false,
+                        visualDensity: VisualDensity.compact,
+                      );
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              PopupMenuButton<String>(
+                initialValue: sortMode,
+                onSelected: (value) {
+                  setState(
+                    () {
+                      sortMode = value;
+                    },
+                  );
+                },
+                tooltip: 'Sort fish listings',
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                itemBuilder: (context) {
+                  return const [
+                    PopupMenuItem(
+                      value: 'latest',
+                      child: Text('Latest posts'),
+                    ),
+                    PopupMenuItem(
+                      value: 'price_low',
+                      child: Text('Price: low to high'),
+                    ),
+                    PopupMenuItem(
+                      value: 'price_high',
+                      child: Text('Price: high to low'),
+                    ),
+                    PopupMenuItem(
+                      value: 'name',
+                      child: Text('Fish name'),
+                    ),
+                  ];
+                },
+                child: Container(
+                  height: 35,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F8FD),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFFD5EEF7),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.swap_vert_rounded,
+                        color: Color(0xFF087AC0),
+                        size: 17,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Sort',
+                        style: const TextStyle(
+                          color: Color(0xFF087AC0),
+                          fontSize: 10.3,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 9),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              sortLabel(sortMode),
+              style: const TextStyle(
+                color: Color(0xFF7B8FA3),
+                fontSize: 9.8,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget productGrid(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
+  ) {
+    final width = MediaQuery.sizeOf(context).width;
+    final columns = width < 360 ? 1 : 2;
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: documents.length,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: columns,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        mainAxisExtent: columns == 1 ? 238 : 262,
+      ),
+      itemBuilder: (context, index) {
+        final document = documents[index];
+        final data = document.data();
+
+        final productName = detailsService.getStringValue(
+          data,
+          'productName',
+          'Fish Product',
+        );
+
+        final category = detailsService.getStringValue(
+          data,
+          'category',
+          'Fresh Fish',
+        );
+
+        final emoji = detailsService.getStringValue(
+          data,
+          'emoji',
+          '🐟',
+        );
+
+        final imageUrl = detailsService.productImageUrl(data);
+        final price = detailsService.getDoubleValue(data, 'price');
+
+        final priceUnit = detailsService.getStringValue(
+          data,
+          'priceUnit',
+          'per kilo',
+        );
+
+        final quantity = detailsService.getDoubleValue(
+          data,
+          'quantity',
+        );
+
+        final quantityUnit = detailsService.getStringValue(
+          data,
+          'quantityUnit',
+          'kilo',
+        );
+
+        final lowStockLevel = detailsService.getDoubleValue(
+          data,
+          'lowStockLevel',
+        );
+
+        final stockColor = detailsService.getStockColor(
+          quantity: quantity,
+          lowStockLevel: lowStockLevel,
+        );
+
+        final stockStatus = detailsService.getStockStatus(
+          quantity: quantity,
+          lowStockLevel: lowStockLevel,
+        );
+
+        return SupplierProductCard(
+          productName: productName,
+          category: category,
+          emoji: emoji,
+          imageUrl: imageUrl,
+          price: price,
+          priceUnit: priceUnit,
+          quantity: quantity,
+          quantityUnit: quantityUnit,
+          stockColor: stockColor,
+          stockStatus: stockStatus,
+          onTap: () => openProduct(document),
         );
       },
     );
   }
 
-  Widget bodyContent({
-    required BuildContext context,
+  Widget productsBody({
     required List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
   }) {
-    final stats = detailsService.calculateStats(
-      documents,
+    final orderable = detailsService.orderableStocks(documents);
+    final units = detailsService.availableUnits(orderable);
+
+    final visibleProducts = detailsService.filterAndSortProducts(
+      documents: orderable,
+      query: searchQuery,
+      selectedUnit: selectedUnit,
+      sortMode: sortMode,
     );
+
+    return ListView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: const EdgeInsets.fromLTRB(18, 10, 18, 24),
+      children: [
+        searchAndFilterCard(units),
+        const SizedBox(height: 18),
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'Available Fish',
+                style: TextStyle(
+                  color: Color(0xFF102C44),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 6,
+              ),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F8FD),
+                borderRadius: BorderRadius.circular(99),
+              ),
+              child: Text(
+                '${visibleProducts.length} listing'
+                '${visibleProducts.length == 1 ? '' : 's'}',
+                style: const TextStyle(
+                  color: Color(0xFF087AC0),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Current COD stock posted by ${supplier.name}.',
+          style: const TextStyle(
+            color: Color(0xFF7B8FA3),
+            fontSize: 11.3,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 14),
+        if (orderable.isEmpty)
+          const SupplierDetailsEmptyCard(
+            title: 'No fish available right now',
+            subtitle:
+                'This supplier has no active fish stock for ordering at the moment.',
+          )
+        else if (visibleProducts.isEmpty)
+          const SupplierDetailsEmptyCard(
+            title: 'No matching fish found',
+            subtitle:
+                'Try another fish name or change the selected unit filter.',
+            icon: Icons.search_off_rounded,
+          )
+        else
+          productGrid(visibleProducts),
+      ],
+    );
+  }
+
+  Widget reviewsBody() {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
+      children: [
+        SupplierReviewsSection(
+          supplierId: supplierId,
+          supplierName: supplier.name,
+        ),
+      ],
+    );
+  }
+
+  Widget loadedBody(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> allDocuments,
+  ) {
+    final documents = detailsService.filterSupplierStocks(
+      documents: allDocuments,
+      supplier: supplier,
+      supplierId: supplierId,
+    );
+
+    final stats = detailsService.calculateStats(documents);
 
     return Column(
       children: [
         SupplierDetailsHeader(
           supplier: supplier,
           stats: stats,
-          onBack: () => Navigator.pop(
-            context,
-          ),
+          onBack: () => Navigator.pop(context),
         ),
+        storeTabs(),
         Expanded(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(
-              18,
-              22,
-              18,
-              20,
-            ),
-            children: [
-              supplierMapLocationCard(
-                context,
-              ),
-              const SizedBox(
-                height: 18,
-              ),
-              const Text(
-                'Available Fish Products',
-                style: TextStyle(
-                  color: Color(
-                    0xFF102C44,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            switchInCurve: Curves.easeOut,
+            switchOutCurve: Curves.easeIn,
+            child: selectedTab == 0
+                ? KeyedSubtree(
+                    key: const ValueKey('products'),
+                    child: productsBody(
+                      documents: documents,
+                    ),
+                  )
+                : KeyedSubtree(
+                    key: const ValueKey('reviews'),
+                    child: reviewsBody(),
                   ),
-                  fontSize: 19,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(
-                height: 4,
-              ),
-              const Text(
-                'Live Firebase stock posts for the selected supplier. Tap a product to view details and place a COD order.',
-                style: TextStyle(
-                  color: Color(
-                    0xFF7B8FA3,
-                  ),
-                  fontSize: 12,
-                ),
-              ),
-              const SizedBox(
-                height: 18,
-              ),
-              if (documents.isEmpty)
-                const SupplierDetailsEmptyCard()
-              else
-                ...documents.map(
-                  (document) => productCard(
-                    context: context,
-                    document: document,
-                  ),
-                ),
-              SupplierReviewsSection(
-                supplierId: supplierId,
-              ),
-            ],
           ),
         ),
       ],
     );
   }
 
-  Widget loadingBody(
-    BuildContext context,
-  ) {
+  Widget loadingBody() {
     final stats = detailsService.calculateStats(
       const [],
     );
@@ -309,32 +647,13 @@ class SupplierDetailsScreen extends StatelessWidget {
         SupplierDetailsHeader(
           supplier: supplier,
           stats: stats,
-          onBack: () => Navigator.pop(
-            context,
-          ),
+          onBack: () => Navigator.pop(context),
         ),
+        storeTabs(),
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(
-              18,
-              22,
-              18,
-              20,
-            ),
+            padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
             children: const [
-              Text(
-                'Available Fish Products',
-                style: TextStyle(
-                  color: Color(
-                    0xFF102C44,
-                  ),
-                  fontSize: 19,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              SizedBox(
-                height: 18,
-              ),
               SupplierDetailsLoadingCard(),
             ],
           ),
@@ -343,10 +662,7 @@ class SupplierDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget errorBody({
-    required BuildContext context,
-    required Object error,
-  }) {
+  Widget errorBody() {
     final stats = detailsService.calculateStats(
       const [],
     );
@@ -356,41 +672,14 @@ class SupplierDetailsScreen extends StatelessWidget {
         SupplierDetailsHeader(
           supplier: supplier,
           stats: stats,
-          onBack: () => Navigator.pop(
-            context,
-          ),
+          onBack: () => Navigator.pop(context),
         ),
+        storeTabs(),
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(
-              18,
-              22,
-              18,
-              20,
-            ),
-            children: [
-              supplierMapLocationCard(
-                context,
-              ),
-              const SizedBox(
-                height: 18,
-              ),
-              const Text(
-                'Available Fish Products',
-                style: TextStyle(
-                  color: Color(
-                    0xFF102C44,
-                  ),
-                  fontSize: 19,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(
-                height: 18,
-              ),
-              SupplierDetailsErrorCard(
-                error: error,
-              ),
+            padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
+            children: const [
+              SupplierDetailsErrorCard(),
             ],
           ),
         ),
@@ -403,205 +692,23 @@ class SupplierDetailsScreen extends StatelessWidget {
     BuildContext context,
   ) {
     return Scaffold(
-      backgroundColor: const Color(
-        0xFFF4F8FB,
-      ),
+      backgroundColor: const Color(0xFFF4F8FB),
+      resizeToAvoidBottomInset: true,
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: detailsService.fishStocksStream,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return errorBody(
-              context: context,
-              error: snapshot.error!,
-            );
+            return errorBody();
           }
 
           if (!snapshot.hasData) {
-            return loadingBody(
-              context,
-            );
+            return loadingBody();
           }
 
-          final documents = detailsService.filterSupplierStocks(
-            documents: snapshot.data!.docs,
-            supplier: supplier,
-            supplierId: supplierId,
-          );
-
-          return bodyContent(
-            context: context,
-            documents: documents,
+          return loadedBody(
+            snapshot.data!.docs,
           );
         },
-      ),
-    );
-  }
-}
-
-
-class SupplierMapLocationCard extends StatelessWidget {
-  const SupplierMapLocationCard({
-    super.key,
-    required this.supplierName,
-    required this.location,
-    required this.latitude,
-    required this.longitude,
-    required this.onTap,
-  });
-
-  final String supplierName;
-  final String location;
-  final double latitude;
-  final double longitude;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x10000000),
-            blurRadius: 14,
-            offset: Offset(0, 7),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [
-                  Color(0xFF102C44),
-                  Color(0xFF146BFF),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: const Icon(
-              Icons.location_on,
-              color: Colors.white,
-              size: 30,
-            ),
-          ),
-          const SizedBox(width: 13),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Store Location',
-                  style: TextStyle(
-                    color: Color(0xFF102C44),
-                    fontSize: 15,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  location,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF7B8FA3),
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${latitude.toStringAsFixed(5)}, ${longitude.toStringAsFixed(5)}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF146BFF),
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 10),
-          ElevatedButton.icon(
-            onPressed: onTap,
-            icon: const Icon(
-              Icons.map,
-              size: 17,
-            ),
-            label: const Text(
-              'View Map',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF146BFF),
-              foregroundColor: Colors.white,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 10,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class SupplierMapUnavailableCard extends StatelessWidget {
-  const SupplierMapUnavailableCard({
-    super.key,
-  });
-
-  @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF8E8),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: const Color(0xFFFFB703).withAlpha(72),
-        ),
-      ),
-      child: const Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.location_off_outlined,
-            color: Color(0xFFFF7A1A),
-            size: 24,
-          ),
-          SizedBox(width: 11),
-          Expanded(
-            child: Text(
-              'Map location is not set for this supplier yet. Add latitude and longitude to the supplier profile to show a Google Maps pin.',
-              style: TextStyle(
-                color: Color(0xFF52677A),
-                fontSize: 12,
-                height: 1.35,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

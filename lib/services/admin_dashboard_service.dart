@@ -9,7 +9,9 @@ class AdminDashboardService {
   }
 
   Stream<QuerySnapshot<Map<String, dynamic>>> get supplierProfilesStream {
-    return FirebaseFirestore.instance.collection('supplierProfiles').snapshots();
+    return FirebaseFirestore.instance
+        .collection('supplierProfiles')
+        .snapshots();
   }
 
   Stream<QuerySnapshot<Map<String, dynamic>>> get fishStocksStream {
@@ -87,11 +89,18 @@ class AdminDashboardService {
       supplierDocument.id,
     );
 
-    final batch = FirebaseFirestore.instance.batch();
+    final userRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid);
 
-    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
-    final supplierRef =
-        FirebaseFirestore.instance.collection('supplierProfiles').doc(uid);
+    final supplierRef = FirebaseFirestore.instance
+        .collection('supplierProfiles')
+        .doc(uid);
+
+    final userSnapshot = await userRef.get();
+    final accountCreatedAt = userSnapshot.data()?['createdAt'];
+
+    final batch = FirebaseFirestore.instance.batch();
 
     batch.set(
       userRef,
@@ -107,9 +116,8 @@ class AdminDashboardService {
       supplierRef,
       {
         'status': 'approved',
-        'verificationStatus': 'approved',
         'approvedAt': FieldValue.serverTimestamp(),
-        'verifiedAt': FieldValue.serverTimestamp(),
+        'accountCreatedAt': ?accountCreatedAt,
         'updatedAt': FieldValue.serverTimestamp(),
       },
       SetOptions(merge: true),
@@ -131,9 +139,13 @@ class AdminDashboardService {
 
     final batch = FirebaseFirestore.instance.batch();
 
-    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
-    final supplierRef =
-        FirebaseFirestore.instance.collection('supplierProfiles').doc(uid);
+    final userRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid);
+
+    final supplierRef = FirebaseFirestore.instance
+        .collection('supplierProfiles')
+        .doc(uid);
 
     batch.set(
       userRef,
@@ -149,7 +161,6 @@ class AdminDashboardService {
       supplierRef,
       {
         'status': 'rejected',
-        'verificationStatus': 'rejected',
         'rejectedAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       },

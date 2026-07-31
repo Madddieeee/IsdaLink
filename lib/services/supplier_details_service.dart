@@ -5,141 +5,128 @@ import 'package:isdalink/models/supplier.dart';
 
 class SupplierDetailsStats {
   const SupplierDetailsStats({
-    required this.totalProducts,
-    required this.availableProducts,
-    required this.lowStockProducts,
-    required this.firstEmoji,
+    required this.totalListings,
+    required this.availableListings,
+    required this.limitedListings,
   });
 
-  final int totalProducts;
-  final int availableProducts;
-  final int lowStockProducts;
-  final String firstEmoji;
+  final int totalListings;
+  final int availableListings;
+  final int limitedListings;
 }
 
 class SupplierDetailsService {
   const SupplierDetailsService();
 
-  Stream<
-    QuerySnapshot<
-      Map<
-        String,
-        dynamic
-      >
-    >
-  >
-  get fishStocksStream {
+  Stream<QuerySnapshot<Map<String, dynamic>>> get fishStocksStream {
     return FirebaseFirestore.instance
-        .collection(
-          'fishStocks',
-        )
-        .orderBy(
-          'createdAt',
-          descending: true,
-        )
+        .collection('fishStocks')
+        .orderBy('createdAt', descending: true)
         .snapshots();
   }
 
   String getStringValue(
-    Map<
-      String,
-      dynamic
-    >
-    data,
+    Map<String, dynamic> data,
     String key,
     String fallback,
   ) {
     final value = data[key];
 
-    if (value ==
-        null) {
+    if (value == null) {
       return fallback;
     }
 
     final text = value.toString().trim();
-
-    if (text.isEmpty) {
-      return fallback;
-    }
-
-    return text;
+    return text.isEmpty ? fallback : text;
   }
 
   double getDoubleValue(
-    Map<
-      String,
-      dynamic
-    >
-    data,
+    Map<String, dynamic> data,
     String key,
   ) {
     final value = data[key];
 
-    if (value
-        is int) {
+    if (value is int) {
       return value.toDouble();
     }
 
-    if (value
-        is double) {
+    if (value is double) {
       return value;
     }
 
-    if (value
-        is String) {
-      return double.tryParse(
-            value,
-          ) ??
-          0;
+    if (value is String) {
+      return double.tryParse(value) ?? 0;
     }
 
     return 0;
   }
 
+  DateTime? getDateTimeValue(
+    dynamic value,
+  ) {
+    if (value is Timestamp) {
+      return value.toDate();
+    }
+
+    if (value is DateTime) {
+      return value;
+    }
+
+    if (value is String) {
+      return DateTime.tryParse(value);
+    }
+
+    return null;
+  }
+
+  String productImageUrl(
+    Map<String, dynamic> data,
+  ) {
+    const keys = [
+      'productImageUrl',
+      'imageUrl',
+      'photoUrl',
+      'fishImageUrl',
+    ];
+
+    for (final key in keys) {
+      final value = getStringValue(data, key, '');
+
+      if (value.isNotEmpty) {
+        return value;
+      }
+    }
+
+    return '';
+  }
+
   bool matchesSelectedSupplier({
-    required Map<
-      String,
-      dynamic
-    >
-    data,
+    required Map<String, dynamic> data,
     required Supplier supplier,
     required String? supplierId,
   }) {
+    final selectedId = supplierId?.trim() ?? '';
     final stockSupplierId = getStringValue(
       data,
       'supplierId',
       '',
-    );
+    ).trim();
+
+    if (selectedId.isNotEmpty && stockSupplierId == selectedId) {
+      return true;
+    }
 
     final stockSupplierName = getStringValue(
       data,
       'supplierName',
       '',
-    ).toLowerCase();
+    ).trim().toLowerCase();
 
-    final selectedSupplierName = supplier.name.toLowerCase();
-
-    final hasMatchingId =
-        supplierId !=
-            null &&
-        supplierId.trim().isNotEmpty &&
-        stockSupplierId ==
-            supplierId;
-
-    final hasMatchingName =
-        stockSupplierName ==
-        selectedSupplierName;
-
-    return hasMatchingId ||
-        hasMatchingName;
+    return stockSupplierName == supplier.name.trim().toLowerCase();
   }
 
-  bool isVisibleStock(
-    Map<
-      String,
-      dynamic
-    >
-    data,
+  bool isArchivedStock(
+    Map<String, dynamic> data,
   ) {
     final status = getStringValue(
       data,
@@ -147,37 +134,42 @@ class SupplierDetailsService {
       'available',
     ).toLowerCase();
 
-    return status ==
-            'available' ||
-        status ==
-            'active';
+    return status == 'deleted' || status == 'archived';
   }
 
-  List<
-    QueryDocumentSnapshot<
-      Map<
-        String,
-        dynamic
-      >
-    >
-  >
-  filterSupplierStocks({
-    required List<
-      QueryDocumentSnapshot<
-        Map<
-          String,
-          dynamic
-        >
-      >
-    >
-    documents,
+  bool isOrderableStock(
+    Map<String, dynamic> data,
+  ) {
+    final status = getStringValue(
+      data,
+      'status',
+      'available',
+    ).toLowerCase();
+
+    final quantity = getDoubleValue(data, 'quantity');
+
+    return (status == 'available' || status == 'active') &&
+        quantity > 0;
+  }
+
+  bool isLimitedStock(
+    Map<String, dynamic> data,
+  ) {
+    final quantity = getDoubleValue(data, 'quantity');
+    final lowStockLevel = getDoubleValue(data, 'lowStockLevel');
+
+    return quantity > 0 &&
+        lowStockLevel > 0 &&
+        quantity <= lowStockLevel;
+  }
+
+  List<QueryDocumentSnapshot<Map<String, dynamic>>> filterSupplierStocks({
+    required List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
     required Supplier supplier,
     required String? supplierId,
   }) {
     return documents.where(
-      (
-        document,
-      ) {
+      (document) {
         final data = document.data();
 
         return matchesSelectedSupplier(
@@ -185,59 +177,189 @@ class SupplierDetailsService {
               supplier: supplier,
               supplierId: supplierId,
             ) &&
-            isVisibleStock(
-              data,
-            );
+            !isArchivedStock(data);
       },
     ).toList();
+  }
+
+  List<QueryDocumentSnapshot<Map<String, dynamic>>> orderableStocks(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
+  ) {
+    return documents.where(
+      (document) => isOrderableStock(document.data()),
+    ).toList();
+  }
+
+  List<String> availableUnits(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
+  ) {
+    final units = <String>{};
+
+    for (final document in documents) {
+      final unit = getStringValue(
+        document.data(),
+        'quantityUnit',
+        'kilo',
+      ).trim().toLowerCase();
+
+      if (unit.isNotEmpty) {
+        units.add(unit);
+      }
+    }
+
+    const preferredOrder = [
+      'kilo',
+      'icebox',
+      'tab',
+    ];
+
+    final ordered = <String>[];
+
+    for (final preferred in preferredOrder) {
+      if (units.remove(preferred)) {
+        ordered.add(preferred);
+      }
+    }
+
+    ordered.addAll(
+      units.toList()..sort(),
+    );
+
+    return ordered;
+  }
+
+  List<QueryDocumentSnapshot<Map<String, dynamic>>> filterAndSortProducts({
+    required List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
+    required String query,
+    required String selectedUnit,
+    required String sortMode,
+  }) {
+    final normalizedQuery = query.trim().toLowerCase();
+    final normalizedUnit = selectedUnit.trim().toLowerCase();
+
+    final filtered = documents.where(
+      (document) {
+        final data = document.data();
+
+        final productName = getStringValue(
+          data,
+          'productName',
+          '',
+        ).toLowerCase();
+
+        final category = getStringValue(
+          data,
+          'category',
+          '',
+        ).toLowerCase();
+
+        final description = getStringValue(
+          data,
+          'description',
+          '',
+        ).toLowerCase();
+
+        final quantityUnit = getStringValue(
+          data,
+          'quantityUnit',
+          'kilo',
+        ).toLowerCase();
+
+        final matchesQuery = normalizedQuery.isEmpty ||
+            productName.contains(normalizedQuery) ||
+            category.contains(normalizedQuery) ||
+            description.contains(normalizedQuery);
+
+        final matchesUnit = normalizedUnit == 'all' ||
+            quantityUnit == normalizedUnit;
+
+        return matchesQuery && matchesUnit;
+      },
+    ).toList();
+
+    filtered.sort(
+      (first, second) {
+        final firstData = first.data();
+        final secondData = second.data();
+
+        switch (sortMode) {
+          case 'price_low':
+            return getDoubleValue(firstData, 'price').compareTo(
+              getDoubleValue(secondData, 'price'),
+            );
+          case 'price_high':
+            return getDoubleValue(secondData, 'price').compareTo(
+              getDoubleValue(firstData, 'price'),
+            );
+          case 'name':
+            return getStringValue(
+              firstData,
+              'productName',
+              '',
+            ).toLowerCase().compareTo(
+                  getStringValue(
+                    secondData,
+                    'productName',
+                    '',
+                  ).toLowerCase(),
+                );
+          case 'latest':
+          default:
+            final firstDate = getDateTimeValue(firstData['createdAt']);
+            final secondDate = getDateTimeValue(secondData['createdAt']);
+
+            if (firstDate == null && secondDate == null) {
+              return 0;
+            }
+
+            if (firstDate == null) {
+              return 1;
+            }
+
+            if (secondDate == null) {
+              return -1;
+            }
+
+            return secondDate.compareTo(firstDate);
+        }
+      },
+    );
+
+    return filtered;
   }
 
   Color getStockColor({
     required double quantity,
     required double lowStockLevel,
   }) {
-    if (quantity <=
-        0) {
-      return const Color(
-        0xFFD32F2F,
-      );
+    if (quantity <= 0) {
+      return const Color(0xFFD32F2F);
     }
 
-    if (quantity <=
-        lowStockLevel) {
-      return const Color(
-        0xFFF57C00,
-      );
+    if (lowStockLevel > 0 && quantity <= lowStockLevel) {
+      return const Color(0xFFF57C00);
     }
 
-    return const Color(
-      0xFF2E7D32,
-    );
+    return const Color(0xFF168A5B);
   }
 
   String getStockStatus({
     required double quantity,
     required double lowStockLevel,
   }) {
-    if (quantity <=
-        0) {
-      return 'Out of Stock';
+    if (quantity <= 0) {
+      return 'Out of stock';
     }
 
-    if (quantity <=
-        lowStockLevel) {
-      return 'Low Stock';
+    if (lowStockLevel > 0 && quantity <= lowStockLevel) {
+      return 'Limited stock';
     }
 
     return 'Available';
   }
 
   FishProduct fishProductFromFirestore(
-    Map<
-      String,
-      dynamic
-    >
-    data,
+    Map<String, dynamic> data,
   ) {
     return FishProduct(
       name: getStringValue(
@@ -253,13 +375,14 @@ class SupplierDetailsService {
       description: getStringValue(
         data,
         'description',
-        'Fresh fish stock available for vendor orders.',
+        'Fresh fish stock available for COD ordering.',
       ),
       emoji: getStringValue(
         data,
         'emoji',
         '🐟',
       ),
+      imageUrl: productImageUrl(data),
       price: getDoubleValue(
         data,
         'price',
@@ -286,66 +409,20 @@ class SupplierDetailsService {
   }
 
   SupplierDetailsStats calculateStats(
-    List<
-      QueryDocumentSnapshot<
-        Map<
-          String,
-          dynamic
-        >
-      >
-    >
-    documents,
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
   ) {
-    final availableProducts = documents.where(
-      (
-        document,
-      ) {
-        final quantity = getDoubleValue(
-          document.data(),
-          'quantity',
-        );
+    final available = documents.where(
+      (document) => isOrderableStock(document.data()),
+    ).toList();
 
-        return quantity >
-            0;
-      },
+    final limited = available.where(
+      (document) => isLimitedStock(document.data()),
     ).length;
-
-    final lowStockProducts = documents.where(
-      (
-        document,
-      ) {
-        final data = document.data();
-
-        final quantity = getDoubleValue(
-          data,
-          'quantity',
-        );
-
-        final lowStockLevel = getDoubleValue(
-          data,
-          'lowStockLevel',
-        );
-
-        return quantity >
-                0 &&
-            quantity <=
-                lowStockLevel;
-      },
-    ).length;
-
-    final firstEmoji = documents.isNotEmpty
-        ? getStringValue(
-            documents.first.data(),
-            'emoji',
-            '🐟',
-          )
-        : '🐟';
 
     return SupplierDetailsStats(
-      totalProducts: documents.length,
-      availableProducts: availableProducts,
-      lowStockProducts: lowStockProducts,
-      firstEmoji: firstEmoji,
+      totalListings: documents.length,
+      availableListings: available.length,
+      limitedListings: limited,
     );
   }
 }

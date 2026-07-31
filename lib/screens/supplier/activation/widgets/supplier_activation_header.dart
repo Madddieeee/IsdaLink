@@ -15,7 +15,7 @@ class SupplierActivationHeader extends StatelessWidget {
     BuildContext context,
   ) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 52, 20, 22),
+      padding: const EdgeInsets.fromLTRB(18, 46, 18, 16),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -81,7 +81,7 @@ class SupplierActivationHeader extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 21.5,
+                        fontSize: 20.2,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -109,22 +109,22 @@ class SupplierActivationHeader extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 17),
+              const SizedBox(height: 12),
               const Text(
                 'Create a trusted supplier profile with verified owner details, supported selling units, and clear verification photos.',
                 style: TextStyle(
                   color: Color(0xFFE6F9FF),
-                  fontSize: 12.5,
-                  height: 1.4,
+                  fontSize: 11.8,
+                  height: 1.35,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 12),
               Container(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: Colors.white.withAlpha(36),
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(17),
                   border: Border.all(
                     color: Colors.white.withAlpha(34),
                   ),
@@ -132,11 +132,11 @@ class SupplierActivationHeader extends StatelessWidget {
                 child: Row(
                   children: [
                     Container(
-                      width: 54,
-                      height: 54,
+                      width: 48,
+                      height: 48,
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(17),
                         boxShadow: const [
                           BoxShadow(
                             color: Color(0x15000000),
@@ -162,7 +162,7 @@ class SupplierActivationHeader extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 16.2,
+                              fontSize: 15.2,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
@@ -186,8 +186,8 @@ class SupplierActivationHeader extends StatelessWidget {
                     ),
                     const SizedBox(width: 10),
                     Container(
-                      width: 36,
-                      height: 36,
+                      width: 32,
+                      height: 32,
                       decoration: const BoxDecoration(
                         color: Color(0xFF38D39F),
                         shape: BoxShape.circle,

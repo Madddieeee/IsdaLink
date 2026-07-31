@@ -2,86 +2,274 @@ import 'package:flutter/material.dart';
 import 'package:isdalink/models/fish_product.dart';
 import 'package:isdalink/models/supplier.dart';
 
-class SectionCard
-    extends
-        StatelessWidget {
-  const SectionCard({
+class CheckoutCard extends StatelessWidget {
+  const CheckoutCard({
     super.key,
-    required this.title,
-    required this.icon,
     required this.child,
+    this.margin = const EdgeInsets.only(bottom: 14),
   });
 
-  final String title;
-  final IconData icon;
   final Widget child;
+  final EdgeInsetsGeometry margin;
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(
-        bottom: 16,
-      ),
-      padding: const EdgeInsets.all(
-        18,
-      ),
+      margin: margin,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(
-          24,
-        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE5EDF3)),
         boxShadow: const [
           BoxShadow(
-            color: Color(
-              0x10000000,
-            ),
-            blurRadius: 14,
-            offset: Offset(
-              0,
-              7,
-            ),
+            color: Color(0x0B000000),
+            blurRadius: 12,
+            offset: Offset(0, 5),
           ),
         ],
       ),
+      child: child,
+    );
+  }
+}
+
+class BuyerDetailsCard extends StatelessWidget {
+  const BuyerDetailsCard({
+    super.key,
+    required this.nameController,
+    required this.phoneController,
+    required this.addressController,
+    required this.isLoading,
+    required this.errorMessage,
+  });
+
+  final TextEditingController nameController;
+  final TextEditingController phoneController;
+  final TextEditingController addressController;
+  final bool isLoading;
+  final String errorMessage;
+
+  InputDecoration fieldDecoration({
+    required String label,
+    required IconData icon,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: const TextStyle(
+        color: Color(0xFF7B8FA3),
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+      ),
+      prefixIcon: Icon(
+        icon,
+        color: const Color(0xFF146BFF),
+        size: 20,
+      ),
+      filled: true,
+      fillColor: const Color(0xFFF7FAFC),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 14,
+        vertical: 14,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Color(0xFFE1EAF0)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(
+          color: Color(0xFF146BFF),
+          width: 1.4,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CheckoutCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(
+                Icons.location_on,
+                color: Color(0xFF146BFF),
+                size: 24,
+              ),
+              SizedBox(width: 8),
+              Text(
+                'Buyer Details',
+                style: TextStyle(
+                  color: Color(0xFF102C44),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          if (isLoading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 18),
+              child: Center(
+                child: CircularProgressIndicator(strokeWidth: 2.2),
+              ),
+            )
+          else ...[
+            TextField(
+              controller: nameController,
+              textCapitalization: TextCapitalization.words,
+              decoration: fieldDecoration(
+                label: 'Buyer name',
+                icon: Icons.person_outline,
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: phoneController,
+              keyboardType: TextInputType.phone,
+              decoration: fieldDecoration(
+                label: 'Contact number',
+                icon: Icons.phone_outlined,
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: addressController,
+              keyboardType: TextInputType.streetAddress,
+              textCapitalization: TextCapitalization.words,
+              minLines: 2,
+              maxLines: 3,
+              decoration: fieldDecoration(
+                label: 'Delivery address',
+                icon: Icons.home_outlined,
+              ),
+            ),
+            if (errorMessage.trim().isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                errorMessage,
+                style: const TextStyle(
+                  color: Color(0xFFD97706),
+                  fontSize: 10.5,
+                  height: 1.35,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class ProductOrderCard extends StatelessWidget {
+  const ProductOrderCard({
+    super.key,
+    required this.supplier,
+    required this.product,
+    required this.quantity,
+    required this.onDecrease,
+    required this.onIncrease,
+  });
+
+  final Supplier supplier;
+  final FishProduct product;
+  final int quantity;
+  final VoidCallback onDecrease;
+  final VoidCallback onIncrease;
+
+  bool get hasProductImage {
+    final imageUrl = product.imageUrl.trim();
+    return imageUrl.startsWith('http://') || imageUrl.startsWith('https://');
+  }
+
+  bool get canDecrease => quantity > 1;
+  bool get canIncrease => quantity < product.availableQuantity;
+
+  String formatNumber(double value) {
+    if (value % 1 == 0) return value.toStringAsFixed(0);
+    return value.toStringAsFixed(1);
+  }
+
+  Widget productImage() {
+    if (hasProductImage) {
+      return Image.network(
+        product.imageUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => productEmoji(),
+      );
+    }
+    return productEmoji();
+  }
+
+  Widget productEmoji() {
+    return Center(
+      child: Text(
+        product.emoji.trim().isEmpty ? '🐟' : product.emoji,
+        style: const TextStyle(fontSize: 38),
+      ),
+    );
+  }
+
+  Widget quantityButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    required bool enabled,
+  }) {
+    return InkWell(
+      onTap: enabled ? onTap : null,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        width: 34,
+        height: 34,
+        decoration: BoxDecoration(
+          color: enabled
+              ? const Color(0xFFEAF2FF)
+              : const Color(0xFFF0F3F5),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: enabled
+                ? const Color(0xFFBFD3F8)
+                : const Color(0xFFE2E7EA),
+          ),
+        ),
+        child: Icon(
+          icon,
+          size: 18,
+          color: enabled
+              ? const Color(0xFF146BFF)
+              : const Color(0xFFA6B2BC),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CheckoutCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color:
-                      const Color(
-                        0xFF146BFF,
-                      ).withAlpha(
-                        24,
-                      ),
-                  borderRadius: BorderRadius.circular(
-                    13,
-                  ),
-                ),
-                child: Icon(
-                  icon,
-                  color: const Color(
-                    0xFF146BFF,
-                  ),
-                  size: 21,
-                ),
+              const Icon(
+                Icons.storefront_outlined,
+                color: Color(0xFF146BFF),
+                size: 22,
               ),
-              const SizedBox(
-                width: 10,
-              ),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  title,
+                  supplier.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: Color(
-                      0xFF102C44,
-                    ),
+                    color: Color(0xFF102C44),
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
                   ),
@@ -89,132 +277,102 @@ class SectionCard
               ),
             ],
           ),
-          const SizedBox(
-            height: 16,
-          ),
-          child,
-        ],
-      ),
-    );
-  }
-}
-
-class QuantitySelectorCard
-    extends
-        StatelessWidget {
-  const QuantitySelectorCard({
-    super.key,
-    required this.quantity,
-    required this.product,
-    required this.onDecrease,
-    required this.onIncrease,
-  });
-
-  final int quantity;
-  final FishProduct product;
-  final VoidCallback onDecrease;
-  final VoidCallback onIncrease;
-
-  bool get canDecrease =>
-      quantity >
-      1;
-  bool get canIncrease =>
-      quantity <
-      product.availableQuantity;
-
-  Widget quantityButton({
-    required IconData icon,
-    required VoidCallback onTap,
-    required bool enabled,
-  }) {
-    return GestureDetector(
-      onTap: enabled
-          ? onTap
-          : null,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: enabled
-              ? const Color(
-                  0xFF146BFF,
-                )
-              : const Color(
-                  0xFFE1E9F0,
-                ),
-          borderRadius: BorderRadius.circular(
-            15,
-          ),
-        ),
-        child: Icon(
-          icon,
-          color: enabled
-              ? Colors.white
-              : const Color(
-                  0xFF7B8FA3,
-                ),
-          size: 22,
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return SectionCard(
-      title: 'Order Quantity',
-      icon: Icons.add_shopping_cart,
-      child: Column(
-        children: [
+          const SizedBox(height: 14),
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Container(
+                width: 88,
+                height: 88,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3F7FA),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFE1EAF0)),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(15),
+                  child: productImage(),
+                ),
+              ),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      product.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF102C44),
+                        fontSize: 15,
+                        height: 1.25,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      product.category,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF7B8FA3),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 9),
+                    Text(
+                      '₱${product.price.toStringAsFixed(0)} ${product.priceUnit}',
+                      style: const TextStyle(
+                        color: Color(0xFF146BFF),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Available: ${formatNumber(product.availableQuantity)} ${product.quantityUnit}',
+                      style: const TextStyle(
+                        color: Color(0xFF7B8FA3),
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 26),
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Quantity',
+                  style: TextStyle(
+                    color: Color(0xFF52677A),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
               quantityButton(
                 icon: Icons.remove,
                 onTap: onDecrease,
                 enabled: canDecrease,
               ),
               Container(
-                width: 120,
-                margin: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                ),
-                padding: const EdgeInsets.symmetric(
-                  vertical: 13,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(
-                    0xFFEAF7FB,
+                constraints: const BoxConstraints(minWidth: 68),
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Text(
+                  '$quantity ${product.quantityUnit}',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Color(0xFF102C44),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
                   ),
-                  borderRadius: BorderRadius.circular(
-                    18,
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      '$quantity',
-                      style: const TextStyle(
-                        color: Color(
-                          0xFF102C44,
-                        ),
-                        fontSize: 30,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    Text(
-                      product.quantityUnit,
-                      style: const TextStyle(
-                        color: Color(
-                          0xFF7B8FA3,
-                        ),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
                 ),
               ),
               quantityButton(
@@ -224,136 +382,20 @@ class QuantitySelectorCard
               ),
             ],
           ),
-          const SizedBox(
-            height: 14,
-          ),
-          Text(
-            'Available stock: ${product.availableQuantity.toStringAsFixed(0)} ${product.quantityUnit}',
-            style: const TextStyle(
-              color: Color(
-                0xFF7B8FA3,
-              ),
-              fontSize: 12,
-            ),
-          ),
         ],
       ),
     );
   }
 }
 
-class PaymentMethodCard
-    extends
-        StatelessWidget {
-  const PaymentMethodCard({
+class PaymentDetailsCard extends StatelessWidget {
+  const PaymentDetailsCard({
     super.key,
-  });
-
-  @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return SectionCard(
-      title: 'Payment Method',
-      icon: Icons.payments,
-      child: Container(
-        padding: const EdgeInsets.all(
-          14,
-        ),
-        decoration: BoxDecoration(
-          color: const Color(
-            0xFFEAF7FB,
-          ),
-          borderRadius: BorderRadius.circular(
-            18,
-          ),
-          border: Border.all(
-            color:
-                const Color(
-                  0xFF146BFF,
-                ).withAlpha(
-                  50,
-                ),
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: const Color(
-                  0xFF146BFF,
-                ),
-                borderRadius: BorderRadius.circular(
-                  14,
-                ),
-              ),
-              child: const Icon(
-                Icons.local_shipping,
-                color: Colors.white,
-                size: 22,
-              ),
-            ),
-            const SizedBox(
-              width: 12,
-            ),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Cash on Delivery',
-                    style: TextStyle(
-                      color: Color(
-                        0xFF102C44,
-                      ),
-                      fontSize: 15,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  SizedBox(
-                    height: 3,
-                  ),
-                  Text(
-                    'Pay the supplier when the order is received.',
-                    style: TextStyle(
-                      color: Color(
-                        0xFF7B8FA3,
-                      ),
-                      fontSize: 12,
-                      height: 1.3,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(
-              Icons.check_circle,
-              color: Color(
-                0xFF2E7D32,
-              ),
-              size: 24,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class OrderSummaryCard
-    extends
-        StatelessWidget {
-  const OrderSummaryCard({
-    super.key,
-    required this.supplier,
     required this.product,
     required this.quantity,
     required this.totalAmount,
   });
 
-  final Supplier supplier;
   final FishProduct product;
   final int quantity;
   final double totalAmount;
@@ -361,41 +403,33 @@ class OrderSummaryCard
   Widget detailRow({
     required String label,
     required String value,
-    bool bold = false,
+    bool total = false,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(
-        bottom: 11,
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(
         children: [
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
-                color: Color(
-                  0xFF7B8FA3,
-                ),
-                fontSize: 13,
+              style: TextStyle(
+                color: total
+                    ? const Color(0xFF102C44)
+                    : const Color(0xFF52677A),
+                fontSize: total ? 14 : 12.5,
+                fontWeight: total ? FontWeight.w900 : FontWeight.w600,
               ),
             ),
           ),
-          Flexible(
-            child: Text(
-              value,
-              textAlign: TextAlign.right,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: const Color(
-                  0xFF102C44,
-                ),
-                fontSize: bold
-                    ? 18
-                    : 13,
-                fontWeight: bold
-                    ? FontWeight.w900
-                    : FontWeight.w700,
-              ),
+          const SizedBox(width: 12),
+          Text(
+            value,
+            style: TextStyle(
+              color: total
+                  ? const Color(0xFF146BFF)
+                  : const Color(0xFF102C44),
+              fontSize: total ? 18 : 12.5,
+              fontWeight: total ? FontWeight.w900 : FontWeight.w800,
             ),
           ),
         ],
@@ -404,103 +438,72 @@ class OrderSummaryCard
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return SectionCard(
-      title: 'Order Summary',
-      icon: Icons.receipt_long,
+  Widget build(BuildContext context) {
+    return CheckoutCard(
+      margin: EdgeInsets.zero,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          detailRow(
-            label: 'Product',
-            value: product.name,
+          const Text(
+            'Payment Details',
+            style: TextStyle(
+              color: Color(0xFF102C44),
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+            ),
           ),
+          const SizedBox(height: 11),
           detailRow(
-            label: 'Supplier',
-            value: supplier.name,
+            label: 'Unit price',
+            value: '₱${product.price.toStringAsFixed(0)} ${product.priceUnit}',
           ),
           detailRow(
             label: 'Quantity',
             value: '$quantity ${product.quantityUnit}',
           ),
           detailRow(
-            label: 'Price',
-            value: '₱${product.price.toStringAsFixed(0)} ${product.priceUnit}',
-          ),
-          detailRow(
-            label: 'Payment',
-            value: 'COD',
-          ),
-          const Divider(
-            height: 24,
-          ),
-          detailRow(
-            label: 'Total Amount',
+            label: 'Merchandise subtotal',
             value: '₱${totalAmount.toStringAsFixed(0)}',
-            bold: true,
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class PlaceOrderInfoCard
-    extends
-        StatelessWidget {
-  const PlaceOrderInfoCard({
-    super.key,
-  });
-
-  @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(
-        16,
-      ),
-      decoration: BoxDecoration(
-        color: const Color(
-          0xFFEAF7FB,
-        ),
-        borderRadius: BorderRadius.circular(
-          22,
-        ),
-        border: Border.all(
-          color:
-              const Color(
-                0xFF146BFF,
-              ).withAlpha(
-                42,
-              ),
-        ),
-      ),
-      child: const Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.cloud_done,
-            color: Color(
-              0xFF146BFF,
+          detailRow(
+            label: 'Payment method',
+            value: 'Cash on Delivery',
+          ),
+          const Divider(height: 22),
+          detailRow(
+            label: 'Total Payment',
+            value: '₱${totalAmount.toStringAsFixed(0)}',
+            total: true,
+          ),
+          const SizedBox(height: 7),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF2F8FF),
+              borderRadius: BorderRadius.circular(13),
             ),
-            size: 22,
-          ),
-          SizedBox(
-            width: 10,
-          ),
-          Expanded(
-            child: Text(
-              'Firebase mode: This COD order will reserve stock immediately. Cancelled orders return the reserved stock.',
-              style: TextStyle(
-                color: Color(
-                  0xFF52677A,
+            child: const Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.payments_outlined,
+                  color: Color(0xFF146BFF),
+                  size: 19,
                 ),
-                fontSize: 12,
-                height: 1.4,
-                fontWeight: FontWeight.w600,
-              ),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Pay the supplier upon delivery. The selected quantity is reserved after placing the order.',
+                    style: TextStyle(
+                      color: Color(0xFF52677A),
+                      fontSize: 10.5,
+                      height: 1.35,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],

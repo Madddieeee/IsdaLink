@@ -63,184 +63,185 @@ class RecentFishCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: const Color(0xFFEAF7FB),
           borderRadius: BorderRadius.circular(22),
           border: Border.all(
             color: const Color(0xFFE1EEF6),
           ),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x10000000),
-              blurRadius: 13,
-              offset: Offset(0, 7),
+              color: Color(0x0F000000),
+              blurRadius: 12,
+              offset: Offset(0, 6),
             ),
           ],
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(22),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Stack(
+            fit: StackFit.expand,
             children: [
-              Expanded(
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Container(
-                      color: const Color(0xFFE6F9FF),
-                    ),
-                    if (product.hasImage)
-                      Image.network(
-                        product.imageUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return FishEmojiFallback(emoji: product.emoji);
-                        },
-                      )
-                    else
-                      FishEmojiFallback(emoji: product.emoji),
-                    Positioned(
-                      left: 9,
-                      top: 9,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(226),
-                          borderRadius: BorderRadius.circular(99),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.circle,
-                              color: product.stockColor,
-                              size: 8,
-                            ),
-                            const SizedBox(width: 5),
-                            Text(
-                              product.stockStatus,
-                              style: TextStyle(
-                                color: product.stockColor,
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      right: 9,
-                      bottom: 9,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 9,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF087AC0),
-                          borderRadius: BorderRadius.circular(15),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x24000000),
-                              blurRadius: 8,
-                              offset: Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Text(
-                          '₱${product.price.toStringAsFixed(0)}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+              if (product.hasImage)
+                Image.network(
+                  product.imageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return FishEmojiFallback(
+                      emoji: product.emoji,
+                    );
+                  },
+                )
+              else
+                FishEmojiFallback(
+                  emoji: product.emoji,
+                ),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withAlpha(2),
+                      Colors.black.withAlpha(120),
+                    ],
+                  ),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(11, 10, 11, 11),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
+              Positioned(
+                left: 9,
+                top: 9,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: 116,
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha(205),
+                      borderRadius: BorderRadius.circular(99),
+                      border: Border.all(
+                        color: Colors.white.withAlpha(80),
+                      ),
+                    ),
+                    child: Text(
                       displayName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Color(0xFF102C44),
-                        fontSize: 13.2,
+                        fontSize: 12.2,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Text(
-                          product.priceUnit,
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 9,
+                bottom: 9,
+                right: 82,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha(185),
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(
+                      color: Colors.white.withAlpha(70),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.storefront,
+                        color: Color(0xFF087AC0),
+                        size: 12,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          displaySupplier,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            color: Color(0xFF087AC0),
-                            fontSize: 10.5,
+                            color: Color(0xFF102C44),
+                            fontSize: 9.7,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
-                        const SizedBox(width: 5),
-                        const Text(
-                          '•',
-                          style: TextStyle(
-                            color: Color(0xFF9AADBC),
-                            fontSize: 10,
-                            fontWeight: FontWeight.w900,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Positioned(
+                right: 9,
+                bottom: 9,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF087AC0),
+                        borderRadius: BorderRadius.circular(99),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x26000000),
+                            blurRadius: 8,
+                            offset: Offset(0, 4),
                           ),
+                        ],
+                      ),
+                      child: Text(
+                        '₱${product.price.toStringAsFixed(0)}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10.7,
+                          fontWeight: FontWeight.w900,
                         ),
-                        const SizedBox(width: 5),
-                        Expanded(
-                          child: Text(
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(220),
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.circle,
+                            color: product.stockColor,
+                            size: 7,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
                             '${formatNumber(product.availableQuantity)} ${product.quantityUnit}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Color(0xFF7B8FA3),
-                              fontSize: 10.2,
-                              fontWeight: FontWeight.w700,
+                            style: TextStyle(
+                              color: product.stockColor,
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w900,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 5),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.storefront,
-                          color: Color(0xFF7B8FA3),
-                          size: 13,
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            displaySupplier,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Color(0xFF7B8FA3),
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        const Icon(
-                          Icons.chevron_right,
-                          color: Color(0xFF9AADBC),
-                          size: 16,
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -266,22 +267,26 @@ class FishEmojiFallback extends StatelessWidget {
     BuildContext context,
   ) {
     return Stack(
+      fit: StackFit.expand,
       children: [
+        Container(
+          color: const Color(0xFFE6F9FF),
+        ),
         Positioned(
           right: -24,
-          top: -20,
+          top: -22,
           child: Container(
             width: 82,
             height: 82,
             decoration: BoxDecoration(
-              color: Colors.white.withAlpha(74),
+              color: Colors.white.withAlpha(78),
               shape: BoxShape.circle,
             ),
           ),
         ),
         Center(
           child: Text(
-            emoji,
+            emoji.trim().isEmpty ? '🐟' : emoji,
             style: const TextStyle(
               fontSize: 48,
             ),

@@ -6,7 +6,9 @@ class SupplierBrowseService {
   const SupplierBrowseService();
 
   Stream<QuerySnapshot<Map<String, dynamic>>> get suppliersStream {
-    return FirebaseFirestore.instance.collection('supplierProfiles').snapshots();
+    return FirebaseFirestore.instance
+        .collection('supplierProfiles')
+        .snapshots();
   }
 
   String getStringValue(
@@ -73,59 +75,321 @@ class SupplierBrowseService {
     return fallback;
   }
 
+  bool getBoolValue(
+    Map<String, dynamic> data,
+    String key,
+  ) {
+    final value = data[key];
+
+    if (value is bool) {
+      return value;
+    }
+
+    if (value is num) {
+      return value != 0;
+    }
+
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+
+      return normalized == 'true' ||
+          normalized == 'yes' ||
+          normalized == 'approved' ||
+          normalized == 'verified';
+    }
+
+    return false;
+  }
+
+  DateTime? getDateTimeValue(
+    dynamic value,
+  ) {
+    if (value is Timestamp) {
+      return value.toDate();
+    }
+
+    if (value is DateTime) {
+      return value;
+    }
+
+    if (value is int) {
+      final isMilliseconds = value.abs() >= 100000000000;
+
+      return isMilliseconds
+          ? DateTime.fromMillisecondsSinceEpoch(value)
+          : DateTime.fromMillisecondsSinceEpoch(value * 1000);
+    }
+
+    if (value is double) {
+      final integerValue = value.toInt();
+      final isMilliseconds = integerValue.abs() >= 100000000000;
+
+      return isMilliseconds
+          ? DateTime.fromMillisecondsSinceEpoch(integerValue)
+          : DateTime.fromMillisecondsSinceEpoch(integerValue * 1000);
+    }
+
+    if (value is String) {
+      return DateTime.tryParse(value.trim());
+    }
+
+    return null;
+  }
+
+  DateTime? firstAvailableDateTime(
+    Map<String, dynamic> data,
+    List<String> keys,
+  ) {
+    for (final key in keys) {
+      final parsed = getDateTimeValue(data[key]);
+
+      if (parsed != null) {
+        return parsed;
+      }
+    }
+
+    return null;
+  }
+
+  Map<String, dynamic>? nestedApplication(
+    Map<String, dynamic> data,
+  ) {
+    final value = data['supplierApplication'];
+
+    if (value is Map<String, dynamic>) {
+      return value;
+    }
+
+    if (value is Map) {
+      return Map<String, dynamic>.from(value);
+    }
+
+    return null;
+  }
+
+  String firstAvailableText(
+    Map<String, dynamic> data,
+    List<String> keys, {
+    String fallback = '',
+  }) {
+    for (final key in keys) {
+      final value = getStringValue(data, key, '');
+
+      if (value.isNotEmpty) {
+        return value;
+      }
+    }
+
+    return fallback;
+  }
+
+  String supplierNameFromProfile(
+    Map<String, dynamic> data,
+  ) {
+    final application = nestedApplication(data);
+
+    final directName = firstAvailableText(
+      data,
+      const [
+        'supplierName',
+        'storeName',
+        'businessName',
+        'shopName',
+        'name',
+      ],
+    );
+
+    if (directName.isNotEmpty) {
+      return directName;
+    }
+
+    if (application != null) {
+      return firstAvailableText(
+        application,
+        const [
+          'supplierName',
+          'storeName',
+          'businessName',
+          'shopName',
+        ],
+        fallback: 'Registered Supplier',
+      );
+    }
+
+    return 'Registered Supplier';
+  }
+
+  String supplierLocationFromProfile(
+    Map<String, dynamic> data,
+  ) {
+    final application = nestedApplication(data);
+
+    final directLocation = firstAvailableText(
+      data,
+      const [
+        'location',
+        'storeLocation',
+        'businessAddress',
+        'storeAddress',
+        'address',
+        'serviceArea',
+      ],
+    );
+
+    if (directLocation.isNotEmpty) {
+      return directLocation;
+    }
+
+    if (application != null) {
+      return firstAvailableText(
+        application,
+        const [
+          'location',
+          'storeLocation',
+          'businessAddress',
+          'storeAddress',
+          'address',
+          'serviceArea',
+        ],
+        fallback: 'Caraga Region',
+      );
+    }
+
+    return 'Caraga Region';
+  }
+
+  String profileImageFromProfile(
+    Map<String, dynamic> data,
+  ) {
+    final application = nestedApplication(data);
+
+    final directImage = firstAvailableText(
+      data,
+      const [
+        'profileImageUrl',
+        'storePhotoUrl',
+        'businessPhotoUrl',
+        'photoUrl',
+        'imageUrl',
+      ],
+    );
+
+    if (directImage.isNotEmpty) {
+      return directImage;
+    }
+
+    if (application != null) {
+      return firstAvailableText(
+        application,
+        const [
+          'profileImageUrl',
+          'storePhotoUrl',
+          'businessPhotoUrl',
+          'photoUrl',
+          'imageUrl',
+        ],
+      );
+    }
+
+    return '';
+  }
+
+  double ratingFromProfile(
+    Map<String, dynamic> data,
+  ) {
+    final primary = getDoubleValue(data, 'rating', -1);
+
+    if (primary >= 0) {
+      return primary.clamp(0, 5).toDouble();
+    }
+
+    final average = getDoubleValue(data, 'averageRating', 0);
+
+    return average.clamp(0, 5).toDouble();
+  }
+
+  int reviewCountFromProfile(
+    Map<String, dynamic> data,
+  ) {
+    final reviews = getIntValue(data, 'reviews', -1);
+
+    if (reviews >= 0) {
+      return reviews;
+    }
+
+    final reviewCount = getIntValue(data, 'reviewCount', -1);
+
+    if (reviewCount >= 0) {
+      return reviewCount;
+    }
+
+    return getIntValue(data, 'totalReviews', 0);
+  }
+
   Supplier supplierFromProfile(
     Map<String, dynamic> data,
   ) {
-    final supplierName = getStringValue(
+    final application = nestedApplication(data);
+
+    final directDescription = firstAvailableText(
       data,
-      'supplierName',
-      getStringValue(
-        data,
-        'name',
-        'Registered Supplier',
-      ),
+      const [
+        'description',
+        'storeDescription',
+        'businessDescription',
+      ],
     );
 
+    final applicationDescription = application == null
+        ? ''
+        : firstAvailableText(
+            application,
+            const [
+              'description',
+              'storeDescription',
+              'businessDescription',
+            ],
+          );
+
     return Supplier(
-      name: supplierName,
-      location: getStringValue(
+      name: supplierNameFromProfile(data),
+      location: supplierLocationFromProfile(data),
+      contactNumber: firstAvailableText(
         data,
-        'location',
-        'Caraga Region',
-      ),
-      contactNumber: getStringValue(
-        data,
-        'phone',
-        getStringValue(
-          data,
+        const [
+          'phone',
           'contactNumber',
-          'No contact number',
-        ),
+          'mobileNumber',
+        ],
+        fallback: application == null
+            ? 'No contact number'
+            : firstAvailableText(
+                application,
+                const [
+                  'phone',
+                  'contactNumber',
+                  'mobileNumber',
+                ],
+                fallback: 'No contact number',
+              ),
       ),
-      description: getStringValue(
+      description: directDescription.isNotEmpty
+          ? directDescription
+          : applicationDescription.isNotEmpty
+              ? applicationDescription
+              : 'Verified fish supplier serving vendors through IsdaLink.',
+      rating: ratingFromProfile(data),
+      reviews: reviewCountFromProfile(data),
+      products: const <FishProduct>[],
+      profileImageUrl: profileImageFromProfile(data),
+      accountCreatedAt: firstAvailableDateTime(
         data,
-        'description',
-        'Registered fish supplier in the IsdaLink platform for vendor-supplier coordination.',
-      ),
-      rating: getDoubleValue(
-        data,
-        'rating',
-        4.5,
-      ),
-      reviews: getIntValue(
-        data,
-        'reviews',
-        0,
-      ),
-      products: <FishProduct>[],
-      profileImageUrl: getStringValue(
-        data,
-        'profileImageUrl',
-        getStringValue(
-          data,
-          'storePhotoUrl',
-          '',
-        ),
+        const [
+          'accountCreatedAt',
+          'userCreatedAt',
+          'registeredAt',
+          'createdAt',
+        ],
       ),
     );
   }
@@ -133,13 +397,27 @@ class SupplierBrowseService {
   bool isApprovedSupplier(
     QueryDocumentSnapshot<Map<String, dynamic>> document,
   ) {
+    final data = document.data();
+
     final status = getStringValue(
-      document.data(),
+      data,
       'status',
-      'approved',
+      '',
     ).toLowerCase();
 
-    return status == 'approved' || status == 'active';
+    final verificationStatus = getStringValue(
+      data,
+      'verificationStatus',
+      '',
+    ).toLowerCase();
+
+    return status == 'approved' ||
+        status == 'active' ||
+        status == 'verified' ||
+        verificationStatus == 'approved' ||
+        verificationStatus == 'verified' ||
+        getBoolValue(data, 'isApproved') ||
+        getBoolValue(data, 'isVerified');
   }
 
   List<QueryDocumentSnapshot<Map<String, dynamic>>> approvedSuppliers(
@@ -148,20 +426,31 @@ class SupplierBrowseService {
     final approved = documents.where(isApprovedSupplier).toList();
 
     approved.sort(
-      (a, b) {
-        final firstName = getStringValue(
-          a.data(),
-          'supplierName',
-          'Supplier',
-        ).toLowerCase();
+      (first, second) {
+        final firstSupplier = supplierFromProfile(first.data());
+        final secondSupplier = supplierFromProfile(second.data());
 
-        final secondName = getStringValue(
-          b.data(),
-          'supplierName',
-          'Supplier',
-        ).toLowerCase();
+        if (firstSupplier.isNewSupplier != secondSupplier.isNewSupplier) {
+          return firstSupplier.isNewSupplier ? -1 : 1;
+        }
 
-        return firstName.compareTo(secondName);
+        final ratingComparison =
+            secondSupplier.rating.compareTo(firstSupplier.rating);
+
+        if (ratingComparison != 0) {
+          return ratingComparison;
+        }
+
+        final reviewComparison =
+            secondSupplier.reviews.compareTo(firstSupplier.reviews);
+
+        if (reviewComparison != 0) {
+          return reviewComparison;
+        }
+
+        return firstSupplier.name
+            .toLowerCase()
+            .compareTo(secondSupplier.name.toLowerCase());
       },
     );
 
@@ -181,49 +470,25 @@ class SupplierBrowseService {
     return documents.where(
       (document) {
         final data = document.data();
-
-        final supplierName = getStringValue(
-          data,
-          'supplierName',
-          '',
-        ).toLowerCase();
-
-        final ownerName = getStringValue(
-          data,
-          'ownerName',
-          '',
-        ).toLowerCase();
-
-        final location = getStringValue(
-          data,
-          'location',
-          '',
-        ).toLowerCase();
-
-        final serviceArea = getStringValue(
-          data,
-          'serviceArea',
-          '',
-        ).toLowerCase();
-
-        final description = getStringValue(
-          data,
-          'description',
-          '',
-        ).toLowerCase();
-
+        final supplier = supplierFromProfile(data);
+        final ownerName = getStringValue(data, 'ownerName', '');
+        final serviceArea = getStringValue(data, 'serviceArea', '');
         final paymentMethod = getStringValue(
           data,
           'paymentMethod',
           'COD',
-        ).toLowerCase();
+        );
 
-        return supplierName.contains(searchText) ||
-            ownerName.contains(searchText) ||
-            location.contains(searchText) ||
-            serviceArea.contains(searchText) ||
-            description.contains(searchText) ||
-            paymentMethod.contains(searchText);
+        final newStatusMatch =
+            supplier.isNewSupplier && 'new supplier'.contains(searchText);
+
+        return supplier.name.toLowerCase().contains(searchText) ||
+            supplier.location.toLowerCase().contains(searchText) ||
+            supplier.description.toLowerCase().contains(searchText) ||
+            ownerName.toLowerCase().contains(searchText) ||
+            serviceArea.toLowerCase().contains(searchText) ||
+            paymentMethod.toLowerCase().contains(searchText) ||
+            newStatusMatch;
       },
     ).toList();
   }

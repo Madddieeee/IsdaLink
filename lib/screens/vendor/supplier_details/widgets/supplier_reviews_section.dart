@@ -6,9 +6,11 @@ class SupplierReviewsSection extends StatelessWidget {
   const SupplierReviewsSection({
     super.key,
     required this.supplierId,
+    required this.supplierName,
   });
 
   final String? supplierId;
+  final String supplierName;
 
   Stream<QuerySnapshot<Map<String, dynamic>>>? get reviewsStream {
     final id = supplierId?.trim() ?? '';
@@ -23,121 +25,120 @@ class SupplierReviewsSection extends StatelessWidget {
         .snapshots();
   }
 
-  Widget sectionCard({
-    required Widget child,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(
-        top: 4,
-        bottom: 16,
-      ),
-      padding: const EdgeInsets.all(
-        18,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(
-          24,
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(
-              0x10000000,
-            ),
-            blurRadius: 14,
-            offset: Offset(
-              0,
-              7,
-            ),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: const Color(
-                    0xFFFFB703,
-                  ).withAlpha(
-                    30,
-                  ),
-                  borderRadius: BorderRadius.circular(
-                    14,
-                  ),
-                ),
-                child: const Icon(
-                  Icons.star,
-                  color: Color(
-                    0xFFFFB703,
-                  ),
-                  size: 23,
-                ),
-              ),
-              const SizedBox(
-                width: 12,
-              ),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Supplier Reviews',
-                      style: TextStyle(
-                        color: Color(
-                          0xFF102C44,
-                        ),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    SizedBox(
-                      height: 3,
-                    ),
-                    Text(
-                      'Reviews from completed vendor orders.',
-                      style: TextStyle(
-                        color: Color(
-                          0xFF7B8FA3,
-                        ),
-                        fontSize: 12,
-                        height: 1.3,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(
-            height: 16,
-          ),
-          child,
-        ],
-      ),
-    );
+  String vendorInitial(
+    String vendorName,
+  ) {
+    final value = vendorName.trim();
+
+    if (value.isEmpty) {
+      return 'V';
+    }
+
+    return value.substring(0, 1).toUpperCase();
+  }
+
+  DateTime? dateValue(
+    dynamic value,
+  ) {
+    if (value is Timestamp) {
+      return value.toDate();
+    }
+
+    if (value is DateTime) {
+      return value;
+    }
+
+    if (value is String) {
+      return DateTime.tryParse(value);
+    }
+
+    return null;
+  }
+
+  String formatDate(
+    DateTime? date,
+  ) {
+    if (date == null) {
+      return '';
+    }
+
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
   Widget ratingStars(
-    int rating,
-  ) {
+    int rating, {
+    double size = 15,
+  }) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: List.generate(
         5,
         (index) {
           return Icon(
-            index < rating ? Icons.star : Icons.star_border,
-            color: const Color(
-              0xFFFFB703,
-            ),
-            size: 15,
+            index < rating
+                ? Icons.star_rounded
+                : Icons.star_border_rounded,
+            color: const Color(0xFFFFB703),
+            size: size,
           );
         },
+      ),
+    );
+  }
+
+  Widget emptyReviews() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(18, 22, 18, 22),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(23),
+        border: Border.all(
+          color: const Color(0xFFE0EEF5),
+        ),
+      ),
+      child: const Column(
+        children: [
+          Icon(
+            Icons.reviews_outlined,
+            color: Color(0xFF87A5B8),
+            size: 38,
+          ),
+          SizedBox(height: 10),
+          Text(
+            'No store reviews yet',
+            style: TextStyle(
+              color: Color(0xFF102C44),
+              fontSize: 14.5,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          SizedBox(height: 5),
+          Text(
+            'Ratings from completed COD orders will appear here.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Color(0xFF7B8FA3),
+              fontSize: 11,
+              height: 1.4,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -168,89 +169,107 @@ class SupplierReviewsSection extends StatelessWidget {
     final rating = OrderHelpers.getDoubleValue(
       data,
       'rating',
-    ).round();
+    ).round().clamp(1, 5);
+
+    final createdAt = dateValue(data['createdAt']);
+    final dateLabel = formatDate(createdAt);
 
     return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(
-        bottom: 10,
-      ),
-      padding: const EdgeInsets.all(
-        13,
-      ),
+      margin: const EdgeInsets.only(bottom: 11),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(
-          0xFFF4F8FB,
-        ),
-        borderRadius: BorderRadius.circular(
-          18,
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(21),
+        border: Border.all(
+          color: const Color(0xFFE0EEF5),
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
+              Container(
+                width: 38,
+                height: 38,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F8FD),
+                  borderRadius: BorderRadius.circular(13),
+                ),
                 child: Text(
-                  vendorName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  vendorInitial(vendorName),
                   style: const TextStyle(
-                    color: Color(
-                      0xFF102C44,
-                    ),
-                    fontSize: 13,
+                    color: Color(0xFF087AC0),
+                    fontSize: 15,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
               ),
-              ratingStars(
-                rating,
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      vendorName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF102C44),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    ratingStars(rating),
+                  ],
+                ),
               ),
+              if (dateLabel.isNotEmpty)
+                Text(
+                  dateLabel,
+                  style: const TextStyle(
+                    color: Color(0xFF91A5B3),
+                    fontSize: 9.3,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
             ],
           ),
-          const SizedBox(
-            height: 4,
-          ),
-          Text(
-            'Order item: $productName',
-            style: const TextStyle(
-              color: Color(
-                0xFF7B8FA3,
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 9,
+              vertical: 6,
+            ),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0F6FA),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              productName,
+              style: const TextStyle(
+                color: Color(0xFF52677A),
+                fontSize: 9.7,
+                fontWeight: FontWeight.w800,
               ),
-              fontSize: 11,
             ),
           ),
           if (comment.isNotEmpty) ...[
-            const SizedBox(
-              height: 8,
-            ),
+            const SizedBox(height: 10),
             Text(
               comment,
               style: const TextStyle(
-                color: Color(
-                  0xFF52677A,
-                ),
-                fontSize: 12,
-                height: 1.35,
+                color: Color(0xFF52677A),
+                fontSize: 11.3,
+                height: 1.4,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
         ],
-      ),
-    );
-  }
-
-  Widget emptyReviews() {
-    return const Text(
-      'No reviews yet. Reviews will appear after vendors rate completed orders.',
-      style: TextStyle(
-        color: Color(
-          0xFF7B8FA3,
-        ),
-        fontSize: 13,
-        height: 1.4,
       ),
     );
   }
@@ -267,7 +286,7 @@ class SupplierReviewsSection extends StatelessWidget {
     );
 
     final totalRating = sortedReviews.fold<double>(
-      0.0,
+      0,
       (total, document) {
         return total +
             OrderHelpers.getDoubleValue(
@@ -284,65 +303,92 @@ class SupplierReviewsSection extends StatelessWidget {
       children: [
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(
-            14,
-          ),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(
-              0xFFFFF7E8,
+            gradient: const LinearGradient(
+              colors: [
+                Color(0xFFFFF4D8),
+                Color(0xFFFFFBF0),
+              ],
             ),
-            borderRadius: BorderRadius.circular(
-              18,
+            borderRadius: BorderRadius.circular(23),
+            border: Border.all(
+              color: const Color(0xFFFFE2A0),
             ),
           ),
           child: Row(
             children: [
-              const Icon(
-                Icons.star,
-                color: Color(
-                  0xFFFFB703,
+              Container(
+                width: 56,
+                height: 56,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
                 ),
-                size: 24,
-              ),
-              const SizedBox(
-                width: 10,
-              ),
-              Text(
-                averageRating.toStringAsFixed(
-                  1,
-                ),
-                style: const TextStyle(
-                  color: Color(
-                    0xFF102C44,
-                  ),
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(
-                width: 8,
-              ),
-              Expanded(
                 child: Text(
-                  '${sortedReviews.length} review${sortedReviews.length == 1 ? '' : 's'}',
+                  averageRating.toStringAsFixed(1),
                   style: const TextStyle(
-                    color: Color(
-                      0xFF7B8FA3,
-                    ),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF102C44),
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
                   ),
+                ),
+              ),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ratingStars(
+                      averageRating.round().clamp(1, 5),
+                      size: 18,
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      '${sortedReviews.length} verified review'
+                      '${sortedReviews.length == 1 ? '' : 's'}',
+                      style: const TextStyle(
+                        color: Color(0xFF52677A),
+                        fontSize: 10.8,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      'From completed IsdaLink COD orders',
+                      style: TextStyle(
+                        color: Color(0xFF7B8FA3),
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(
-          height: 12,
+        const SizedBox(height: 16),
+        Text(
+          'Reviews for $supplierName',
+          style: const TextStyle(
+            color: Color(0xFF102C44),
+            fontSize: 16,
+            fontWeight: FontWeight.w900,
+          ),
         ),
-        ...sortedReviews.take(5).map(
-              reviewTile,
-            ),
+        const SizedBox(height: 4),
+        const Text(
+          'Feedback submitted after completed fish orders.',
+          style: TextStyle(
+            color: Color(0xFF7B8FA3),
+            fontSize: 10.8,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...sortedReviews.take(8).map(reviewTile),
       ],
     );
   }
@@ -354,47 +400,49 @@ class SupplierReviewsSection extends StatelessWidget {
     final stream = reviewsStream;
 
     if (stream == null) {
-      return sectionCard(
-        child: emptyReviews(),
-      );
+      return emptyReviews();
     }
 
-    return sectionCard(
-      child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream: stream,
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Text(
-              'Unable to load supplier reviews: ${snapshot.error}',
-              style: const TextStyle(
-                color: Color(
-                  0xFFD32F2F,
-                ),
-                fontSize: 12,
-                height: 1.4,
-                fontWeight: FontWeight.w700,
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: stream,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(23),
+              border: Border.all(
+                color: const Color(0xFFFFD7D7),
               ),
-            );
-          }
-
-          if (!snapshot.hasData) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(
-                  8,
-                ),
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                ),
+            ),
+            child: const Text(
+              'Unable to load store reviews right now.',
+              style: TextStyle(
+                color: Color(0xFFD32F2F),
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
               ),
-            );
-          }
-
-          return reviewsBody(
-            snapshot.data!.docs,
+            ),
           );
-        },
-      ),
+        }
+
+        if (!snapshot.hasData) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(22),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Color(0xFF087AC0),
+              ),
+            ),
+          );
+        }
+
+        return reviewsBody(
+          snapshot.data!.docs,
+        );
+      },
     );
   }
 }

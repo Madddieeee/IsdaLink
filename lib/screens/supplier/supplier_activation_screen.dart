@@ -573,7 +573,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
       builder: (dialogContext) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(19),
           ),
           title: const Text(
             'Application Submitted',
@@ -635,9 +635,9 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
         fontWeight: FontWeight.w600,
       ),
       prefixIcon: Container(
-        margin: const EdgeInsets.fromLTRB(12, 10, 9, 10),
-        width: 34,
-        height: 34,
+        margin: const EdgeInsets.fromLTRB(10, 8, 8, 8),
+        width: 31,
+        height: 31,
         decoration: BoxDecoration(
           color: const Color(0xFFE6F9FF),
           borderRadius: BorderRadius.circular(13),
@@ -649,28 +649,28 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
         ),
       ),
       prefixIconConstraints: const BoxConstraints(
-        minWidth: 58,
-        minHeight: 56,
+        minWidth: 52,
+        minHeight: 50,
       ),
       filled: true,
       fillColor: const Color(0xFFF6FAFD),
-      contentPadding: const EdgeInsets.fromLTRB(14, 18, 15, 16),
+      contentPadding: const EdgeInsets.fromLTRB(12, 14, 13, 13),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(19),
         borderSide: const BorderSide(
           color: Color(0xFFE5EEF6),
           width: 1,
         ),
       ),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(19),
         borderSide: const BorderSide(
           color: Color(0xFFE5EEF6),
           width: 1,
         ),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(19),
         borderSide: const BorderSide(
           color: Color(0xFF146BFF),
           width: 1.5,
@@ -689,11 +689,11 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
     ];
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      margin: const EdgeInsets.fromLTRB(18, 10, 18, 0),
+      padding: const EdgeInsets.fromLTRB(14, 13, 14, 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(19),
         border: Border.all(
           color: const Color(0xFFE4EDF5),
         ),
@@ -773,7 +773,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           ClipRRect(
             borderRadius: BorderRadius.circular(99),
             child: LinearProgressIndicator(
@@ -785,7 +785,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Row(
             children: List.generate(
               stepTitles.length,
@@ -868,8 +868,8 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
     required String message,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FCFF),
         borderRadius: BorderRadius.circular(20),
@@ -881,8 +881,8 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 38,
-            height: 38,
+            width: 34,
+            height: 34,
             decoration: BoxDecoration(
               color: const Color(0xFFEFF7FF),
               borderRadius: BorderRadius.circular(14),
@@ -902,7 +902,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                   title,
                   style: const TextStyle(
                     color: Color(0xFF102C44),
-                    fontSize: 13.6,
+                    fontSize: 13.1,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -911,8 +911,8 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                   message,
                   style: const TextStyle(
                     color: Color(0xFF61778A),
-                    fontSize: 11,
-                    height: 1.35,
+                    fontSize: 10.5,
+                    height: 1.3,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -972,22 +972,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
             ],
           ),
         ),
-        const SizedBox(width: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-          decoration: BoxDecoration(
-            color: const Color(0xFFEAF8EE),
-            borderRadius: BorderRadius.circular(99),
-          ),
-          child: const Text(
-            'Required',
-            style: TextStyle(
-              color: Color(0xFF2E7D32),
-              fontSize: 9.2,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ),
+
       ],
     );
   }
@@ -999,11 +984,11 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
     required List<Widget> children,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 18),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(19),
         border: Border.all(
           color: const Color(0xFFE5EEF6),
         ),
@@ -1022,7 +1007,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
             title: title,
             subtitle: subtitle,
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 11),
           ...children,
         ],
       ),
@@ -1030,7 +1015,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
   }
 
   Widget verticalGap() {
-    return const SizedBox(height: 14);
+    return const SizedBox(height: 10);
   }
 
   Widget verificationPhotoUploadCard({
@@ -1052,7 +1037,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
               ),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(9),
         decoration: BoxDecoration(
           color: hasImage ? const Color(0xFFF4FCF6) : const Color(0xFFFAFCFF),
           borderRadius: BorderRadius.circular(18),
@@ -1068,8 +1053,8 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
               clipBehavior: Clip.none,
               children: [
                 Container(
-                  width: 64,
-                  height: 64,
+                  width: 58,
+                  height: 58,
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
@@ -1136,7 +1121,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: Color(0xFF102C44),
-                            fontSize: 13.5,
+                            fontSize: 13.0,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
@@ -1174,8 +1159,8 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Color(0xFF607486),
-                      fontSize: 10.8,
-                      height: 1.32,
+                      fontSize: 10.3,
+                      height: 1.28,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -1232,7 +1217,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
     required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: color.withAlpha(10),
         borderRadius: BorderRadius.circular(16),
@@ -1244,8 +1229,8 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 30,
-            height: 30,
+            width: 26,
+            height: 26,
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(10),
@@ -1268,7 +1253,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                   title,
                   style: TextStyle(
                     color: color,
-                    fontSize: 11.6,
+                    fontSize: 10.8,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -1277,8 +1262,8 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                   message,
                   style: const TextStyle(
                     color: Color(0xFF5E7386),
-                    fontSize: 10.6,
-                    height: 1.35,
+                    fontSize: 10.0,
+                    height: 1.3,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -1353,12 +1338,12 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                     'Required format: 09XXXXXXXXX or +639XXXXXXXXX.',
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 8),
             requirementNoticeCard(
               icon: Icons.verified_outlined,
-              title: 'Contact number validation',
+              title: 'Use a valid mobile number',
               message:
-                  'Random or incomplete numbers are not accepted. Use an active Philippine mobile number so admin can verify the supplier account.',
+                  'Only active Philippine mobile numbers are accepted for admin review.',
               color: const Color(0xFF146BFF),
             ),
           ],
@@ -1428,12 +1413,12 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                     'Describe the fish source, selling setup, and regular available stocks.',
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 8),
             requirementNoticeCard(
               icon: Icons.store_mall_directory_outlined,
-              title: 'Vendor-facing profile',
+              title: 'Shown to vendors',
               message:
-                  'After approval, these details help vendors identify your store and available supply coverage.',
+                  'These details appear on your supplier profile after approval.',
               color: const Color(0xFF10B7D4),
             ),
           ],
@@ -1534,12 +1519,12 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
               isUploading: isUploadingStorePhoto,
               isBusinessPermit: false,
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 8),
             requirementNoticeCard(
               icon: Icons.privacy_tip_outlined,
-              title: 'Photo quality reminder',
+              title: 'Readable photos only',
               message:
-                  'Use bright and readable photos. Blurry, cropped, mismatched, or incomplete verification photos may be rejected by admin.',
+                  'Blurry or mismatched photos may be rejected by admin.',
               color: const Color(0xFF146BFF),
             ),
           ],
@@ -1765,7 +1750,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
   Widget bottomNavigation() {
     if (applicationSubmitted) {
       return Container(
-        padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+        padding: const EdgeInsets.fromLTRB(18, 10, 18, 14),
         decoration: const BoxDecoration(
           color: Colors.white,
           boxShadow: [
@@ -1807,7 +1792,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
     }
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+      padding: const EdgeInsets.fromLTRB(18, 10, 18, 14),
       decoration: const BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -1837,7 +1822,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                     color: Color(0xFF146BFF),
                     width: 1.3,
                   ),
-                  minimumSize: const Size.fromHeight(56),
+                  minimumSize: const Size.fromHeight(52),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(18),
                   ),
@@ -1873,7 +1858,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                   foregroundColor: Colors.white,
                   elevation: 4,
                   shadowColor: const Color(0xFF146BFF).withAlpha(60),
-                  minimumSize: const Size.fromHeight(56),
+                  minimumSize: const Size.fromHeight(52),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(18),
                   ),
@@ -1913,7 +1898,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                       ? 'submitted'
                       : 'step-$currentStep',
                 ),
-                padding: const EdgeInsets.fromLTRB(20, 18, 20, 120),
+                padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
                 children: [

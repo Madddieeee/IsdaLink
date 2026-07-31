@@ -5,14 +5,14 @@ class HomeSectionHeader extends StatelessWidget {
     super.key,
     required this.title,
     required this.icon,
+    this.actionLabel,
     this.onViewAll,
-    this.actionLabel = 'View all',
   });
 
   final String title;
   final IconData icon;
+  final String? actionLabel;
   final VoidCallback? onViewAll;
-  final String actionLabel;
 
   @override
   Widget build(
@@ -21,21 +21,21 @@ class HomeSectionHeader extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 32,
-          height: 32,
+          width: 34,
+          height: 34,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFF087AC0),
-                Color(0xFF10B7D4),
+                Color(0xFF0A73D8),
+                Color(0xFF12B6D6),
               ],
             ),
             borderRadius: BorderRadius.circular(12),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x22087AC0),
+                color: Color(0x260A73D8),
                 blurRadius: 8,
                 offset: Offset(0, 4),
               ),
@@ -54,44 +54,45 @@ class HomeSectionHeader extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              color: Color(0xFF102C44),
-              fontSize: 16,
+              color: Color(0xFF13354B),
+              fontSize: 17,
               fontWeight: FontWeight.w900,
             ),
           ),
         ),
         if (onViewAll != null)
-          GestureDetector(
-            onTap: onViewAll,
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 7,
-              ),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE6F9FF),
-                borderRadius: BorderRadius.circular(99),
-                border: Border.all(
-                  color: const Color(0xFFC9EDF7),
+          Material(
+            color: const Color(0xFFE8F8FD),
+            borderRadius: BorderRadius.circular(99),
+            child: InkWell(
+              onTap: onViewAll,
+              borderRadius: BorderRadius.circular(99),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 11,
+                  vertical: 8,
                 ),
-              ),
-              child: Row(
-                children: [
-                  Text(
-                    actionLabel,
-                    style: const TextStyle(
-                      color: Color(0xFF087AC0),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w900,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      actionLabel?.trim().isNotEmpty == true
+                          ? actionLabel!.trim()
+                          : 'View all',
+                      style: const TextStyle(
+                        color: Color(0xFF0A73D8),
+                        fontSize: 10.2,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 3),
-                  const Icon(
-                    Icons.chevron_right,
-                    color: Color(0xFF087AC0),
-                    size: 16,
-                  ),
-                ],
+                    const SizedBox(width: 3),
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      color: Color(0xFF0A73D8),
+                      size: 16,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

@@ -91,6 +91,11 @@ class SupplierActivationService {
       );
     }
 
+    // Registration stores this in users/{uid}.createdAt.
+    // It is copied to the supplier profile so the 7-day New Supplier
+    // period is based on account creation, not supplier approval.
+    final accountCreatedAt = userData?['createdAt'];
+
     final applicationData = {
       'ownerName': input.ownerName,
       'ownerAddress': input.ownerAddress,
@@ -114,6 +119,7 @@ class SupplierActivationService {
       'hasStorePhoto': true,
       'verificationStatus': 'pending',
       'paymentMethod': 'COD',
+      'accountCreatedAt': ?accountCreatedAt,
       'submittedAt': FieldValue.serverTimestamp(),
     };
 
@@ -146,13 +152,12 @@ class SupplierActivationService {
             'verificationStatus': 'pending',
             'paymentMethod': 'COD',
             'status': 'pending',
+            'accountCreatedAt': ?accountCreatedAt,
             'submittedAt': FieldValue.serverTimestamp(),
             'createdAt': FieldValue.serverTimestamp(),
             'updatedAt': FieldValue.serverTimestamp(),
           },
-          SetOptions(
-            merge: true,
-          ),
+          SetOptions(merge: true),
         );
 
         transaction.set(
@@ -167,9 +172,7 @@ class SupplierActivationService {
             'supplierApplication': applicationData,
             'updatedAt': FieldValue.serverTimestamp(),
           },
-          SetOptions(
-            merge: true,
-          ),
+          SetOptions(merge: true),
         );
       },
     );
