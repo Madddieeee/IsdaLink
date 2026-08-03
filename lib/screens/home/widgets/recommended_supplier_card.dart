@@ -38,11 +38,11 @@ class RecommendedSupplierCard extends StatelessWidget {
 
   Widget buildStorePhoto() {
     return Container(
-      width: 52,
-      height: 52,
+      width: 50,
+      height: 50,
       decoration: BoxDecoration(
         color: const Color(0xFFE8F8FD),
-        borderRadius: BorderRadius.circular(17),
+        borderRadius: BorderRadius.circular(15),
         border: Border.all(
           color: Colors.white,
           width: 3,
@@ -56,7 +56,7 @@ class RecommendedSupplierCard extends StatelessWidget {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         child: hasNetworkImage
             ? Image.network(
                 supplier.profileImageUrl,
@@ -100,8 +100,8 @@ class RecommendedSupplierCard extends StatelessWidget {
   Widget verifiedBadge() {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: 7,
-        vertical: 4,
+        horizontal: 6,
+        vertical: 3,
       ),
       decoration: BoxDecoration(
         color: Colors.white.withAlpha(38),
@@ -116,14 +116,14 @@ class RecommendedSupplierCard extends StatelessWidget {
           Icon(
             Icons.verified_rounded,
             color: Colors.white,
-            size: 11,
+            size: 9,
           ),
           SizedBox(width: 3),
           Text(
             'Verified',
             style: TextStyle(
               color: Colors.white,
-              fontSize: 8.2,
+              fontSize: 7.4,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -135,8 +135,8 @@ class RecommendedSupplierCard extends StatelessWidget {
   Widget newSupplierBadge() {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: 7,
-        vertical: 4,
+        horizontal: 6,
+        vertical: 3,
       ),
       decoration: BoxDecoration(
         color: const Color(0xFFF7A24B),
@@ -175,8 +175,8 @@ class RecommendedSupplierCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 166,
-      margin: const EdgeInsets.only(right: 12),
+      width: 210,
+      margin: const EdgeInsets.only(right: 11),
       child: Material(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
@@ -203,7 +203,7 @@ class RecommendedSupplierCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(
-                  height: 69,
+                  height: 64,
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
@@ -227,8 +227,8 @@ class RecommendedSupplierCard extends StatelessWidget {
                         right: -18,
                         top: -27,
                         child: Container(
-                          width: 88,
-                          height: 88,
+                          width: 78,
+                          height: 78,
                           decoration: BoxDecoration(
                             color: Colors.white.withAlpha(22),
                             shape: BoxShape.circle,
@@ -237,7 +237,7 @@ class RecommendedSupplierCard extends StatelessWidget {
                       ),
                       Positioned(
                         left: 12,
-                        bottom: -20,
+                        bottom: -18,
                         child: buildStorePhoto(),
                       ),
                       Positioned(
@@ -254,21 +254,21 @@ class RecommendedSupplierCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 23),
+                const SizedBox(height: 20),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 11),
                   child: Text(
                     supplier.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Color(0xFF13354B),
-                      fontSize: 13.4,
+                      fontSize: 12.8,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Row(
@@ -286,7 +286,7 @@ class RecommendedSupplierCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: Color(0xFF6B8CA3),
-                            fontSize: 10,
+                            fontSize: 9.4,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -294,7 +294,7 @@ class RecommendedSupplierCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Row(
@@ -314,7 +314,7 @@ class RecommendedSupplierCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: Color(0xFF13354B),
-                            fontSize: 10.3,
+                            fontSize: 9.7,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
@@ -342,9 +342,9 @@ class RecommendedSupplierCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+                  padding: const EdgeInsets.fromLTRB(9, 0, 9, 8),
                   child: Container(
-                    height: 31,
+                    height: 30,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         colors: [

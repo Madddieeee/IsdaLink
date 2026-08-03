@@ -49,9 +49,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
   ) {
     final data = document.data();
 
-    final product = detailsService.fishProductFromFirestore(
-      data,
-    );
+    final product = detailsService.fishProductFromFirestore(data);
 
     final stockSupplierId = detailsService.getStringValue(
       data,
@@ -93,7 +91,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 10),
       child: Container(
-        height: 46,
+        height: 48,
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
           color: const Color(0xFFF0F6FA),
@@ -113,6 +111,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
                 label: 'Store Reviews',
                 icon: Icons.star_outline_rounded,
                 index: 1,
+                count: supplier.reviews,
               ),
             ),
           ],
@@ -125,6 +124,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
     required String label,
     required IconData icon,
     required int index,
+    int? count,
   }) {
     final selected = selectedTab == index;
 
@@ -133,11 +133,9 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
       borderRadius: BorderRadius.circular(13),
       child: InkWell(
         onTap: () {
-          setState(
-            () {
-              selectedTab = index;
-            },
-          );
+          setState(() {
+            selectedTab = index;
+          });
         },
         borderRadius: BorderRadius.circular(13),
         child: Container(
@@ -165,14 +163,18 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
                     : const Color(0xFF7B8FA3),
               ),
               const SizedBox(width: 7),
-              Text(
-                label,
-                style: TextStyle(
-                  color: selected
-                      ? const Color(0xFF102C44)
-                      : const Color(0xFF7B8FA3),
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w900,
+              Flexible(
+                child: Text(
+                  count == null ? label : '$label ($count)',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: selected
+                        ? const Color(0xFF102C44)
+                        : const Color(0xFF7B8FA3),
+                    fontSize: 11.2,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
             ],
@@ -185,20 +187,17 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
   Widget searchAndFilterCard(
     List<String> units,
   ) {
-    final unitOptions = [
-      'all',
-      ...units,
-    ];
+    final unitOptions = ['all', ...units];
 
     if (!unitOptions.contains(selectedUnit)) {
       selectedUnit = 'all';
     }
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(23),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(
           color: const Color(0xFFE0EEF5),
         ),
@@ -215,11 +214,9 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
           TextField(
             controller: searchController,
             onChanged: (value) {
-              setState(
-                () {
-                  searchQuery = value;
-                },
-              );
+              setState(() {
+                searchQuery = value;
+              });
             },
             textInputAction: TextInputAction.search,
             decoration: InputDecoration(
@@ -238,12 +235,9 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
                   : IconButton(
                       onPressed: () {
                         searchController.clear();
-
-                        setState(
-                          () {
-                            searchQuery = '';
-                          },
-                        );
+                        setState(() {
+                          searchQuery = '';
+                        });
                       },
                       icon: const Icon(
                         Icons.close_rounded,
@@ -281,11 +275,11 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
             children: [
               Expanded(
                 child: SizedBox(
-                  height: 35,
+                  height: 34,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: unitOptions.length,
-                    separatorBuilder: (_, _) =>
+                    separatorBuilder: (_, __) =>
                         const SizedBox(width: 7),
                     itemBuilder: (context, index) {
                       final unit = unitOptions[index];
@@ -294,11 +288,9 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
                       return ChoiceChip(
                         selected: selected,
                         onSelected: (_) {
-                          setState(
-                            () {
-                              selectedUnit = unit;
-                            },
-                          );
+                          setState(() {
+                            selectedUnit = unit;
+                          });
                         },
                         label: Text(
                           unit == 'all'
@@ -310,7 +302,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
                           color: selected
                               ? Colors.white
                               : const Color(0xFF52677A),
-                          fontSize: 10.3,
+                          fontSize: 10.2,
                           fontWeight: FontWeight.w900,
                         ),
                         selectedColor: const Color(0xFF087AC0),
@@ -334,11 +326,9 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
               PopupMenuButton<String>(
                 initialValue: sortMode,
                 onSelected: (value) {
-                  setState(
-                    () {
-                      sortMode = value;
-                    },
-                  );
+                  setState(() {
+                    sortMode = value;
+                  });
                 },
                 tooltip: 'Sort fish listings',
                 shape: RoundedRectangleBorder(
@@ -365,7 +355,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
                   ];
                 },
                 child: Container(
-                  height: 35,
+                  height: 34,
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   decoration: BoxDecoration(
                     color: const Color(0xFFE8F8FD),
@@ -396,18 +386,6 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 9),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              sortLabel(sortMode),
-              style: const TextStyle(
-                color: Color(0xFF7B8FA3),
-                fontSize: 9.8,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -427,7 +405,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
         crossAxisCount: columns,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        mainAxisExtent: columns == 1 ? 238 : 262,
+        mainAxisExtent: columns == 1 ? 226 : 236,
       ),
       itemBuilder: (context, index) {
         final document = documents[index];
@@ -460,10 +438,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
           'per kilo',
         );
 
-        final quantity = detailsService.getDoubleValue(
-          data,
-          'quantity',
-        );
+        final quantity = detailsService.getDoubleValue(data, 'quantity');
 
         final quantityUnit = detailsService.getStringValue(
           data,
@@ -521,7 +496,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 24),
       children: [
         searchAndFilterCard(units),
-        const SizedBox(height: 18),
+        const SizedBox(height: 16),
         Row(
           children: [
             const Expanded(
@@ -557,14 +532,14 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
         ),
         const SizedBox(height: 4),
         Text(
-          'Current COD stock posted by ${supplier.name}.',
+          sortLabel(sortMode),
           style: const TextStyle(
             color: Color(0xFF7B8FA3),
-            fontSize: 11.3,
-            fontWeight: FontWeight.w600,
+            fontSize: 10.7,
+            fontWeight: FontWeight.w700,
           ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 10),
         if (orderable.isEmpty)
           const SupplierDetailsEmptyCard(
             title: 'No fish available right now',
@@ -623,9 +598,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
             child: selectedTab == 0
                 ? KeyedSubtree(
                     key: const ValueKey('products'),
-                    child: productsBody(
-                      documents: documents,
-                    ),
+                    child: productsBody(documents: documents),
                   )
                 : KeyedSubtree(
                     key: const ValueKey('reviews'),
@@ -638,9 +611,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
   }
 
   Widget loadingBody() {
-    final stats = detailsService.calculateStats(
-      const [],
-    );
+    final stats = detailsService.calculateStats(const []);
 
     return Column(
       children: [
@@ -653,8 +624,8 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
         Expanded(
           child: ListView(
             padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
-            children: const [
-              SupplierDetailsLoadingCard(),
+            children: [
+              const SupplierDetailsLoadingCard(),
             ],
           ),
         ),
@@ -663,9 +634,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
   }
 
   Widget errorBody() {
-    final stats = detailsService.calculateStats(
-      const [],
-    );
+    final stats = detailsService.calculateStats(const []);
 
     return Column(
       children: [
@@ -678,8 +647,8 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
         Expanded(
           child: ListView(
             padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
-            children: const [
-              SupplierDetailsErrorCard(),
+            children: [
+              const SupplierDetailsErrorCard(),
             ],
           ),
         ),
@@ -705,9 +674,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
             return loadingBody();
           }
 
-          return loadedBody(
-            snapshot.data!.docs,
-          );
+          return loadedBody(snapshot.data!.docs);
         },
       ),
     );

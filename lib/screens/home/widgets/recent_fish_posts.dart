@@ -29,8 +29,6 @@ class RecentFishPosts extends StatelessWidget {
     required String stockId,
     required String supplierId,
   }) {
-    final navigator = Navigator.of(context);
-
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -58,7 +56,8 @@ class RecentFishPosts extends StatelessWidget {
 
             Future.microtask(
               () {
-                navigator.push(
+                Navigator.push(
+                  context,
                   MaterialPageRoute(
                     builder: (_) => PlaceOrderScreen(
                       supplier: supplier,
@@ -209,8 +208,9 @@ class RecentFishPosts extends StatelessWidget {
 
   Widget cardForDocument(
     BuildContext context,
-    QueryDocumentSnapshot<Map<String, dynamic>> document,
-  ) {
+    QueryDocumentSnapshot<Map<String, dynamic>> document, {
+    bool isWide = false,
+  }) {
     final data = document.data();
 
     final product = stockService.fishProductFromFirestore(data);
@@ -229,6 +229,7 @@ class RecentFishPosts extends StatelessWidget {
     return RecentFishCard(
       product: product,
       supplierName: supplier.name,
+      isWide: isWide,
       onTap: () => showFishPreviewSheet(
         context: context,
         supplier: supplier,
@@ -262,7 +263,9 @@ class RecentFishPosts extends StatelessWidget {
         }
 
         return GridView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 14,
+          ),
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: documents.length,

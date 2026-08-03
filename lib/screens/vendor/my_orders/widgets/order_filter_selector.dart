@@ -16,6 +16,7 @@ class OrderFilterSelector extends StatelessWidget {
 
   List<String> get filters => const [
         'All',
+        'Active',
         'Pending',
         'Accepted',
         'Completed',
@@ -45,12 +46,19 @@ class OrderFilterSelector extends StatelessWidget {
       (document) {
         final status = statusOf(document);
 
+        if (value == 'active') {
+          return status == 'pending' || status == 'accepted';
+        }
+
         if (value == 'completed') {
           return status == 'completed' || status == 'delivered';
         }
 
         if (value == 'cancelled') {
-          return status == 'cancelled' || status == 'rejected';
+          return status == 'cancelled' ||
+              status == 'rejected' ||
+              status == 'returned' ||
+              status == 'refunded';
         }
 
         return status == value;
@@ -62,10 +70,12 @@ class OrderFilterSelector extends StatelessWidget {
     String filter,
   ) {
     switch (filter.toLowerCase()) {
+      case 'active':
+        return const Color(0xFF0875D1);
       case 'pending':
         return const Color(0xFFFF7A1A);
       case 'accepted':
-        return const Color(0xFF0A73D8);
+        return const Color(0xFF376EF6);
       case 'completed':
         return const Color(0xFF2E7D32);
       case 'cancelled':
@@ -80,6 +90,8 @@ class OrderFilterSelector extends StatelessWidget {
     String filter,
   ) {
     switch (filter.toLowerCase()) {
+      case 'active':
+        return Icons.pending_actions_rounded;
       case 'pending':
         return Icons.schedule_rounded;
       case 'accepted':
@@ -107,9 +119,10 @@ class OrderFilterSelector extends StatelessWidget {
         2,
       ),
       child: SizedBox(
-        height: 45,
+        height: 43,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.only(right: 16),
           itemCount: filters.length,
           separatorBuilder: (_, _) => const SizedBox(width: 8),
@@ -127,7 +140,7 @@ class OrderFilterSelector extends StatelessWidget {
                 borderRadius: BorderRadius.circular(99),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
+                    horizontal: 11,
                   ),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(99),
@@ -139,8 +152,8 @@ class OrderFilterSelector extends StatelessWidget {
                     boxShadow: selected
                         ? [
                             BoxShadow(
-                              color: color.withAlpha(38),
-                              blurRadius: 8,
+                              color: color.withAlpha(36),
+                              blurRadius: 9,
                               offset: const Offset(0, 4),
                             ),
                           ]
@@ -153,7 +166,7 @@ class OrderFilterSelector extends StatelessWidget {
                         color: selected
                             ? Colors.white
                             : color,
-                        size: 15,
+                        size: 14,
                       ),
                       const SizedBox(width: 6),
                       Text(
@@ -162,24 +175,24 @@ class OrderFilterSelector extends StatelessWidget {
                           color: selected
                               ? Colors.white
                               : const Color(0xFF52677A),
-                          fontSize: 10.5,
+                          fontSize: 10.2,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
                       const SizedBox(width: 6),
                       Container(
                         constraints: const BoxConstraints(
-                          minWidth: 21,
-                          minHeight: 21,
+                          minWidth: 20,
+                          minHeight: 20,
                         ),
                         alignment: Alignment.center,
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
+                          horizontal: 5,
                         ),
                         decoration: BoxDecoration(
                           color: selected
-                              ? Colors.white.withAlpha(34)
-                              : color.withAlpha(18),
+                              ? Colors.white.withAlpha(35)
+                              : color.withAlpha(17),
                           borderRadius: BorderRadius.circular(99),
                         ),
                         child: Text(
@@ -188,7 +201,7 @@ class OrderFilterSelector extends StatelessWidget {
                             color: selected
                                 ? Colors.white
                                 : color,
-                            fontSize: 9.5,
+                            fontSize: 9.2,
                             fontWeight: FontWeight.w900,
                           ),
                         ),

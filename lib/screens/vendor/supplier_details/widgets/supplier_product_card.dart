@@ -55,9 +55,14 @@ class SupplierProductCard extends StatelessWidget {
     return value.isEmpty ? quantityUnit : value;
   }
 
+  bool get showCategory {
+    final value = category.trim().toLowerCase();
+    return value.isNotEmpty && value != 'fresh fish';
+  }
+
   Widget productImage() {
     return SizedBox(
-      height: 116,
+      height: 104,
       width: double.infinity,
       child: ClipRRect(
         borderRadius: const BorderRadius.vertical(
@@ -81,7 +86,7 @@ class SupplierProductCard extends StatelessWidget {
                     loading: true,
                   );
                 },
-                errorBuilder: (_, _, _) {
+                errorBuilder: (_, __, ___) {
                   return ProductImagePlaceholder(
                     emoji: emoji,
                   );
@@ -101,7 +106,7 @@ class SupplierProductCard extends StatelessWidget {
         vertical: 5,
       ),
       decoration: BoxDecoration(
-        color: stockColor.withAlpha(235),
+        color: stockColor.withAlpha(236),
         borderRadius: BorderRadius.circular(99),
         boxShadow: const [
           BoxShadow(
@@ -115,7 +120,7 @@ class SupplierProductCard extends StatelessWidget {
         stockStatus,
         style: const TextStyle(
           color: Colors.white,
-          fontSize: 8.7,
+          fontSize: 8.6,
           fontWeight: FontWeight.w900,
         ),
       ),
@@ -128,20 +133,20 @@ class SupplierProductCard extends StatelessWidget {
   ) {
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(21),
+      borderRadius: BorderRadius.circular(20),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(21),
+        borderRadius: BorderRadius.circular(20),
         child: Ink(
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(21),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: const Color(0xFFE0EEF5),
             ),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x10000000),
+                color: Color(0x0F000000),
                 blurRadius: 12,
                 offset: Offset(0, 6),
               ),
@@ -162,12 +167,7 @@ class SupplierProductCard extends StatelessWidget {
               ),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    11,
-                    9,
-                    11,
-                    9,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(11, 9, 11, 10),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -177,33 +177,35 @@ class SupplierProductCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Color(0xFF102C44),
-                          fontSize: 13.2,
+                          fontSize: 13.1,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        category,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFF7B8FA3),
-                          fontSize: 9.6,
-                          fontWeight: FontWeight.w600,
+                      if (showCategory) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          category,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFF7B8FA3),
+                            fontSize: 9.2,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
+                      ],
+                      const SizedBox(height: 7),
                       Text(
                         '₱${formatNumber(price)} / $cleanPriceUnit',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Color(0xFF087AC0),
-                          fontSize: 13.2,
+                          fontSize: 13.3,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 5),
                       Row(
                         children: [
                           Container(
@@ -233,7 +235,7 @@ class SupplierProductCard extends StatelessWidget {
                       const Spacer(),
                       Container(
                         width: double.infinity,
-                        height: 28,
+                        height: 29,
                         decoration: BoxDecoration(
                           color: const Color(0xFFE8F8FD),
                           borderRadius: BorderRadius.circular(11),
@@ -245,7 +247,7 @@ class SupplierProductCard extends StatelessWidget {
                               'View details',
                               style: TextStyle(
                                 color: Color(0xFF087AC0),
-                                fontSize: 9.4,
+                                fontSize: 9.5,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),

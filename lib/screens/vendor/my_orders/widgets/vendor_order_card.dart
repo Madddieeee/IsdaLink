@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:isdalink/utils/order_helpers.dart';
 
-class VendorOrderCard extends StatelessWidget {
+class VendorOrderCard extends StatefulWidget {
   const VendorOrderCard({
     super.key,
     required this.document,
@@ -13,6 +13,25 @@ class VendorOrderCard extends StatelessWidget {
   final QueryDocumentSnapshot<Map<String, dynamic>> document;
   final VoidCallback onCancelPendingOrder;
   final VoidCallback onReviewOrder;
+
+  @override
+  State<VendorOrderCard> createState() => _VendorOrderCardState();
+}
+
+class _VendorOrderCardState extends State<VendorOrderCard> {
+  bool isExpanded = false;
+
+  String getString(
+    Map<String, dynamic> data,
+    String key,
+    String fallback,
+  ) {
+    return OrderHelpers.getStringValue(
+      data,
+      key,
+      fallback,
+    );
+  }
 
   bool isCompletedStatus(
     String status,
@@ -25,6 +44,7 @@ class VendorOrderCard extends StatelessWidget {
     String status,
   ) {
     final value = status.toLowerCase();
+
     return value == 'cancelled' ||
         value == 'rejected' ||
         value == 'returned' ||
@@ -39,8 +59,8 @@ class VendorOrderCard extends StatelessWidget {
         return 'Pending Confirmation';
       case 'accepted':
         return 'Accepted';
-      case 'delivered':
       case 'completed':
+      case 'delivered':
         return 'Completed';
       case 'cancelled':
         return 'Cancelled';
@@ -62,9 +82,9 @@ class VendorOrderCard extends StatelessWidget {
       case 'pending':
         return const Color(0xFFFF7A1A);
       case 'accepted':
-        return const Color(0xFF0A73D8);
-      case 'delivered':
+        return const Color(0xFF376EF6);
       case 'completed':
+      case 'delivered':
         return const Color(0xFF2E7D32);
       case 'cancelled':
       case 'rejected':
@@ -84,8 +104,8 @@ class VendorOrderCard extends StatelessWidget {
         return Icons.schedule_rounded;
       case 'accepted':
         return Icons.check_circle_outline_rounded;
-      case 'delivered':
       case 'completed':
+      case 'delivered':
         return Icons.task_alt_rounded;
       case 'cancelled':
       case 'rejected':
@@ -105,9 +125,9 @@ class VendorOrderCard extends StatelessWidget {
         return 'Waiting for the supplier to accept your order.';
       case 'accepted':
         return 'The supplier confirmed your order.';
-      case 'delivered':
       case 'completed':
-        return 'The order was received and the transaction was completed.';
+      case 'delivered':
+        return 'Order received and transaction completed.';
       case 'cancelled':
         return 'This order was cancelled.';
       case 'rejected':
@@ -119,18 +139,6 @@ class VendorOrderCard extends StatelessWidget {
       default:
         return 'Track the latest status of this order.';
     }
-  }
-
-  String getString(
-    Map<String, dynamic> data,
-    String key,
-    String fallback,
-  ) {
-    return OrderHelpers.getStringValue(
-      data,
-      key,
-      fallback,
-    );
   }
 
   String productImageUrl(
@@ -235,14 +243,14 @@ class VendorOrderCard extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: 9,
-        vertical: 6,
+        horizontal: 8,
+        vertical: 5,
       ),
       decoration: BoxDecoration(
-        color: color.withAlpha(20),
+        color: color.withAlpha(18),
         borderRadius: BorderRadius.circular(99),
         border: Border.all(
-          color: color.withAlpha(50),
+          color: color.withAlpha(45),
         ),
       ),
       child: Row(
@@ -251,14 +259,14 @@ class VendorOrderCard extends StatelessWidget {
           Icon(
             statusIcon(status),
             color: color,
-            size: 13,
+            size: 11,
           ),
-          const SizedBox(width: 5),
+          const SizedBox(width: 4),
           Text(
             displayStatus(status),
             style: TextStyle(
               color: color,
-              fontSize: 9.6,
+              fontSize: 8.7,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -277,23 +285,23 @@ class VendorOrderCard extends StatelessWidget {
       child: Text(
         emoji.trim().isEmpty ? '🐟' : emoji,
         style: const TextStyle(
-          fontSize: 31,
+          fontSize: 25,
         ),
       ),
     );
 
     return Container(
-      width: 70,
-      height: 70,
+      width: 56,
+      height: 56,
       decoration: BoxDecoration(
         color: const Color(0xFFE8F8FD),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(17),
         border: Border.all(
           color: const Color(0xFFDDEBF3),
         ),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(19),
+        borderRadius: BorderRadius.circular(16),
         child: hasNetworkImage(imageUrl)
             ? Image.network(
                 imageUrl,
@@ -305,43 +313,124 @@ class VendorOrderCard extends StatelessWidget {
     );
   }
 
-  Widget infoCell({
+  Widget compactValue({
     required String label,
     required String value,
     Color valueColor = const Color(0xFF102C44),
   }) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 12,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFF8A9EAD),
+            fontSize: 8.2,
+            fontWeight: FontWeight.w700,
+          ),
         ),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF0FAFD),
-          borderRadius: BorderRadius.circular(16),
+        const SizedBox(height: 3),
+        Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: valueColor,
+            fontSize: 12.2,
+            height: 1,
+            fontWeight: FontWeight.w900,
+          ),
         ),
-        child: Column(
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                color: Color(0xFF7B8FA3),
-                fontSize: 9.7,
-                fontWeight: FontWeight.w700,
-              ),
+      ],
+    );
+  }
+
+  Widget compactStatusBar(
+    String orderStatus,
+  ) {
+    final color = statusColor(orderStatus);
+
+    return Material(
+      color: color.withAlpha(10),
+      borderRadius: BorderRadius.circular(15),
+      child: InkWell(
+        onTap: () {
+          setState(
+            () {
+              isExpanded = !isExpanded;
+            },
+          );
+        },
+        borderRadius: BorderRadius.circular(15),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 11,
+            vertical: 9,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(
+              color: color.withAlpha(28),
             ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: valueColor,
-                fontSize: 12.5,
-                fontWeight: FontWeight.w900,
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withAlpha(42),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  statusIcon(orderStatus),
+                  color: Colors.white,
+                  size: 15,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  statusMessage(orderStatus),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFF52677A),
+                    fontSize: 9.8,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                isExpanded ? 'Hide' : 'Details',
+                style: TextStyle(
+                  color: color,
+                  fontSize: 9.1,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(width: 3),
+              AnimatedRotation(
+                duration: const Duration(
+                  milliseconds: 190,
+                ),
+                turns: isExpanded ? 0.5 : 0,
+                child: Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: color,
+                  size: 18,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -363,10 +452,13 @@ class VendorOrderCard extends StatelessWidget {
             : const Color(0xFFD32F2F);
 
     return Container(
-      padding: const EdgeInsets.all(13),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 11,
+        vertical: 9,
+      ),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FBFD),
-        borderRadius: BorderRadius.circular(17),
+        borderRadius: BorderRadius.circular(15),
         border: Border.all(
           color: const Color(0xFFE3EDF3),
         ),
@@ -374,19 +466,19 @@ class VendorOrderCard extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 34,
-            height: 34,
+            width: 31,
+            height: 31,
             decoration: BoxDecoration(
               color: const Color(0xFFE8F8FD),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(
               Icons.payments_outlined,
-              color: Color(0xFF0A73D8),
-              size: 18,
+              color: Color(0xFF0875D1),
+              size: 16,
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 9),
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -395,19 +487,16 @@ class VendorOrderCard extends StatelessWidget {
                   'Cash on Delivery',
                   style: TextStyle(
                     color: Color(0xFF102C44),
-                    fontSize: 11.5,
+                    fontSize: 10.8,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
                 SizedBox(height: 2),
                 Text(
-                  'Payment is collected when the order is received.',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                  'Pay when the order is received.',
                   style: TextStyle(
                     color: Color(0xFF7B8FA3),
-                    fontSize: 9.2,
-                    height: 1.25,
+                    fontSize: 8.8,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -417,18 +506,18 @@ class VendorOrderCard extends StatelessWidget {
           const SizedBox(width: 8),
           Container(
             padding: const EdgeInsets.symmetric(
-              horizontal: 9,
-              vertical: 6,
+              horizontal: 8,
+              vertical: 5,
             ),
             decoration: BoxDecoration(
-              color: paymentColor.withAlpha(20),
+              color: paymentColor.withAlpha(18),
               borderRadius: BorderRadius.circular(99),
             ),
             child: Text(
               paymentText,
               style: TextStyle(
                 color: paymentColor,
-                fontSize: 9.5,
+                fontSize: 8.9,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -445,15 +534,15 @@ class VendorOrderCard extends StatelessWidget {
     required bool current,
   }) {
     final color = reached
-        ? const Color(0xFF0A73D8)
+        ? const Color(0xFF0875D1)
         : const Color(0xFFB8C8D4);
 
     return Expanded(
       child: Column(
         children: [
           Container(
-            width: 31,
-            height: 31,
+            width: 26,
+            height: 26,
             decoration: BoxDecoration(
               color: reached
                   ? color
@@ -462,8 +551,8 @@ class VendorOrderCard extends StatelessWidget {
               boxShadow: current
                   ? const [
                       BoxShadow(
-                        color: Color(0x330A73D8),
-                        blurRadius: 9,
+                        color: Color(0x330875D1),
+                        blurRadius: 8,
                         offset: Offset(0, 4),
                       ),
                     ]
@@ -474,17 +563,17 @@ class VendorOrderCard extends StatelessWidget {
               color: reached
                   ? Colors.white
                   : const Color(0xFF9DAFBC),
-              size: 16,
+              size: 13,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Text(
             label,
             style: TextStyle(
               color: reached
-                  ? const Color(0xFF0A73D8)
+                  ? const Color(0xFF0875D1)
                   : const Color(0xFF9DAFBC),
-              fontSize: 8.8,
+              fontSize: 8,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -498,9 +587,9 @@ class VendorOrderCard extends StatelessWidget {
   }) {
     return Expanded(
       child: Container(
-        height: 3,
+        height: 2,
         margin: const EdgeInsets.only(
-          bottom: 20,
+          bottom: 17,
         ),
         decoration: BoxDecoration(
           color: reached
@@ -512,20 +601,19 @@ class VendorOrderCard extends StatelessWidget {
     );
   }
 
-  Widget progressCard(
+  Widget compactProgress(
     String status,
   ) {
-    final stopped = isStoppedStatus(status);
     final color = statusColor(status);
 
-    if (stopped) {
+    if (isStoppedStatus(status)) {
       return Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(11),
         decoration: BoxDecoration(
-          color: color.withAlpha(12),
-          borderRadius: BorderRadius.circular(17),
+          color: color.withAlpha(10),
+          borderRadius: BorderRadius.circular(15),
           border: Border.all(
-            color: color.withAlpha(35),
+            color: color.withAlpha(28),
           ),
         ),
         child: Row(
@@ -533,16 +621,16 @@ class VendorOrderCard extends StatelessWidget {
             Icon(
               statusIcon(status),
               color: color,
-              size: 20,
+              size: 17,
             ),
-            const SizedBox(width: 9),
+            const SizedBox(width: 8),
             Expanded(
               child: Text(
                 statusMessage(status),
                 style: TextStyle(
                   color: color,
-                  fontSize: 10.5,
-                  height: 1.35,
+                  fontSize: 9.8,
+                  height: 1.3,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -556,108 +644,160 @@ class VendorOrderCard extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.fromLTRB(
-        13,
-        14,
-        13,
-        12,
+        10,
+        11,
+        10,
+        9,
       ),
       decoration: BoxDecoration(
         color: const Color(0xFFF3F9FD),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(15),
         border: Border.all(
           color: const Color(0xFFDDEBF3),
         ),
       ),
-      child: Column(
+      child: Row(
         children: [
-          Row(
-            children: [
-              progressStep(
-                label: 'Pending',
-                icon: Icons.schedule_rounded,
-                reached: index >= 0,
-                current: index == 0,
-              ),
-              progressLine(
-                reached: index >= 1,
-              ),
-              progressStep(
-                label: 'Accepted',
-                icon: Icons.check_rounded,
-                reached: index >= 1,
-                current: index == 1,
-              ),
-              progressLine(
-                reached: index >= 2,
-              ),
-              progressStep(
-                label: 'Completed',
-                icon: Icons.task_alt_rounded,
-                reached: index >= 2,
-                current: index == 2,
-              ),
-            ],
+          progressStep(
+            label: 'Pending',
+            icon: Icons.schedule_rounded,
+            reached: index >= 0,
+            current: index == 0,
           ),
-          const SizedBox(height: 9),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              statusMessage(status),
-              style: const TextStyle(
-                color: Color(0xFF62798B),
-                fontSize: 10.3,
-                height: 1.35,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+          progressLine(
+            reached: index >= 1,
+          ),
+          progressStep(
+            label: 'Accepted',
+            icon: Icons.check_rounded,
+            reached: index >= 1,
+            current: index == 1,
+          ),
+          progressLine(
+            reached: index >= 2,
+          ),
+          progressStep(
+            label: 'Completed',
+            icon: Icons.task_alt_rounded,
+            reached: index >= 2,
+            current: index == 2,
           ),
         ],
       ),
     );
   }
 
-  Widget reviewSubmittedChip() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 12,
-      ),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2E7D32).withAlpha(20),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: const Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.rate_review_outlined,
-            color: Color(0xFF2E7D32),
-            size: 18,
+  Widget actionArea(
+    String orderStatus,
+    bool reviewSubmitted,
+  ) {
+    if (orderStatus.toLowerCase() == 'pending') {
+      return SizedBox(
+        width: double.infinity,
+        height: 38,
+        child: OutlinedButton.icon(
+          onPressed: widget.onCancelPendingOrder,
+          icon: const Icon(
+            Icons.cancel_outlined,
+            size: 15,
           ),
-          SizedBox(width: 8),
-          Text(
-            'Review Submitted',
+          label: const Text(
+            'Cancel Order',
             style: TextStyle(
-              color: Color(0xFF2E7D32),
-              fontSize: 11.5,
+              fontSize: 10.8,
               fontWeight: FontWeight.w900,
             ),
           ),
-        ],
-      ),
-    );
+          style: OutlinedButton.styleFrom(
+            foregroundColor: const Color(0xFFD32F2F),
+            backgroundColor:
+                const Color(0xFFD32F2F).withAlpha(7),
+            side: const BorderSide(
+              color: Color(0x55D32F2F),
+              width: 1,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(13),
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (isCompletedStatus(orderStatus)) {
+      if (reviewSubmitted) {
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(
+            horizontal: 11,
+            vertical: 10,
+          ),
+          decoration: BoxDecoration(
+            color: const Color(0xFF2E7D32).withAlpha(18),
+            borderRadius: BorderRadius.circular(13),
+          ),
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.rate_review_outlined,
+                color: Color(0xFF2E7D32),
+                size: 16,
+              ),
+              SizedBox(width: 7),
+              Text(
+                'Review Submitted',
+                style: TextStyle(
+                  color: Color(0xFF2E7D32),
+                  fontSize: 10.8,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      return SizedBox(
+        width: double.infinity,
+        height: 38,
+        child: ElevatedButton.icon(
+          onPressed: widget.onReviewOrder,
+          icon: const Icon(
+            Icons.star_rounded,
+            size: 17,
+          ),
+          label: const Text(
+            'Rate Supplier',
+            style: TextStyle(
+              fontSize: 10.8,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFFFB703),
+            foregroundColor: const Color(0xFF102C44),
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(13),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return const SizedBox.shrink();
   }
 
   @override
   Widget build(
     BuildContext context,
   ) {
-    final data = document.data();
+    final data = widget.document.data();
 
-    final orderId = document.id.length > 8
-        ? 'ORD-${document.id.substring(0, 8).toUpperCase()}'
-        : 'ORD-${document.id.toUpperCase()}';
+    final orderId = widget.document.id.length > 8
+        ? 'ORD-${widget.document.id.substring(0, 8).toUpperCase()}'
+        : 'ORD-${widget.document.id.toUpperCase()}';
 
     final productName = getString(
       data,
@@ -712,231 +852,192 @@ class VendorOrderCard extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.only(
-        bottom: 15,
+        bottom: 11,
       ),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(
           color: const Color(0xFFE1ECF2),
         ),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x1000152A),
-            blurRadius: 14,
-            offset: Offset(0, 7),
+            color: Color(0x0D00152A),
+            blurRadius: 13,
+            offset: Offset(0, 6),
           ),
         ],
       ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.fromLTRB(
-              15,
-              14,
-              15,
-              14,
-            ),
-            decoration: BoxDecoration(
-              color: color.withAlpha(12),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(23),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(21),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.fromLTRB(
+                12,
+                11,
+                12,
+                10,
               ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: color.withAlpha(20),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(
-                    statusIcon(orderStatus),
-                    color: color,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 11),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        orderId,
-                        style: const TextStyle(
-                          color: Color(0xFF102C44),
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        formattedOrderDate(data),
-                        style: const TextStyle(
-                          color: Color(0xFF7B8FA3),
-                          fontSize: 10.3,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                statusChip(orderStatus),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              15,
-              15,
-              15,
-              17,
-            ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    productImage(
-                      imageUrl: imageUrl,
-                      emoji: emoji,
+              color: color.withAlpha(9),
+              child: Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: color.withAlpha(18),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            productName,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Color(0xFF102C44),
-                              fontSize: 17,
-                              height: 1.1,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          const SizedBox(height: 7),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.storefront_outlined,
-                                color: Color(0xFF7B8FA3),
-                                size: 14,
-                              ),
-                              const SizedBox(width: 5),
-                              Expanded(
-                                child: Text(
-                                  supplierName,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: Color(0xFF62798B),
-                                    fontSize: 10.8,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 13),
-                Row(
-                  children: [
-                    infoCell(
-                      label: 'Quantity',
-                      value:
-                          '${OrderHelpers.formatNumber(quantity)} $quantityUnit',
-                    ),
-                    const SizedBox(width: 9),
-                    infoCell(
-                      label: 'Total',
-                      value: '₱${totalAmount.toStringAsFixed(0)}',
-                      valueColor: const Color(0xFF0A73D8),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                paymentRow(
-                  paymentStatus: paymentStatus,
-                  orderStatus: orderStatus,
-                ),
-                const SizedBox(height: 12),
-                progressCard(orderStatus),
-                if (orderStatus.toLowerCase() == 'pending') ...[
-                  const SizedBox(height: 13),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 43,
-                    child: OutlinedButton.icon(
-                      onPressed: onCancelPendingOrder,
-                      icon: const Icon(
-                        Icons.cancel_outlined,
-                        size: 17,
-                      ),
-                      label: const Text(
-                        'Cancel Order',
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFFD32F2F),
-                        side: const BorderSide(
-                          color: Color(0xFFD32F2F),
-                          width: 1.1,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
+                    child: Icon(
+                      statusIcon(orderStatus),
+                      color: color,
+                      size: 17,
                     ),
                   ),
-                ],
-                if (isCompletedStatus(orderStatus)) ...[
-                  const SizedBox(height: 13),
-                  if (reviewSubmitted)
-                    reviewSubmittedChip()
-                  else
-                    SizedBox(
-                      width: double.infinity,
-                      height: 43,
-                      child: ElevatedButton.icon(
-                        onPressed: onReviewOrder,
-                        icon: const Icon(
-                          Icons.star_rounded,
-                          size: 18,
-                        ),
-                        label: const Text(
-                          'Rate Supplier',
-                          style: TextStyle(
-                            fontSize: 11.5,
+                  const SizedBox(width: 9),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          orderId,
+                          style: const TextStyle(
+                            color: Color(0xFF102C44),
+                            fontSize: 12.4,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFFB703),
-                          foregroundColor: const Color(0xFF102C44),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                        const SizedBox(height: 3),
+                        Text(
+                          formattedOrderDate(data),
+                          style: const TextStyle(
+                            color: Color(0xFF7B8FA3),
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ),
+                      ],
                     ),
+                  ),
+                  const SizedBox(width: 7),
+                  statusChip(orderStatus),
                 ],
-              ],
+              ),
             ),
-          ),
-        ],
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                12,
+                11,
+                12,
+                12,
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      productImage(
+                        imageUrl: imageUrl,
+                        emoji: emoji,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              productName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFF102C44),
+                                fontSize: 15.5,
+                                height: 1.05,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.storefront_outlined,
+                                  color: Color(0xFF7B8FA3),
+                                  size: 13,
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    supplierName,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: Color(0xFF62798B),
+                                      fontSize: 9.8,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 9),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          compactValue(
+                            label: 'Quantity',
+                            value:
+                                '${OrderHelpers.formatNumber(quantity)} $quantityUnit',
+                          ),
+                          const SizedBox(height: 8),
+                          compactValue(
+                            label: 'Total',
+                            value:
+                                '₱${totalAmount.toStringAsFixed(0)}',
+                            valueColor: const Color(0xFF0875D1),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  compactStatusBar(orderStatus),
+                  AnimatedSize(
+                    duration: const Duration(
+                      milliseconds: 230,
+                    ),
+                    curve: Curves.easeOutCubic,
+                    alignment: Alignment.topCenter,
+                    child: isExpanded
+                        ? Column(
+                            children: [
+                              const SizedBox(height: 10),
+                              paymentRow(
+                                paymentStatus: paymentStatus,
+                                orderStatus: orderStatus,
+                              ),
+                              const SizedBox(height: 9),
+                              compactProgress(orderStatus),
+                              if (orderStatus.toLowerCase() ==
+                                      'pending' ||
+                                  isCompletedStatus(orderStatus)) ...[
+                                const SizedBox(height: 9),
+                                actionArea(
+                                  orderStatus,
+                                  reviewSubmitted,
+                                ),
+                              ],
+                            ],
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

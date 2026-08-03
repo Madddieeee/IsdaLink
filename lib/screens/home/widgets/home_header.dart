@@ -9,11 +9,17 @@ class HomeHeader extends StatelessWidget {
     required this.onLogout,
     required this.onSearchTap,
     this.onProfileTap,
+    this.onSuppliersTap,
+    this.onFishStocksTap,
+    this.onActiveOrdersTap,
   });
 
   final VoidCallback onLogout;
   final VoidCallback onSearchTap;
   final VoidCallback? onProfileTap;
+  final VoidCallback? onSuppliersTap;
+  final VoidCallback? onFishStocksTap;
+  final VoidCallback? onActiveOrdersTap;
 
   User? get currentUser => FirebaseAuth.instance.currentUser;
 
@@ -98,7 +104,8 @@ class HomeHeader extends StatelessWidget {
       'quantity',
     );
 
-    return (status == 'available' || status == 'active') && quantity > 0;
+    return (status == 'available' || status == 'active') &&
+        quantity > 0;
   }
 
   bool activeVendorOrder(
@@ -137,277 +144,128 @@ class HomeHeader extends StatelessWidget {
     required int activeOrderCount,
   }) {
     final topPadding = MediaQuery.paddingOf(context).top;
-    final isDarkMode = MediaQuery.platformBrightnessOf(context) == Brightness.dark;
+    final isDarkMode =
+        MediaQuery.platformBrightnessOf(context) == Brightness.dark;
 
     final headerGradient = isDarkMode
         ? const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Color(0xFF071223),
-              Color(0xFF0B1E38),
-              Color(0xFF0C2D4A),
+              Color(0xFF06101E),
+              Color(0xFF082D4F),
+              Color(0xFF07536C),
             ],
-            stops: [0, 0.58, 1],
+            stops: [
+              0,
+              0.56,
+              1,
+            ],
           )
         : const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Color(0xFF0E69D5),
-              Color(0xFF1588E6),
-              Color(0xFF21C0D7),
+              Color(0xFF06355F),
+              Color(0xFF0875D1),
+              Color(0xFF12B6D6),
             ],
-            stops: [0, 0.58, 1],
-          );
-
-    final searchButtonGradient = isDarkMode
-        ? const LinearGradient(
-            colors: [
-              Color(0xFF143E67),
-              Color(0xFF155F7A),
-            ],
-          )
-        : const LinearGradient(
-            colors: [
-              Color(0xFF0E69D5),
-              Color(0xFF1AB8D8),
+            stops: [
+              0,
+              0.56,
+              1,
             ],
           );
 
-    SystemChrome.setSystemUIOverlayStyle(
-      SystemUiOverlayStyle(
-        statusBarColor: isDarkMode ? const Color(0xFF071223) : const Color(0xFF0E69D5),
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
-        systemNavigationBarColor: Colors.white,
-        systemNavigationBarIconBrightness: Brightness.dark,
-      ),
+    final overlayStyle = SystemUiOverlayStyle(
+      statusBarColor: isDarkMode
+          ? const Color(0xFF06101E)
+          : const Color(0xFF06355F),
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
+      systemNavigationBarColor: Colors.white,
+      systemNavigationBarIconBrightness: Brightness.dark,
     );
 
-    return SizedBox(
-      width: MediaQuery.sizeOf(context).width,
-      child: ClipPath(
-        clipper: const _HomeHeaderClipper(),
-        clipBehavior: Clip.hardEdge,
-        child: Container(
-          width: double.infinity,
-          padding: EdgeInsets.fromLTRB(
-            14,
-            topPadding + 6,
-            14,
-            30,
-          ),
-        decoration: BoxDecoration(
-          color: isDarkMode
-              ? const Color(0xFF071223)
-              : const Color(0xFF0E69D5),
-          gradient: headerGradient,
-        ),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: overlayStyle,
+      child: SizedBox(
+        width: double.infinity,
         child: Stack(
+          clipBehavior: Clip.none,
           children: [
-            Positioned(
-              top: -18,
-              right: -36,
-              child: _MarineBubble(
-                size: 160,
-                opacity: isDarkMode ? 8 : 16,
-              ),
-            ),
-            Positioned(
-              right: 54,
-              bottom: -42,
-              child: _MarineBubble(
-                size: 118,
-                opacity: isDarkMode ? 6 : 12,
-              ),
-            ),
-            Positioned(
-              left: -56,
-              bottom: -70,
-              child: _MarineBubble(
-                size: 140,
-                opacity: isDarkMode ? 6 : 12,
-              ),
-            ),
-            Positioned(
-              top: 46,
-              right: -20,
-              child: Container(
-                width: 116,
-                height: 116,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white.withAlpha(
-                      isDarkMode ? 8 : 17,
-                    ),
-                    width: 1.1,
+            Positioned.fill(
+              child: IgnorePointer(
+                child: CustomPaint(
+                  painter: _PremiumWaveTransitionPainter(
+                    isDarkMode: isDarkMode,
                   ),
                 ),
               ),
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+            ClipPath(
+              clipper: const _PremiumHomeHeaderClipper(),
+              clipBehavior: Clip.hardEdge,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: isDarkMode
+                      ? const Color(0xFF06101E)
+                      : const Color(0xFF06355F),
+                  gradient: headerGradient,
+                ),
+                child: Stack(
                   children: [
-                    const Expanded(
-                      child: Text(
-                        'ISDALINK',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 11.2,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.45,
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: CustomPaint(
+                          painter: _PremiumMarineBackdropPainter(
+                            isDarkMode: isDarkMode,
+                          ),
                         ),
                       ),
                     ),
-                    _RegionChip(isDarkMode: isDarkMode),
-                    const SizedBox(width: 8),
-                    _HeaderCircleButton(
-                      icon: Icons.person_rounded,
-                      tooltip: 'Profile',
-                      onTap: onProfileTap,
-                      isDarkMode: isDarkMode,
-                    ),
-                    const SizedBox(width: 7),
-                    _HeaderCircleButton(
-                      icon: Icons.logout_rounded,
-                      tooltip: 'Log out',
-                      onTap: onLogout,
-                      isDarkMode: isDarkMode,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                const Text(
-                  'Good day,',
-                  style: TextStyle(
-                    color: Color(0xFFD8F4F5),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  userName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    height: 1.08,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 7),
-                const Text(
-                  'Find fresh fish, verified suppliers, and track your Cash on Delivery orders.',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Color(0xFFE0F5F6),
-                    fontSize: 11.4,
-                    height: 1.35,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 15),
-                Material(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                  elevation: 0,
-                  child: InkWell(
-                    onTap: onSearchTap,
-                    borderRadius: BorderRadius.circular(18),
-                    child: Container(
-                      height: 54,
-                      padding: const EdgeInsets.fromLTRB(14, 0, 8, 0),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(18),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x26002339),
-                            blurRadius: 16,
-                            offset: Offset(0, 8),
-                          ),
-                        ],
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        16,
+                        topPadding + 7,
+                        12,
+                        34,
                       ),
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(
-                            Icons.search_rounded,
-                            color: Color(0xFF68879B),
-                            size: 22,
+                          _PremiumHeaderTopBar(
+                            isDarkMode: isDarkMode,
+                            onProfileTap: onProfileTap,
+                            onLogout: onLogout,
                           ),
-                          const SizedBox(width: 11),
-                          const Expanded(
-                            child: Text(
-                              'Search fish, suppliers, or locations',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: Color(0xFF98AAB8),
-                                fontSize: 11.7,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
+                          const SizedBox(height: 18),
+                          _PremiumGreeting(
+                            userName: userName,
                           ),
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              gradient: searchButtonGradient,
-                              borderRadius: BorderRadius.circular(13),
-                            ),
-                            child: const Icon(
-                              Icons.set_meal_rounded,
-                              color: Colors.white,
-                              size: 19,
-                            ),
+                          const SizedBox(height: 15),
+                          _PremiumSearchBar(
+                            onTap: onSearchTap,
+                            isDarkMode: isDarkMode,
+                          ),
+                          const SizedBox(height: 13),
+                          _PremiumNetworkPanel(
+                            supplierCount: supplierCount,
+                            fishStockCount: fishStockCount,
+                            activeOrderCount: activeOrderCount,
+                            isDarkMode: isDarkMode,
+                            onSuppliersTap: onSuppliersTap,
+                            onFishStocksTap: onFishStocksTap,
+                            onActiveOrdersTap: onActiveOrdersTap,
                           ),
                         ],
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _HeaderStatCard(
-                        icon: Icons.storefront_outlined,
-                        value: supplierCount,
-                        label: 'Suppliers',
-                        isDarkMode: isDarkMode,
-                      ),
-                    ),
-                    const SizedBox(width: 9),
-                    Expanded(
-                      child: _HeaderStatCard(
-                        icon: Icons.set_meal_outlined,
-                        value: fishStockCount,
-                        label: 'Fish Stocks',
-                        isDarkMode: isDarkMode,
-                      ),
-                    ),
-                    const SizedBox(width: 9),
-                    Expanded(
-                      child: _HeaderStatCard(
-                        icon: Icons.receipt_long_outlined,
-                        value: activeOrderCount,
-                        label: 'Active Orders',
-                        isDarkMode: isDarkMode,
-                      ),
-                    ),
                   ],
                 ),
-              ],
+              ),
             ),
           ],
-          ),
         ),
       ),
     );
@@ -430,7 +288,10 @@ class HomeHeader extends StatelessWidget {
     }
 
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance.collection('users').doc(uid).snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .snapshots(),
       builder: (context, userSnapshot) {
         final userName = stringValue(
           userSnapshot.data?.data(),
@@ -439,7 +300,9 @@ class HomeHeader extends StatelessWidget {
         );
 
         return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-          stream: FirebaseFirestore.instance.collection('supplierProfiles').snapshots(),
+          stream: FirebaseFirestore.instance
+              .collection('supplierProfiles')
+              .snapshots(),
           builder: (context, supplierSnapshot) {
             final supplierCount = supplierSnapshot.hasData
                 ? supplierSnapshot.data!.docs.where(
@@ -452,7 +315,9 @@ class HomeHeader extends StatelessWidget {
                 : 0;
 
             return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-              stream: FirebaseFirestore.instance.collection('fishStocks').snapshots(),
+              stream: FirebaseFirestore.instance
+                  .collection('fishStocks')
+                  .snapshots(),
               builder: (context, stockSnapshot) {
                 final fishStockCount = stockSnapshot.hasData
                     ? stockSnapshot.data!.docs.where(
@@ -501,63 +366,109 @@ class HomeHeader extends StatelessWidget {
   }
 }
 
-class _MarineBubble extends StatelessWidget {
-  const _MarineBubble({
-    required this.size,
-    required this.opacity,
+class _PremiumHeaderTopBar extends StatelessWidget {
+  const _PremiumHeaderTopBar({
+    required this.isDarkMode,
+    required this.onProfileTap,
+    required this.onLogout,
   });
 
-  final double size;
-  final int opacity;
+  final bool isDarkMode;
+  final VoidCallback? onProfileTap;
+  final VoidCallback onLogout;
 
   @override
   Widget build(
     BuildContext context,
   ) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: Colors.white.withAlpha(opacity),
-        shape: BoxShape.circle,
-      ),
+    return Row(
+      children: [
+        const Expanded(
+          child: _BrandLockup(),
+        ),
+        _RegionChip(
+          isDarkMode: isDarkMode,
+        ),
+        const SizedBox(width: 7),
+        _PremiumActionButton(
+          icon: Icons.person_rounded,
+          tooltip: 'Profile',
+          onTap: onProfileTap,
+          isDarkMode: isDarkMode,
+        ),
+        const SizedBox(width: 6),
+        _PremiumActionButton(
+          icon: Icons.logout_rounded,
+          tooltip: 'Log out',
+          onTap: onLogout,
+          isDarkMode: isDarkMode,
+        ),
+      ],
     );
   }
 }
 
-class _HomeHeaderClipper extends CustomClipper<Path> {
-  const _HomeHeaderClipper();
+class _BrandLockup extends StatelessWidget {
+  const _BrandLockup();
 
   @override
-  Path getClip(
-    Size size,
+  Widget build(
+    BuildContext context,
   ) {
-    final path = Path()
-      ..moveTo(0, 0)
-      ..lineTo(0, size.height - 22)
-      ..quadraticBezierTo(
-        size.width * 0.25,
-        size.height - 5,
-        size.width * 0.50,
-        size.height - 2,
-      )
-      ..quadraticBezierTo(
-        size.width * 0.75,
-        size.height - 5,
-        size.width + 2,
-        size.height - 22,
-      )
-      ..lineTo(size.width + 2, 0)
-      ..close();
-
-    return path;
-  }
-
-  @override
-  bool shouldReclip(
-    covariant CustomClipper<Path> oldClipper,
-  ) {
-    return false;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 31,
+          height: 31,
+          decoration: BoxDecoration(
+            color: Colors.white.withAlpha(24),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: Colors.white.withAlpha(42),
+            ),
+          ),
+          child: const Icon(
+            Icons.set_meal_rounded,
+            color: Color(0xFFE9FDFF),
+            size: 17,
+          ),
+        ),
+        const SizedBox(width: 8),
+        const Flexible(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'ISDALINK',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 10.8,
+                  height: 1,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.35,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                'FISH SUPPLY NETWORK',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Color(0xFFBFEFF3),
+                  fontSize: 6.8,
+                  height: 1,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.72,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -573,18 +484,18 @@ class _RegionChip extends StatelessWidget {
     BuildContext context,
   ) {
     return Container(
-      height: 32,
+      height: 31,
       padding: const EdgeInsets.symmetric(
-        horizontal: 10,
+        horizontal: 9,
       ),
       decoration: BoxDecoration(
         color: Colors.white.withAlpha(
-          isDarkMode ? 18 : 28,
+          isDarkMode ? 17 : 24,
         ),
         borderRadius: BorderRadius.circular(99),
         border: Border.all(
           color: Colors.white.withAlpha(
-            isDarkMode ? 20 : 34,
+            isDarkMode ? 22 : 36,
           ),
         ),
       ),
@@ -593,16 +504,16 @@ class _RegionChip extends StatelessWidget {
         children: [
           Icon(
             Icons.location_on_rounded,
-            color: Colors.white,
-            size: 14,
+            color: Color(0xFFE9FDFF),
+            size: 13,
           ),
           SizedBox(width: 4),
           Text(
-            'Caraga Region',
+            'Caraga',
             style: TextStyle(
               color: Colors.white,
-              fontSize: 9.7,
-              fontWeight: FontWeight.w800,
+              fontSize: 9.1,
+              fontWeight: FontWeight.w900,
             ),
           ),
         ],
@@ -611,8 +522,8 @@ class _RegionChip extends StatelessWidget {
   }
 }
 
-class _HeaderCircleButton extends StatelessWidget {
-  const _HeaderCircleButton({
+class _PremiumActionButton extends StatelessWidget {
+  const _PremiumActionButton({
     required this.icon,
     required this.tooltip,
     required this.onTap,
@@ -632,19 +543,28 @@ class _HeaderCircleButton extends StatelessWidget {
       message: tooltip,
       child: Material(
         color: Colors.white.withAlpha(
-          isDarkMode ? 18 : 28,
+          isDarkMode ? 17 : 24,
         ),
-        shape: const CircleBorder(),
+        borderRadius: BorderRadius.circular(11),
         child: InkWell(
           onTap: onTap,
-          customBorder: const CircleBorder(),
-          child: SizedBox(
-            width: 32,
-            height: 32,
+          borderRadius: BorderRadius.circular(11),
+          splashColor: Colors.white.withAlpha(28),
+          child: Container(
+            width: 31,
+            height: 31,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(11),
+              border: Border.all(
+                color: Colors.white.withAlpha(
+                  isDarkMode ? 20 : 34,
+                ),
+              ),
+            ),
             child: Icon(
               icon,
               color: Colors.white,
-              size: 18,
+              size: 16,
             ),
           ),
         ),
@@ -653,62 +573,733 @@ class _HeaderCircleButton extends StatelessWidget {
   }
 }
 
-class _HeaderStatCard extends StatelessWidget {
-  const _HeaderStatCard({
-    required this.icon,
-    required this.value,
-    required this.label,
+class _PremiumGreeting extends StatelessWidget {
+  const _PremiumGreeting({
+    required this.userName,
+  });
+
+  final String userName;
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Row(
+          children: [
+            SizedBox(
+              width: 18,
+              child: Divider(
+                color: Color(0xFF82E9F1),
+                thickness: 2,
+                height: 2,
+              ),
+            ),
+            SizedBox(width: 7),
+            Text(
+              'GOOD DAY',
+              style: TextStyle(
+                color: Color(0xFFCBF4F7),
+                fontSize: 8.4,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.15,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 7),
+        Text(
+          userName,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 25,
+            height: 1.03,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.35,
+          ),
+        ),
+        const SizedBox(height: 7),
+        const Text(
+          'Fresh fish, trusted suppliers, and clear Cash on Delivery order tracking.',
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: Color(0xFFDDF5F7),
+            fontSize: 11.1,
+            height: 1.36,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PremiumSearchBar extends StatelessWidget {
+  const _PremiumSearchBar({
+    required this.onTap,
     required this.isDarkMode,
   });
 
-  final IconData icon;
-  final int value;
-  final String label;
+  final VoidCallback onTap;
   final bool isDarkMode;
 
   @override
   Widget build(
     BuildContext context,
   ) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(19),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(19),
+        child: Ink(
+          height: 53,
+          padding: const EdgeInsets.fromLTRB(
+            8,
+            6,
+            7,
+            6,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(19),
+            border: Border.all(
+              color: Colors.white,
+              width: 1.4,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(
+                  isDarkMode ? 34 : 29,
+                ),
+                blurRadius: 22,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 39,
+                height: 39,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEAF7FC),
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: const Icon(
+                  Icons.search_rounded,
+                  color: Color(0xFF53788F),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Search fish or suppliers',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Color(0xFF8EA3B2),
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Container(
+                height: 39,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 13,
+                ),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFF0875D1),
+                      Color(0xFF10ACC9),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(13),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x330875D1),
+                      blurRadius: 10,
+                      offset: Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: const Row(
+                  children: [
+                    Text(
+                      'Search',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 9.8,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(width: 5),
+                    Icon(
+                      Icons.arrow_forward_rounded,
+                      color: Colors.white,
+                      size: 14,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PremiumNetworkPanel extends StatelessWidget {
+  const _PremiumNetworkPanel({
+    required this.supplierCount,
+    required this.fishStockCount,
+    required this.activeOrderCount,
+    required this.isDarkMode,
+    this.onSuppliersTap,
+    this.onFishStocksTap,
+    this.onActiveOrdersTap,
+  });
+
+  final int supplierCount;
+  final int fishStockCount;
+  final int activeOrderCount;
+  final bool isDarkMode;
+  final VoidCallback? onSuppliersTap;
+  final VoidCallback? onFishStocksTap;
+  final VoidCallback? onActiveOrdersTap;
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
     return Container(
-      height: 50,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 8,
+      padding: const EdgeInsets.fromLTRB(
+        10,
+        9,
+        10,
+        9,
       ),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(
-          isDarkMode ? 14 : 24,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withAlpha(
+              isDarkMode ? 20 : 34,
+            ),
+            Colors.white.withAlpha(
+              isDarkMode ? 9 : 17,
+            ),
+          ],
         ),
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(
           color: Colors.white.withAlpha(
-            isDarkMode ? 18 : 30,
+            isDarkMode ? 22 : 42,
           ),
         ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            color: const Color(0xFFE4FAFB),
-            size: 14,
-          ),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              '$value $label',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 9.4,
-                fontWeight: FontWeight.w900,
-              ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(
+              isDarkMode ? 30 : 19,
             ),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 7,
+                height: 7,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF8AF0B0),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0x668AF0B0),
+                      blurRadius: 7,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 7),
+              const Text(
+                'LIVE MARKETPLACE',
+                style: TextStyle(
+                  color: Color(0xFFD8F7F5),
+                  fontSize: 7.8,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.9,
+                ),
+              ),
+              const Spacer(),
+              const Text(
+                'Tap to explore',
+                style: TextStyle(
+                  color: Color(0xFFBCE8EC),
+                  fontSize: 7.8,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _PremiumMetricItem(
+                  icon: Icons.storefront_rounded,
+                  value: supplierCount,
+                  label: 'Suppliers',
+                  accentColor: const Color(0xFFA8F0DC),
+                  onTap: onSuppliersTap,
+                ),
+              ),
+              const _PremiumMetricDivider(),
+              Expanded(
+                child: _PremiumMetricItem(
+                  icon: Icons.set_meal_rounded,
+                  value: fishStockCount,
+                  label: 'Fish Stocks',
+                  accentColor: const Color(0xFFAEEBFF),
+                  onTap: onFishStocksTap,
+                ),
+              ),
+              const _PremiumMetricDivider(),
+              Expanded(
+                child: _PremiumMetricItem(
+                  icon: Icons.receipt_long_rounded,
+                  value: activeOrderCount,
+                  label: 'Active Orders',
+                  accentColor: const Color(0xFFFFDEA0),
+                  onTap: onActiveOrdersTap,
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
+  }
+}
+
+class _PremiumMetricDivider extends StatelessWidget {
+  const _PremiumMetricDivider();
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    return Container(
+      width: 1,
+      height: 35,
+      margin: const EdgeInsets.symmetric(
+        horizontal: 3,
+      ),
+      color: Colors.white.withAlpha(39),
+    );
+  }
+}
+
+class _PremiumMetricItem extends StatelessWidget {
+  const _PremiumMetricItem({
+    required this.icon,
+    required this.value,
+    required this.label,
+    required this.accentColor,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final int value;
+  final String label;
+  final Color accentColor;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    return Semantics(
+      button: onTap != null,
+      label: 'Open $label',
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(15),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(15),
+          splashColor: Colors.white.withAlpha(23),
+          highlightColor: Colors.white.withAlpha(10),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 5,
+              vertical: 4,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: accentColor.withAlpha(32),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: accentColor.withAlpha(70),
+                    ),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: accentColor,
+                    size: 15,
+                  ),
+                ),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '$value',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          height: 1,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFFD8F3F5),
+                          fontSize: 7.8,
+                          height: 1,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PremiumHeaderWaveGeometry {
+  const _PremiumHeaderWaveGeometry._();
+
+  static Path clipPath(
+    Size size,
+  ) {
+    final path = Path()
+      ..moveTo(0, 0)
+      ..lineTo(
+        0,
+        size.height - 31,
+      )
+      ..cubicTo(
+        size.width * 0.18,
+        size.height - 17,
+        size.width * 0.38,
+        size.height - 7,
+        size.width * 0.56,
+        size.height - 11,
+      )
+      ..cubicTo(
+        size.width * 0.72,
+        size.height - 15,
+        size.width * 0.87,
+        size.height - 31,
+        size.width + 8,
+        size.height - 33,
+      )
+      ..lineTo(
+        size.width + 8,
+        0,
+      )
+      ..close();
+
+    return path;
+  }
+
+  static Path bottomEdge(
+    Size size,
+  ) {
+    return Path()
+      ..moveTo(
+        -8,
+        size.height - 31,
+      )
+      ..cubicTo(
+        size.width * 0.18,
+        size.height - 17,
+        size.width * 0.38,
+        size.height - 7,
+        size.width * 0.56,
+        size.height - 11,
+      )
+      ..cubicTo(
+        size.width * 0.72,
+        size.height - 15,
+        size.width * 0.87,
+        size.height - 31,
+        size.width + 10,
+        size.height - 33,
+      );
+  }
+}
+
+class _PremiumHomeHeaderClipper extends CustomClipper<Path> {
+  const _PremiumHomeHeaderClipper();
+
+  @override
+  Path getClip(
+    Size size,
+  ) {
+    return _PremiumHeaderWaveGeometry.clipPath(
+      size,
+    );
+  }
+
+  @override
+  bool shouldReclip(
+    covariant CustomClipper<Path> oldClipper,
+  ) {
+    return false;
+  }
+}
+
+class _PremiumWaveTransitionPainter extends CustomPainter {
+  const _PremiumWaveTransitionPainter({
+    required this.isDarkMode,
+  });
+
+  final bool isDarkMode;
+
+  @override
+  void paint(
+    Canvas canvas,
+    Size size,
+  ) {
+    final wave = _PremiumHeaderWaveGeometry.bottomEdge(
+      size,
+    );
+
+    final shadowPaint = Paint()
+      ..color = Colors.black.withAlpha(
+        isDarkMode ? 52 : 32,
+      )
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 18
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(
+        BlurStyle.normal,
+        8,
+      );
+
+    canvas.drawPath(
+      wave,
+      shadowPaint,
+    );
+
+    final underglowPaint = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
+        colors: [
+          Color(0xFF0B76C8),
+          Color(0xFF16B8D5),
+          Color(0xFF77E6EB),
+        ],
+      ).createShader(
+        Rect.fromLTWH(
+          0,
+          size.height - 45,
+          size.width,
+          32,
+        ),
+      )
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 10
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawPath(
+      wave,
+      underglowPaint,
+    );
+
+    final foamPaint = Paint()
+      ..color = Colors.white.withAlpha(
+        isDarkMode ? 42 : 104,
+      )
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.1
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawPath(
+      wave,
+      foamPaint,
+    );
+
+    final softHighlightPaint = Paint()
+      ..color = const Color(0xFFBFF8FA).withAlpha(
+        isDarkMode ? 28 : 62,
+      )
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(
+        BlurStyle.normal,
+        3,
+      );
+
+    canvas.drawPath(
+      wave,
+      softHighlightPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(
+    covariant _PremiumWaveTransitionPainter oldDelegate,
+  ) {
+    return oldDelegate.isDarkMode != isDarkMode;
+  }
+}
+
+class _PremiumMarineBackdropPainter extends CustomPainter {
+  const _PremiumMarineBackdropPainter({
+    required this.isDarkMode,
+  });
+
+  final bool isDarkMode;
+
+  @override
+  void paint(
+    Canvas canvas,
+    Size size,
+  ) {
+    final glowCenter = Offset(
+      size.width * 0.87,
+      size.height * 0.28,
+    );
+
+    final glowPaint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          Colors.white.withAlpha(
+            isDarkMode ? 12 : 22,
+          ),
+          Colors.white.withAlpha(0),
+        ],
+      ).createShader(
+        Rect.fromCircle(
+          center: glowCenter,
+          radius: size.width * 0.42,
+        ),
+      );
+
+    canvas.drawCircle(
+      glowCenter,
+      size.width * 0.42,
+      glowPaint,
+    );
+
+    final ringPaint = Paint()
+      ..color = Colors.white.withAlpha(
+        isDarkMode ? 5 : 10,
+      )
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+
+    for (final radius in [
+      size.width * 0.10,
+      size.width * 0.18,
+    ]) {
+      canvas.drawCircle(
+        Offset(
+          size.width * 0.93,
+          size.height * 0.36,
+        ),
+        radius,
+        ringPaint,
+      );
+    }
+
+    final wavePaint = Paint()
+      ..color = Colors.white.withAlpha(
+        isDarkMode ? 5 : 10,
+      )
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+
+    final upperWave = Path()
+      ..moveTo(
+        -20,
+        size.height * 0.27,
+      )
+      ..cubicTo(
+        size.width * 0.24,
+        size.height * 0.18,
+        size.width * 0.47,
+        size.height * 0.37,
+        size.width + 24,
+        size.height * 0.22,
+      );
+
+    final lowerWave = Path()
+      ..moveTo(
+        -24,
+        size.height * 0.72,
+      )
+      ..cubicTo(
+        size.width * 0.28,
+        size.height * 0.60,
+        size.width * 0.58,
+        size.height * 0.82,
+        size.width + 22,
+        size.height * 0.66,
+      );
+
+    canvas
+      ..drawPath(
+        upperWave,
+        wavePaint,
+      )
+      ..drawPath(
+        lowerWave,
+        wavePaint,
+      );
+  }
+
+  @override
+  bool shouldRepaint(
+    covariant _PremiumMarineBackdropPainter oldDelegate,
+  ) {
+    return oldDelegate.isDarkMode != isDarkMode;
   }
 }
