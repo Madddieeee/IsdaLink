@@ -53,7 +53,9 @@ class HomeScreen extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => const AnalyticsScreen(),
+        builder: (_) => const AnalyticsScreen(
+          mode: AnalyticsMode.vendor,
+        ),
       ),
     );
   }
@@ -169,7 +171,7 @@ class HomeScreen extends StatelessWidget {
     BuildContext context,
   ) {
     return SizedBox(
-      height: 198,
+      height: 212,
       child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: supplierService.suppliersStream,
         builder: (context, snapshot) {
@@ -219,9 +221,8 @@ class HomeScreen extends StatelessWidget {
           }
 
           return ListView(
-            padding: const EdgeInsets.fromLTRB(14, 0, 2, 0),
+            padding: const EdgeInsets.only(left: 14),
             scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
             children: approvedSuppliers.map(
               (document) {
                 final data = document.data();
@@ -393,58 +394,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-
-  Widget topSellingSection(
-    BuildContext context,
-  ) {
-    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('orders')
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const SizedBox.shrink();
-        }
-
-        final hasCompletedOrders = snapshot.data!.docs.any(
-          (document) {
-            final status = (document.data()['orderStatus'] ?? '')
-                .toString()
-                .toLowerCase();
-
-            return status == 'completed' || status == 'delivered';
-          },
-        );
-
-        if (!hasCompletedOrders) {
-          return const SizedBox.shrink();
-        }
-
-        return Column(
-          children: [
-            TopSellingFishStrip(
-              onProductTap: (
-                supplier,
-                product,
-                stockId,
-                supplierId,
-              ) {
-                openProductDetails(
-                  context,
-                  supplier,
-                  product,
-                  stockId: stockId,
-                  supplierId: supplierId,
-                );
-              },
-            ),
-            const SizedBox(height: 15),
-          ],
-        );
-      },
-    );
-  }
-
   @override
   Widget build(
     BuildContext context,
@@ -461,12 +410,25 @@ class HomeScreen extends StatelessWidget {
                   onLogout: () => logout(context),
                   onSearchTap: () => openHomeSearch(context),
                   onProfileTap: () => openMe(context),
-                  onSuppliersTap: () => openBrowseSuppliers(context),
-                  onFishStocksTap: () => openHomeSearch(context),
-                  onActiveOrdersTap: () => openMyOrders(context),
                 ),
                 const SizedBox(height: 12),
-                topSellingSection(context),
+                TopSellingFishStrip(
+                  onProductTap: (
+                    supplier,
+                    product,
+                    stockId,
+                    supplierId,
+                  ) {
+                    openProductDetails(
+                      context,
+                      supplier,
+                      product,
+                      stockId: stockId,
+                      supplierId: supplierId,
+                    );
+                  },
+                ),
+                const SizedBox(height: 15),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 14),
                   child: HomeSectionHeader(
@@ -503,7 +465,7 @@ class HomeScreen extends StatelessWidget {
                     );
                   },
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 18),
               ],
             ),
           ),

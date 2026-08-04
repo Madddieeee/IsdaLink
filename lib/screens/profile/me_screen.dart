@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:isdalink/config/cloudinary_config.dart';
 import 'package:isdalink/screens/analytics/analytics_screen.dart';
@@ -9,7 +10,6 @@ import 'package:isdalink/screens/supplier/supplier_activation_screen.dart';
 import 'package:isdalink/screens/supplier/supplier_cod_orders_screen.dart';
 import 'package:isdalink/screens/supplier/supplier_dashboard_screen.dart';
 import 'package:isdalink/screens/supplier/supplier_manage_products_screen.dart';
-import 'package:isdalink/screens/vendor/browse_suppliers_screen.dart';
 import 'package:isdalink/screens/vendor/my_orders_screen.dart';
 import 'package:isdalink/screens/welcome_screen.dart';
 import 'package:isdalink/services/cloudinary_upload_service.dart';
@@ -30,26 +30,10 @@ class _MeScreenState extends State<MeScreen> {
       const CloudinaryUploadService();
   final ImagePicker imagePicker = ImagePicker();
 
-  bool approvalDialogScheduled = false;
   bool isUploadingProfileImage = false;
-
-  void showMessage(
-    BuildContext context,
-    String message, {
-    bool isError = false,
-  }) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError
-            ? const Color(0xFFD32F2F)
-            : const Color(0xFF2E7D32),
-      ),
-    );
-  }
+  bool approvalDialogScheduled = false;
 
   void openScreen(
-    BuildContext context,
     Widget screen,
   ) {
     Navigator.push(
@@ -60,37 +44,43 @@ class _MeScreenState extends State<MeScreen> {
     );
   }
 
-  void openSupplierDashboard(
-    BuildContext context,
-  ) {
-    openScreen(
-      context,
-      const SupplierDashboardScreen(),
+  void showMessage(
+    String message, {
+    bool isError = false,
+  }) {
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError
+            ? const Color(0xFFD32F2F)
+            : const Color(0xFF2E7D32),
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 
-  void openSupplierApplication(
-    BuildContext context,
-  ) {
-    openScreen(
-      context,
-      const SupplierActivationScreen(),
-    );
-  }
+  Future<void> logout() async {
+    await profileService.logout();
 
-  void openManageProfile(
-    BuildContext context,
-  ) {
-    ScaffoldMessenger.of(context).clearSnackBars();
+    if (!mounted) {
+      return;
+    }
 
-    openScreen(
+    Navigator.pushAndRemoveUntil(
       context,
-      const ManageProfileScreen(),
+      MaterialPageRoute(
+        builder: (_) => const WelcomeScreen(),
+      ),
+      (route) => false,
     );
   }
 
   Future<void> uploadProfilePhoto(
-    bool canOpenSupplierDashboard,
+    bool isApprovedSupplier,
   ) async {
     try {
       final image = await imagePicker.pickImage(
@@ -114,24 +104,12 @@ class _MeScreenState extends State<MeScreen> {
 
       await profileService.updateProfileImageUrl(
         imageUrl: imageUrl,
-        isApprovedSupplier: canOpenSupplierDashboard,
+        isApprovedSupplier: isApprovedSupplier,
       );
 
-      if (!mounted) {
-        return;
-      }
-
-      showMessage(
-        context,
-        'Profile photo updated successfully.',
-      );
+      showMessage('Profile photo updated successfully.');
     } catch (error) {
-      if (!mounted) {
-        return;
-      }
-
       showMessage(
-        context,
         'Failed to update profile photo: $error',
         isError: true,
       );
@@ -145,7 +123,7 @@ class _MeScreenState extends State<MeScreen> {
   }
 
   Future<void> removeProfilePhoto(
-    bool canOpenSupplierDashboard,
+    bool isApprovedSupplier,
   ) async {
     try {
       setState(() {
@@ -153,24 +131,12 @@ class _MeScreenState extends State<MeScreen> {
       });
 
       await profileService.removeProfileImageUrl(
-        isApprovedSupplier: canOpenSupplierDashboard,
+        isApprovedSupplier: isApprovedSupplier,
       );
 
-      if (!mounted) {
-        return;
-      }
-
-      showMessage(
-        context,
-        'Profile photo removed.',
-      );
+      showMessage('Profile photo removed.');
     } catch (error) {
-      if (!mounted) {
-        return;
-      }
-
       showMessage(
-        context,
         'Failed to remove profile photo: $error',
         isError: true,
       );
@@ -185,14 +151,15 @@ class _MeScreenState extends State<MeScreen> {
 
   void showProfilePhotoOptions({
     required String profileImageUrl,
-    required bool canOpenSupplierDashboard,
+    required bool isApprovedSupplier,
   }) {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (sheetContext) {
         return Container(
-          padding: const EdgeInsets.fromLTRB(18, 12, 18, 22),
+          padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
           decoration: const BoxDecoration(
             color: Color(0xFFF4F8FB),
             borderRadius: BorderRadius.vertical(
@@ -213,38 +180,13 @@ class _MeScreenState extends State<MeScreen> {
                   ),
                 ),
                 const SizedBox(height: 18),
-                Container(
-                  width: 86,
-                  height: 86,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(0xFFEAF7FB),
-                      width: 4,
-                    ),
-                  ),
-                  child: ClipOval(
-                    child: profileImageUrl.trim().isNotEmpty
-                        ? Image.network(
-                            profileImageUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return const Icon(
-                                Icons.person,
-                                color: Color(0xFF146BFF),
-                                size: 42,
-                              );
-                            },
-                          )
-                        : Icon(
-                            canOpenSupplierDashboard
-                                ? Icons.storefront
-                                : Icons.person,
-                            color: const Color(0xFF146BFF),
-                            size: 42,
-                          ),
-                  ),
+                _ProfileAvatar(
+                  imageUrl: profileImageUrl,
+                  isSupplier: isApprovedSupplier,
+                  isUploading: false,
+                  onTap: () {},
+                  size: 86,
+                  showCameraBadge: false,
                 ),
                 const SizedBox(height: 12),
                 const Text(
@@ -257,7 +199,7 @@ class _MeScreenState extends State<MeScreen> {
                 ),
                 const SizedBox(height: 5),
                 const Text(
-                  'Update the photo shown on your account profile.',
+                  'Update the photo shown on your IsdaLink account.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Color(0xFF7B8FA3),
@@ -266,25 +208,25 @@ class _MeScreenState extends State<MeScreen> {
                   ),
                 ),
                 const SizedBox(height: 18),
-                ProfilePhotoActionButton(
+                _ProfilePhotoAction(
                   icon: Icons.photo_library_outlined,
                   title: 'Upload New Photo',
                   subtitle: 'Choose an image from your gallery',
                   onTap: () {
                     Navigator.pop(sheetContext);
-                    uploadProfilePhoto(canOpenSupplierDashboard);
+                    uploadProfilePhoto(isApprovedSupplier);
                   },
                 ),
                 if (profileImageUrl.trim().isNotEmpty) ...[
                   const SizedBox(height: 10),
-                  ProfilePhotoActionButton(
+                  _ProfilePhotoAction(
                     icon: Icons.delete_outline,
                     title: 'Remove Photo',
-                    subtitle: 'Use the default profile icon again',
+                    subtitle: 'Use the default account icon again',
                     isDanger: true,
                     onTap: () {
                       Navigator.pop(sheetContext);
-                      removeProfilePhoto(canOpenSupplierDashboard);
+                      removeProfilePhoto(isApprovedSupplier);
                     },
                   ),
                 ],
@@ -335,786 +277,167 @@ class _MeScreenState extends State<MeScreen> {
         )
         .toLowerCase();
 
-    final isApprovedSupplier =
-        role == 'supplier' || supplierStatus == 'approved';
+    final approved = role == 'supplier' || supplierStatus == 'approved';
+    final alreadySeen = profileData['supplierApprovalSeen'] == true;
 
-    final approvalAlreadySeen = profileData['supplierApprovalSeen'] == true;
-
-    if (!isApprovedSupplier || approvalAlreadySeen) {
+    if (!approved || alreadySeen) {
       return;
     }
 
     approvalDialogScheduled = true;
 
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) async {
-        if (!mounted) {
-          return;
-        }
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) {
+        return;
+      }
 
-        await markSupplierApprovalSeen();
+      await markSupplierApprovalSeen();
 
-        if (!mounted) {
-          return;
-        }
+      if (!mounted) {
+        return;
+      }
 
-        await showDialog<void>(
-          context: context,
-          barrierDismissible: false,
-          builder: (dialogContext) {
-            return Dialog(
-              insetPadding: const EdgeInsets.symmetric(
-                horizontal: 28,
-              ),
-              shape: RoundedRectangleBorder(
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) {
+          return Dialog(
+            insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(22, 24, 22, 18),
+              decoration: BoxDecoration(
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(30),
               ),
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(22, 24, 22, 18),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 86,
-                      height: 86,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Color(0xFF2E7D32),
-                            Color(0xFF146BFF),
-                          ],
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.verified,
-                        color: Colors.white,
-                        size: 46,
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    const Text(
-                      'Congratulations!',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Color(0xFF102C44),
-                        fontSize: 24,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'You are now an approved IsdaLink fish supplier.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Color(0xFF146BFF),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        height: 1.3,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    const Text(
-                      'Your supplier account has been verified. You can now post fish stocks, manage products, track COD orders, and view supplier sales analytics.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Color(0xFF52677A),
-                        fontSize: 13,
-                        height: 1.45,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(13),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEAF7FB),
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: const Color(0xFF146BFF).withAlpha(40),
-                        ),
-                      ),
-                      child: const Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(
-                            Icons.home_outlined,
-                            color: Color(0xFF146BFF),
-                            size: 20,
-                          ),
-                          SizedBox(width: 9),
-                          Expanded(
-                            child: Text(
-                              'You will still start from the main home screen. Open Supplier Dashboard anytime from your profile.',
-                              style: TextStyle(
-                                color: Color(0xFF52677A),
-                                fontSize: 11.5,
-                                height: 1.35,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 82,
+                    height: 82,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        colors: [
+                          Color(0xFF2E7D32),
+                          Color(0xFF0875D1),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 18),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => Navigator.pop(dialogContext),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFF146BFF),
-                              side: const BorderSide(
-                                color: Color(0xFF146BFF),
-                              ),
-                              minimumSize: const Size.fromHeight(46),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                            ),
-                            child: const Text(
-                              'Later',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          flex: 2,
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.pop(dialogContext);
-                              openSupplierDashboard(context);
-                            },
-                            icon: const Icon(
-                              Icons.dashboard_customize,
-                              size: 18,
-                            ),
-                            label: const Text(
-                              'Start Selling',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF146BFF),
-                              foregroundColor: Colors.white,
-                              minimumSize: const Size.fromHeight(46),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Future<void> logout(
-    BuildContext context,
-  ) async {
-    await profileService.logout();
-
-    if (!context.mounted) {
-      return;
-    }
-
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const WelcomeScreen(),
-      ),
-      (route) => false,
-    );
-  }
-
-  Widget dashboardHeader({
-    required String name,
-    required String email,
-    required String location,
-    required String supplierStatus,
-    required String profileImageUrl,
-    required bool canOpenSupplierDashboard,
-    required bool isPendingSupplier,
-    required bool isRejectedSupplier,
-  }) {
-    final accountLabel = canOpenSupplierDashboard
-        ? 'Approved Supplier'
-        : isPendingSupplier
-            ? 'Pending Review'
-            : isRejectedSupplier
-                ? 'Application Rejected'
-                : 'Vendor Account';
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(18, 48, 18, 22),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF102C44),
-            Color(0xFF146BFF),
-          ],
-        ),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(38),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.arrow_back,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: GestureDetector(
-                  onTap: canOpenSupplierDashboard
-                      ? () => openSupplierDashboard(context)
-                      : () => openSupplierApplication(context),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 9,
-                    ),
-                    decoration: BoxDecoration(
+                    child: const Icon(
+                      Icons.verified_rounded,
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(99),
+                      size: 44,
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          canOpenSupplierDashboard
-                              ? Icons.storefront
-                              : Icons.store_mall_directory,
-                          color: const Color(0xFF102C44),
-                          size: 18,
-                        ),
-                        const SizedBox(width: 7),
-                        Text(
-                          canOpenSupplierDashboard
-                              ? 'Supplier Center'
-                              : 'Start Selling',
-                          style: const TextStyle(
-                            color: Color(0xFF102C44),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w900,
+                  ),
+                  const SizedBox(height: 17),
+                  const Text(
+                    'Supplier Approved',
+                    style: TextStyle(
+                      color: Color(0xFF102C44),
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 7),
+                  const Text(
+                    'Your existing account now has supplier tools while keeping all vendor functions.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Color(0xFF52677A),
+                      fontSize: 12.5,
+                      height: 1.4,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(dialogContext),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFF0875D1),
+                            minimumSize: const Size.fromHeight(46),
+                            side: const BorderSide(
+                              color: Color(0xFF0875D1),
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: const Text(
+                            'Later',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 4),
-                        const Icon(
-                          Icons.chevron_right,
-                          color: Color(0xFF102C44),
-                          size: 18,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              HeaderIconButton(
-                icon: Icons.settings,
-                onTap: () => openManageProfile(context),
-              ),
-              const SizedBox(width: 9),
-              HeaderIconButton(
-                icon: Icons.logout,
-                onTap: () => logout(context),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              ProfileAvatarButton(
-                imageUrl: profileImageUrl,
-                isSupplier: canOpenSupplierDashboard,
-                isUploading: isUploadingProfileImage,
-                onTap: () => showProfilePhotoOptions(
-                  profileImageUrl: profileImageUrl,
-                  canOpenSupplierDashboard: canOpenSupplierDashboard,
-                ),
-              ),
-              const SizedBox(width: 15),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 23,
-                        fontWeight: FontWeight.w900,
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      email,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFFDCE9F5),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                      const SizedBox(width: 10),
+                      Expanded(
+                        flex: 2,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(dialogContext);
+                            openScreen(const SupplierDashboardScreen());
+                          },
+                          icon: const Icon(
+                            Icons.dashboard_customize_outlined,
+                            size: 18,
+                          ),
+                          label: const Text(
+                            'Open Supplier Center',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF0875D1),
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size.fromHeight(46),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 7,
-                      runSpacing: 7,
-                      children: [
-                        HeaderBadge(
-                          icon: canOpenSupplierDashboard
-                              ? Icons.verified
-                              : Icons.person,
-                          label: accountLabel,
-                        ),
-                        HeaderBadge(
-                          icon: Icons.location_on,
-                          label: location,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget supplierStatusBanner(
-    String supplierStatus,
-  ) {
-    final isPending = supplierStatus == 'pending';
-    final isRejected = supplierStatus == 'rejected';
-
-    if (!isPending && !isRejected) {
-      return const SizedBox.shrink();
-    }
-
-    return Container(
-      margin: const EdgeInsets.fromLTRB(14, 14, 14, 0),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isPending
-            ? const Color(0xFFFFF8E8)
-            : const Color(0xFFFFEBEE),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: isPending
-              ? const Color(0xFFFFB703).withAlpha(80)
-              : const Color(0xFFD32F2F).withAlpha(60),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            isPending ? Icons.hourglass_top : Icons.info_outline,
-            color: isPending
-                ? const Color(0xFFFF7A1A)
-                : const Color(0xFFD32F2F),
-            size: 21,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              isPending
-                  ? 'Your supplier application is under admin review.'
-                  : 'Your supplier application was rejected. You may review your details and apply again.',
-              style: const TextStyle(
-                color: Color(0xFF52677A),
-                fontSize: 12,
-                height: 1.35,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget purchaseSection(
-    String uid,
-  ) {
-    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('orders')
-          .where(
-            'vendorId',
-            isEqualTo: uid,
-          )
-          .snapshots(),
-      builder: (context, snapshot) {
-        final documents = snapshot.data?.docs ?? [];
-
-        final toPay = documents.where(
-          (document) {
-            final data = document.data();
-
-            final orderStatus = (data['orderStatus'] ?? '')
-                .toString()
-                .toLowerCase();
-
-            final paymentStatus = (data['paymentStatus'] ?? '')
-                .toString()
-                .toLowerCase();
-
-            return orderStatus == 'pending' ||
-                paymentStatus.contains('to be paid');
-          },
-        ).length;
-
-        final accepted = documents.where(
-          (document) {
-            final status = (document.data()['orderStatus'] ?? '')
-                .toString()
-                .toLowerCase();
-
-            return status == 'accepted';
-          },
-        ).length;
-
-        final delivered = documents.where(
-          (document) {
-            final status = (document.data()['orderStatus'] ?? '')
-                .toString()
-                .toLowerCase();
-
-            return status == 'delivered' || status == 'completed';
-          },
-        ).length;
-
-        final toRate = documents.where(
-          (document) {
-            final data = document.data();
-
-            final status = (data['orderStatus'] ?? '')
-                .toString()
-                .toLowerCase();
-
-            final reviewed = data['reviewSubmitted'] == true;
-
-            return (status == 'delivered' || status == 'completed') &&
-                !reviewed;
-          },
-        ).length;
-
-        return WhiteSectionCard(
-          title: 'My Purchases',
-          actionLabel: 'View Purchase History',
-          onActionTap: () => openScreen(
-            context,
-            const MyOrdersScreen(),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: StatusShortcut(
-                  icon: Icons.payments_outlined,
-                  label: 'To Pay',
-                  count: toPay,
-                  onTap: () => openScreen(
-                    context,
-                    const MyOrdersScreen(),
+                    ],
                   ),
-                ),
-              ),
-              Expanded(
-                child: StatusShortcut(
-                  icon: Icons.inventory_2_outlined,
-                  label: 'Accepted',
-                  count: accepted,
-                  onTap: () => openScreen(
-                    context,
-                    const MyOrdersScreen(),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: StatusShortcut(
-                  icon: Icons.local_shipping_outlined,
-                  label: 'Delivered',
-                  count: delivered,
-                  onTap: () => openScreen(
-                    context,
-                    const MyOrdersScreen(),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: StatusShortcut(
-                  icon: Icons.star_border,
-                  label: 'To Rate',
-                  count: toRate,
-                  onTap: () => openScreen(
-                    context,
-                    const MyOrdersScreen(),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget supplierSection({
-    required String uid,
-    required bool canOpenSupplierDashboard,
-    required bool isPendingSupplier,
-    required bool isRejectedSupplier,
-  }) {
-    if (canOpenSupplierDashboard) {
-      return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream: FirebaseFirestore.instance
-            .collection('orders')
-            .where(
-              'supplierId',
-              isEqualTo: uid,
-            )
-            .snapshots(),
-        builder: (context, snapshot) {
-          final orders = snapshot.data?.docs ?? [];
-
-          final pendingCodOrders = orders.where(
-            (document) {
-              final status = (document.data()['orderStatus'] ?? '')
-                  .toString()
-                  .toLowerCase();
-
-              return status == 'pending';
-            },
-          ).length;
-
-          return WhiteSectionCard(
-            title: 'Supplier Center',
-            actionLabel: pendingCodOrders > 0
-                ? '$pendingCodOrders new COD'
-                : 'Open Dashboard',
-            onActionTap: () => openSupplierDashboard(context),
-            child: Column(
-              children: [
-                if (pendingCodOrders > 0) ...[
-                  SupplierOrderNotificationCard(
-                    count: pendingCodOrders,
-                    onTap: () => openScreen(
-                      context,
-                      const SupplierCodOrdersScreen(),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
                 ],
-                Row(
-                  children: [
-                    Expanded(
-                      child: SupplierToolShortcut(
-                        icon: Icons.add_box_outlined,
-                        label: 'Post Stock',
-                        onTap: () => openScreen(
-                          context,
-                          const PostFishStockScreen(),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: SupplierToolShortcut(
-                        icon: Icons.inventory_outlined,
-                        label: 'Products',
-                        onTap: () => openScreen(
-                          context,
-                          const SupplierManageProductsScreen(),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: SupplierToolShortcut(
-                        icon: Icons.receipt_long_outlined,
-                        label: 'COD Orders',
-                        count: pendingCodOrders,
-                        onTap: () => openScreen(
-                          context,
-                          const SupplierCodOrdersScreen(),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: SupplierToolShortcut(
-                        icon: Icons.bar_chart,
-                        label: 'Analytics',
-                        onTap: () => openScreen(
-                          context,
-                          const AnalyticsScreen(),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                SupplierMiniStats(
-                  uid: uid,
-                ),
-              ],
+              ),
             ),
           );
         },
       );
+    });
+  }
+
+  String firstAvailableText(
+    Map<String, dynamic>? data,
+    List<String> keys,
+    String fallback,
+  ) {
+    for (final key in keys) {
+      final value = profileService.getStringValue(
+        data,
+        key,
+        '',
+      );
+
+      if (value.trim().isNotEmpty) {
+        return value.trim();
+      }
     }
 
-    return WhiteSectionCard(
-      title: 'Supplier Application',
-      actionLabel: isPendingSupplier ? 'Pending' : 'Apply',
-      onActionTap: isPendingSupplier
-          ? () {
-              showMessage(
-                context,
-                'Your supplier application is still pending admin review.',
-                isError: true,
-              );
-            }
-          : () => openSupplierApplication(context),
-      child: ApplySupplierCard(
-        isPendingSupplier: isPendingSupplier,
-        isRejectedSupplier: isRejectedSupplier,
-        onTap: isPendingSupplier
-            ? () {
-                showMessage(
-                  context,
-                  'Your supplier application is still pending admin review.',
-                  isError: true,
-                );
-              }
-            : () => openSupplierApplication(context),
-      ),
-    );
+    return fallback;
   }
 
-  Widget fishMarketToolsSection() {
-    return WhiteSectionCard(
-      title: 'Fish Market Tools',
-      child: Row(
-        children: [
-          Expanded(
-            child: SupplierToolShortcut(
-              icon: Icons.storefront,
-              label: 'Browse',
-              onTap: () => openScreen(
-                context,
-                const BrowseSuppliersScreen(),
-              ),
-            ),
-          ),
-          Expanded(
-            child: SupplierToolShortcut(
-              icon: Icons.receipt_long,
-              label: 'Orders',
-              onTap: () => openScreen(
-                context,
-                const MyOrdersScreen(),
-              ),
-            ),
-          ),
-          Expanded(
-            child: SupplierToolShortcut(
-              icon: Icons.analytics,
-              label: 'Analytics',
-              onTap: () => openScreen(
-                context,
-                const AnalyticsScreen(),
-              ),
-            ),
-          ),
-          Expanded(
-            child: SupplierToolShortcut(
-              icon: Icons.person_outline,
-              label: 'Profile',
-              onTap: () => openManageProfile(context),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget accountSettingsSection() {
-    return WhiteSectionCard(
-      title: 'Account Settings',
-      child: Column(
-        children: [
-          SettingsRow(
-            icon: Icons.person_outline,
-            title: 'Account Information',
-            subtitle: 'Update profile and contact number',
-            onTap: () => openManageProfile(context),
-          ),
-          SettingsRow(
-            icon: Icons.location_on_outlined,
-            title: 'Region and Location',
-            subtitle: 'Manage market location and service area',
-            onTap: () => openManageProfile(context),
-          ),
-          SettingsRow(
-            icon: Icons.help_outline,
-            title: 'Help and Support',
-            subtitle: 'Get help using IsdaLink features',
-            onTap: () {
-              showMessage(
-                context,
-                'Help and support coming soon',
-              );
-            },
-          ),
-          SettingsRow(
-            icon: Icons.logout,
-            title: 'Logout',
-            subtitle: 'Return to welcome screen',
-            iconColor: const Color(0xFFD32F2F),
-            onTap: () => logout(context),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget bodyContent(
+  Widget loadedBody(
     Map<String, dynamic>? profileData,
   ) {
     maybeShowSupplierApprovalDialog(profileData);
@@ -1135,17 +458,24 @@ class _MeScreenState extends State<MeScreen> {
     final email = profileService.getStringValue(
       profileData,
       'email',
-      user?.email ?? 'No email',
+      user?.email ?? 'No email available',
     );
 
-    final location = profileService.getStringValue(
+    final profileImageUrl = profileService.getStringValue(
       profileData,
-      'region',
-      profileService.getStringValue(
-        profileData,
+      'profileImageUrl',
+      user?.photoURL ?? '',
+    );
+
+    final location = firstAvailableText(
+      profileData,
+      const [
         'location',
-        'Caraga Region',
-      ),
+        'marketLocation',
+        'address',
+        'region',
+      ],
+      'Caraga Region',
     );
 
     final role = profileService
@@ -1164,55 +494,93 @@ class _MeScreenState extends State<MeScreen> {
         )
         .toLowerCase();
 
-    final profileImageUrl = profileService.getStringValue(
-      profileData,
-      'profileImageUrl',
-      profileService.getStringValue(
-        profileData,
-        'photoUrl',
-        user?.photoURL ?? '',
-      ),
-    );
-
-    final canOpenSupplierDashboard =
+    final isApprovedSupplier =
         role == 'supplier' || supplierStatus == 'approved';
-
     final isPendingSupplier = supplierStatus == 'pending';
     final isRejectedSupplier = supplierStatus == 'rejected';
 
     return Column(
       children: [
-        dashboardHeader(
+        _MeDashboardHeader(
           name: name,
           email: email,
           location: location,
-          supplierStatus: supplierStatus,
           profileImageUrl: profileImageUrl,
-          canOpenSupplierDashboard: canOpenSupplierDashboard,
+          isApprovedSupplier: isApprovedSupplier,
           isPendingSupplier: isPendingSupplier,
           isRejectedSupplier: isRejectedSupplier,
+          isUploadingProfileImage: isUploadingProfileImage,
+          onBack: () => Navigator.pop(context),
+          onProfilePhotoTap: () => showProfilePhotoOptions(
+            profileImageUrl: profileImageUrl,
+            isApprovedSupplier: isApprovedSupplier,
+          ),
+          onManageProfile: () => openScreen(
+            const ManageProfileScreen(),
+          ),
+          onSupplierCenter: () {
+            if (isApprovedSupplier) {
+              openScreen(const SupplierDashboardScreen());
+            } else {
+              openScreen(const SupplierActivationScreen());
+            }
+          },
+          onLogout: logout,
         ),
         Expanded(
           child: ListView(
-            padding: EdgeInsets.zero,
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
             children: [
-              supplierStatusBanner(
-                supplierStatus,
-              ),
               if (uid.isNotEmpty)
-                purchaseSection(
-                  uid,
-                ),
-              if (uid.isNotEmpty)
-                supplierSection(
+                _VendorOrdersOverviewCard(
                   uid: uid,
-                  canOpenSupplierDashboard: canOpenSupplierDashboard,
-                  isPendingSupplier: isPendingSupplier,
-                  isRejectedSupplier: isRejectedSupplier,
+                  onOpenOrders: () => openScreen(
+                    const MyOrdersScreen(),
+                  ),
                 ),
-              fishMarketToolsSection(),
-              accountSettingsSection(),
-              const SizedBox(height: 22),
+              const SizedBox(height: 13),
+              if (isApprovedSupplier && uid.isNotEmpty)
+                _SupplierCenterCard(
+                  uid: uid,
+                  onOpenDashboard: () => openScreen(
+                    const SupplierDashboardScreen(),
+                  ),
+                  onPostStock: () => openScreen(
+                    const PostFishStockScreen(),
+                  ),
+                  onProducts: () => openScreen(
+                    const SupplierManageProductsScreen(),
+                  ),
+                  onOrders: () => openScreen(
+                    const SupplierCodOrdersScreen(),
+                  ),
+                  onAnalytics: () => openScreen(
+                    const AnalyticsScreen(
+                      mode: AnalyticsMode.supplier,
+                    ),
+                  ),
+                )
+              else
+                _SupplierActivationCard(
+                  isPending: isPendingSupplier,
+                  isRejected: isRejectedSupplier,
+                  onTap: () => openScreen(
+                    const SupplierActivationScreen(),
+                  ),
+                ),
+              const SizedBox(height: 13),
+              _AccountSettingsCard(
+                onAccountInformation: () => openScreen(
+                  const ManageProfileScreen(),
+                ),
+                onRegionAndLocation: () => openScreen(
+                  const ManageProfileScreen(),
+                ),
+                onHelp: () => showMessage(
+                  'Help and support content will be available here.',
+                ),
+                onLogout: logout,
+              ),
             ],
           ),
         ),
@@ -1229,9 +597,7 @@ class _MeScreenState extends State<MeScreen> {
     if (stream == null) {
       return Scaffold(
         backgroundColor: const Color(0xFFF4F8FB),
-        body: bodyContent(
-          null,
-        ),
+        body: loadedBody(null),
       );
     }
 
@@ -1241,123 +607,327 @@ class _MeScreenState extends State<MeScreen> {
         stream: stream,
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const _MeLoadingBody();
           }
 
-          return bodyContent(
-            snapshot.data?.data(),
-          );
+          return loadedBody(snapshot.data?.data());
         },
       ),
     );
   }
 }
 
-class ProfileAvatarButton extends StatelessWidget {
-  const ProfileAvatarButton({
-    super.key,
-    required this.imageUrl,
-    required this.isSupplier,
-    required this.isUploading,
-    required this.onTap,
+class _MeDashboardHeader extends StatelessWidget {
+  const _MeDashboardHeader({
+    required this.name,
+    required this.email,
+    required this.location,
+    required this.profileImageUrl,
+    required this.isApprovedSupplier,
+    required this.isPendingSupplier,
+    required this.isRejectedSupplier,
+    required this.isUploadingProfileImage,
+    required this.onBack,
+    required this.onProfilePhotoTap,
+    required this.onManageProfile,
+    required this.onSupplierCenter,
+    required this.onLogout,
   });
 
-  final String imageUrl;
-  final bool isSupplier;
-  final bool isUploading;
-  final VoidCallback onTap;
+  final String name;
+  final String email;
+  final String location;
+  final String profileImageUrl;
+  final bool isApprovedSupplier;
+  final bool isPendingSupplier;
+  final bool isRejectedSupplier;
+  final bool isUploadingProfileImage;
+  final VoidCallback onBack;
+  final VoidCallback onProfilePhotoTap;
+  final VoidCallback onManageProfile;
+  final VoidCallback onSupplierCenter;
+  final VoidCallback onLogout;
 
-  bool get hasImage {
-    return imageUrl.trim().isNotEmpty &&
-        (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'));
+  String get accountLabel {
+    if (isApprovedSupplier) {
+      return 'Approved Supplier';
+    }
+
+    if (isPendingSupplier) {
+      return 'Pending Review';
+    }
+
+    if (isRejectedSupplier) {
+      return 'Application Rejected';
+    }
+
+    return 'Vendor Account';
   }
 
   @override
   Widget build(
     BuildContext context,
   ) {
-    return GestureDetector(
-      onTap: isUploading ? null : onTap,
+    final topPadding = MediaQuery.paddingOf(context).top;
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Color(0xFF06355F),
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          Container(
-            width: 76,
-            height: 76,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.white,
-                width: 3,
+          Positioned.fill(
+            child: IgnorePointer(
+              child: CustomPaint(
+                painter: const _MeHeaderWavePainter(),
               ),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x26000000),
-                  blurRadius: 14,
-                  offset: Offset(0, 7),
-                ),
-              ],
-            ),
-            child: ClipOval(
-              child: hasImage
-                  ? Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Icon(
-                          isSupplier ? Icons.storefront : Icons.person,
-                          color: const Color(0xFF146BFF),
-                          size: 42,
-                        );
-                      },
-                    )
-                  : Icon(
-                      isSupplier ? Icons.storefront : Icons.person,
-                      color: const Color(0xFF146BFF),
-                      size: 42,
-                    ),
             ),
           ),
-          if (isUploading)
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.black.withAlpha(55),
-                  shape: BoxShape.circle,
+          ClipPath(
+            clipper: const _MeHeaderClipper(),
+            child: Container(
+              width: double.infinity,
+              padding: EdgeInsets.fromLTRB(
+                16,
+                topPadding + 8,
+                16,
+                34,
+              ),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFF06355F),
+                    Color(0xFF0875D1),
+                    Color(0xFF12B6D6),
+                  ],
+                  stops: [0, 0.58, 1],
                 ),
-                child: const Center(
-                  child: SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
+              ),
+              child: Stack(
+                children: [
+                  const Positioned.fill(
+                    child: IgnorePointer(
+                      child: CustomPaint(
+                        painter: _MeHeaderBackdropPainter(),
+                      ),
                     ),
                   ),
-                ),
-              ),
-            ),
-          Positioned(
-            right: -2,
-            bottom: -2,
-            child: Container(
-              width: 27,
-              height: 27,
-              decoration: BoxDecoration(
-                color: const Color(0xFF146BFF),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white,
-                  width: 2,
-                ),
-              ),
-              child: const Icon(
-                Icons.camera_alt,
-                color: Colors.white,
-                size: 14,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          _HeaderCircleButton(
+                            icon: Icons.arrow_back_rounded,
+                            tooltip: 'Back',
+                            onTap: onBack,
+                          ),
+                          const SizedBox(width: 11),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'MY ACCOUNT',
+                                  style: TextStyle(
+                                    color: Color(0xFFCBF4F7),
+                                    fontSize: 8.6,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 1.1,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Account Center',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 21,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          _HeaderCircleButton(
+                            icon: Icons.settings_rounded,
+                            tooltip: 'Account settings',
+                            onTap: onManageProfile,
+                          ),
+                          const SizedBox(width: 8),
+                          _HeaderCircleButton(
+                            icon: Icons.logout_rounded,
+                            tooltip: 'Logout',
+                            onTap: onLogout,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 17),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(13),
+                          borderRadius: BorderRadius.circular(25),
+                          border: Border.all(
+                            color: Colors.white.withAlpha(20),
+                          ),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x17001226),
+                              blurRadius: 18,
+                              offset: Offset(0, 9),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                _ProfileAvatar(
+                                  imageUrl: profileImageUrl,
+                                  isSupplier: isApprovedSupplier,
+                                  isUploading: isUploadingProfileImage,
+                                  onTap: onProfilePhotoTap,
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        name,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.w900,
+                                          height: 1.05,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 5),
+                                      Text(
+                                        email,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: Color(0xFFDCEEF6),
+                                          fontSize: 10.8,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 9),
+                                      Wrap(
+                                        spacing: 7,
+                                        runSpacing: 7,
+                                        children: [
+                                          _HeaderBadge(
+                                            icon: isApprovedSupplier
+                                                ? Icons.verified_rounded
+                                                : Icons.person_rounded,
+                                            label: accountLabel,
+                                            highlight: isApprovedSupplier,
+                                          ),
+                                          _HeaderBadge(
+                                            icon: Icons.location_on_rounded,
+                                            label: location,
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 13),
+                            Material(
+                              color: Colors.white.withAlpha(20),
+                              borderRadius: BorderRadius.circular(16),
+                              child: InkWell(
+                                onTap: onSupplierCenter,
+                                borderRadius: BorderRadius.circular(16),
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: Colors.white.withAlpha(23),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 31,
+                                        height: 31,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withAlpha(24),
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                        ),
+                                        child: Icon(
+                                          isApprovedSupplier
+                                              ? Icons.storefront_rounded
+                                              : Icons.store_mall_directory,
+                                          color: Colors.white,
+                                          size: 17,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 9),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              isApprovedSupplier
+                                                  ? 'Supplier Center'
+                                                  : 'Become a Supplier',
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 11.2,
+                                                fontWeight: FontWeight.w900,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              isApprovedSupplier
+                                                  ? 'Manage your supplier tools and sales.'
+                                                  : 'Activate supplier tools in this account.',
+                                              style: const TextStyle(
+                                                color: Color(0xFFD6EDF4),
+                                                fontSize: 8.9,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const Icon(
+                                        Icons.arrow_forward_rounded,
+                                        color: Colors.white,
+                                        size: 18,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ),
@@ -1367,9 +937,1087 @@ class ProfileAvatarButton extends StatelessWidget {
   }
 }
 
-class ProfilePhotoActionButton extends StatelessWidget {
-  const ProfilePhotoActionButton({
-    super.key,
+class _VendorOrdersOverviewCard extends StatelessWidget {
+  const _VendorOrdersOverviewCard({
+    required this.uid,
+    required this.onOpenOrders,
+  });
+
+  final String uid;
+  final VoidCallback onOpenOrders;
+
+  bool isActive(
+    String status,
+  ) {
+    final value = status.toLowerCase();
+    return value == 'pending' || value == 'accepted';
+  }
+
+  bool isCompleted(
+    String status,
+  ) {
+    final value = status.toLowerCase();
+    return value == 'completed' || value == 'delivered';
+  }
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('orders')
+          .where('vendorId', isEqualTo: uid)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final documents = snapshot.data?.docs ?? [];
+        final active = documents.where((document) {
+          final status = (document.data()['orderStatus'] ?? 'pending')
+              .toString();
+          return isActive(status);
+        }).length;
+        final completed = documents.where((document) {
+          final status = (document.data()['orderStatus'] ?? 'pending')
+              .toString();
+          return isCompleted(status);
+        }).length;
+
+        return _SectionCard(
+          title: 'My Orders',
+          subtitle: 'Your Cash on Delivery order activity.',
+          icon: Icons.receipt_long_rounded,
+          actionLabel: 'View My Orders',
+          onActionTap: onOpenOrders,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 10,
+              vertical: 12,
+            ),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F8FC),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Row(
+              children: [
+                _OverviewValue(
+                  value: '$active',
+                  label: 'Active',
+                  icon: Icons.pending_actions_rounded,
+                ),
+                const _MetricDivider(),
+                _OverviewValue(
+                  value: '$completed',
+                  label: 'Completed',
+                  icon: Icons.task_alt_rounded,
+                ),
+                const _MetricDivider(),
+                _OverviewValue(
+                  value: '${documents.length}',
+                  label: 'Total',
+                  icon: Icons.inventory_2_outlined,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SupplierCenterCard extends StatelessWidget {
+  const _SupplierCenterCard({
+    required this.uid,
+    required this.onOpenDashboard,
+    required this.onPostStock,
+    required this.onProducts,
+    required this.onOrders,
+    required this.onAnalytics,
+  });
+
+  final String uid;
+  final VoidCallback onOpenDashboard;
+  final VoidCallback onPostStock;
+  final VoidCallback onProducts;
+  final VoidCallback onOrders;
+  final VoidCallback onAnalytics;
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('orders')
+          .where('supplierId', isEqualTo: uid)
+          .snapshots(),
+      builder: (context, orderSnapshot) {
+        final orders = orderSnapshot.data?.docs ?? [];
+        final pending = orders.where((document) {
+          final status = (document.data()['orderStatus'] ?? '')
+              .toString()
+              .toLowerCase();
+          return status == 'pending';
+        }).length;
+        final active = orders.where((document) {
+          final status = (document.data()['orderStatus'] ?? '')
+              .toString()
+              .toLowerCase();
+          return status == 'pending' || status == 'accepted';
+        }).length;
+        final completed = orders.where((document) {
+          final status = (document.data()['orderStatus'] ?? '')
+              .toString()
+              .toLowerCase();
+          return status == 'completed' || status == 'delivered';
+        }).length;
+
+        return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+          stream: FirebaseFirestore.instance
+              .collection('fishStocks')
+              .where('supplierId', isEqualTo: uid)
+              .snapshots(),
+          builder: (context, stockSnapshot) {
+            final stocks = stockSnapshot.data?.docs ?? [];
+            final activeStocks = stocks.where((document) {
+              final data = document.data();
+              final status = (data['status'] ?? 'available')
+                  .toString()
+                  .toLowerCase();
+              final quantityValue = data['quantity'];
+              final quantity = quantityValue is num
+                  ? quantityValue.toDouble()
+                  : double.tryParse(quantityValue?.toString() ?? '') ?? 0;
+              return status != 'unavailable' && quantity > 0;
+            }).length;
+
+            return _SectionCard(
+              title: 'Supplier Center',
+              subtitle: 'Manage stock, COD orders, and supplier analytics.',
+              icon: Icons.storefront_rounded,
+              actionLabel: 'Open Dashboard',
+              onActionTap: onOpenDashboard,
+              child: Column(
+                children: [
+                  if (pending > 0) ...[
+                    Material(
+                      color: const Color(0xFFFFF7E8),
+                      borderRadius: BorderRadius.circular(17),
+                      child: InkWell(
+                        onTap: onOrders,
+                        borderRadius: BorderRadius.circular(17),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(17),
+                            border: Border.all(
+                              color: const Color(0xFFFF7A1A).withAlpha(55),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFF7A1A),
+                                  borderRadius: BorderRadius.circular(13),
+                                ),
+                                child: const Icon(
+                                  Icons.notifications_active_outlined,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '$pending pending COD order'
+                                      '${pending == 1 ? '' : 's'}',
+                                      style: const TextStyle(
+                                        color: Color(0xFF102C44),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    const Text(
+                                      'Review and respond to new orders.',
+                                      style: TextStyle(
+                                        color: Color(0xFF7B8FA3),
+                                        fontSize: 9.4,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(
+                                Icons.arrow_forward_rounded,
+                                color: Color(0xFFFF7A1A),
+                                size: 19,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 13),
+                  ],
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _DashboardShortcut(
+                          icon: Icons.add_box_outlined,
+                          label: 'Post Stock',
+                          onTap: onPostStock,
+                        ),
+                      ),
+                      Expanded(
+                        child: _DashboardShortcut(
+                          icon: Icons.inventory_2_outlined,
+                          label: 'Products',
+                          onTap: onProducts,
+                        ),
+                      ),
+                      Expanded(
+                        child: _DashboardShortcut(
+                          icon: Icons.receipt_long_outlined,
+                          label: 'COD Orders',
+                          badge: pending,
+                          onTap: onOrders,
+                        ),
+                      ),
+                      Expanded(
+                        child: _DashboardShortcut(
+                          icon: Icons.bar_chart_rounded,
+                          label: 'Analytics',
+                          onTap: onAnalytics,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 13),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F8FC),
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: Row(
+                      children: [
+                        _OverviewValue(
+                          value: '$activeStocks',
+                          label: 'Stocks',
+                          icon: Icons.inventory_outlined,
+                        ),
+                        const _MetricDivider(),
+                        _OverviewValue(
+                          value: '$active',
+                          label: 'Active COD',
+                          icon: Icons.pending_actions_rounded,
+                        ),
+                        const _MetricDivider(),
+                        _OverviewValue(
+                          value: '$completed',
+                          label: 'Completed',
+                          icon: Icons.task_alt_rounded,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _SupplierActivationCard extends StatelessWidget {
+  const _SupplierActivationCard({
+    required this.isPending,
+    required this.isRejected,
+    required this.onTap,
+  });
+
+  final bool isPending;
+  final bool isRejected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    final title = isPending
+        ? 'Supplier Application Pending'
+        : isRejected
+            ? 'Supplier Application Rejected'
+            : 'Become a Supplier';
+    final subtitle = isPending
+        ? 'Your application is waiting for administrator review.'
+        : isRejected
+            ? 'Review your information before submitting again.'
+            : 'Activate supplier tools in your existing account.';
+    final icon = isPending
+        ? Icons.hourglass_top_rounded
+        : isRejected
+            ? Icons.info_outline_rounded
+            : Icons.storefront_rounded;
+    final color = isPending
+        ? const Color(0xFFFF7A1A)
+        : isRejected
+            ? const Color(0xFFD32F2F)
+            : const Color(0xFF0875D1);
+
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(23),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(23),
+        child: Container(
+          padding: const EdgeInsets.all(15),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(23),
+            border: Border.all(
+              color: color.withAlpha(40),
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0D00152A),
+                blurRadius: 13,
+                offset: Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: color.withAlpha(18),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: 23,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Color(0xFF102C44),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        color: Color(0xFF7B8FA3),
+                        fontSize: 10.4,
+                        height: 1.35,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: color,
+                size: 16,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AccountSettingsCard extends StatelessWidget {
+  const _AccountSettingsCard({
+    required this.onAccountInformation,
+    required this.onRegionAndLocation,
+    required this.onHelp,
+    required this.onLogout,
+  });
+
+  final VoidCallback onAccountInformation;
+  final VoidCallback onRegionAndLocation;
+  final VoidCallback onHelp;
+  final VoidCallback onLogout;
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    return _SectionCard(
+      title: 'Account Settings',
+      subtitle: 'Manage your account and app preferences.',
+      icon: Icons.manage_accounts_outlined,
+      child: Column(
+        children: [
+          _SettingsTile(
+            icon: Icons.person_outline_rounded,
+            title: 'Account Information',
+            subtitle: 'Update profile and contact details',
+            onTap: onAccountInformation,
+          ),
+          _SettingsTile(
+            icon: Icons.location_on_outlined,
+            title: 'Region and Location',
+            subtitle: 'Manage market and service area',
+            onTap: onRegionAndLocation,
+          ),
+          _SettingsTile(
+            icon: Icons.help_outline_rounded,
+            title: 'Help and Support',
+            subtitle: 'Learn how to use IsdaLink',
+            onTap: onHelp,
+          ),
+          _SettingsTile(
+            icon: Icons.logout_rounded,
+            title: 'Logout',
+            subtitle: 'Return to the welcome screen',
+            color: const Color(0xFFD32F2F),
+            showDivider: false,
+            onTap: onLogout,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionCard extends StatelessWidget {
+  const _SectionCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.child,
+    this.actionLabel,
+    this.onActionTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Widget child;
+  final String? actionLabel;
+  final VoidCallback? onActionTap;
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(23),
+        border: Border.all(
+          color: const Color(0xFFE1ECF2),
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0D00152A),
+            blurRadius: 13,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 39,
+                height: 39,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F8FD),
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Icon(
+                  icon,
+                  color: const Color(0xFF0875D1),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Color(0xFF102C44),
+                        fontSize: 15.5,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF7B8FA3),
+                        fontSize: 9.8,
+                        height: 1.25,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (actionLabel != null && onActionTap != null)
+                TextButton(
+                  onPressed: onActionTap,
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF0875D1),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 6,
+                    ),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        actionLabel!,
+                        style: const TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(width: 3),
+                      const Icon(
+                        Icons.arrow_forward_rounded,
+                        size: 14,
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 13),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _OverviewValue extends StatelessWidget {
+  const _OverviewValue({
+    required this.value,
+    required this.label,
+    required this.icon,
+  });
+
+  final String value;
+  final String label;
+  final IconData icon;
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    return Expanded(
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            color: const Color(0xFF0875D1),
+            size: 16,
+          ),
+          const SizedBox(height: 5),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Color(0xFF102C44),
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+              height: 1,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Color(0xFF7B8FA3),
+              fontSize: 8.8,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetricDivider extends StatelessWidget {
+  const _MetricDivider();
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    return Container(
+      width: 1,
+      height: 43,
+      color: const Color(0xFFDDE9F1),
+    );
+  }
+}
+
+class _DashboardShortcut extends StatelessWidget {
+  const _DashboardShortcut({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.badge = 0,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final int badge;
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(15),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(15),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 3,
+            vertical: 5,
+          ),
+          child: Column(
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 43,
+                    height: 43,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8F8FD),
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: Icon(
+                      icon,
+                      color: const Color(0xFF0875D1),
+                      size: 21,
+                    ),
+                  ),
+                  if (badge > 0)
+                    Positioned(
+                      right: -4,
+                      top: -5,
+                      child: Container(
+                        constraints: const BoxConstraints(
+                          minWidth: 19,
+                          minHeight: 19,
+                        ),
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFF4D38),
+                          borderRadius: BorderRadius.circular(99),
+                          border: Border.all(
+                            color: Colors.white,
+                            width: 2,
+                          ),
+                        ),
+                        child: Text(
+                          badge > 99 ? '99+' : '$badge',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 8,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 7),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Color(0xFF52677A),
+                  fontSize: 8.8,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsTile extends StatelessWidget {
+  const _SettingsTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.color = const Color(0xFF0875D1),
+    this.showDivider = true,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  final Color color;
+  final bool showDivider;
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    return Column(
+      children: [
+        Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(15),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(15),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                children: [
+                  Container(
+                    width: 39,
+                    height: 39,
+                    decoration: BoxDecoration(
+                      color: color.withAlpha(17),
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                    child: Icon(
+                      icon,
+                      color: color,
+                      size: 19,
+                    ),
+                  ),
+                  const SizedBox(width: 11),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            color: color == const Color(0xFFD32F2F)
+                                ? color
+                                : const Color(0xFF102C44),
+                            fontSize: 11.8,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          subtitle,
+                          style: const TextStyle(
+                            color: Color(0xFF7B8FA3),
+                            fontSize: 9.2,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    color: Color(0xFF9FB0BC),
+                    size: 14,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (showDivider)
+          const Divider(
+            height: 1,
+            indent: 50,
+            color: Color(0xFFE6EEF3),
+          ),
+      ],
+    );
+  }
+}
+
+class _ProfileAvatar extends StatelessWidget {
+  const _ProfileAvatar({
+    required this.imageUrl,
+    required this.isSupplier,
+    required this.isUploading,
+    required this.onTap,
+    this.size = 72,
+    this.showCameraBadge = true,
+  });
+
+  final String imageUrl;
+  final bool isSupplier;
+  final bool isUploading;
+  final VoidCallback onTap;
+  final double size;
+  final bool showCameraBadge;
+
+  bool get hasImage {
+    final value = imageUrl.trim();
+    return value.startsWith('http://') || value.startsWith('https://');
+  }
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    return GestureDetector(
+      onTap: isUploading ? null : onTap,
+      child: SizedBox(
+        width: size + 8,
+        height: size + 8,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white,
+                  width: 3,
+                ),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x24001226),
+                    blurRadius: 13,
+                    offset: Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ClipOval(
+                child: isUploading
+                    ? const Center(
+                        child: SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Color(0xFF0875D1),
+                          ),
+                        ),
+                      )
+                    : hasImage
+                        ? Image.network(
+                            imageUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) {
+                              return _AvatarFallback(
+                                isSupplier: isSupplier,
+                              );
+                            },
+                          )
+                        : _AvatarFallback(
+                            isSupplier: isSupplier,
+                          ),
+              ),
+            ),
+            if (showCameraBadge)
+              Positioned(
+                right: 0,
+                bottom: 2,
+                child: Container(
+                  width: 27,
+                  height: 27,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0875D1),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white,
+                      width: 2,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.camera_alt_outlined,
+                    color: Colors.white,
+                    size: 14,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AvatarFallback extends StatelessWidget {
+  const _AvatarFallback({
+    required this.isSupplier,
+  });
+
+  final bool isSupplier;
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    return Container(
+      color: const Color(0xFFEAF8FC),
+      child: Icon(
+        isSupplier ? Icons.storefront_rounded : Icons.person_rounded,
+        color: const Color(0xFF0875D1),
+        size: 36,
+      ),
+    );
+  }
+}
+
+class _HeaderCircleButton extends StatelessWidget {
+  const _HeaderCircleButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.white.withAlpha(24),
+        shape: const CircleBorder(),
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const CircleBorder(),
+          child: SizedBox(
+            width: 39,
+            height: 39,
+            child: Icon(
+              icon,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HeaderBadge extends StatelessWidget {
+  const _HeaderBadge({
+    required this.icon,
+    required this.label,
+    this.highlight = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool highlight;
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 9,
+        vertical: 6,
+      ),
+      decoration: BoxDecoration(
+        color: highlight
+            ? const Color(0xFFFFC857).withAlpha(36)
+            : Colors.white.withAlpha(20),
+        borderRadius: BorderRadius.circular(99),
+        border: Border.all(
+          color: highlight
+              ? const Color(0xFFFFD978).withAlpha(55)
+              : Colors.white.withAlpha(26),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            color: highlight
+                ? const Color(0xFFFFD66B)
+                : const Color(0xFFEAF8FC),
+            size: 12,
+          ),
+          const SizedBox(width: 5),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 140),
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 9.2,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfilePhotoAction extends StatelessWidget {
+  const _ProfilePhotoAction({
     required this.icon,
     required this.title,
     required this.subtitle,
@@ -1387,832 +2035,272 @@ class ProfilePhotoActionButton extends StatelessWidget {
   Widget build(
     BuildContext context,
   ) {
-    final color = isDanger ? const Color(0xFFD32F2F) : const Color(0xFF146BFF);
+    final color = isDanger
+        ? const Color(0xFFD32F2F)
+        : const Color(0xFF0875D1);
 
-    return InkWell(
-      onTap: onTap,
+    return Material(
+      color: Colors.white,
       borderRadius: BorderRadius.circular(18),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: isDanger
-                ? const Color(0xFFFFCDD2)
-                : const Color(0xFFEAF7FB),
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: isDanger
-                    ? const Color(0xFFFFEBEE)
-                    : const Color(0xFFEAF7FB),
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Icon(
-                icon,
-                color: color,
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: 13),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      color: color,
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      color: Color(0xFF7B8FA3),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.chevron_right,
-              color: color,
-              size: 21,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class HeaderIconButton extends StatelessWidget {
-  const HeaderIconButton({
-    super.key,
-    required this.icon,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 38,
-        height: 38,
-        decoration: BoxDecoration(
-          color: Colors.white.withAlpha(38),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(
-          icon,
-          color: Colors.white,
-          size: 20,
-        ),
-      ),
-    );
-  }
-}
-
-class HeaderBadge extends StatelessWidget {
-  const HeaderBadge({
-    super.key,
-    required this.icon,
-    required this.label,
-  });
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 9,
-        vertical: 6,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white.withAlpha(42),
-        borderRadius: BorderRadius.circular(99),
-        border: Border.all(
-          color: Colors.white.withAlpha(34),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            color: const Color(0xFFFFB703),
-            size: 14,
-          ),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 10.5,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class WhiteSectionCard extends StatelessWidget {
-  const WhiteSectionCard({
-    super.key,
-    required this.title,
-    required this.child,
-    this.actionLabel,
-    this.onActionTap,
-  });
-
-  final String title;
-  final Widget child;
-  final String? actionLabel;
-  final VoidCallback? onActionTap;
-
-  @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(14, 14, 14, 0),
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0F000000),
-            blurRadius: 12,
-            offset: Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Color(0xFF102C44),
-                  fontSize: 17,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const Spacer(),
-              if (actionLabel != null)
-                GestureDetector(
-                  onTap: onActionTap,
-                  child: Row(
-                    children: [
-                      Text(
-                        actionLabel!,
-                        style: const TextStyle(
-                          color: Color(0xFF52677A),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(width: 3),
-                      const Icon(
-                        Icons.chevron_right,
-                        color: Color(0xFF9AADBC),
-                        size: 18,
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          child,
-        ],
-      ),
-    );
-  }
-}
-
-class StatusShortcut extends StatelessWidget {
-  const StatusShortcut({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.count,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final int count;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Column(
-            children: [
-              Icon(
-                icon,
-                color: const Color(0xFF102C44),
-                size: 30,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Color(0xFF52677A),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-          if (count > 0)
-            Positioned(
-              top: -7,
-              right: 18,
-              child: CountBadge(
-                count: count,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class SupplierToolShortcut extends StatelessWidget {
-  const SupplierToolShortcut({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.count = 0,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final int count;
-
-  @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Stack(
-            clipBehavior: Clip.none,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Padding(
+          padding: const EdgeInsets.all(13),
+          child: Row(
             children: [
               Container(
-                width: 52,
-                height: 52,
+                width: 42,
+                height: 42,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEAF7FB),
-                  borderRadius: BorderRadius.circular(18),
+                  color: color.withAlpha(17),
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(
                   icon,
-                  color: const Color(0xFF146BFF),
-                  size: 25,
+                  color: color,
+                  size: 21,
                 ),
               ),
-              if (count > 0)
-                Positioned(
-                  top: -7,
-                  right: -8,
-                  child: CountBadge(
-                    count: count,
-                  ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        color: Color(0xFF7B8FA3),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: color,
+                size: 15,
+              ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Color(0xFF52677A),
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MeLoadingBody extends StatelessWidget {
+  const _MeLoadingBody();
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    return const Scaffold(
+      backgroundColor: Color(0xFFF4F8FB),
+      body: Center(
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: Color(0xFF0875D1),
+        ),
+      ),
+    );
+  }
+}
+
+class _MeHeaderClipper extends CustomClipper<Path> {
+  const _MeHeaderClipper();
+
+  @override
+  Path getClip(
+    Size size,
+  ) {
+    return Path()
+      ..moveTo(0, 0)
+      ..lineTo(0, size.height - 31)
+      ..cubicTo(
+        size.width * 0.18,
+        size.height - 16,
+        size.width * 0.38,
+        size.height - 7,
+        size.width * 0.57,
+        size.height - 11,
+      )
+      ..cubicTo(
+        size.width * 0.74,
+        size.height - 15,
+        size.width * 0.88,
+        size.height - 29,
+        size.width + 8,
+        size.height - 32,
+      )
+      ..lineTo(size.width + 8, 0)
+      ..close();
+  }
+
+  @override
+  bool shouldReclip(
+    covariant CustomClipper<Path> oldClipper,
+  ) {
+    return false;
+  }
+}
+
+class _MeHeaderWavePainter extends CustomPainter {
+  const _MeHeaderWavePainter();
+
+  @override
+  void paint(
+    Canvas canvas,
+    Size size,
+  ) {
+    final path = Path()
+      ..moveTo(-8, size.height - 31)
+      ..cubicTo(
+        size.width * 0.18,
+        size.height - 16,
+        size.width * 0.38,
+        size.height - 7,
+        size.width * 0.57,
+        size.height - 11,
+      )
+      ..cubicTo(
+        size.width * 0.74,
+        size.height - 15,
+        size.width * 0.88,
+        size.height - 29,
+        size.width + 10,
+        size.height - 32,
+      );
+
+    final shadow = Paint()
+      ..color = Colors.black.withAlpha(27)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 14
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(
+        BlurStyle.normal,
+        7,
+      );
+
+    final accent = Paint()
+      ..shader = const LinearGradient(
+        colors: [
+          Color(0xFF0A75C8),
+          Color(0xFF18BDD8),
+          Color(0xFF7BE9ED),
         ],
-      ),
-    );
+      ).createShader(
+        Rect.fromLTWH(
+          0,
+          size.height - 45,
+          size.width,
+          32,
+        ),
+      )
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 8
+      ..strokeCap = StrokeCap.round;
+
+    final foam = Paint()
+      ..color = Colors.white.withAlpha(95)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round;
+
+    canvas
+      ..drawPath(path, shadow)
+      ..drawPath(path, accent)
+      ..drawPath(path, foam);
+  }
+
+  @override
+  bool shouldRepaint(
+    covariant CustomPainter oldDelegate,
+  ) {
+    return false;
   }
 }
 
-class CountBadge extends StatelessWidget {
-  const CountBadge({
-    super.key,
-    required this.count,
-  });
-
-  final int count;
+class _MeHeaderBackdropPainter extends CustomPainter {
+  const _MeHeaderBackdropPainter();
 
   @override
-  Widget build(
-    BuildContext context,
+  void paint(
+    Canvas canvas,
+    Size size,
   ) {
-    return Container(
-      constraints: const BoxConstraints(
-        minWidth: 21,
-      ),
-      height: 21,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 6,
-      ),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFF4D2D),
-        borderRadius: BorderRadius.circular(99),
-        border: Border.all(
-          color: Colors.white,
-          width: 2,
-        ),
-      ),
-      child: Center(
-        child: Text(
-          count > 99 ? '99+' : '$count',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 10,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-      ),
+    final glowCenter = Offset(
+      size.width * 0.86,
+      size.height * 0.25,
     );
-  }
-}
 
-class ApplySupplierCard extends StatelessWidget {
-  const ApplySupplierCard({
-    super.key,
-    required this.isPendingSupplier,
-    required this.isRejectedSupplier,
-    required this.onTap,
-  });
-
-  final bool isPendingSupplier;
-  final bool isRejectedSupplier;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(
-    BuildContext context,
-  ) {
-    final title = isPendingSupplier
-        ? 'Application Under Review'
-        : isRejectedSupplier
-            ? 'Apply Again as Supplier'
-            : 'Start Selling on IsdaLink';
-
-    final subtitle = isPendingSupplier
-        ? 'Admin is checking your store and verification details.'
-        : 'Submit owner, store, supported unit, permit, and store photo details.';
-
-    final buttonText = isPendingSupplier
-        ? 'Pending'
-        : isRejectedSupplier
-            ? 'Apply Again'
-            : 'Apply Now';
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFF102C44),
-            Color(0xFF146BFF),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: Colors.white.withAlpha(40),
-              borderRadius: BorderRadius.circular(17),
-            ),
-            child: const Icon(
-              Icons.storefront,
-              color: Colors.white,
-              size: 28,
-            ),
-          ),
-          const SizedBox(width: 13),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFFDCE9F5),
-                    fontSize: 11,
-                    height: 1.35,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          ElevatedButton(
-            onPressed: onTap,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: const Color(0xFF146BFF),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 10,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
-            child: Text(
-              buttonText,
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
+    final glow = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          Colors.white.withAlpha(22),
+          Colors.white.withAlpha(0),
         ],
-      ),
+      ).createShader(
+        Rect.fromCircle(
+          center: glowCenter,
+          radius: size.width * 0.4,
+        ),
+      );
+
+    canvas.drawCircle(
+      glowCenter,
+      size.width * 0.4,
+      glow,
     );
+
+    final ring = Paint()
+      ..color = Colors.white.withAlpha(10)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+
+    canvas
+      ..drawCircle(
+        Offset(
+          size.width * 0.94,
+          size.height * 0.34,
+        ),
+        size.width * 0.11,
+        ring,
+      )
+      ..drawCircle(
+        Offset(
+          size.width * 0.94,
+          size.height * 0.34,
+        ),
+        size.width * 0.2,
+        ring,
+      )
+      ..drawCircle(
+        Offset(
+          size.width * 0.08,
+          size.height * 0.72,
+        ),
+        size.width * 0.13,
+        ring,
+      );
   }
-}
-
-class SupplierOrderNotificationCard extends StatelessWidget {
-  const SupplierOrderNotificationCard({
-    super.key,
-    required this.count,
-    required this.onTap,
-  });
-
-  final int count;
-  final VoidCallback onTap;
 
   @override
-  Widget build(
-    BuildContext context,
+  bool shouldRepaint(
+    covariant CustomPainter oldDelegate,
   ) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(13),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [
-              Color(0xFFFFF4E0),
-              Color(0xFFFFFBF3),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: const Color(0xFFFFDFA8),
-          ),
-        ),
-        child: Row(
-          children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFF7A1A),
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: const Icon(
-                    Icons.notifications_active,
-                    color: Colors.white,
-                    size: 23,
-                  ),
-                ),
-                Positioned(
-                  right: -7,
-                  top: -7,
-                  child: CountBadge(
-                    count: count,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    count == 1
-                        ? '1 pending COD order'
-                        : '$count pending COD orders',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFF102C44),
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  const Text(
-                    'Review and accept new vendor orders.',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Color(0xFF7B8FA3),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            const Icon(
-              Icons.chevron_right,
-              color: Color(0xFFFF7A1A),
-              size: 22,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class SupplierMiniStats extends StatelessWidget {
-  const SupplierMiniStats({
-    super.key,
-    required this.uid,
-  });
-
-  final String uid;
-
-  @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('fishStocks')
-          .where(
-            'supplierId',
-            isEqualTo: uid,
-          )
-          .snapshots(),
-      builder: (context, stockSnapshot) {
-        final stocks = stockSnapshot.data?.docs ?? [];
-
-        return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-          stream: FirebaseFirestore.instance
-              .collection('orders')
-              .where(
-                'supplierId',
-                isEqualTo: uid,
-              )
-              .snapshots(),
-          builder: (context, orderSnapshot) {
-            final orders = orderSnapshot.data?.docs ?? [];
-
-            final activeStocks = stocks.where(
-              (document) {
-                final status = (document.data()['status'] ?? '')
-                    .toString()
-                    .toLowerCase();
-
-                return status != 'unavailable';
-              },
-            ).length;
-
-            final activeOrders = orders.where(
-              (document) {
-                final status = (document.data()['orderStatus'] ?? '')
-                    .toString()
-                    .toLowerCase();
-
-                return status == 'pending' || status == 'accepted';
-              },
-            ).length;
-
-            final deliveredOrders = orders.where(
-              (document) {
-                final status = (document.data()['orderStatus'] ?? '')
-                    .toString()
-                    .toLowerCase();
-
-                return status == 'delivered' || status == 'completed';
-              },
-            ).length;
-
-            return Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF4F8FB),
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: MiniMetric(
-                      label: 'Stocks',
-                      value: '$activeStocks',
-                    ),
-                  ),
-                  Expanded(
-                    child: MiniMetric(
-                      label: 'Active COD',
-                      value: '$activeOrders',
-                    ),
-                  ),
-                  Expanded(
-                    child: MiniMetric(
-                      label: 'Delivered',
-                      value: '$deliveredOrders',
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-}
-
-class MiniMetric extends StatelessWidget {
-  const MiniMetric({
-    super.key,
-    required this.label,
-    required this.value,
-  });
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            color: Color(0xFF102C44),
-            fontSize: 17,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Color(0xFF7B8FA3),
-            fontSize: 10,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class SettingsRow extends StatelessWidget {
-  const SettingsRow({
-    super.key,
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-    this.iconColor = const Color(0xFF146BFF),
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-  final Color iconColor;
-
-  @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          vertical: 9,
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: iconColor == const Color(0xFFD32F2F)
-                    ? const Color(0xFFFFEBEE)
-                    : const Color(0xFFEAF7FB),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(
-                icon,
-                color: iconColor,
-                size: 21,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: Color(0xFF102C44),
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFF7B8FA3),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(
-              Icons.chevron_right,
-              color: Color(0xFF9AADBC),
-              size: 21,
-            ),
-          ],
-        ),
-      ),
-    );
+    return false;
   }
 }

@@ -12,7 +12,7 @@ class FishStockInput {
     required this.price,
     required this.quantity,
     required this.lowStockLevel,
-    required this.productImageUrl,
+    this.lowStockPercentage = 20,
   });
 
   final String productName;
@@ -23,7 +23,7 @@ class FishStockInput {
   final double price;
   final double quantity;
   final double lowStockLevel;
-  final String productImageUrl;
+  final double lowStockPercentage;
 }
 
 class FishStockService {
@@ -44,7 +44,8 @@ class FishStockService {
         .get();
 
     final userData = userDocument.data() ?? <String, dynamic>{};
-    final supplierProfileData = supplierProfileDocument.data() ?? <String, dynamic>{};
+    final supplierProfileData =
+        supplierProfileDocument.data() ?? <String, dynamic>{};
 
     final role = OrderHelpers.getStringValue(
       userData,
@@ -59,7 +60,9 @@ class FishStockService {
     ).toLowerCase();
 
     if (role != 'supplier' && supplierStatus != 'approved') {
-      throw Exception('Supplier approval is required before posting fish stock.');
+      throw Exception(
+        'Supplier approval is required before posting fish stock.',
+      );
     }
 
     final supplierName = OrderHelpers.getStringValue(
@@ -88,17 +91,26 @@ class FishStockService {
       ),
     );
 
+    final percentage = input.lowStockPercentage.clamp(1, 100).toDouble();
+    final computedLevel = input.lowStockLevel.clamp(0, input.quantity).toDouble();
+
     await FirebaseFirestore.instance.collection('fishStocks').add({
       'productName': input.productName,
       'category': input.category,
       'description': input.description,
       'emoji': input.emoji,
-      'productImageUrl': input.productImageUrl,
       'price': input.price,
       'priceUnit': 'per ${input.unit}',
       'quantity': input.quantity,
       'quantityUnit': input.unit,
-      'lowStockLevel': input.lowStockLevel,
+      'referenceStockQuantity': input.quantity,
+      'lowStockPercentage': percentage,
+      'lowStockLevel': computedLevel,
+      'stockStatus': input.quantity <= 0
+          ? 'outOfStock'
+          : input.quantity <= computedLevel
+              ? 'lowStock'
+              : 'available',
       'paymentMethod': 'COD',
       'supplierId': user.uid,
       'supplierName': supplierName,

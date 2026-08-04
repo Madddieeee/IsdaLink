@@ -229,6 +229,8 @@ class PlaceOrderService {
           'productName': product.name,
           'productCategory': product.category,
           'productEmoji': product.emoji,
+          'productImageUrl': product.imageUrl,
+          'imageUrl': product.imageUrl,
           'productDescription': product.description,
           'supplierName': realSupplierName,
           'supplierLocation': realSupplierLocation,

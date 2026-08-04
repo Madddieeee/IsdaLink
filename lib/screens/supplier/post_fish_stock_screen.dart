@@ -1,14 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:isdalink/config/cloudinary_config.dart';
-import 'package:isdalink/screens/supplier/post_stock/widgets/fish_stock_image_upload_card.dart';
+import 'package:isdalink/screens/supplier/post_stock/widgets/fish_stock_emoji_selector_card.dart';
+import 'package:isdalink/screens/supplier/post_stock/widgets/fish_stock_info_card.dart';
 import 'package:isdalink/screens/supplier/post_stock/widgets/fish_stock_preview_card.dart';
 import 'package:isdalink/screens/supplier/post_stock/widgets/fish_stock_price_stock_card.dart';
 import 'package:isdalink/screens/supplier/post_stock/widgets/fish_stock_product_information_card.dart';
 import 'package:isdalink/screens/supplier/post_stock/widgets/fish_stock_submit_button.dart';
 import 'package:isdalink/screens/supplier/post_stock/widgets/post_stock_header.dart';
-import 'package:isdalink/services/cloudinary_upload_service.dart';
 import 'package:isdalink/services/fish_stock_service.dart';
 
 class PostFishStockScreen extends StatefulWidget {
@@ -25,33 +23,35 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
   final priceController = TextEditingController();
   final quantityController = TextEditingController();
   final lowStockController = TextEditingController();
+  final percentageController = TextEditingController(text: '20');
   final descriptionController = TextEditingController();
 
   final FishStockService fishStockService = const FishStockService();
-  final CloudinaryUploadService cloudinaryUploadService =
-      const CloudinaryUploadService();
-  final ImagePicker imagePicker = ImagePicker();
 
   String selectedCategory = 'Fresh Fish';
   String selectedUnit = 'kilo';
-  String productImageUrl = '';
-
-  XFile? selectedImage;
-
+  String selectedEmoji = '🐟';
   bool isPosting = false;
-  bool isUploadingImage = false;
 
-  final List<String> categories = [
+  final List<String> categories = const [
     'Fresh Fish',
     'Marine Fish',
     'Aquaculture Fish',
     'Bulk Fish Supply',
   ];
 
-  final List<String> units = [
+  final List<String> units = const [
     'kilo',
     'tab',
     'icebox',
+  ];
+
+  final List<String> emojis = const [
+    '🐟',
+    '🐠',
+    '🦈',
+    '🦑',
+    '🦐',
   ];
 
   @override
@@ -60,32 +60,9 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
     priceController.dispose();
     quantityController.dispose();
     lowStockController.dispose();
+    percentageController.dispose();
     descriptionController.dispose();
     super.dispose();
-  }
-
-  String emojiForProductName(String productName) {
-    final name = productName.toLowerCase();
-
-    if (name.contains('shrimp') || name.contains('hipon')) {
-      return '🦐';
-    }
-
-    if (name.contains('squid') || name.contains('pusit')) {
-      return '🦑';
-    }
-
-    if (name.contains('crab') ||
-        name.contains('alimasag') ||
-        name.contains('alimango')) {
-      return '🦀';
-    }
-
-    if (name.contains('shark')) {
-      return '🦈';
-    }
-
-    return '🐟';
   }
 
   void showMessage(
@@ -102,78 +79,44 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
         backgroundColor: isError
             ? const Color(0xFFD32F2F)
             : const Color(0xFF2E7D32),
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
-  Future<void> pickAndUploadProductImage() async {
-    try {
-      final image = await imagePicker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 82,
-        maxWidth: 1400,
-      );
-
-      if (image == null) {
-        return;
-      }
-
-      setState(() {
-        selectedImage = image;
-        productImageUrl = '';
-        isUploadingImage = true;
-      });
-
-      final uploadedUrl = await cloudinaryUploadService.uploadImage(
-        image,
-        folder: CloudinaryConfig.fishStockFolder,
-      );
-
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        productImageUrl = uploadedUrl;
-        isUploadingImage = false;
-      });
-
-      showMessage('Product image uploaded successfully.');
-    } catch (error) {
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        isUploadingImage = false;
-      });
-
-      showMessage(
-        'Failed to upload product image: $error',
-        isError: true,
-      );
-    }
+  String formatNumber(double value) {
+    return value % 1 == 0 ? value.toStringAsFixed(0) : value.toStringAsFixed(1);
   }
 
-  void removeProductImage() {
-    setState(() {
-      selectedImage = null;
-      productImageUrl = '';
-    });
+  void calculateSuggestedThreshold() {
+    final quantity = double.tryParse(quantityController.text.trim()) ?? 0;
+    final percentage = double.tryParse(percentageController.text.trim()) ?? 20;
+
+    if (quantity <= 0) {
+      lowStockController.clear();
+    } else {
+      final safePercentage = percentage.clamp(1, 100).toDouble();
+      lowStockController.text = formatNumber(
+        quantity * safePercentage / 100,
+      );
+    }
+
+    setState(() {});
   }
 
   FishStockInput? buildInputFromForm() {
     final productName = productNameController.text.trim();
     final description = descriptionController.text.trim();
-
     final price = double.tryParse(priceController.text.trim());
     final quantity = double.tryParse(quantityController.text.trim());
+    final percentage = double.tryParse(percentageController.text.trim());
     final lowStockLevel = double.tryParse(lowStockController.text.trim());
 
     if (productName.isEmpty ||
         description.isEmpty ||
         price == null ||
         quantity == null ||
+        percentage == null ||
         lowStockLevel == null) {
       showMessage(
         'Please complete all fields with valid values.',
@@ -182,17 +125,25 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
       return null;
     }
 
-    if (price <= 0 || quantity <= 0 || lowStockLevel < 0) {
+    if (price <= 0 || quantity <= 0) {
       showMessage(
-        'Price and quantity must be valid positive values.',
+        'Price and available stock must be greater than zero.',
         isError: true,
       );
       return null;
     }
 
-    if (productImageUrl.trim().isEmpty) {
+    if (percentage < 1 || percentage > 100) {
       showMessage(
-        'Please upload a product image before posting.',
+        'Low-stock percentage must be between 1% and 100%.',
+        isError: true,
+      );
+      return null;
+    }
+
+    if (lowStockLevel < 0 || lowStockLevel > quantity) {
+      showMessage(
+        'The alert level must be between zero and the available stock.',
         isError: true,
       );
       return null;
@@ -203,11 +154,11 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
       description: description,
       category: selectedCategory,
       unit: selectedUnit,
-      emoji: emojiForProductName(productName),
+      emoji: selectedEmoji,
       price: price,
       quantity: quantity,
       lowStockLevel: lowStockLevel,
-      productImageUrl: productImageUrl,
+      lowStockPercentage: percentage,
     );
   }
 
@@ -217,14 +168,6 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
     if (user == null) {
       showMessage(
         'Please log in first before posting fish stock.',
-        isError: true,
-      );
-      return;
-    }
-
-    if (isUploadingImage) {
-      showMessage(
-        'Please wait for the product image upload to finish.',
         isError: true,
       );
       return;
@@ -250,7 +193,7 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
         return;
       }
 
-      showStockPostedDialog();
+      showStockPostedDialog(input);
     } catch (error) {
       if (!mounted) {
         return;
@@ -269,27 +212,41 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
     }
   }
 
-  void showStockPostedDialog() {
-    showDialog(
+  void showStockPostedDialog(FishStockInput input) {
+    showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) {
         return AlertDialog(
+          backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(26),
           ),
-          title: const Text(
-            'Stock Posted',
-            style: TextStyle(
-              color: Color(0xFF102C44),
-              fontWeight: FontWeight.w900,
-            ),
+          title: const Row(
+            children: [
+              Icon(
+                Icons.check_circle_rounded,
+                color: Color(0xFF2E7D32),
+              ),
+              SizedBox(width: 9),
+              Text(
+                'Stock Posted',
+                style: TextStyle(
+                  color: Color(0xFF102C44),
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
           ),
-          content: const Text(
-            'Your fish stock post is now available for vendor browsing and COD ordering.',
-            style: TextStyle(
+          content: Text(
+            '${input.productName} was posted with a low-stock alert at '
+            '${formatNumber(input.lowStockLevel)} ${input.unit} '
+            '(${formatNumber(input.lowStockPercentage)}%). The Supplier Dashboard '
+            'will show an alert when the remaining quantity reaches this level.',
+            style: const TextStyle(
               color: Color(0xFF52677A),
-              height: 1.4,
+              height: 1.45,
+              fontWeight: FontWeight.w600,
             ),
           ),
           actions: [
@@ -306,10 +263,17 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
                 Navigator.pop(context);
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF146BFF),
+                backgroundColor: const Color(0xFF0875D1),
                 foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(13),
+                ),
               ),
-              child: const Text('Back to Dashboard'),
+              child: const Text(
+                'Back to Dashboard',
+                style: TextStyle(fontWeight: FontWeight.w900),
+              ),
             ),
           ],
         );
@@ -323,13 +287,11 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
       priceController.clear();
       quantityController.clear();
       lowStockController.clear();
+      percentageController.text = '20';
       descriptionController.clear();
-
       selectedCategory = 'Fresh Fish';
       selectedUnit = 'kilo';
-      selectedImage = null;
-      productImageUrl = '';
-      isUploadingImage = false;
+      selectedEmoji = '🐟';
     });
   }
 
@@ -348,7 +310,8 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
           ),
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: const EdgeInsets.fromLTRB(18, 22, 18, 20),
               children: [
                 FishStockProductInformationCard(
                   productNameController: productNameController,
@@ -362,20 +325,24 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
                     });
                   },
                 ),
-                FishStockImageUploadCard(
-                  selectedImage: selectedImage,
-                  uploadedImageUrl: productImageUrl,
-                  isUploading: isUploadingImage,
-                  onPickImage: pickAndUploadProductImage,
-                  onRemoveImage: removeProductImage,
+                FishStockEmojiSelectorCard(
+                  emojis: emojis,
+                  selectedEmoji: selectedEmoji,
+                  onEmojiSelected: (value) {
+                    setState(() {
+                      selectedEmoji = value;
+                    });
+                  },
                 ),
                 FishStockPriceStockCard(
                   priceController: priceController,
                   quantityController: quantityController,
                   lowStockController: lowStockController,
+                  percentageController: percentageController,
                   units: units,
                   selectedUnit: selectedUnit,
                   onPreviewChanged: refreshPreview,
+                  onPercentageChanged: calculateSuggestedThreshold,
                   onUnitChanged: (value) {
                     setState(() {
                       selectedUnit = value;
@@ -387,13 +354,14 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
                   price: priceController.text,
                   selectedCategory: selectedCategory,
                   selectedUnit: selectedUnit,
-                  productImageUrl: productImageUrl,
+                  selectedEmoji: selectedEmoji,
                 ),
+                const FishStockInfoCard(),
               ],
             ),
           ),
           FishStockSubmitButton(
-            isPosting: isPosting || isUploadingImage,
+            isPosting: isPosting,
             onPressed: submitPost,
           ),
         ],

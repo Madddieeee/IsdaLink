@@ -6,30 +6,80 @@ class CheckoutCard extends StatelessWidget {
   const CheckoutCard({
     super.key,
     required this.child,
-    this.margin = const EdgeInsets.only(bottom: 14),
+    this.margin = const EdgeInsets.only(bottom: 13),
+    this.padding = const EdgeInsets.all(15),
   });
 
   final Widget child;
   final EdgeInsetsGeometry margin;
+  final EdgeInsetsGeometry padding;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       margin: margin,
-      padding: const EdgeInsets.all(16),
+      padding: padding,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE5EDF3)),
+        borderRadius: BorderRadius.circular(23),
+        border: Border.all(
+          color: const Color(0xFFE0EBF2),
+        ),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x0B000000),
-            blurRadius: 12,
-            offset: Offset(0, 5),
+            color: Color(0x0E00152A),
+            blurRadius: 14,
+            offset: Offset(0, 7),
           ),
         ],
       ),
       child: child,
+    );
+  }
+}
+
+class CheckoutSectionTitle extends StatelessWidget {
+  const CheckoutSectionTitle({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.trailing,
+  });
+
+  final IconData icon;
+  final String title;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: const Color(0xFFE8F8FD),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            icon,
+            color: const Color(0xFF0875D1),
+            size: 18,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(
+              color: Color(0xFF102C44),
+              fontSize: 15.5,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+        if (trailing != null) trailing!,
+      ],
     );
   }
 }
@@ -58,29 +108,36 @@ class BuyerDetailsCard extends StatelessWidget {
       labelText: label,
       labelStyle: const TextStyle(
         color: Color(0xFF7B8FA3),
-        fontSize: 12,
-        fontWeight: FontWeight.w600,
+        fontSize: 10.3,
+        fontWeight: FontWeight.w700,
       ),
-      prefixIcon: Icon(
-        icon,
-        color: const Color(0xFF146BFF),
-        size: 20,
+      prefixIcon: Container(
+        margin: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE8F8FD),
+          borderRadius: BorderRadius.circular(11),
+        ),
+        child: Icon(
+          icon,
+          color: const Color(0xFF0875D1),
+          size: 17,
+        ),
       ),
       filled: true,
       fillColor: const Color(0xFFF7FAFC),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: 14,
-      ),
+      isDense: true,
+      contentPadding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Color(0xFFE1EAF0)),
+        borderRadius: BorderRadius.circular(15),
+        borderSide: const BorderSide(
+          color: Color(0xFFE0EBF2),
+        ),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(15),
         borderSide: const BorderSide(
-          color: Color(0xFF146BFF),
-          width: 1.4,
+          color: Color(0xFF12A9D1),
+          width: 1.3,
         ),
       ),
     );
@@ -92,30 +149,19 @@ class BuyerDetailsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
-            children: [
-              Icon(
-                Icons.location_on,
-                color: Color(0xFF146BFF),
-                size: 24,
-              ),
-              SizedBox(width: 8),
-              Text(
-                'Buyer Details',
-                style: TextStyle(
-                  color: Color(0xFF102C44),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ],
+          const CheckoutSectionTitle(
+            icon: Icons.person_pin_circle_outlined,
+            title: 'Buyer Details',
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 13),
           if (isLoading)
             const Padding(
-              padding: EdgeInsets.symmetric(vertical: 18),
+              padding: EdgeInsets.symmetric(vertical: 20),
               child: Center(
-                child: CircularProgressIndicator(strokeWidth: 2.2),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.2,
+                  color: Color(0xFF0875D1),
+                ),
               ),
             )
           else ...[
@@ -124,10 +170,10 @@ class BuyerDetailsCard extends StatelessWidget {
               textCapitalization: TextCapitalization.words,
               decoration: fieldDecoration(
                 label: 'Buyer name',
-                icon: Icons.person_outline,
+                icon: Icons.person_outline_rounded,
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 9),
             TextField(
               controller: phoneController,
               keyboardType: TextInputType.phone,
@@ -136,27 +182,41 @@ class BuyerDetailsCard extends StatelessWidget {
                 icon: Icons.phone_outlined,
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 9),
             TextField(
               controller: addressController,
               keyboardType: TextInputType.streetAddress,
               textCapitalization: TextCapitalization.words,
-              minLines: 2,
-              maxLines: 3,
+              minLines: 1,
+              maxLines: 2,
               decoration: fieldDecoration(
                 label: 'Delivery address',
                 icon: Icons.home_outlined,
               ),
             ),
             if (errorMessage.trim().isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text(
-                errorMessage,
-                style: const TextStyle(
-                  color: Color(0xFFD97706),
-                  fontSize: 10.5,
-                  height: 1.35,
-                  fontWeight: FontWeight.w600,
+              const SizedBox(height: 9),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 11,
+                  vertical: 9,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF5E8),
+                  borderRadius: BorderRadius.circular(13),
+                  border: Border.all(
+                    color: const Color(0xFFFFE0B8),
+                  ),
+                ),
+                child: Text(
+                  errorMessage,
+                  style: const TextStyle(
+                    color: Color(0xFFB26400),
+                    fontSize: 9.8,
+                    height: 1.35,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
@@ -185,15 +245,29 @@ class ProductOrderCard extends StatelessWidget {
 
   bool get hasProductImage {
     final imageUrl = product.imageUrl.trim();
-    return imageUrl.startsWith('http://') || imageUrl.startsWith('https://');
+    return imageUrl.startsWith('http://') ||
+        imageUrl.startsWith('https://');
   }
 
   bool get canDecrease => quantity > 1;
   bool get canIncrease => quantity < product.availableQuantity;
 
   String formatNumber(double value) {
-    if (value % 1 == 0) return value.toStringAsFixed(0);
+    if (value % 1 == 0) {
+      return value.toStringAsFixed(0);
+    }
     return value.toStringAsFixed(1);
+  }
+
+  String get cleanPriceUnit {
+    final value = product.priceUnit.trim();
+    if (value.isEmpty) {
+      return product.quantityUnit;
+    }
+    if (value.toLowerCase().startsWith('per ')) {
+      return value.substring(4);
+    }
+    return value;
   }
 
   Widget productImage() {
@@ -201,17 +275,19 @@ class ProductOrderCard extends StatelessWidget {
       return Image.network(
         product.imageUrl,
         fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => productEmoji(),
+        errorBuilder: (_, __, ___) => productEmoji(),
       );
     }
     return productEmoji();
   }
 
   Widget productEmoji() {
-    return Center(
+    return Container(
+      color: const Color(0xFFEAF7FB),
+      alignment: Alignment.center,
       child: Text(
         product.emoji.trim().isEmpty ? '🐟' : product.emoji,
-        style: const TextStyle(fontSize: 38),
+        style: const TextStyle(fontSize: 36),
       ),
     );
   }
@@ -221,29 +297,32 @@ class ProductOrderCard extends StatelessWidget {
     required VoidCallback onTap,
     required bool enabled,
   }) {
-    return InkWell(
-      onTap: enabled ? onTap : null,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        width: 34,
-        height: 34,
-        decoration: BoxDecoration(
-          color: enabled
-              ? const Color(0xFFEAF2FF)
-              : const Color(0xFFF0F3F5),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: enabled
-                ? const Color(0xFFBFD3F8)
-                : const Color(0xFFE2E7EA),
+    return Material(
+      color: enabled
+          ? const Color(0xFFE8F8FD)
+          : const Color(0xFFF0F3F5),
+      borderRadius: BorderRadius.circular(11),
+      child: InkWell(
+        onTap: enabled ? onTap : null,
+        borderRadius: BorderRadius.circular(11),
+        child: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(11),
+            border: Border.all(
+              color: enabled
+                  ? const Color(0xFFCBEAF5)
+                  : const Color(0xFFE2E7EA),
+            ),
           ),
-        ),
-        child: Icon(
-          icon,
-          size: 18,
-          color: enabled
-              ? const Color(0xFF146BFF)
-              : const Color(0xFFA6B2BC),
+          child: Icon(
+            icon,
+            size: 18,
+            color: enabled
+                ? const Color(0xFF0875D1)
+                : const Color(0xFFA6B2BC),
+          ),
         ),
       ),
     );
@@ -255,132 +334,175 @@ class ProductOrderCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.storefront_outlined,
-                color: Color(0xFF146BFF),
-                size: 22,
+          CheckoutSectionTitle(
+            icon: Icons.storefront_outlined,
+            title: supplier.name,
+            trailing: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 5,
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  supplier.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF102C44),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                  ),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F8FD),
+                borderRadius: BorderRadius.circular(99),
+              ),
+              child: const Text(
+                'Order item',
+                style: TextStyle(
+                  color: Color(0xFF0875D1),
+                  fontSize: 8.8,
+                  fontWeight: FontWeight.w900,
                 ),
               ),
-            ],
+            ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 13),
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 88,
-                height: 88,
+                width: 78,
+                height: 78,
                 decoration: BoxDecoration(
                   color: const Color(0xFFF3F7FA),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFE1EAF0)),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: const Color(0xFFE0EBF2),
+                  ),
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(15),
+                  borderRadius: BorderRadius.circular(17),
                   child: productImage(),
                 ),
               ),
-              const SizedBox(width: 13),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       product.name,
-                      maxLines: 2,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Color(0xFF102C44),
-                        fontSize: 15,
-                        height: 1.25,
+                        fontSize: 16,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 4),
                     Text(
                       product.category,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Color(0xFF7B8FA3),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 9),
+                    const SizedBox(height: 7),
                     Text(
-                      '₱${product.price.toStringAsFixed(0)} ${product.priceUnit}',
+                      '₱${formatNumber(product.price)} / $cleanPriceUnit',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: Color(0xFF146BFF),
-                        fontSize: 16,
+                        color: Color(0xFF0875D1),
+                        fontSize: 15.5,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Available: ${formatNumber(product.availableQuantity)} ${product.quantityUnit}',
-                      style: const TextStyle(
-                        color: Color(0xFF7B8FA3),
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    const SizedBox(height: 5),
+                    Row(
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF19A66A),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Expanded(
+                          child: Text(
+                            '${formatNumber(product.availableQuantity)} '
+                            '${product.quantityUnit} available',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Color(0xFF62798B),
+                              fontSize: 9.3,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
             ],
           ),
-          const Divider(height: 26),
-          Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  'Quantity',
-                  style: TextStyle(
-                    color: Color(0xFF52677A),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
+          const SizedBox(height: 13),
+          Container(
+            padding: const EdgeInsets.fromLTRB(12, 9, 9, 9),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5FAFD),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: const Color(0xFFE0EBF2),
+              ),
+            ),
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Quantity',
+                        style: TextStyle(
+                          color: Color(0xFF102C44),
+                          fontSize: 11.3,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        'Choose the amount to reserve.',
+                        style: TextStyle(
+                          color: Color(0xFF7B8FA3),
+                          fontSize: 8.8,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              quantityButton(
-                icon: Icons.remove,
-                onTap: onDecrease,
-                enabled: canDecrease,
-              ),
-              Container(
-                constraints: const BoxConstraints(minWidth: 68),
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Text(
-                  '$quantity ${product.quantityUnit}',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Color(0xFF102C44),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
+                quantityButton(
+                  icon: Icons.remove_rounded,
+                  onTap: onDecrease,
+                  enabled: canDecrease,
+                ),
+                SizedBox(
+                  width: 70,
+                  child: Text(
+                    '$quantity ${product.quantityUnit}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Color(0xFF102C44),
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
-              ),
-              quantityButton(
-                icon: Icons.add,
-                onTap: onIncrease,
-                enabled: canIncrease,
-              ),
-            ],
+                quantityButton(
+                  icon: Icons.add_rounded,
+                  onTap: onIncrease,
+                  enabled: canIncrease,
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -400,24 +522,44 @@ class PaymentDetailsCard extends StatelessWidget {
   final int quantity;
   final double totalAmount;
 
-  Widget detailRow({
+  String formatNumber(double value) {
+    if (value % 1 == 0) {
+      return value.toStringAsFixed(0);
+    }
+    return value.toStringAsFixed(1);
+  }
+
+  String get cleanPriceUnit {
+    final value = product.priceUnit.trim();
+    if (value.isEmpty) {
+      return product.quantityUnit;
+    }
+    if (value.toLowerCase().startsWith('per ')) {
+      return value.substring(4);
+    }
+    return value;
+  }
+
+  Widget summaryRow({
     required String label,
     required String value,
-    bool total = false,
+    bool strong = false,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 7),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
           Expanded(
             child: Text(
               label,
               style: TextStyle(
-                color: total
+                color: strong
                     ? const Color(0xFF102C44)
-                    : const Color(0xFF52677A),
-                fontSize: total ? 14 : 12.5,
-                fontWeight: total ? FontWeight.w900 : FontWeight.w600,
+                    : const Color(0xFF62798B),
+                fontSize: strong ? 12 : 10.5,
+                fontWeight: strong
+                    ? FontWeight.w900
+                    : FontWeight.w700,
               ),
             ),
           ),
@@ -425,11 +567,11 @@ class PaymentDetailsCard extends StatelessWidget {
           Text(
             value,
             style: TextStyle(
-              color: total
-                  ? const Color(0xFF146BFF)
+              color: strong
+                  ? const Color(0xFF0875D1)
                   : const Color(0xFF102C44),
-              fontSize: total ? 18 : 12.5,
-              fontWeight: total ? FontWeight.w900 : FontWeight.w800,
+              fontSize: strong ? 16 : 11,
+              fontWeight: FontWeight.w900,
             ),
           ),
         ],
@@ -444,63 +586,80 @@ class PaymentDetailsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Payment Details',
-            style: TextStyle(
-              color: Color(0xFF102C44),
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-            ),
+          const CheckoutSectionTitle(
+            icon: Icons.receipt_long_outlined,
+            title: 'Payment Summary',
           ),
-          const SizedBox(height: 11),
-          detailRow(
+          const SizedBox(height: 10),
+          summaryRow(
             label: 'Unit price',
-            value: '₱${product.price.toStringAsFixed(0)} ${product.priceUnit}',
+            value: '₱${formatNumber(product.price)} / $cleanPriceUnit',
           ),
-          detailRow(
+          summaryRow(
             label: 'Quantity',
             value: '$quantity ${product.quantityUnit}',
           ),
-          detailRow(
+          summaryRow(
             label: 'Merchandise subtotal',
-            value: '₱${totalAmount.toStringAsFixed(0)}',
+            value: '₱${formatNumber(totalAmount)}',
           ),
-          detailRow(
+          summaryRow(
             label: 'Payment method',
             value: 'Cash on Delivery',
           ),
-          const Divider(height: 22),
-          detailRow(
-            label: 'Total Payment',
-            value: '₱${totalAmount.toStringAsFixed(0)}',
-            total: true,
+          const Divider(
+            height: 22,
+            color: Color(0xFFE0EBF2),
           ),
-          const SizedBox(height: 7),
+          summaryRow(
+            label: 'Total payment',
+            value: '₱${formatNumber(totalAmount)}',
+            strong: true,
+          ),
+          const SizedBox(height: 8),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(11),
             decoration: BoxDecoration(
-              color: const Color(0xFFF2F8FF),
-              borderRadius: BorderRadius.circular(13),
+              color: const Color(0xFFEFF8FD),
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(
+                color: const Color(0xFFD8ECF6),
+              ),
             ),
             child: const Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(
                   Icons.payments_outlined,
-                  color: Color(0xFF146BFF),
-                  size: 19,
+                  color: Color(0xFF0875D1),
+                  size: 18,
                 ),
-                SizedBox(width: 8),
+                SizedBox(width: 9),
                 Expanded(
-                  child: Text(
-                    'Pay the supplier upon delivery. The selected quantity is reserved after placing the order.',
-                    style: TextStyle(
-                      color: Color(0xFF52677A),
-                      fontSize: 10.5,
-                      height: 1.35,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Cash on Delivery',
+                        style: TextStyle(
+                          color: Color(0xFF102C44),
+                          fontSize: 10.7,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      SizedBox(height: 3),
+                      Text(
+                        'Pay the supplier when the order is received. '
+                        'Stock is reserved after order placement.',
+                        style: TextStyle(
+                          color: Color(0xFF62798B),
+                          fontSize: 9.3,
+                          height: 1.35,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

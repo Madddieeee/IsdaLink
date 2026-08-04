@@ -67,6 +67,13 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
     return fallback;
   }
 
+  String formatNumber(double value) {
+    if (value % 1 == 0) {
+      return value.toStringAsFixed(0);
+    }
+    return value.toStringAsFixed(1);
+  }
+
   Future<void> loadBuyerDetails() async {
     final user = FirebaseAuth.instance.currentUser;
 
@@ -161,6 +168,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
         backgroundColor: isError
             ? const Color(0xFFD32F2F)
             : const Color(0xFF2E7D32),
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }
@@ -172,7 +180,10 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
     }
 
     if (buyerPhoneController.text.trim().isEmpty) {
-      showMessage('Please enter the buyer contact number.', isError: true);
+      showMessage(
+        'Please enter the buyer contact number.',
+        isError: true,
+      );
       return false;
     }
 
@@ -184,7 +195,202 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
     return true;
   }
 
+  Future<bool> showOrderConfirmationDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: !isSubmitting,
+      builder: (dialogContext) {
+        return Dialog(
+          insetPadding: const EdgeInsets.symmetric(horizontal: 22),
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(19, 19, 19, 18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(27),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x26000000),
+                  blurRadius: 24,
+                  offset: Offset(0, 12),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [
+                        Color(0xFF0875D1),
+                        Color(0xFF12B6D6),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(19),
+                  ),
+                  child: const Icon(
+                    Icons.receipt_long_rounded,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                const Text(
+                  'Place this COD order?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFF102C44),
+                    fontSize: 19,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Review the order before confirming.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFF7B8FA3),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 15),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF4F9FC),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: const Color(0xFFE0EBF2),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      _ConfirmationRow(
+                        label: 'Product',
+                        value: widget.product.name,
+                      ),
+                      _ConfirmationRow(
+                        label: 'Quantity',
+                        value: '$quantity ${widget.product.quantityUnit}',
+                      ),
+                      const _ConfirmationRow(
+                        label: 'Payment',
+                        value: 'Cash on Delivery',
+                      ),
+                      const Divider(
+                        height: 20,
+                        color: Color(0xFFDDE8EF),
+                      ),
+                      _ConfirmationRow(
+                        label: 'Total',
+                        value: '₱${formatNumber(totalAmount)}',
+                        strong: true,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 11),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF8FD),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.info_outline_rounded,
+                        color: Color(0xFF0875D1),
+                        size: 17,
+                      ),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'The selected quantity will be deducted from '
+                          'available stock after the order is placed.',
+                          style: TextStyle(
+                            color: Color(0xFF52677A),
+                            fontSize: 9.6,
+                            height: 1.35,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => Navigator.pop(dialogContext, false),
+                        icon: const Icon(
+                          Icons.edit_outlined,
+                          size: 15,
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF52677A),
+                          side: const BorderSide(
+                            color: Color(0xFFD6E2EA),
+                          ),
+                          minimumSize: const Size.fromHeight(46),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        label: const Text(
+                          'Edit Order',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(dialogContext, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0875D1),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          minimumSize: const Size.fromHeight(46),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: const Text(
+                          'Place Order',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    return result == true;
+  }
+
   Future<void> confirmOrder() async {
+    if (isSubmitting || isLoadingBuyer) return;
+
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
@@ -198,6 +404,9 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
     if (!validateBuyerDetails()) return;
 
     FocusScope.of(context).unfocus();
+
+    final confirmed = await showOrderConfirmationDialog();
+    if (!mounted || !confirmed) return;
 
     setState(() {
       isSubmitting = true;
@@ -237,222 +446,150 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
     }
   }
 
-  Future<void> showOrderPlacedDialog() async {
-    await showModalBottomSheet<void>(
+  void showOrderPlacedDialog() {
+    showDialog(
       context: context,
-      isDismissible: false,
-      enableDrag: false,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x99000000),
-      builder: (sheetContext) {
-        return Container(
-          padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(30),
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return Dialog(
+          insetPadding: const EdgeInsets.symmetric(horizontal: 23),
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x26000000),
+                  blurRadius: 22,
+                  offset: Offset(0, 11),
+                ),
+              ],
             ),
-          ),
-          child: SafeArea(
-            top: false,
-            child: SingleChildScrollView(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
                 Container(
-                  width: 42,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD8E2EA),
-                    borderRadius: BorderRadius.circular(99),
+                  width: 68,
+                  height: 68,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF2E9A62),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check_rounded,
+                    color: Colors.white,
+                    size: 37,
                   ),
                 ),
-                const SizedBox(height: 22),
-                TweenAnimationBuilder<double>(
-                  tween: Tween<double>(begin: 0, end: 1),
-                  duration: const Duration(milliseconds: 620),
-                  curve: Curves.elasticOut,
-                  builder: (context, value, child) {
-                    return Transform.scale(
-                      scale: value,
-                      child: child,
-                    );
-                  },
-                  child: Container(
-                    width: 78,
-                    height: 78,
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Color(0xFF2E7D32),
-                          Color(0xFF38D39F),
-                        ],
-                      ),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Color(0x3038D39F),
-                          blurRadius: 18,
-                          offset: Offset(0, 9),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.check_rounded,
-                      color: Colors.white,
-                      size: 43,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 17),
+                const SizedBox(height: 15),
                 const Text(
-                  'Order Placed Successfully',
+                  'Order Placed',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Color(0xFF102C44),
-                    fontSize: 22,
+                    fontSize: 21,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 7),
                 Text(
-                  '${widget.product.name} was sent to ${widget.supplier.name} for confirmation.',
+                  '${widget.product.name} was sent to '
+                  '${widget.supplier.name} for confirmation.',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: Color(0xFF52677A),
-                    fontSize: 12.5,
-                    height: 1.45,
+                    fontSize: 11.7,
+                    height: 1.4,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 15),
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF5F9FC),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: const Color(0xFFE1EEF6)),
+                    color: const Color(0xFFF4F9FC),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: const Color(0xFFE0EBF2),
+                    ),
                   ),
                   child: Column(
                     children: [
-                      OrderPlacedRow(
-                        label: 'Product',
-                        value: widget.product.name,
-                      ),
-                      OrderPlacedRow(
+                      _ConfirmationRow(
                         label: 'Quantity',
                         value: '$quantity ${widget.product.quantityUnit}',
                       ),
-                      const OrderPlacedRow(
+                      const _ConfirmationRow(
                         label: 'Payment',
                         value: 'Cash on Delivery',
                       ),
-                      const Divider(height: 20),
-                      OrderPlacedRow(
+                      const Divider(
+                        height: 20,
+                        color: Color(0xFFDDE8EF),
+                      ),
+                      _ConfirmationRow(
                         label: 'Total',
-                        value: '₱${totalAmount.toStringAsFixed(0)}',
-                        bold: true,
+                        value: '₱${formatNumber(totalAmount)}',
+                        strong: true,
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 13),
-                const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.notifications_active_outlined,
-                      color: Color(0xFF087AC0),
-                      size: 17,
-                    ),
-                    SizedBox(width: 7),
-                    Flexible(
-                      child: Text(
-                        'Track supplier updates in My Orders.',
-                        style: TextStyle(
-                          color: Color(0xFF52677A),
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 17),
                 Row(
                   children: [
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () {
-                          Navigator.pop(sheetContext);
-
-                          Future<void>.delayed(
-                            const Duration(milliseconds: 260),
-                            () {
-                              if (mounted && Navigator.canPop(context)) {
-                                Navigator.pop(context);
-                              }
-                            },
-                          );
+                          Navigator.pop(dialogContext);
+                          Navigator.pop(context);
                         },
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF146BFF),
-                          side: const BorderSide(color: Color(0xFF146BFF)),
-                          minimumSize: const Size.fromHeight(51),
+                          foregroundColor: const Color(0xFF0875D1),
+                          side: const BorderSide(
+                            color: Color(0xFF0875D1),
+                          ),
+                          minimumSize: const Size.fromHeight(46),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(14),
                           ),
                         ),
                         child: const Text(
-                          'Continue Shopping',
-                          textAlign: TextAlign.center,
+                          'Continue',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 11,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 11),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
-                          Navigator.pop(sheetContext);
-
-                          Future<void>.delayed(
-                            const Duration(milliseconds: 260),
-                            () {
-                              if (!mounted) return;
-
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const MyOrdersScreen(),
-                                ),
-                              );
-                            },
+                          Navigator.pop(dialogContext);
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const MyOrdersScreen(),
+                            ),
                           );
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF146BFF),
+                          backgroundColor: const Color(0xFF0875D1),
                           foregroundColor: Colors.white,
-                          elevation: 3,
-                          minimumSize: const Size.fromHeight(51),
+                          elevation: 0,
+                          minimumSize: const Size.fromHeight(46),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(14),
                           ),
                         ),
                         child: const Text(
-                          'View My Orders',
-                          textAlign: TextAlign.center,
+                          'My Orders',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 11,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
@@ -460,8 +597,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                     ),
                   ],
                 ),
-                ],
-              ),
+              ],
             ),
           ),
         );
@@ -471,14 +607,17 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
 
   Widget checkoutBottomBar() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 14),
+      padding: const EdgeInsets.fromLTRB(18, 11, 18, 10),
       decoration: const BoxDecoration(
         color: Colors.white,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(24),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Color(0x16000000),
-            blurRadius: 16,
-            offset: Offset(0, -4),
+            color: Color(0x1C00152A),
+            blurRadius: 18,
+            offset: Offset(0, -6),
           ),
         ],
       ),
@@ -495,37 +634,46 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                     'Total',
                     style: TextStyle(
                       color: Color(0xFF7B8FA3),
-                      fontSize: 12,
+                      fontSize: 9.8,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '₱${totalAmount.toStringAsFixed(0)}',
+                    '₱${formatNumber(totalAmount)}',
                     style: const TextStyle(
-                      color: Color(0xFF146BFF),
-                      fontSize: 22,
+                      color: Color(0xFF0875D1),
+                      fontSize: 21,
+                      height: 1,
                       fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  const Text(
+                    'Cash on Delivery',
+                    style: TextStyle(
+                      color: Color(0xFF7B8FA3),
+                      fontSize: 8.4,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
               ),
             ),
             SizedBox(
-              width: 166,
-              height: 52,
-              child: ElevatedButton(
-                onPressed: isSubmitting ? null : confirmOrder,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF146BFF),
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: const Color(0xFF8CA5BA),
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                child: isSubmitting
+              width: 190,
+              height: 50,
+              child: ElevatedButton.icon(
+                onPressed: isSubmitting || isLoadingBuyer
+                    ? null
+                    : confirmOrder,
+                icon: isSubmitting
+                    ? const SizedBox.shrink()
+                    : const Icon(
+                        Icons.arrow_forward_rounded,
+                        size: 18,
+                      ),
+                label: isSubmitting
                     ? const SizedBox(
                         width: 20,
                         height: 20,
@@ -537,10 +685,20 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                     : const Text(
                         'Place Order',
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: 13,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0875D1),
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: const Color(0xFF8CA5BA),
+                  elevation: 2,
+                  shadowColor: const Color(0x550875D1),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
               ),
             ),
           ],
@@ -552,14 +710,16 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F8),
+      backgroundColor: const Color(0xFFF4F8FB),
+      resizeToAvoidBottomInset: true,
       body: Column(
         children: [
           const PlaceOrderHeader(),
           Expanded(
             child: ListView(
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              keyboardDismissBehavior:
+                  ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
               children: [
                 BuyerDetailsCard(
                   nameController: buyerNameController,
@@ -590,40 +750,51 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
   }
 }
 
-class OrderPlacedRow extends StatelessWidget {
-  const OrderPlacedRow({
-    super.key,
+class _ConfirmationRow extends StatelessWidget {
+  const _ConfirmationRow({
     required this.label,
     required this.value,
-    this.bold = false,
+    this.strong = false,
   });
 
   final String label;
   final String value;
-  final bool bold;
+  final bool strong;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         children: [
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
-                color: Color(0xFF7B8FA3),
-                fontSize: 11.5,
-                fontWeight: FontWeight.w700,
+              style: TextStyle(
+                color: strong
+                    ? const Color(0xFF102C44)
+                    : const Color(0xFF52677A),
+                fontSize: strong ? 11.7 : 10.7,
+                fontWeight: strong
+                    ? FontWeight.w900
+                    : FontWeight.w800,
               ),
             ),
           ),
-          Text(
-            value,
-            style: TextStyle(
-              color: const Color(0xFF102C44),
-              fontSize: bold ? 16 : 12,
-              fontWeight: bold ? FontWeight.w900 : FontWeight.w800,
+          const SizedBox(width: 12),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: strong
+                    ? const Color(0xFF0875D1)
+                    : const Color(0xFF102C44),
+                fontSize: strong ? 15.5 : 10.8,
+                fontWeight: FontWeight.w900,
+              ),
             ),
           ),
         ],
