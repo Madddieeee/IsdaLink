@@ -1,5 +1,4 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -48,6 +47,7 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
   bool isPosting = false;
   bool isUploadingImage = false;
   bool useCustomPercentage = false;
+  bool allowPop = false;
 
   String? productNameError;
   String? descriptionError;
@@ -288,6 +288,39 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
     return shouldDiscard ?? false;
   }
 
+  void allowRoutePop([Object? result]) {
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      allowPop = true;
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Navigator.of(context).pop(result);
+      }
+    });
+  }
+
+  Future<void> handlePopInvoked(
+    bool didPop,
+    Object? result,
+  ) async {
+    if (didPop) {
+      return;
+    }
+
+    final canLeave = await confirmDiscardListing();
+
+    if (!mounted || !canLeave) {
+      return;
+    }
+
+    allowRoutePop(result);
+  }
+
   Future<void> handleBack() async {
     final canLeave = await confirmDiscardListing();
 
@@ -295,7 +328,7 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
       return;
     }
 
-    Navigator.pop(context);
+    allowRoutePop();
   }
 
   void showMessage(
@@ -796,7 +829,7 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
                       child: ElevatedButton(
                         onPressed: () {
                           Navigator.pop(dialogContext);
-                          Navigator.pop(context);
+                          allowRoutePop();
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor:
@@ -861,8 +894,9 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
         systemNavigationBarColor: Colors.white,
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
-      child: WillPopScope(
-        onWillPop: confirmDiscardListing,
+      child: PopScope<Object?>(
+        canPop: allowPop || !hasUnsavedListing,
+        onPopInvokedWithResult: handlePopInvoked,
         child: Scaffold(
           resizeToAvoidBottomInset: true,
         backgroundColor: const Color(0xFFF4F8FB),

@@ -7,7 +7,7 @@ import 'package:isdalink/screens/analytics/analytics_screen.dart';
 import 'package:isdalink/screens/profile/manage_profile_screen.dart';
 import 'package:isdalink/screens/profile/region_location_screen.dart';
 import 'package:isdalink/screens/supplier/post_fish_stock_screen.dart';
-import 'package:isdalink/screens/supplier/supplier_activation_screen.dart';
+import 'package:isdalink/screens/supplier/activation/supplier_activation_screen.dart';
 import 'package:isdalink/screens/supplier/supplier_cod_orders_screen.dart';
 import 'package:isdalink/screens/supplier/supplier_dashboard_screen.dart';
 import 'package:isdalink/screens/supplier/supplier_manage_products_screen.dart';
@@ -16,19 +16,27 @@ import 'package:isdalink/screens/welcome_screen.dart';
 import 'package:isdalink/services/cloudinary_upload_service.dart';
 import 'package:isdalink/services/user_profile_service.dart';
 
-class MeScreen extends StatefulWidget {
+class MeScreen
+    extends
+        StatefulWidget {
   const MeScreen({
     super.key,
   });
 
   @override
-  State<MeScreen> createState() => _MeScreenState();
+  State<
+    MeScreen
+  >
+  createState() => _MeScreenState();
 }
 
-class _MeScreenState extends State<MeScreen> {
+class _MeScreenState
+    extends
+        State<
+          MeScreen
+        > {
   final UserProfileService profileService = const UserProfileService();
-  final CloudinaryUploadService cloudinaryUploadService =
-      const CloudinaryUploadService();
+  final CloudinaryUploadService cloudinaryUploadService = const CloudinaryUploadService();
   final ImagePicker imagePicker = ImagePicker();
 
   bool isUploadingProfileImage = false;
@@ -40,7 +48,10 @@ class _MeScreenState extends State<MeScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => screen,
+        builder:
+            (
+              _,
+            ) => screen,
       ),
     );
   }
@@ -53,18 +64,29 @@ class _MeScreenState extends State<MeScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Text(
+          message,
+        ),
         backgroundColor: isError
-            ? const Color(0xFFD32F2F)
-            : const Color(0xFF2E7D32),
+            ? const Color(
+                0xFFD32F2F,
+              )
+            : const Color(
+                0xFF2E7D32,
+              ),
         behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
-  Future<void> logout() async {
+  Future<
+    void
+  >
+  logout() async {
     await profileService.logout();
 
     if (!mounted) {
@@ -74,13 +96,21 @@ class _MeScreenState extends State<MeScreen> {
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
-        builder: (_) => const WelcomeScreen(),
+        builder:
+            (
+              _,
+            ) => const WelcomeScreen(),
       ),
-      (route) => false,
+      (
+        route,
+      ) => false,
     );
   }
 
-  Future<void> uploadProfilePhoto(
+  Future<
+    void
+  >
+  uploadProfilePhoto(
     bool isApprovedSupplier,
   ) async {
     try {
@@ -90,13 +120,16 @@ class _MeScreenState extends State<MeScreen> {
         maxWidth: 1200,
       );
 
-      if (image == null) {
+      if (image ==
+          null) {
         return;
       }
 
-      setState(() {
-        isUploadingProfileImage = true;
-      });
+      setState(
+        () {
+          isUploadingProfileImage = true;
+        },
+      );
 
       final imageUrl = await cloudinaryUploadService.uploadImage(
         image,
@@ -108,44 +141,61 @@ class _MeScreenState extends State<MeScreen> {
         isApprovedSupplier: isApprovedSupplier,
       );
 
-      showMessage('Profile photo updated successfully.');
-    } catch (error) {
+      showMessage(
+        'Profile photo updated successfully.',
+      );
+    } catch (
+      error
+    ) {
       showMessage(
         'Failed to update profile photo: $error',
         isError: true,
       );
     } finally {
       if (mounted) {
-        setState(() {
-          isUploadingProfileImage = false;
-        });
+        setState(
+          () {
+            isUploadingProfileImage = false;
+          },
+        );
       }
     }
   }
 
-  Future<void> removeProfilePhoto(
+  Future<
+    void
+  >
+  removeProfilePhoto(
     bool isApprovedSupplier,
   ) async {
     try {
-      setState(() {
-        isUploadingProfileImage = true;
-      });
+      setState(
+        () {
+          isUploadingProfileImage = true;
+        },
+      );
 
       await profileService.removeProfileImageUrl(
         isApprovedSupplier: isApprovedSupplier,
       );
 
-      showMessage('Profile photo removed.');
-    } catch (error) {
+      showMessage(
+        'Profile photo removed.',
+      );
+    } catch (
+      error
+    ) {
       showMessage(
         'Failed to remove profile photo: $error',
         isError: true,
       );
     } finally {
       if (mounted) {
-        setState(() {
-          isUploadingProfileImage = false;
-        });
+        setState(
+          () {
+            isUploadingProfileImage = false;
+          },
+        );
       }
     }
   }
@@ -154,111 +204,170 @@ class _MeScreenState extends State<MeScreen> {
     required String profileImageUrl,
     required bool isApprovedSupplier,
   }) {
-    showModalBottomSheet<void>(
+    showModalBottomSheet<
+      void
+    >(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (sheetContext) {
-        return Container(
-          padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
-          decoration: const BoxDecoration(
-            color: Color(0xFFF4F8FB),
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(28),
-            ),
-          ),
-          child: SafeArea(
-            top: false,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 44,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFC9DDEA),
-                    borderRadius: BorderRadius.circular(99),
+      builder:
+          (
+            sheetContext,
+          ) {
+            return Container(
+              padding: const EdgeInsets.fromLTRB(
+                18,
+                12,
+                18,
+                24,
+              ),
+              decoration: const BoxDecoration(
+                color: Color(
+                  0xFFF4F8FB,
+                ),
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(
+                    28,
                   ),
                 ),
-                const SizedBox(height: 18),
-                _ProfileAvatar(
-                  imageUrl: profileImageUrl,
-                  isSupplier: isApprovedSupplier,
-                  isUploading: false,
-                  onTap: () {},
-                  size: 86,
-                  showCameraBadge: false,
+              ),
+              child: SafeArea(
+                top: false,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: const Color(
+                          0xFFC9DDEA,
+                        ),
+                        borderRadius: BorderRadius.circular(
+                          99,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(
+                      height: 18,
+                    ),
+                    _ProfileAvatar(
+                      imageUrl: profileImageUrl,
+                      isSupplier: isApprovedSupplier,
+                      isUploading: false,
+                      onTap: () {},
+                      size: 86,
+                      showCameraBadge: false,
+                    ),
+                    const SizedBox(
+                      height: 12,
+                    ),
+                    const Text(
+                      'Profile Photo',
+                      style: TextStyle(
+                        color: Color(
+                          0xFF102C44,
+                        ),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(
+                      height: 5,
+                    ),
+                    const Text(
+                      'Update the photo shown on your IsdaLink account.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Color(
+                          0xFF7B8FA3,
+                        ),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(
+                      height: 18,
+                    ),
+                    _ProfilePhotoAction(
+                      icon: Icons.photo_library_outlined,
+                      title: 'Upload New Photo',
+                      subtitle: 'Choose an image from your gallery',
+                      onTap: () {
+                        Navigator.pop(
+                          sheetContext,
+                        );
+                        uploadProfilePhoto(
+                          isApprovedSupplier,
+                        );
+                      },
+                    ),
+                    if (profileImageUrl.trim().isNotEmpty) ...[
+                      const SizedBox(
+                        height: 10,
+                      ),
+                      _ProfilePhotoAction(
+                        icon: Icons.delete_outline,
+                        title: 'Remove Photo',
+                        subtitle: 'Use the default account icon again',
+                        isDanger: true,
+                        onTap: () {
+                          Navigator.pop(
+                            sheetContext,
+                          );
+                          removeProfilePhoto(
+                            isApprovedSupplier,
+                          );
+                        },
+                      ),
+                    ],
+                  ],
                 ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Profile Photo',
-                  style: TextStyle(
-                    color: Color(0xFF102C44),
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                const Text(
-                  'Update the photo shown on your IsdaLink account.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Color(0xFF7B8FA3),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 18),
-                _ProfilePhotoAction(
-                  icon: Icons.photo_library_outlined,
-                  title: 'Upload New Photo',
-                  subtitle: 'Choose an image from your gallery',
-                  onTap: () {
-                    Navigator.pop(sheetContext);
-                    uploadProfilePhoto(isApprovedSupplier);
-                  },
-                ),
-                if (profileImageUrl.trim().isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  _ProfilePhotoAction(
-                    icon: Icons.delete_outline,
-                    title: 'Remove Photo',
-                    subtitle: 'Use the default account icon again',
-                    isDanger: true,
-                    onTap: () {
-                      Navigator.pop(sheetContext);
-                      removeProfilePhoto(isApprovedSupplier);
-                    },
-                  ),
-                ],
-              ],
-            ),
-          ),
-        );
-      },
+              ),
+            );
+          },
     );
   }
 
-  Future<void> markSupplierApprovalSeen() async {
+  Future<
+    void
+  >
+  markSupplierApprovalSeen() async {
     final user = profileService.currentUser;
 
-    if (user == null) {
+    if (user ==
+        null) {
       return;
     }
 
-    await FirebaseFirestore.instance.collection('users').doc(user.uid).set(
-      {
-        'supplierApprovalSeen': true,
-        'updatedAt': FieldValue.serverTimestamp(),
-      },
-      SetOptions(merge: true),
-    );
+    await FirebaseFirestore.instance
+        .collection(
+          'users',
+        )
+        .doc(
+          user.uid,
+        )
+        .set(
+          {
+            'supplierApprovalSeen': true,
+            'updatedAt': FieldValue.serverTimestamp(),
+          },
+          SetOptions(
+            merge: true,
+          ),
+        );
   }
 
   void maybeShowSupplierApprovalDialog(
-    Map<String, dynamic>? profileData,
+    Map<
+      String,
+      dynamic
+    >?
+    profileData,
   ) {
-    if (profileData == null || approvalDialogScheduled) {
+    if (profileData ==
+            null ||
+        approvalDialogScheduled) {
       return;
     }
 
@@ -278,149 +387,219 @@ class _MeScreenState extends State<MeScreen> {
         )
         .toLowerCase();
 
-    final approved = role == 'supplier' || supplierStatus == 'approved';
-    final alreadySeen = profileData['supplierApprovalSeen'] == true;
+    final approved =
+        role ==
+            'supplier' ||
+        supplierStatus ==
+            'approved';
+    final alreadySeen =
+        profileData['supplierApprovalSeen'] ==
+        true;
 
-    if (!approved || alreadySeen) {
+    if (!approved ||
+        alreadySeen) {
       return;
     }
 
     approvalDialogScheduled = true;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted) {
-        return;
-      }
+    WidgetsBinding.instance.addPostFrameCallback(
+      (
+        _,
+      ) async {
+        if (!mounted) {
+          return;
+        }
 
-      await markSupplierApprovalSeen();
+        await markSupplierApprovalSeen();
 
-      if (!mounted) {
-        return;
-      }
+        if (!mounted) {
+          return;
+        }
 
-      await showDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        builder: (dialogContext) {
-          return Dialog(
-            insetPadding: const EdgeInsets.symmetric(horizontal: 28),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(22, 24, 22, 18),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(30),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 82,
-                    height: 82,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [
-                          Color(0xFF2E7D32),
-                          Color(0xFF0875D1),
-                        ],
-                      ),
+        await showDialog<
+          void
+        >(
+          context: context,
+          barrierDismissible: false,
+          builder:
+              (
+                dialogContext,
+              ) {
+                return Dialog(
+                  insetPadding: const EdgeInsets.symmetric(
+                    horizontal: 28,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      30,
                     ),
-                    child: const Icon(
-                      Icons.verified_rounded,
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(
+                      22,
+                      24,
+                      22,
+                      18,
+                    ),
+                    decoration: BoxDecoration(
                       color: Colors.white,
-                      size: 44,
+                      borderRadius: BorderRadius.circular(
+                        30,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 17),
-                  const Text(
-                    'Supplier Approved',
-                    style: TextStyle(
-                      color: Color(0xFF102C44),
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 7),
-                  const Text(
-                    'Your existing account now has supplier tools while keeping all vendor functions.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Color(0xFF52677A),
-                      fontSize: 12.5,
-                      height: 1.4,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.pop(dialogContext),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFF0875D1),
-                            minimumSize: const Size.fromHeight(46),
-                            side: const BorderSide(
-                              color: Color(0xFF0875D1),
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 82,
+                          height: 82,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              colors: [
+                                Color(
+                                  0xFF2E7D32,
+                                ),
+                                Color(
+                                  0xFF0875D1,
+                                ),
+                              ],
                             ),
                           ),
-                          child: const Text(
-                            'Later',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                            ),
+                          child: const Icon(
+                            Icons.verified_rounded,
+                            color: Colors.white,
+                            size: 44,
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        flex: 2,
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.pop(dialogContext);
-                            openScreen(const SupplierDashboardScreen());
-                          },
-                          icon: const Icon(
-                            Icons.dashboard_customize_outlined,
-                            size: 18,
-                          ),
-                          label: const Text(
-                            'Open Supplier Center',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w900,
+                        const SizedBox(
+                          height: 17,
+                        ),
+                        const Text(
+                          'Supplier Approved',
+                          style: TextStyle(
+                            color: Color(
+                              0xFF102C44,
                             ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF0875D1),
-                            foregroundColor: Colors.white,
-                            minimumSize: const Size.fromHeight(46),
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(
+                          height: 7,
+                        ),
+                        const Text(
+                          'Your existing account now has supplier tools while keeping all vendor functions.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Color(
+                              0xFF52677A,
+                            ),
+                            fontSize: 12.5,
+                            height: 1.4,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(
+                          height: 18,
+                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () => Navigator.pop(
+                                  dialogContext,
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: const Color(
+                                    0xFF0875D1,
+                                  ),
+                                  minimumSize: const Size.fromHeight(
+                                    46,
+                                  ),
+                                  side: const BorderSide(
+                                    color: Color(
+                                      0xFF0875D1,
+                                    ),
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(
+                                      14,
+                                    ),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Later',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(
+                              width: 10,
+                            ),
+                            Expanded(
+                              flex: 2,
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  Navigator.pop(
+                                    dialogContext,
+                                  );
+                                  openScreen(
+                                    const SupplierDashboardScreen(),
+                                  );
+                                },
+                                icon: const Icon(
+                                  Icons.dashboard_customize_outlined,
+                                  size: 18,
+                                ),
+                                label: const Text(
+                                  'Open Supplier Center',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(
+                                    0xFF0875D1,
+                                  ),
+                                  foregroundColor: Colors.white,
+                                  minimumSize: const Size.fromHeight(
+                                    46,
+                                  ),
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(
+                                      14,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-              ),
-            ),
-          );
-        },
-      );
-    });
+                );
+              },
+        );
+      },
+    );
   }
 
   String firstAvailableText(
-    Map<String, dynamic>? data,
-    List<String> keys,
+    Map<
+      String,
+      dynamic
+    >?
+    data,
+    List<
+      String
+    >
+    keys,
     String fallback,
   ) {
     for (final key in keys) {
@@ -439,14 +618,24 @@ class _MeScreenState extends State<MeScreen> {
   }
 
   Widget loadedBody(
-    Map<String, dynamic>? profileData,
+    Map<
+      String,
+      dynamic
+    >?
+    profileData,
   ) {
-    maybeShowSupplierApprovalDialog(profileData);
+    maybeShowSupplierApprovalDialog(
+      profileData,
+    );
 
     final user = profileService.currentUser;
-    final uid = user?.uid ?? '';
+    final uid =
+        user?.uid ??
+        '';
 
-    final fallbackName = user?.displayName?.trim().isNotEmpty == true
+    final fallbackName =
+        user?.displayName?.trim().isNotEmpty ==
+            true
         ? user!.displayName!.trim()
         : 'IsdaLink User';
 
@@ -459,13 +648,15 @@ class _MeScreenState extends State<MeScreen> {
     final email = profileService.getStringValue(
       profileData,
       'email',
-      user?.email ?? 'No email available',
+      user?.email ??
+          'No email available',
     );
 
     final profileImageUrl = profileService.getStringValue(
       profileData,
       'profileImageUrl',
-      user?.photoURL ?? '',
+      user?.photoURL ??
+          '',
     );
 
     final location = firstAvailableText(
@@ -496,9 +687,16 @@ class _MeScreenState extends State<MeScreen> {
         .toLowerCase();
 
     final isApprovedSupplier =
-        role == 'supplier' || supplierStatus == 'approved';
-    final isPendingSupplier = supplierStatus == 'pending';
-    final isRejectedSupplier = supplierStatus == 'rejected';
+        role ==
+            'supplier' ||
+        supplierStatus ==
+            'approved';
+    final isPendingSupplier =
+        supplierStatus ==
+        'pending';
+    final isRejectedSupplier =
+        supplierStatus ==
+        'rejected';
 
     return Column(
       children: [
@@ -511,7 +709,9 @@ class _MeScreenState extends State<MeScreen> {
           isPendingSupplier: isPendingSupplier,
           isRejectedSupplier: isRejectedSupplier,
           isUploadingProfileImage: isUploadingProfileImage,
-          onBack: () => Navigator.pop(context),
+          onBack: () => Navigator.pop(
+            context,
+          ),
           onProfilePhotoTap: () => showProfilePhotoOptions(
             profileImageUrl: profileImageUrl,
             isApprovedSupplier: isApprovedSupplier,
@@ -521,16 +721,25 @@ class _MeScreenState extends State<MeScreen> {
           ),
           onSupplierCenter: () {
             if (isApprovedSupplier) {
-              openScreen(const SupplierDashboardScreen());
+              openScreen(
+                const SupplierDashboardScreen(),
+              );
             } else {
-              openScreen(const SupplierActivationScreen());
+              openScreen(
+                const SupplierActivationScreen(),
+              );
             }
           },
           onLogout: logout,
         ),
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+            padding: const EdgeInsets.fromLTRB(
+              16,
+              14,
+              16,
+              28,
+            ),
             children: [
               if (uid.isNotEmpty)
                 _VendorOrdersOverviewCard(
@@ -539,8 +748,11 @@ class _MeScreenState extends State<MeScreen> {
                     const MyOrdersScreen(),
                   ),
                 ),
-              const SizedBox(height: 13),
-              if (isApprovedSupplier && uid.isNotEmpty)
+              const SizedBox(
+                height: 13,
+              ),
+              if (isApprovedSupplier &&
+                  uid.isNotEmpty)
                 _SupplierCenterCard(
                   uid: uid,
                   onOpenDashboard: () => openScreen(
@@ -569,7 +781,9 @@ class _MeScreenState extends State<MeScreen> {
                     const SupplierActivationScreen(),
                   ),
                 ),
-              const SizedBox(height: 13),
+              const SizedBox(
+                height: 13,
+              ),
               _AccountSettingsCard(
                 onAccountInformation: () => openScreen(
                   const ManageProfileScreen(),
@@ -595,30 +809,53 @@ class _MeScreenState extends State<MeScreen> {
   ) {
     final stream = profileService.profileStream();
 
-    if (stream == null) {
+    if (stream ==
+        null) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF4F8FB),
-        body: loadedBody(null),
+        backgroundColor: const Color(
+          0xFFF4F8FB,
+        ),
+        body: loadedBody(
+          null,
+        ),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F8FB),
-      body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        stream: stream,
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const _MeLoadingBody();
-          }
-
-          return loadedBody(snapshot.data?.data());
-        },
+      backgroundColor: const Color(
+        0xFFF4F8FB,
       ),
+      body:
+          StreamBuilder<
+            DocumentSnapshot<
+              Map<
+                String,
+                dynamic
+              >
+            >
+          >(
+            stream: stream,
+            builder:
+                (
+                  context,
+                  snapshot,
+                ) {
+                  if (!snapshot.hasData) {
+                    return const _MeLoadingBody();
+                  }
+
+                  return loadedBody(
+                    snapshot.data?.data(),
+                  );
+                },
+          ),
     );
   }
 }
 
-class _MeDashboardHeader extends StatelessWidget {
+class _MeDashboardHeader
+    extends
+        StatelessWidget {
   const _MeDashboardHeader({
     required this.name,
     required this.email,
@@ -669,11 +906,17 @@ class _MeDashboardHeader extends StatelessWidget {
   Widget build(
     BuildContext context,
   ) {
-    final topPadding = MediaQuery.paddingOf(context).top;
+    final topPadding = MediaQuery.paddingOf(
+      context,
+    ).top;
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
+    return AnnotatedRegion<
+      SystemUiOverlayStyle
+    >(
       value: const SystemUiOverlayStyle(
-        statusBarColor: Color(0xFF06355F),
+        statusBarColor: Color(
+          0xFF06355F,
+        ),
         statusBarIconBrightness: Brightness.light,
         statusBarBrightness: Brightness.dark,
       ),
@@ -693,7 +936,8 @@ class _MeDashboardHeader extends StatelessWidget {
               width: double.infinity,
               padding: EdgeInsets.fromLTRB(
                 16,
-                topPadding + 8,
+                topPadding +
+                    8,
                 16,
                 34,
               ),
@@ -702,11 +946,21 @@ class _MeDashboardHeader extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Color(0xFF06355F),
-                    Color(0xFF0875D1),
-                    Color(0xFF12B6D6),
+                    Color(
+                      0xFF06355F,
+                    ),
+                    Color(
+                      0xFF0875D1,
+                    ),
+                    Color(
+                      0xFF12B6D6,
+                    ),
                   ],
-                  stops: [0, 0.58, 1],
+                  stops: [
+                    0,
+                    0.58,
+                    1,
+                  ],
                 ),
               ),
               child: Stack(
@@ -728,7 +982,9 @@ class _MeDashboardHeader extends StatelessWidget {
                             tooltip: 'Back',
                             onTap: onBack,
                           ),
-                          const SizedBox(width: 11),
+                          const SizedBox(
+                            width: 11,
+                          ),
                           const Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -736,13 +992,17 @@ class _MeDashboardHeader extends StatelessWidget {
                                 Text(
                                   'MY ACCOUNT',
                                   style: TextStyle(
-                                    color: Color(0xFFCBF4F7),
+                                    color: Color(
+                                      0xFFCBF4F7,
+                                    ),
                                     fontSize: 8.6,
                                     fontWeight: FontWeight.w900,
                                     letterSpacing: 1.1,
                                   ),
                                 ),
-                                SizedBox(height: 4),
+                                SizedBox(
+                                  height: 4,
+                                ),
                                 Text(
                                   'Account Center',
                                   style: TextStyle(
@@ -759,7 +1019,9 @@ class _MeDashboardHeader extends StatelessWidget {
                             tooltip: 'Account settings',
                             onTap: onManageProfile,
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(
+                            width: 8,
+                          ),
                           _HeaderCircleButton(
                             icon: Icons.logout_rounded,
                             tooltip: 'Logout',
@@ -767,21 +1029,36 @@ class _MeDashboardHeader extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 17),
+                      const SizedBox(
+                        height: 17,
+                      ),
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.all(14),
+                        padding: const EdgeInsets.all(
+                          14,
+                        ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(13),
-                          borderRadius: BorderRadius.circular(25),
+                          color: Colors.white.withAlpha(
+                            13,
+                          ),
+                          borderRadius: BorderRadius.circular(
+                            25,
+                          ),
                           border: Border.all(
-                            color: Colors.white.withAlpha(20),
+                            color: Colors.white.withAlpha(
+                              20,
+                            ),
                           ),
                           boxShadow: const [
                             BoxShadow(
-                              color: Color(0x17001226),
+                              color: Color(
+                                0x17001226,
+                              ),
                               blurRadius: 18,
-                              offset: Offset(0, 9),
+                              offset: Offset(
+                                0,
+                                9,
+                              ),
                             ),
                           ],
                         ),
@@ -795,11 +1072,12 @@ class _MeDashboardHeader extends StatelessWidget {
                                   isUploading: isUploadingProfileImage,
                                   onTap: onProfilePhotoTap,
                                 ),
-                                const SizedBox(width: 14),
+                                const SizedBox(
+                                  width: 14,
+                                ),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         name,
@@ -812,18 +1090,24 @@ class _MeDashboardHeader extends StatelessWidget {
                                           height: 1.05,
                                         ),
                                       ),
-                                      const SizedBox(height: 5),
+                                      const SizedBox(
+                                        height: 5,
+                                      ),
                                       Text(
                                         email,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                         style: const TextStyle(
-                                          color: Color(0xFFDCEEF6),
+                                          color: Color(
+                                            0xFFDCEEF6,
+                                          ),
                                           fontSize: 10.8,
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
-                                      const SizedBox(height: 9),
+                                      const SizedBox(
+                                        height: 9,
+                                      ),
                                       Wrap(
                                         spacing: 7,
                                         runSpacing: 7,
@@ -846,13 +1130,21 @@ class _MeDashboardHeader extends StatelessWidget {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 13),
+                            const SizedBox(
+                              height: 13,
+                            ),
                             Material(
-                              color: Colors.white.withAlpha(20),
-                              borderRadius: BorderRadius.circular(16),
+                              color: Colors.white.withAlpha(
+                                20,
+                              ),
+                              borderRadius: BorderRadius.circular(
+                                16,
+                              ),
                               child: InkWell(
                                 onTap: onSupplierCenter,
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(
+                                  16,
+                                ),
                                 child: Container(
                                   width: double.infinity,
                                   padding: const EdgeInsets.symmetric(
@@ -860,9 +1152,13 @@ class _MeDashboardHeader extends StatelessWidget {
                                     vertical: 10,
                                   ),
                                   decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(16),
+                                    borderRadius: BorderRadius.circular(
+                                      16,
+                                    ),
                                     border: Border.all(
-                                      color: Colors.white.withAlpha(23),
+                                      color: Colors.white.withAlpha(
+                                        23,
+                                      ),
                                     ),
                                   ),
                                   child: Row(
@@ -871,9 +1167,12 @@ class _MeDashboardHeader extends StatelessWidget {
                                         width: 31,
                                         height: 31,
                                         decoration: BoxDecoration(
-                                          color: Colors.white.withAlpha(24),
-                                          borderRadius:
-                                              BorderRadius.circular(10),
+                                          color: Colors.white.withAlpha(
+                                            24,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
                                         ),
                                         child: Icon(
                                           isApprovedSupplier
@@ -883,11 +1182,12 @@ class _MeDashboardHeader extends StatelessWidget {
                                           size: 17,
                                         ),
                                       ),
-                                      const SizedBox(width: 9),
+                                      const SizedBox(
+                                        width: 9,
+                                      ),
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
+                                          crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               isApprovedSupplier
@@ -899,13 +1199,17 @@ class _MeDashboardHeader extends StatelessWidget {
                                                 fontWeight: FontWeight.w900,
                                               ),
                                             ),
-                                            const SizedBox(height: 2),
+                                            const SizedBox(
+                                              height: 2,
+                                            ),
                                             Text(
                                               isApprovedSupplier
                                                   ? 'Manage your supplier tools and sales.'
                                                   : 'Activate supplier tools in this account.',
                                               style: const TextStyle(
-                                                color: Color(0xFFD6EDF4),
+                                                color: Color(
+                                                  0xFFD6EDF4,
+                                                ),
                                                 fontSize: 8.9,
                                                 fontWeight: FontWeight.w600,
                                               ),
@@ -938,7 +1242,9 @@ class _MeDashboardHeader extends StatelessWidget {
   }
 }
 
-class _VendorOrdersOverviewCard extends StatelessWidget {
+class _VendorOrdersOverviewCard
+    extends
+        StatelessWidget {
   const _VendorOrdersOverviewCard({
     required this.uid,
     required this.onOpenOrders,
@@ -951,82 +1257,128 @@ class _VendorOrdersOverviewCard extends StatelessWidget {
     String status,
   ) {
     final value = status.toLowerCase();
-    return value == 'pending' || value == 'accepted';
+    return value ==
+            'pending' ||
+        value ==
+            'accepted';
   }
 
   bool isCompleted(
     String status,
   ) {
     final value = status.toLowerCase();
-    return value == 'completed' || value == 'delivered';
+    return value ==
+            'completed' ||
+        value ==
+            'delivered';
   }
 
   @override
   Widget build(
     BuildContext context,
   ) {
-    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+    return StreamBuilder<
+      QuerySnapshot<
+        Map<
+          String,
+          dynamic
+        >
+      >
+    >(
       stream: FirebaseFirestore.instance
-          .collection('orders')
-          .where('vendorId', isEqualTo: uid)
+          .collection(
+            'orders',
+          )
+          .where(
+            'vendorId',
+            isEqualTo: uid,
+          )
           .snapshots(),
-      builder: (context, snapshot) {
-        final documents = snapshot.data?.docs ?? [];
-        final active = documents.where((document) {
-          final status = (document.data()['orderStatus'] ?? 'pending')
-              .toString();
-          return isActive(status);
-        }).length;
-        final completed = documents.where((document) {
-          final status = (document.data()['orderStatus'] ?? 'pending')
-              .toString();
-          return isCompleted(status);
-        }).length;
+      builder:
+          (
+            context,
+            snapshot,
+          ) {
+            final documents =
+                snapshot.data?.docs ??
+                [];
+            final active = documents.where(
+              (
+                document,
+              ) {
+                final status =
+                    (document.data()['orderStatus'] ??
+                            'pending')
+                        .toString();
+                return isActive(
+                  status,
+                );
+              },
+            ).length;
+            final completed = documents.where(
+              (
+                document,
+              ) {
+                final status =
+                    (document.data()['orderStatus'] ??
+                            'pending')
+                        .toString();
+                return isCompleted(
+                  status,
+                );
+              },
+            ).length;
 
-        return _SectionCard(
-          title: 'My Orders',
-          subtitle: 'Your Cash on Delivery order activity.',
-          icon: Icons.receipt_long_rounded,
-          actionLabel: 'View My Orders',
-          onActionTap: onOpenOrders,
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 10,
-              vertical: 12,
-            ),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F8FC),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Row(
-              children: [
-                _OverviewValue(
-                  value: '$active',
-                  label: 'Active',
-                  icon: Icons.pending_actions_rounded,
+            return _SectionCard(
+              title: 'My Orders',
+              subtitle: 'Your Cash on Delivery order activity.',
+              icon: Icons.receipt_long_rounded,
+              actionLabel: 'View My Orders',
+              onActionTap: onOpenOrders,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 12,
                 ),
-                const _MetricDivider(),
-                _OverviewValue(
-                  value: '$completed',
-                  label: 'Completed',
-                  icon: Icons.task_alt_rounded,
+                decoration: BoxDecoration(
+                  color: const Color(
+                    0xFFF1F8FC,
+                  ),
+                  borderRadius: BorderRadius.circular(
+                    18,
+                  ),
                 ),
-                const _MetricDivider(),
-                _OverviewValue(
-                  value: '${documents.length}',
-                  label: 'Total',
-                  icon: Icons.inventory_2_outlined,
+                child: Row(
+                  children: [
+                    _OverviewValue(
+                      value: '$active',
+                      label: 'Active',
+                      icon: Icons.pending_actions_rounded,
+                    ),
+                    const _MetricDivider(),
+                    _OverviewValue(
+                      value: '$completed',
+                      label: 'Completed',
+                      icon: Icons.task_alt_rounded,
+                    ),
+                    const _MetricDivider(),
+                    _OverviewValue(
+                      value: '${documents.length}',
+                      label: 'Total',
+                      icon: Icons.inventory_2_outlined,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-        );
-      },
+              ),
+            );
+          },
     );
   }
 }
 
-class _SupplierCenterCard extends StatelessWidget {
+class _SupplierCenterCard
+    extends
+        StatelessWidget {
   const _SupplierCenterCard({
     required this.uid,
     required this.onOpenDashboard,
@@ -1047,204 +1399,320 @@ class _SupplierCenterCard extends StatelessWidget {
   Widget build(
     BuildContext context,
   ) {
-    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+    return StreamBuilder<
+      QuerySnapshot<
+        Map<
+          String,
+          dynamic
+        >
+      >
+    >(
       stream: FirebaseFirestore.instance
-          .collection('orders')
-          .where('supplierId', isEqualTo: uid)
+          .collection(
+            'orders',
+          )
+          .where(
+            'supplierId',
+            isEqualTo: uid,
+          )
           .snapshots(),
-      builder: (context, orderSnapshot) {
-        final orders = orderSnapshot.data?.docs ?? [];
-        final pending = orders.where((document) {
-          final status = (document.data()['orderStatus'] ?? '')
-              .toString()
-              .toLowerCase();
-          return status == 'pending';
-        }).length;
-        final active = orders.where((document) {
-          final status = (document.data()['orderStatus'] ?? '')
-              .toString()
-              .toLowerCase();
-          return status == 'pending' || status == 'accepted';
-        }).length;
-        final completed = orders.where((document) {
-          final status = (document.data()['orderStatus'] ?? '')
-              .toString()
-              .toLowerCase();
-          return status == 'completed' || status == 'delivered';
-        }).length;
+      builder:
+          (
+            context,
+            orderSnapshot,
+          ) {
+            final orders =
+                orderSnapshot.data?.docs ??
+                [];
+            final pending = orders.where(
+              (
+                document,
+              ) {
+                final status =
+                    (document.data()['orderStatus'] ??
+                            '')
+                        .toString()
+                        .toLowerCase();
+                return status ==
+                    'pending';
+              },
+            ).length;
+            final active = orders.where(
+              (
+                document,
+              ) {
+                final status =
+                    (document.data()['orderStatus'] ??
+                            '')
+                        .toString()
+                        .toLowerCase();
+                return status ==
+                        'pending' ||
+                    status ==
+                        'accepted';
+              },
+            ).length;
+            final completed = orders.where(
+              (
+                document,
+              ) {
+                final status =
+                    (document.data()['orderStatus'] ??
+                            '')
+                        .toString()
+                        .toLowerCase();
+                return status ==
+                        'completed' ||
+                    status ==
+                        'delivered';
+              },
+            ).length;
 
-        return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-          stream: FirebaseFirestore.instance
-              .collection('fishStocks')
-              .where('supplierId', isEqualTo: uid)
-              .snapshots(),
-          builder: (context, stockSnapshot) {
-            final stocks = stockSnapshot.data?.docs ?? [];
-            final activeStocks = stocks.where((document) {
-              final data = document.data();
-              final status = (data['status'] ?? 'available')
-                  .toString()
-                  .toLowerCase();
-              final quantityValue = data['quantity'];
-              final quantity = quantityValue is num
-                  ? quantityValue.toDouble()
-                  : double.tryParse(quantityValue?.toString() ?? '') ?? 0;
-              return status != 'unavailable' && quantity > 0;
-            }).length;
+            return StreamBuilder<
+              QuerySnapshot<
+                Map<
+                  String,
+                  dynamic
+                >
+              >
+            >(
+              stream: FirebaseFirestore.instance
+                  .collection(
+                    'fishStocks',
+                  )
+                  .where(
+                    'supplierId',
+                    isEqualTo: uid,
+                  )
+                  .snapshots(),
+              builder:
+                  (
+                    context,
+                    stockSnapshot,
+                  ) {
+                    final stocks =
+                        stockSnapshot.data?.docs ??
+                        [];
+                    final activeStocks = stocks.where(
+                      (
+                        document,
+                      ) {
+                        final data = document.data();
+                        final status =
+                            (data['status'] ??
+                                    'available')
+                                .toString()
+                                .toLowerCase();
+                        final quantityValue = data['quantity'];
+                        final quantity =
+                            quantityValue
+                                is num
+                            ? quantityValue.toDouble()
+                            : double.tryParse(
+                                    quantityValue?.toString() ??
+                                        '',
+                                  ) ??
+                                  0;
+                        return status !=
+                                'unavailable' &&
+                            quantity >
+                                0;
+                      },
+                    ).length;
 
-            return _SectionCard(
-              title: 'Supplier Center',
-              subtitle: 'Manage stock, COD orders, and supplier analytics.',
-              icon: Icons.storefront_rounded,
-              actionLabel: 'Open Dashboard',
-              onActionTap: onOpenDashboard,
-              child: Column(
-                children: [
-                  if (pending > 0) ...[
-                    Material(
-                      color: const Color(0xFFFFF7E8),
-                      borderRadius: BorderRadius.circular(17),
-                      child: InkWell(
-                        onTap: onOrders,
-                        borderRadius: BorderRadius.circular(17),
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(17),
-                            border: Border.all(
-                              color: const Color(0xFFFF7A1A).withAlpha(55),
+                    return _SectionCard(
+                      title: 'Supplier Center',
+                      subtitle: 'Manage stock, COD orders, and supplier analytics.',
+                      icon: Icons.storefront_rounded,
+                      actionLabel: 'Open Dashboard',
+                      onActionTap: onOpenDashboard,
+                      child: Column(
+                        children: [
+                          if (pending >
+                              0) ...[
+                            Material(
+                              color: const Color(
+                                0xFFFFF7E8,
+                              ),
+                              borderRadius: BorderRadius.circular(
+                                17,
+                              ),
+                              child: InkWell(
+                                onTap: onOrders,
+                                borderRadius: BorderRadius.circular(
+                                  17,
+                                ),
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(
+                                    12,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(
+                                      17,
+                                    ),
+                                    border: Border.all(
+                                      color:
+                                          const Color(
+                                            0xFFFF7A1A,
+                                          ).withAlpha(
+                                            55,
+                                          ),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 40,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          color: const Color(
+                                            0xFFFF7A1A,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            13,
+                                          ),
+                                        ),
+                                        child: const Icon(
+                                          Icons.notifications_active_outlined,
+                                          color: Colors.white,
+                                          size: 20,
+                                        ),
+                                      ),
+                                      const SizedBox(
+                                        width: 10,
+                                      ),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              '$pending pending COD order'
+                                              '${pending == 1 ? '' : 's'}',
+                                              style: const TextStyle(
+                                                color: Color(
+                                                  0xFF102C44,
+                                                ),
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w900,
+                                              ),
+                                            ),
+                                            const SizedBox(
+                                              height: 3,
+                                            ),
+                                            const Text(
+                                              'Review and respond to new orders.',
+                                              style: TextStyle(
+                                                color: Color(
+                                                  0xFF7B8FA3,
+                                                ),
+                                                fontSize: 9.4,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const Icon(
+                                        Icons.arrow_forward_rounded,
+                                        color: Color(
+                                          0xFFFF7A1A,
+                                        ),
+                                        size: 19,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
-                          child: Row(
+                            const SizedBox(
+                              height: 13,
+                            ),
+                          ],
+                          Row(
                             children: [
-                              Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFF7A1A),
-                                  borderRadius: BorderRadius.circular(13),
-                                ),
-                                child: const Icon(
-                                  Icons.notifications_active_outlined,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
                               Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '$pending pending COD order'
-                                      '${pending == 1 ? '' : 's'}',
-                                      style: const TextStyle(
-                                        color: Color(0xFF102C44),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w900,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 3),
-                                    const Text(
-                                      'Review and respond to new orders.',
-                                      style: TextStyle(
-                                        color: Color(0xFF7B8FA3),
-                                        fontSize: 9.4,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
+                                child: _DashboardShortcut(
+                                  icon: Icons.add_box_outlined,
+                                  label: 'Post Stock',
+                                  onTap: onPostStock,
                                 ),
                               ),
-                              const Icon(
-                                Icons.arrow_forward_rounded,
-                                color: Color(0xFFFF7A1A),
-                                size: 19,
+                              Expanded(
+                                child: _DashboardShortcut(
+                                  icon: Icons.inventory_2_outlined,
+                                  label: 'Products',
+                                  onTap: onProducts,
+                                ),
+                              ),
+                              Expanded(
+                                child: _DashboardShortcut(
+                                  icon: Icons.receipt_long_outlined,
+                                  label: 'COD Orders',
+                                  badge: pending,
+                                  onTap: onOrders,
+                                ),
+                              ),
+                              Expanded(
+                                child: _DashboardShortcut(
+                                  icon: Icons.bar_chart_rounded,
+                                  label: 'Analytics',
+                                  onTap: onAnalytics,
+                                ),
                               ),
                             ],
                           ),
-                        ),
+                          const SizedBox(
+                            height: 13,
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(
+                                0xFFF1F8FC,
+                              ),
+                              borderRadius: BorderRadius.circular(
+                                18,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                _OverviewValue(
+                                  value: '$activeStocks',
+                                  label: 'Stocks',
+                                  icon: Icons.inventory_outlined,
+                                ),
+                                const _MetricDivider(),
+                                _OverviewValue(
+                                  value: '$active',
+                                  label: 'Active COD',
+                                  icon: Icons.pending_actions_rounded,
+                                ),
+                                const _MetricDivider(),
+                                _OverviewValue(
+                                  value: '$completed',
+                                  label: 'Completed',
+                                  icon: Icons.task_alt_rounded,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 13),
-                  ],
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _DashboardShortcut(
-                          icon: Icons.add_box_outlined,
-                          label: 'Post Stock',
-                          onTap: onPostStock,
-                        ),
-                      ),
-                      Expanded(
-                        child: _DashboardShortcut(
-                          icon: Icons.inventory_2_outlined,
-                          label: 'Products',
-                          onTap: onProducts,
-                        ),
-                      ),
-                      Expanded(
-                        child: _DashboardShortcut(
-                          icon: Icons.receipt_long_outlined,
-                          label: 'COD Orders',
-                          badge: pending,
-                          onTap: onOrders,
-                        ),
-                      ),
-                      Expanded(
-                        child: _DashboardShortcut(
-                          icon: Icons.bar_chart_rounded,
-                          label: 'Analytics',
-                          onTap: onAnalytics,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 13),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF1F8FC),
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: Row(
-                      children: [
-                        _OverviewValue(
-                          value: '$activeStocks',
-                          label: 'Stocks',
-                          icon: Icons.inventory_outlined,
-                        ),
-                        const _MetricDivider(),
-                        _OverviewValue(
-                          value: '$active',
-                          label: 'Active COD',
-                          icon: Icons.pending_actions_rounded,
-                        ),
-                        const _MetricDivider(),
-                        _OverviewValue(
-                          value: '$completed',
-                          label: 'Completed',
-                          icon: Icons.task_alt_rounded,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                    );
+                  },
             );
           },
-        );
-      },
     );
   }
 }
 
-class _SupplierActivationCard extends StatelessWidget {
+class _SupplierActivationCard
+    extends
+        StatelessWidget {
   const _SupplierActivationCard({
     required this.isPending,
     required this.isRejected,
@@ -1262,42 +1730,63 @@ class _SupplierActivationCard extends StatelessWidget {
     final title = isPending
         ? 'Supplier Application Pending'
         : isRejected
-            ? 'Supplier Application Rejected'
-            : 'Become a Supplier';
+        ? 'Supplier Application Rejected'
+        : 'Become a Supplier';
     final subtitle = isPending
         ? 'Your application is waiting for administrator review.'
         : isRejected
-            ? 'Review your information before submitting again.'
-            : 'Activate supplier tools in your existing account.';
+        ? 'Review your information before submitting again.'
+        : 'Activate supplier tools in your existing account.';
     final icon = isPending
         ? Icons.hourglass_top_rounded
         : isRejected
-            ? Icons.info_outline_rounded
-            : Icons.storefront_rounded;
+        ? Icons.info_outline_rounded
+        : Icons.storefront_rounded;
     final color = isPending
-        ? const Color(0xFFFF7A1A)
+        ? const Color(
+            0xFFFF7A1A,
+          )
         : isRejected
-            ? const Color(0xFFD32F2F)
-            : const Color(0xFF0875D1);
+        ? const Color(
+            0xFFD32F2F,
+          )
+        : const Color(
+            0xFF0875D1,
+          );
 
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(23),
+      borderRadius: BorderRadius.circular(
+        23,
+      ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(23),
+        borderRadius: BorderRadius.circular(
+          23,
+        ),
         child: Container(
-          padding: const EdgeInsets.all(15),
+          padding: const EdgeInsets.all(
+            15,
+          ),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(23),
+            borderRadius: BorderRadius.circular(
+              23,
+            ),
             border: Border.all(
-              color: color.withAlpha(40),
+              color: color.withAlpha(
+                40,
+              ),
             ),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x0D00152A),
+                color: Color(
+                  0x0D00152A,
+                ),
                 blurRadius: 13,
-                offset: Offset(0, 6),
+                offset: Offset(
+                  0,
+                  6,
+                ),
               ),
             ],
           ),
@@ -1307,8 +1796,12 @@ class _SupplierActivationCard extends StatelessWidget {
                 width: 46,
                 height: 46,
                 decoration: BoxDecoration(
-                  color: color.withAlpha(18),
-                  borderRadius: BorderRadius.circular(15),
+                  color: color.withAlpha(
+                    18,
+                  ),
+                  borderRadius: BorderRadius.circular(
+                    15,
+                  ),
                 ),
                 child: Icon(
                   icon,
@@ -1316,7 +1809,9 @@ class _SupplierActivationCard extends StatelessWidget {
                   size: 23,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(
+                width: 12,
+              ),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1324,16 +1819,22 @@ class _SupplierActivationCard extends StatelessWidget {
                     Text(
                       title,
                       style: const TextStyle(
-                        color: Color(0xFF102C44),
+                        color: Color(
+                          0xFF102C44,
+                        ),
                         fontSize: 14,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(
+                      height: 4,
+                    ),
                     Text(
                       subtitle,
                       style: const TextStyle(
-                        color: Color(0xFF7B8FA3),
+                        color: Color(
+                          0xFF7B8FA3,
+                        ),
                         fontSize: 10.4,
                         height: 1.35,
                         fontWeight: FontWeight.w600,
@@ -1355,7 +1856,9 @@ class _SupplierActivationCard extends StatelessWidget {
   }
 }
 
-class _AccountSettingsCard extends StatelessWidget {
+class _AccountSettingsCard
+    extends
+        StatelessWidget {
   const _AccountSettingsCard({
     required this.onAccountInformation,
     required this.onRegionAndLocation,
@@ -1400,7 +1903,9 @@ class _AccountSettingsCard extends StatelessWidget {
             icon: Icons.logout_rounded,
             title: 'Logout',
             subtitle: 'Return to the welcome screen',
-            color: const Color(0xFFD32F2F),
+            color: const Color(
+              0xFFD32F2F,
+            ),
             showDivider: false,
             onTap: onLogout,
           ),
@@ -1410,7 +1915,9 @@ class _AccountSettingsCard extends StatelessWidget {
   }
 }
 
-class _SectionCard extends StatelessWidget {
+class _SectionCard
+    extends
+        StatelessWidget {
   const _SectionCard({
     required this.title,
     required this.subtitle,
@@ -1432,18 +1939,29 @@ class _SectionCard extends StatelessWidget {
     BuildContext context,
   ) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(
+        14,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(23),
+        borderRadius: BorderRadius.circular(
+          23,
+        ),
         border: Border.all(
-          color: const Color(0xFFE1ECF2),
+          color: const Color(
+            0xFFE1ECF2,
+          ),
         ),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x0D00152A),
+            color: Color(
+              0x0D00152A,
+            ),
             blurRadius: 13,
-            offset: Offset(0, 6),
+            offset: Offset(
+              0,
+              6,
+            ),
           ),
         ],
       ),
@@ -1456,16 +1974,24 @@ class _SectionCard extends StatelessWidget {
                 width: 39,
                 height: 39,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE8F8FD),
-                  borderRadius: BorderRadius.circular(13),
+                  color: const Color(
+                    0xFFE8F8FD,
+                  ),
+                  borderRadius: BorderRadius.circular(
+                    13,
+                  ),
                 ),
                 child: Icon(
                   icon,
-                  color: const Color(0xFF0875D1),
+                  color: const Color(
+                    0xFF0875D1,
+                  ),
                   size: 20,
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(
+                width: 10,
+              ),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1473,18 +1999,24 @@ class _SectionCard extends StatelessWidget {
                     Text(
                       title,
                       style: const TextStyle(
-                        color: Color(0xFF102C44),
+                        color: Color(
+                          0xFF102C44,
+                        ),
                         fontSize: 15.5,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(
+                      height: 3,
+                    ),
                     Text(
                       subtitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: Color(0xFF7B8FA3),
+                        color: Color(
+                          0xFF7B8FA3,
+                        ),
                         fontSize: 9.8,
                         height: 1.25,
                         fontWeight: FontWeight.w600,
@@ -1493,11 +2025,16 @@ class _SectionCard extends StatelessWidget {
                   ],
                 ),
               ),
-              if (actionLabel != null && onActionTap != null)
+              if (actionLabel !=
+                      null &&
+                  onActionTap !=
+                      null)
                 TextButton(
                   onPressed: onActionTap,
                   style: TextButton.styleFrom(
-                    foregroundColor: const Color(0xFF0875D1),
+                    foregroundColor: const Color(
+                      0xFF0875D1,
+                    ),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
                       vertical: 6,
@@ -1515,7 +2052,9 @@ class _SectionCard extends StatelessWidget {
                           fontWeight: FontWeight.w900,
                         ),
                       ),
-                      const SizedBox(width: 3),
+                      const SizedBox(
+                        width: 3,
+                      ),
                       const Icon(
                         Icons.arrow_forward_rounded,
                         size: 14,
@@ -1525,7 +2064,9 @@ class _SectionCard extends StatelessWidget {
                 ),
             ],
           ),
-          const SizedBox(height: 13),
+          const SizedBox(
+            height: 13,
+          ),
           child,
         ],
       ),
@@ -1533,7 +2074,9 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
-class _OverviewValue extends StatelessWidget {
+class _OverviewValue
+    extends
+        StatelessWidget {
   const _OverviewValue({
     required this.value,
     required this.label,
@@ -1553,25 +2096,35 @@ class _OverviewValue extends StatelessWidget {
         children: [
           Icon(
             icon,
-            color: const Color(0xFF0875D1),
+            color: const Color(
+              0xFF0875D1,
+            ),
             size: 16,
           ),
-          const SizedBox(height: 5),
+          const SizedBox(
+            height: 5,
+          ),
           Text(
             value,
             style: const TextStyle(
-              color: Color(0xFF102C44),
+              color: Color(
+                0xFF102C44,
+              ),
               fontSize: 16,
               fontWeight: FontWeight.w900,
               height: 1,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(
+            height: 4,
+          ),
           Text(
             label,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              color: Color(0xFF7B8FA3),
+              color: Color(
+                0xFF7B8FA3,
+              ),
               fontSize: 8.8,
               fontWeight: FontWeight.w700,
             ),
@@ -1582,7 +2135,9 @@ class _OverviewValue extends StatelessWidget {
   }
 }
 
-class _MetricDivider extends StatelessWidget {
+class _MetricDivider
+    extends
+        StatelessWidget {
   const _MetricDivider();
 
   @override
@@ -1592,12 +2147,16 @@ class _MetricDivider extends StatelessWidget {
     return Container(
       width: 1,
       height: 43,
-      color: const Color(0xFFDDE9F1),
+      color: const Color(
+        0xFFDDE9F1,
+      ),
     );
   }
 }
 
-class _DashboardShortcut extends StatelessWidget {
+class _DashboardShortcut
+    extends
+        StatelessWidget {
   const _DashboardShortcut({
     required this.icon,
     required this.label,
@@ -1616,10 +2175,14 @@ class _DashboardShortcut extends StatelessWidget {
   ) {
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(15),
+      borderRadius: BorderRadius.circular(
+        15,
+      ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(
+          15,
+        ),
         child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: 3,
@@ -1634,16 +2197,23 @@ class _DashboardShortcut extends StatelessWidget {
                     width: 43,
                     height: 43,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE8F8FD),
-                      borderRadius: BorderRadius.circular(15),
+                      color: const Color(
+                        0xFFE8F8FD,
+                      ),
+                      borderRadius: BorderRadius.circular(
+                        15,
+                      ),
                     ),
                     child: Icon(
                       icon,
-                      color: const Color(0xFF0875D1),
+                      color: const Color(
+                        0xFF0875D1,
+                      ),
                       size: 21,
                     ),
                   ),
-                  if (badge > 0)
+                  if (badge >
+                      0)
                     Positioned(
                       right: -4,
                       top: -5,
@@ -1653,17 +2223,26 @@ class _DashboardShortcut extends StatelessWidget {
                           minHeight: 19,
                         ),
                         alignment: Alignment.center,
-                        padding: const EdgeInsets.symmetric(horizontal: 5),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                        ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFF4D38),
-                          borderRadius: BorderRadius.circular(99),
+                          color: const Color(
+                            0xFFFF4D38,
+                          ),
+                          borderRadius: BorderRadius.circular(
+                            99,
+                          ),
                           border: Border.all(
                             color: Colors.white,
                             width: 2,
                           ),
                         ),
                         child: Text(
-                          badge > 99 ? '99+' : '$badge',
+                          badge >
+                                  99
+                              ? '99+'
+                              : '$badge',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 8,
@@ -1674,14 +2253,18 @@ class _DashboardShortcut extends StatelessWidget {
                     ),
                 ],
               ),
-              const SizedBox(height: 7),
+              const SizedBox(
+                height: 7,
+              ),
               Text(
                 label,
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  color: Color(0xFF52677A),
+                  color: Color(
+                    0xFF52677A,
+                  ),
                   fontSize: 8.8,
                   fontWeight: FontWeight.w800,
                 ),
@@ -1694,13 +2277,17 @@ class _DashboardShortcut extends StatelessWidget {
   }
 }
 
-class _SettingsTile extends StatelessWidget {
+class _SettingsTile
+    extends
+        StatelessWidget {
   const _SettingsTile({
     required this.icon,
     required this.title,
     required this.subtitle,
     required this.onTap,
-    this.color = const Color(0xFF0875D1),
+    this.color = const Color(
+      0xFF0875D1,
+    ),
     this.showDivider = true,
   });
 
@@ -1719,20 +2306,30 @@ class _SettingsTile extends StatelessWidget {
       children: [
         Material(
           color: Colors.transparent,
-          borderRadius: BorderRadius.circular(15),
+          borderRadius: BorderRadius.circular(
+            15,
+          ),
           child: InkWell(
             onTap: onTap,
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(
+              15,
+            ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+              padding: const EdgeInsets.symmetric(
+                vertical: 8,
+              ),
               child: Row(
                 children: [
                   Container(
                     width: 39,
                     height: 39,
                     decoration: BoxDecoration(
-                      color: color.withAlpha(17),
-                      borderRadius: BorderRadius.circular(13),
+                      color: color.withAlpha(
+                        17,
+                      ),
+                      borderRadius: BorderRadius.circular(
+                        13,
+                      ),
                     ),
                     child: Icon(
                       icon,
@@ -1740,7 +2337,9 @@ class _SettingsTile extends StatelessWidget {
                       size: 19,
                     ),
                   ),
-                  const SizedBox(width: 11),
+                  const SizedBox(
+                    width: 11,
+                  ),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1748,18 +2347,28 @@ class _SettingsTile extends StatelessWidget {
                         Text(
                           title,
                           style: TextStyle(
-                            color: color == const Color(0xFFD32F2F)
+                            color:
+                                color ==
+                                    const Color(
+                                      0xFFD32F2F,
+                                    )
                                 ? color
-                                : const Color(0xFF102C44),
+                                : const Color(
+                                    0xFF102C44,
+                                  ),
                             fontSize: 11.8,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
-                        const SizedBox(height: 3),
+                        const SizedBox(
+                          height: 3,
+                        ),
                         Text(
                           subtitle,
                           style: const TextStyle(
-                            color: Color(0xFF7B8FA3),
+                            color: Color(
+                              0xFF7B8FA3,
+                            ),
                             fontSize: 9.2,
                             fontWeight: FontWeight.w600,
                           ),
@@ -1769,7 +2378,9 @@ class _SettingsTile extends StatelessWidget {
                   ),
                   const Icon(
                     Icons.arrow_forward_ios_rounded,
-                    color: Color(0xFF9FB0BC),
+                    color: Color(
+                      0xFF9FB0BC,
+                    ),
                     size: 14,
                   ),
                 ],
@@ -1781,14 +2392,18 @@ class _SettingsTile extends StatelessWidget {
           const Divider(
             height: 1,
             indent: 50,
-            color: Color(0xFFE6EEF3),
+            color: Color(
+              0xFFE6EEF3,
+            ),
           ),
       ],
     );
   }
 }
 
-class _ProfileAvatar extends StatelessWidget {
+class _ProfileAvatar
+    extends
+        StatelessWidget {
   const _ProfileAvatar({
     required this.imageUrl,
     required this.isSupplier,
@@ -1807,7 +2422,12 @@ class _ProfileAvatar extends StatelessWidget {
 
   bool get hasImage {
     final value = imageUrl.trim();
-    return value.startsWith('http://') || value.startsWith('https://');
+    return value.startsWith(
+          'http://',
+        ) ||
+        value.startsWith(
+          'https://',
+        );
   }
 
   @override
@@ -1815,10 +2435,16 @@ class _ProfileAvatar extends StatelessWidget {
     BuildContext context,
   ) {
     return GestureDetector(
-      onTap: isUploading ? null : onTap,
+      onTap: isUploading
+          ? null
+          : onTap,
       child: SizedBox(
-        width: size + 8,
-        height: size + 8,
+        width:
+            size +
+            8,
+        height:
+            size +
+            8,
         child: Stack(
           clipBehavior: Clip.none,
           children: [
@@ -1834,9 +2460,14 @@ class _ProfileAvatar extends StatelessWidget {
                 ),
                 boxShadow: const [
                   BoxShadow(
-                    color: Color(0x24001226),
+                    color: Color(
+                      0x24001226,
+                    ),
                     blurRadius: 13,
-                    offset: Offset(0, 6),
+                    offset: Offset(
+                      0,
+                      6,
+                    ),
                   ),
                 ],
               ),
@@ -1848,23 +2479,30 @@ class _ProfileAvatar extends StatelessWidget {
                           height: 22,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Color(0xFF0875D1),
+                            color: Color(
+                              0xFF0875D1,
+                            ),
                           ),
                         ),
                       )
                     : hasImage
-                        ? Image.network(
-                            imageUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) {
+                    ? Image.network(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder:
+                            (
+                              _,
+                              _,
+                              _,
+                            ) {
                               return _AvatarFallback(
                                 isSupplier: isSupplier,
                               );
                             },
-                          )
-                        : _AvatarFallback(
-                            isSupplier: isSupplier,
-                          ),
+                      )
+                    : _AvatarFallback(
+                        isSupplier: isSupplier,
+                      ),
               ),
             ),
             if (showCameraBadge)
@@ -1875,7 +2513,9 @@ class _ProfileAvatar extends StatelessWidget {
                   width: 27,
                   height: 27,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0875D1),
+                    color: const Color(
+                      0xFF0875D1,
+                    ),
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: Colors.white,
@@ -1896,7 +2536,9 @@ class _ProfileAvatar extends StatelessWidget {
   }
 }
 
-class _AvatarFallback extends StatelessWidget {
+class _AvatarFallback
+    extends
+        StatelessWidget {
   const _AvatarFallback({
     required this.isSupplier,
   });
@@ -1908,17 +2550,25 @@ class _AvatarFallback extends StatelessWidget {
     BuildContext context,
   ) {
     return Container(
-      color: const Color(0xFFEAF8FC),
+      color: const Color(
+        0xFFEAF8FC,
+      ),
       child: Icon(
-        isSupplier ? Icons.storefront_rounded : Icons.person_rounded,
-        color: const Color(0xFF0875D1),
+        isSupplier
+            ? Icons.storefront_rounded
+            : Icons.person_rounded,
+        color: const Color(
+          0xFF0875D1,
+        ),
         size: 36,
       ),
     );
   }
 }
 
-class _HeaderCircleButton extends StatelessWidget {
+class _HeaderCircleButton
+    extends
+        StatelessWidget {
   const _HeaderCircleButton({
     required this.icon,
     required this.tooltip,
@@ -1936,7 +2586,9 @@ class _HeaderCircleButton extends StatelessWidget {
     return Tooltip(
       message: tooltip,
       child: Material(
-        color: Colors.white.withAlpha(24),
+        color: Colors.white.withAlpha(
+          24,
+        ),
         shape: const CircleBorder(),
         child: InkWell(
           onTap: onTap,
@@ -1956,7 +2608,9 @@ class _HeaderCircleButton extends StatelessWidget {
   }
 }
 
-class _HeaderBadge extends StatelessWidget {
+class _HeaderBadge
+    extends
+        StatelessWidget {
   const _HeaderBadge({
     required this.icon,
     required this.label,
@@ -1978,13 +2632,27 @@ class _HeaderBadge extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: highlight
-            ? const Color(0xFFFFC857).withAlpha(36)
-            : Colors.white.withAlpha(20),
-        borderRadius: BorderRadius.circular(99),
+            ? const Color(
+                0xFFFFC857,
+              ).withAlpha(
+                36,
+              )
+            : Colors.white.withAlpha(
+                20,
+              ),
+        borderRadius: BorderRadius.circular(
+          99,
+        ),
         border: Border.all(
           color: highlight
-              ? const Color(0xFFFFD978).withAlpha(55)
-              : Colors.white.withAlpha(26),
+              ? const Color(
+                  0xFFFFD978,
+                ).withAlpha(
+                  55,
+                )
+              : Colors.white.withAlpha(
+                  26,
+                ),
         ),
       ),
       child: Row(
@@ -1993,13 +2661,21 @@ class _HeaderBadge extends StatelessWidget {
           Icon(
             icon,
             color: highlight
-                ? const Color(0xFFFFD66B)
-                : const Color(0xFFEAF8FC),
+                ? const Color(
+                    0xFFFFD66B,
+                  )
+                : const Color(
+                    0xFFEAF8FC,
+                  ),
             size: 12,
           ),
-          const SizedBox(width: 5),
+          const SizedBox(
+            width: 5,
+          ),
           ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 140),
+            constraints: const BoxConstraints(
+              maxWidth: 140,
+            ),
             child: Text(
               label,
               maxLines: 1,
@@ -2017,7 +2693,9 @@ class _HeaderBadge extends StatelessWidget {
   }
 }
 
-class _ProfilePhotoAction extends StatelessWidget {
+class _ProfilePhotoAction
+    extends
+        StatelessWidget {
   const _ProfilePhotoAction({
     required this.icon,
     required this.title,
@@ -2037,25 +2715,39 @@ class _ProfilePhotoAction extends StatelessWidget {
     BuildContext context,
   ) {
     final color = isDanger
-        ? const Color(0xFFD32F2F)
-        : const Color(0xFF0875D1);
+        ? const Color(
+            0xFFD32F2F,
+          )
+        : const Color(
+            0xFF0875D1,
+          );
 
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(
+        18,
+      ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(
+          18,
+        ),
         child: Padding(
-          padding: const EdgeInsets.all(13),
+          padding: const EdgeInsets.all(
+            13,
+          ),
           child: Row(
             children: [
               Container(
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: color.withAlpha(17),
-                  borderRadius: BorderRadius.circular(14),
+                  color: color.withAlpha(
+                    17,
+                  ),
+                  borderRadius: BorderRadius.circular(
+                    14,
+                  ),
                 ),
                 child: Icon(
                   icon,
@@ -2063,7 +2755,9 @@ class _ProfilePhotoAction extends StatelessWidget {
                   size: 21,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(
+                width: 12,
+              ),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -2076,11 +2770,15 @@ class _ProfilePhotoAction extends StatelessWidget {
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(
+                      height: 3,
+                    ),
                     Text(
                       subtitle,
                       style: const TextStyle(
-                        color: Color(0xFF7B8FA3),
+                        color: Color(
+                          0xFF7B8FA3,
+                        ),
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
                       ),
@@ -2101,7 +2799,9 @@ class _ProfilePhotoAction extends StatelessWidget {
   }
 }
 
-class _MeLoadingBody extends StatelessWidget {
+class _MeLoadingBody
+    extends
+        StatelessWidget {
   const _MeLoadingBody();
 
   @override
@@ -2109,18 +2809,26 @@ class _MeLoadingBody extends StatelessWidget {
     BuildContext context,
   ) {
     return const Scaffold(
-      backgroundColor: Color(0xFFF4F8FB),
+      backgroundColor: Color(
+        0xFFF4F8FB,
+      ),
       body: Center(
         child: CircularProgressIndicator(
           strokeWidth: 2,
-          color: Color(0xFF0875D1),
+          color: Color(
+            0xFF0875D1,
+          ),
         ),
       ),
     );
   }
 }
 
-class _MeHeaderClipper extends CustomClipper<Path> {
+class _MeHeaderClipper
+    extends
+        CustomClipper<
+          Path
+        > {
   const _MeHeaderClipper();
 
   @override
@@ -2128,37 +2836,65 @@ class _MeHeaderClipper extends CustomClipper<Path> {
     Size size,
   ) {
     return Path()
-      ..moveTo(0, 0)
-      ..lineTo(0, size.height - 31)
-      ..cubicTo(
-        size.width * 0.18,
-        size.height - 16,
-        size.width * 0.38,
-        size.height - 7,
-        size.width * 0.57,
-        size.height - 11,
+      ..moveTo(
+        0,
+        0,
+      )
+      ..lineTo(
+        0,
+        size.height -
+            31,
       )
       ..cubicTo(
-        size.width * 0.74,
-        size.height - 15,
-        size.width * 0.88,
-        size.height - 29,
-        size.width + 8,
-        size.height - 32,
+        size.width *
+            0.18,
+        size.height -
+            16,
+        size.width *
+            0.38,
+        size.height -
+            7,
+        size.width *
+            0.57,
+        size.height -
+            11,
       )
-      ..lineTo(size.width + 8, 0)
+      ..cubicTo(
+        size.width *
+            0.74,
+        size.height -
+            15,
+        size.width *
+            0.88,
+        size.height -
+            29,
+        size.width +
+            8,
+        size.height -
+            32,
+      )
+      ..lineTo(
+        size.width +
+            8,
+        0,
+      )
       ..close();
   }
 
   @override
   bool shouldReclip(
-    covariant CustomClipper<Path> oldClipper,
+    covariant CustomClipper<
+      Path
+    >
+    oldClipper,
   ) {
     return false;
   }
 }
 
-class _MeHeaderWavePainter extends CustomPainter {
+class _MeHeaderWavePainter
+    extends
+        CustomPainter {
   const _MeHeaderWavePainter();
 
   @override
@@ -2167,26 +2903,44 @@ class _MeHeaderWavePainter extends CustomPainter {
     Size size,
   ) {
     final path = Path()
-      ..moveTo(-8, size.height - 31)
-      ..cubicTo(
-        size.width * 0.18,
-        size.height - 16,
-        size.width * 0.38,
-        size.height - 7,
-        size.width * 0.57,
-        size.height - 11,
+      ..moveTo(
+        -8,
+        size.height -
+            31,
       )
       ..cubicTo(
-        size.width * 0.74,
-        size.height - 15,
-        size.width * 0.88,
-        size.height - 29,
-        size.width + 10,
-        size.height - 32,
+        size.width *
+            0.18,
+        size.height -
+            16,
+        size.width *
+            0.38,
+        size.height -
+            7,
+        size.width *
+            0.57,
+        size.height -
+            11,
+      )
+      ..cubicTo(
+        size.width *
+            0.74,
+        size.height -
+            15,
+        size.width *
+            0.88,
+        size.height -
+            29,
+        size.width +
+            10,
+        size.height -
+            32,
       );
 
     final shadow = Paint()
-      ..color = Colors.black.withAlpha(27)
+      ..color = Colors.black.withAlpha(
+        27,
+      )
       ..style = PaintingStyle.stroke
       ..strokeWidth = 14
       ..strokeCap = StrokeCap.round
@@ -2196,34 +2950,53 @@ class _MeHeaderWavePainter extends CustomPainter {
       );
 
     final accent = Paint()
-      ..shader = const LinearGradient(
-        colors: [
-          Color(0xFF0A75C8),
-          Color(0xFF18BDD8),
-          Color(0xFF7BE9ED),
-        ],
-      ).createShader(
-        Rect.fromLTWH(
-          0,
-          size.height - 45,
-          size.width,
-          32,
-        ),
-      )
+      ..shader =
+          const LinearGradient(
+            colors: [
+              Color(
+                0xFF0A75C8,
+              ),
+              Color(
+                0xFF18BDD8,
+              ),
+              Color(
+                0xFF7BE9ED,
+              ),
+            ],
+          ).createShader(
+            Rect.fromLTWH(
+              0,
+              size.height -
+                  45,
+              size.width,
+              32,
+            ),
+          )
       ..style = PaintingStyle.stroke
       ..strokeWidth = 8
       ..strokeCap = StrokeCap.round;
 
     final foam = Paint()
-      ..color = Colors.white.withAlpha(95)
+      ..color = Colors.white.withAlpha(
+        95,
+      )
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2
       ..strokeCap = StrokeCap.round;
 
     canvas
-      ..drawPath(path, shadow)
-      ..drawPath(path, accent)
-      ..drawPath(path, foam);
+      ..drawPath(
+        path,
+        shadow,
+      )
+      ..drawPath(
+        path,
+        accent,
+      )
+      ..drawPath(
+        path,
+        foam,
+      );
   }
 
   @override
@@ -2234,7 +3007,9 @@ class _MeHeaderWavePainter extends CustomPainter {
   }
 }
 
-class _MeHeaderBackdropPainter extends CustomPainter {
+class _MeHeaderBackdropPainter
+    extends
+        CustomPainter {
   const _MeHeaderBackdropPainter();
 
   @override
@@ -2243,57 +3018,78 @@ class _MeHeaderBackdropPainter extends CustomPainter {
     Size size,
   ) {
     final glowCenter = Offset(
-      size.width * 0.86,
-      size.height * 0.25,
+      size.width *
+          0.86,
+      size.height *
+          0.25,
     );
 
     final glow = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          Colors.white.withAlpha(22),
-          Colors.white.withAlpha(0),
-        ],
-      ).createShader(
-        Rect.fromCircle(
-          center: glowCenter,
-          radius: size.width * 0.4,
-        ),
-      );
+      ..shader =
+          RadialGradient(
+            colors: [
+              Colors.white.withAlpha(
+                22,
+              ),
+              Colors.white.withAlpha(
+                0,
+              ),
+            ],
+          ).createShader(
+            Rect.fromCircle(
+              center: glowCenter,
+              radius:
+                  size.width *
+                  0.4,
+            ),
+          );
 
     canvas.drawCircle(
       glowCenter,
-      size.width * 0.4,
+      size.width *
+          0.4,
       glow,
     );
 
     final ring = Paint()
-      ..color = Colors.white.withAlpha(10)
+      ..color = Colors.white.withAlpha(
+        10,
+      )
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
 
     canvas
       ..drawCircle(
         Offset(
-          size.width * 0.94,
-          size.height * 0.34,
+          size.width *
+              0.94,
+          size.height *
+              0.34,
         ),
-        size.width * 0.11,
+        size.width *
+            0.11,
         ring,
       )
       ..drawCircle(
         Offset(
-          size.width * 0.94,
-          size.height * 0.34,
+          size.width *
+              0.94,
+          size.height *
+              0.34,
         ),
-        size.width * 0.2,
+        size.width *
+            0.2,
         ring,
       )
       ..drawCircle(
         Offset(
-          size.width * 0.08,
-          size.height * 0.72,
+          size.width *
+              0.08,
+          size.height *
+              0.72,
         ),
-        size.width * 0.13,
+        size.width *
+            0.13,
         ring,
       );
   }

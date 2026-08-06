@@ -471,7 +471,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       final orderTotal = completedAmount(data);
       final lineTotals = lines.fold<double>(
         0,
-        (sum, line) => sum + line.amount,
+        (total, line) => total + line.amount,
       );
 
       totalAmount += orderTotal > 0 ? orderTotal : lineTotals;
@@ -605,7 +605,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
     final total = recent.fold<double>(
       0,
-      (sum, value) => sum + value,
+      (total, value) => total + value,
     );
 
     return ForecastResult.available(
@@ -644,7 +644,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
       final total = comparable.fold<double>(
         0,
-        (sum, value) => sum + value,
+        (total, value) => total + value,
       );
 
       return ForecastResult.available(
@@ -676,7 +676,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
     final total = comparable.fold<double>(
       0,
-      (sum, value) => sum + value,
+      (total, value) => total + value,
     );
 
     return ForecastResult.available(
@@ -706,7 +706,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       );
       final forecast = previous.fold<double>(
             0,
-            (sum, value) => sum + value,
+            (total, value) => total + value,
           ) /
           window;
       final actual = values[index];
@@ -723,7 +723,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
     final mae = absoluteErrors.fold<double>(
           0,
-          (sum, value) => sum + value,
+          (total, value) => total + value,
         ) /
         absoluteErrors.length;
 
@@ -731,7 +731,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         ? 0.0
         : percentageErrors.fold<double>(
               0,
-              (sum, value) => sum + value,
+              (total, value) => total + value,
             ) /
             percentageErrors.length;
 
@@ -751,7 +751,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
     final mean = values.fold<double>(
           0,
-          (sum, value) => sum + value,
+          (total, value) => total + value,
         ) /
         values.length;
 
@@ -766,7 +766,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       ).toDouble(),
     ).fold<double>(
           0,
-          (sum, value) => sum + value,
+          (total, value) => total + value,
         ) /
         values.length;
 

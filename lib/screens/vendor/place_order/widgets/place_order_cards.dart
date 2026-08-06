@@ -78,7 +78,7 @@ class CheckoutSectionTitle extends StatelessWidget {
             ),
           ),
         ),
-        if (trailing != null) trailing!,
+        ?trailing,
       ],
     );
   }
@@ -275,7 +275,7 @@ class ProductOrderCard extends StatelessWidget {
       return Image.network(
         product.imageUrl,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => productEmoji(),
+        errorBuilder: (_, _, _) => productEmoji(),
       );
     }
     return productEmoji();

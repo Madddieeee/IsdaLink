@@ -3,199 +3,190 @@ import 'package:flutter/material.dart';
 class SupplierActivationHeader extends StatelessWidget {
   const SupplierActivationHeader({
     super.key,
+    required this.currentStep,
+    required this.totalSteps,
     required this.enabledUnitCount,
+    required this.submitted,
     required this.onBack,
   });
 
+  final int currentStep;
+  final int totalSteps;
   final int enabledUnitCount;
+  final bool submitted;
   final VoidCallback onBack;
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(18, 46, 18, 16),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF082B49),
-            Color(0xFF1257D8),
-            Color(0xFF146BFF),
-          ],
-        ),
-        borderRadius: BorderRadius.vertical(
-          bottom: Radius.circular(34),
+  Widget build(BuildContext context) {
+    return SliverAppBar(
+      pinned: true,
+      expandedHeight: 232,
+      toolbarHeight: 62,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      backgroundColor: const Color(0xFF075FAE),
+      foregroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      leadingWidth: 58,
+      leading: Padding(
+        padding: const EdgeInsets.only(left: 14, top: 8, bottom: 8),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onBack,
+            borderRadius: BorderRadius.circular(99),
+            child: Ink(
+              decoration: BoxDecoration(
+                color: Colors.white.withAlpha(32),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white.withAlpha(28)),
+              ),
+              child: const Icon(Icons.arrow_back_rounded, size: 21),
+            ),
+          ),
         ),
       ),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned(
-            right: -42,
-            top: 6,
-            child: HeaderBubble(
-              size: 132,
-              opacity: 22,
+      titleSpacing: 8,
+      title: const Text(
+        'Supplier Onboarding',
+        style: TextStyle(
+          fontSize: 20.2,
+          letterSpacing: -0.15,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 15),
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+              decoration: BoxDecoration(
+                color: Colors.white.withAlpha(28),
+                borderRadius: BorderRadius.circular(99),
+                border: Border.all(color: Colors.white.withAlpha(28)),
+              ),
+              child: Text(
+                submitted
+                    ? 'Pending Review'
+                    : 'Step ${currentStep + 1} of $totalSteps',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 9.2,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
             ),
           ),
-          Positioned(
-            left: -46,
-            bottom: 22,
-            child: HeaderBubble(
-              size: 94,
-              opacity: 18,
+        ),
+      ],
+      flexibleSpace: FlexibleSpaceBar(
+        collapseMode: CollapseMode.pin,
+        background: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF063B66),
+                Color(0xFF075FAE),
+                Color(0xFF146BFF),
+              ],
+              stops: [0, 0.55, 1],
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Stack(
             children: [
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: onBack,
-                    child: Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(40),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white.withAlpha(32),
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Text(
-                      'Supplier Onboarding',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20.2,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 7,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(38),
-                      borderRadius: BorderRadius.circular(99),
-                      border: Border.all(
-                        color: Colors.white.withAlpha(30),
-                      ),
-                    ),
-                    child: const Text(
-                      'Review',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Create a trusted supplier profile with verified owner details, supported selling units, and clear verification photos.',
-                style: TextStyle(
-                  color: Color(0xFFE6F9FF),
-                  fontSize: 11.8,
-                  height: 1.35,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withAlpha(36),
-                  borderRadius: BorderRadius.circular(17),
-                  border: Border.all(
-                    color: Colors.white.withAlpha(34),
+              Positioned(
+                top: -58,
+                right: -52,
+                child: Container(
+                  width: 190,
+                  height: 190,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withAlpha(9),
+                    border: Border.all(color: Colors.white.withAlpha(18)),
                   ),
                 ),
-                child: Row(
+              ),
+              Positioned(
+                top: 68,
+                right: 24,
+                child: Container(
+                  width: 82,
+                  height: 82,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white.withAlpha(18)),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  18,
+                  MediaQuery.paddingOf(context).top + 75,
+                  18,
+                  16,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const Text(
+                      'SUPPLIER ACTIVATION',
+                      style: TextStyle(
+                        color: Color(0xFFBCE8FF),
+                        fontSize: 8.6,
+                        letterSpacing: 1.05,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      submitted
+                          ? 'Your supplier application is awaiting admin review.'
+                          : 'Create a trusted supplier profile with verified owner, store, unit, and business details.',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFFDDEFFF),
+                        fontSize: 10.7,
+                        height: 1.35,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const Spacer(),
                     Container(
-                      width: 48,
-                      height: 48,
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(17),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x15000000),
-                            blurRadius: 9,
-                            offset: Offset(0, 5),
-                          ),
-                        ],
+                        color: Colors.white.withAlpha(29),
+                        borderRadius: BorderRadius.circular(19),
+                        border: Border.all(color: Colors.white.withAlpha(31)),
                       ),
-                      child: const Icon(
-                        Icons.storefront,
-                        color: Color(0xFF146BFF),
-                        size: 31,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Row(
                         children: [
-                          const Text(
-                            'Supplier Verification',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 15.2,
-                              fontWeight: FontWeight.w900,
-                            ),
+                          const _HeaderFeature(
+                            icon: Icons.verified_user_outlined,
+                            label: 'REVIEW',
+                            value: 'Admin verified',
                           ),
-                          const SizedBox(height: 6),
-                          Wrap(
-                            spacing: 7,
-                            runSpacing: 7,
-                            children: [
-                              HeaderInfoPill(
-                                icon: Icons.inventory_2_outlined,
-                                label: '$enabledUnitCount units selected',
-                              ),
-                              const HeaderInfoPill(
-                                icon: Icons.payments_outlined,
-                                label: 'COD only',
-                              ),
-                            ],
+                          const _HeaderDivider(),
+                          _HeaderFeature(
+                            icon: Icons.scale_outlined,
+                            label: 'SELLING UNITS',
+                            value: '$enabledUnitCount selected',
+                          ),
+                          const _HeaderDivider(),
+                          const _HeaderFeature(
+                            icon: Icons.payments_outlined,
+                            label: 'PAYMENT',
+                            value: 'COD only',
                           ),
                         ],
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF38D39F),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.verified_user,
-                        color: Colors.white,
-                        size: 20,
                       ),
                     ),
                   ],
@@ -203,50 +194,53 @@ class SupplierActivationHeader extends StatelessWidget {
               ),
             ],
           ),
-        ],
+        ),
+      ),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
       ),
     );
   }
 }
 
-class HeaderInfoPill extends StatelessWidget {
-  const HeaderInfoPill({
-    super.key,
+class _HeaderFeature extends StatelessWidget {
+  const _HeaderFeature({
     required this.icon,
     required this.label,
+    required this.value,
   });
 
   final IconData icon;
   final String label;
+  final String value;
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 8,
-        vertical: 6,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white.withAlpha(34),
-        borderRadius: BorderRadius.circular(99),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
         children: [
-          Icon(
-            icon,
-            color: Colors.white,
-            size: 12,
-          ),
-          const SizedBox(width: 4),
+          Icon(icon, color: Colors.white, size: 17),
+          const SizedBox(height: 4),
           Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              color: Color(0xFFE6F9FF),
-              fontSize: 9.8,
-              fontWeight: FontWeight.w800,
+              color: Color(0xFFBCE8FF),
+              fontSize: 7.1,
+              letterSpacing: 0.35,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 8.8,
+              fontWeight: FontWeight.w900,
             ),
           ),
         ],
@@ -255,27 +249,16 @@ class HeaderInfoPill extends StatelessWidget {
   }
 }
 
-class HeaderBubble extends StatelessWidget {
-  const HeaderBubble({
-    super.key,
-    required this.size,
-    required this.opacity,
-  });
-
-  final double size;
-  final int opacity;
+class _HeaderDivider extends StatelessWidget {
+  const _HeaderDivider();
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: Colors.white.withAlpha(opacity),
-        shape: BoxShape.circle,
-      ),
+      width: 1,
+      height: 36,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      color: Colors.white.withAlpha(28),
     );
   }
 }

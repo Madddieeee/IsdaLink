@@ -523,7 +523,7 @@ class SupplierDashboardScreen extends StatelessWidget {
                         : Image.network(
                             imageUrl,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => fallbackImage(),
+                            errorBuilder: (_, _, _) => fallbackImage(),
                           ),
                   ),
                 ),

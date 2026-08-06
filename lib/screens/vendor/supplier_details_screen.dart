@@ -279,7 +279,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: unitOptions.length,
-                    separatorBuilder: (_, __) =>
+                    separatorBuilder: (_, _) =>
                         const SizedBox(width: 7),
                     itemBuilder: (context, index) {
                       final unit = unitOptions[index];

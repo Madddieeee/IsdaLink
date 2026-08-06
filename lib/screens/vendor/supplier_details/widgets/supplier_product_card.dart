@@ -86,7 +86,7 @@ class SupplierProductCard extends StatelessWidget {
                     loading: true,
                   );
                 },
-                errorBuilder: (_, __, ___) {
+                errorBuilder: (_, _, _) {
                   return ProductImagePlaceholder(
                     emoji: emoji,
                   );

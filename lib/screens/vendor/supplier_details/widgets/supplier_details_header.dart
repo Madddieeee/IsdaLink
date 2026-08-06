@@ -107,7 +107,7 @@ class SupplierDetailsHeader extends StatelessWidget {
                     ),
                   );
                 },
-                errorBuilder: (_, __, ___) {
+                errorBuilder: (_, _, _) {
                   return StoreInitial(
                     initial: storeInitial,
                   );

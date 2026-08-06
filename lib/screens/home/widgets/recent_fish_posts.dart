@@ -29,6 +29,8 @@ class RecentFishPosts extends StatelessWidget {
     required String stockId,
     required String supplierId,
   }) {
+    final navigator = Navigator.of(context);
+
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -56,8 +58,11 @@ class RecentFishPosts extends StatelessWidget {
 
             Future.microtask(
               () {
-                Navigator.push(
-                  context,
+                if (!navigator.mounted) {
+                  return;
+                }
+
+                navigator.push(
                   MaterialPageRoute(
                     builder: (_) => PlaceOrderScreen(
                       supplier: supplier,
