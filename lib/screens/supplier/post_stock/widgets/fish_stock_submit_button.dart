@@ -1,40 +1,35 @@
 import 'package:flutter/material.dart';
 
-class FishStockSubmitButton
-    extends
-        StatelessWidget {
+class FishStockSubmitButton extends StatelessWidget {
   const FishStockSubmitButton({
     super.key,
     required this.isPosting,
+    required this.isEnabled,
     required this.onPressed,
   });
 
   final bool isPosting;
+  final bool isEnabled;
   final VoidCallback onPressed;
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
+    final canPublish = isEnabled && !isPosting;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(
         18,
-        12,
+        10,
         18,
-        18,
+        15,
       ),
       decoration: const BoxDecoration(
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Color(
-              0x14000000,
-            ),
-            blurRadius: 14,
-            offset: Offset(
-              0,
-              -4,
-            ),
+            color: Color(0x1A000000),
+            blurRadius: 18,
+            offset: Offset(0, -6),
           ),
         ],
       ),
@@ -42,11 +37,9 @@ class FishStockSubmitButton
         top: false,
         child: SizedBox(
           width: double.infinity,
-          height: 52,
+          height: 53,
           child: ElevatedButton.icon(
-            onPressed: isPosting
-                ? null
-                : onPressed,
+            onPressed: canPublish ? onPressed : null,
             icon: isPosting
                 ? const SizedBox(
                     width: 19,
@@ -56,30 +49,34 @@ class FishStockSubmitButton
                       color: Colors.white,
                     ),
                   )
-                : const Icon(
-                    Icons.add_box,
+                : Icon(
+                    isEnabled
+                        ? Icons.publish_rounded
+                        : Icons.fact_check_outlined,
+                    size: 20,
                   ),
             label: Text(
               isPosting
-                  ? 'Saving to Firebase...'
-                  : 'Post Fish Stock',
+                  ? 'Publishing Stock...'
+                  : isEnabled
+                      ? 'Publish Fish Stock'
+                      : 'Complete Required Details',
               style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
+                fontSize: 14.2,
+                fontWeight: FontWeight.w900,
               ),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(
-                0xFF146BFF,
-              ),
-              disabledBackgroundColor: const Color(
-                0xFF7B8FA3,
-              ),
+              backgroundColor: const Color(0xFF146BFF),
+              disabledBackgroundColor:
+                  const Color(0xFFDCE7EF),
               foregroundColor: Colors.white,
+              disabledForegroundColor:
+                  const Color(0xFF7B8FA3),
+              elevation: canPublish ? 7 : 0,
+              shadowColor: const Color(0x55146BFF),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(
-                  16,
-                ),
+                borderRadius: BorderRadius.circular(16),
               ),
             ),
           ),

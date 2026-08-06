@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 
-class ManageProductsEmptyCard extends StatelessWidget {
-  const ManageProductsEmptyCard({
+class SupplierOrdersEmptyCard extends StatelessWidget {
+  const SupplierOrdersEmptyCard({
     super.key,
-    required this.onPostStock,
+    required this.filtered,
+    required this.onClearFilters,
   });
 
-  final VoidCallback onPostStock;
+  final bool filtered;
+  final VoidCallback onClearFilters;
 
   @override
   Widget build(
@@ -42,139 +44,63 @@ class ManageProductsEmptyCard extends StatelessWidget {
               color: Color(0xFFEAF7FB),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.inventory_2_outlined,
-              color: Color(0xFF146BFF),
+            child: Icon(
+              filtered
+                  ? Icons.search_off_rounded
+                  : Icons.receipt_long_outlined,
+              color: const Color(0xFF146BFF),
               size: 32,
             ),
           ),
           const SizedBox(height: 13),
-          const Text(
-            'No products to manage yet',
+          Text(
+            filtered
+                ? 'No matching COD orders'
+                : 'No incoming COD orders yet',
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: Color(0xFF102C44),
               fontSize: 16,
               fontWeight: FontWeight.w900,
             ),
           ),
           const SizedBox(height: 5),
-          const Text(
-            'Post your first fish stock to create a marketplace listing and automatic stock alert.',
+          Text(
+            filtered
+                ? 'Try another vendor or product search, or clear the selected order stage.'
+                : 'Vendor COD orders for this supplier account will appear here automatically.',
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: Color(0xFF7B8FA3),
               fontSize: 10.8,
               height: 1.4,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 15),
-          SizedBox(
-            width: double.infinity,
-            height: 47,
-            child: ElevatedButton.icon(
-              onPressed: onPostStock,
+          if (filtered) ...[
+            const SizedBox(height: 12),
+            TextButton.icon(
+              onPressed: onClearFilters,
               icon: const Icon(
-                Icons.add_box_outlined,
-                size: 19,
+                Icons.filter_alt_off_outlined,
+                size: 18,
               ),
               label: const Text(
-                'Post Fish Stock',
+                'Clear Search and Filters',
                 style: TextStyle(
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF146BFF),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-              ),
             ),
-          ),
+          ],
         ],
       ),
     );
   }
 }
 
-class ManageProductsFilteredEmptyCard extends StatelessWidget {
-  const ManageProductsFilteredEmptyCard({
-    super.key,
-    required this.onClear,
-  });
-
-  final VoidCallback onClear;
-
-  @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(
-        18,
-        20,
-        18,
-        18,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(23),
-        border: Border.all(
-          color: const Color(0xFFE1EBF2),
-        ),
-      ),
-      child: Column(
-        children: [
-          const Icon(
-            Icons.search_off_rounded,
-            color: Color(0xFF8BA0B1),
-            size: 38,
-          ),
-          const SizedBox(height: 9),
-          const Text(
-            'No matching products',
-            style: TextStyle(
-              color: Color(0xFF102C44),
-              fontSize: 14,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 5),
-          const Text(
-            'Try another search or clear the selected stock filter.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0xFF7B8FA3),
-              fontSize: 10.5,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextButton.icon(
-            onPressed: onClear,
-            icon: const Icon(
-              Icons.filter_alt_off_outlined,
-              size: 18,
-            ),
-            label: const Text(
-              'Clear Search and Filters',
-              style: TextStyle(
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class ManageProductsLoadingCard extends StatelessWidget {
-  const ManageProductsLoadingCard({
+class SupplierOrdersLoadingCard extends StatelessWidget {
+  const SupplierOrdersLoadingCard({
     super.key,
   });
 
@@ -204,7 +130,7 @@ class ManageProductsLoadingCard extends StatelessWidget {
           SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Loading your product listings...',
+              'Loading your incoming COD orders...',
               style: TextStyle(
                 color: Color(0xFF52677A),
                 fontSize: 11,
@@ -218,8 +144,8 @@ class ManageProductsLoadingCard extends StatelessWidget {
   }
 }
 
-class ManageProductsErrorCard extends StatelessWidget {
-  const ManageProductsErrorCard({
+class SupplierOrdersErrorCard extends StatelessWidget {
+  const SupplierOrdersErrorCard({
     super.key,
     required this.onRetry,
   });
@@ -253,7 +179,7 @@ class ManageProductsErrorCard extends StatelessWidget {
           ),
           const SizedBox(height: 9),
           const Text(
-            'Unable to load products',
+            'Unable to load COD orders',
             style: TextStyle(
               color: Color(0xFF102C44),
               fontSize: 14,
@@ -262,7 +188,7 @@ class ManageProductsErrorCard extends StatelessWidget {
           ),
           const SizedBox(height: 5),
           const Text(
-            'Check your connection and try loading the supplier inventory again.',
+            'Check your connection and try loading the supplier order queue again.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Color(0xFF7B8FA3),

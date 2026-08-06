@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:isdalink/screens/supplier/post_stock/widgets/post_stock_section_card.dart';
 
 class FishStockPreviewCard extends StatelessWidget {
@@ -7,133 +10,357 @@ class FishStockPreviewCard extends StatelessWidget {
     required this.productName,
     required this.selectedCategory,
     required this.selectedUnit,
-    this.selectedEmoji = '🐟',
-    this.price = '',
-    this.priceText = '',
+    required this.price,
+    required this.quantity,
+    required this.lowStockLevel,
+    this.selectedImage,
+    this.uploadedImageUrl = '',
   });
 
   final String productName;
   final String selectedCategory;
   final String selectedUnit;
-  final String selectedEmoji;
-
-  // Supports both constructor names used by earlier IsdaLink versions.
   final String price;
-  final String priceText;
+  final String quantity;
+  final String lowStockLevel;
+  final XFile? selectedImage;
+  final String uploadedImageUrl;
 
-  String get displayPrice {
-    final currentPrice = price.trim();
+  String get displayProductName {
+    final value = productName.trim();
 
-    if (currentPrice.isNotEmpty) {
-      return currentPrice;
+    return value.isEmpty
+        ? 'Product name not set'
+        : value;
+  }
+
+  String? get validPrice {
+    final parsed = double.tryParse(price.trim());
+
+    if (parsed == null || parsed <= 0) {
+      return null;
     }
 
-    final legacyPrice = priceText.trim();
+    return parsed % 1 == 0
+        ? parsed.toStringAsFixed(0)
+        : parsed.toStringAsFixed(2);
+  }
 
-    if (legacyPrice.isNotEmpty) {
-      return legacyPrice;
+  String? get validQuantity {
+    final parsed = double.tryParse(quantity.trim());
+
+    if (parsed == null || parsed <= 0) {
+      return null;
     }
 
-    return '0';
+    return parsed % 1 == 0
+        ? parsed.toStringAsFixed(0)
+        : parsed.toStringAsFixed(1);
+  }
+
+  String? get validAlertLevel {
+    final parsed = double.tryParse(
+      lowStockLevel.trim(),
+    );
+
+    if (parsed == null || parsed <= 0) {
+      return null;
+    }
+
+    return parsed % 1 == 0
+        ? parsed.toStringAsFixed(0)
+        : parsed.toStringAsFixed(1);
+  }
+
+  bool get hasLocalImage => selectedImage != null;
+  bool get hasUploadedImage =>
+      uploadedImageUrl.trim().isNotEmpty;
+  bool get hasImage => hasLocalImage || hasUploadedImage;
+
+  Widget productVisual() {
+    if (hasLocalImage) {
+      return Image.file(
+        File(selectedImage!.path),
+        fit: BoxFit.cover,
+      );
+    }
+
+    if (hasUploadedImage) {
+      return Image.network(
+        uploadedImageUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (
+          context,
+          error,
+          stackTrace,
+        ) {
+          return const _PhotoPlaceholderVisual();
+        },
+      );
+    }
+
+    return const _PhotoPlaceholderVisual();
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
-    final displayProductName = productName.trim().isEmpty
-        ? 'Fish Product'
-        : productName.trim();
-
-    final emoji = selectedEmoji.trim().isEmpty
-        ? '🐟'
-        : selectedEmoji;
-
+  Widget build(BuildContext context) {
     return PostStockSectionCard(
-      title: 'Post Preview',
-      subtitle: 'Preview how vendors may see this fish stock.',
+      title: 'Marketplace Preview',
+      subtitle: 'Confirm how the listing will appear to vendors.',
       icon: Icons.visibility_outlined,
+      badge: 'FINAL CHECK',
       child: Container(
-        padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(
-          color: const Color(0xFFEAF7FB),
-          borderRadius: BorderRadius.circular(20),
+          color: const Color(0xFFF2F7FB),
+          borderRadius: BorderRadius.circular(21),
           border: Border.all(
-            color: const Color(0xFF146BFF).withAlpha(42),
+            color: const Color(0xFFDDE8EF),
           ),
         ),
-        child: Row(
+        child: Column(
           children: [
-            Container(
-              width: 58,
-              height: 58,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x0C00152A),
-                    blurRadius: 8,
-                    offset: Offset(0, 4),
-                  ),
-                ],
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
               ),
-              alignment: Alignment.center,
-              child: Text(
-                emoji,
-                style: const TextStyle(
-                  fontSize: 32,
+              child: SizedBox(
+                width: double.infinity,
+                height: 146,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    productVisual(),
+                    const DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Color(0xB0001727),
+                          ],
+                          stops: [
+                            0.48,
+                            1.0,
+                          ],
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      left: 13,
+                      right: 13,
+                      bottom: 12,
+                      child: Row(
+                        crossAxisAlignment:
+                            CrossAxisAlignment.end,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  displayProductName,
+                                  maxLines: 1,
+                                  overflow:
+                                      TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 15.5,
+                                    fontWeight: FontWeight.w900,
+                                    fontStyle:
+                                        productName.trim().isEmpty
+                                            ? FontStyle.italic
+                                            : FontStyle.normal,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  selectedCategory,
+                                  maxLines: 1,
+                                  overflow:
+                                      TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Color(0xFFDDEFFA),
+                                    fontSize: 9.8,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            constraints: const BoxConstraints(
+                              maxWidth: 112,
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 9,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius:
+                                  BorderRadius.circular(99),
+                            ),
+                            child: Text(
+                              validPrice == null
+                                  ? 'Price not set'
+                                  : '₱$validPrice',
+                              maxLines: 1,
+                              overflow:
+                                  TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: validPrice == null
+                                    ? const Color(0xFF7B8FA3)
+                                    : const Color(0xFF0875D1),
+                                fontSize: 9.8,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-            const SizedBox(width: 13),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                13,
+                12,
+                13,
+                13,
+              ),
+              child: Row(
                 children: [
-                  Text(
-                    displayProductName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFF102C44),
-                      fontSize: 15,
-                      fontWeight: FontWeight.w900,
+                  Expanded(
+                    child: _PreviewMetric(
+                      icon: Icons.scale_outlined,
+                      label: 'SELLING UNIT',
+                      value: 'per $selectedUnit',
+                      complete: true,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    selectedCategory,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFF7B8FA3),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _PreviewMetric(
+                      icon: Icons.inventory_2_outlined,
+                      label: 'AVAILABLE',
+                      value: validQuantity == null
+                          ? 'Stock not set'
+                          : '$validQuantity $selectedUnit',
+                      complete: validQuantity != null,
                     ),
                   ),
-                  const SizedBox(height: 7),
-                  Text(
-                    '₱$displayPrice per $selectedUnit',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFF146BFF),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w900,
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _PreviewMetric(
+                      icon:
+                          Icons.notifications_active_outlined,
+                      label: 'ALERT AT',
+                      value: validAlertLevel == null
+                          ? 'Alert pending'
+                          : '$validAlertLevel $selectedUnit',
+                      complete: validAlertLevel != null,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 8),
-            const Icon(
-              Icons.visibility_outlined,
-              color: Color(0xFF146BFF),
-              size: 21,
-            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _PhotoPlaceholderVisual extends StatelessWidget {
+  const _PhotoPlaceholderVisual();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      alignment: Alignment.center,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFE4F5FC),
+            Color(0xFFCDEAF6),
+          ],
+        ),
+      ),
+      child: const Icon(
+        Icons.add_photo_alternate_outlined,
+        color: Color(0xFF146BFF),
+        size: 44,
+      ),
+    );
+  }
+}
+
+class _PreviewMetric extends StatelessWidget {
+  const _PreviewMetric({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.complete,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final bool complete;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(
+        7,
+        9,
+        7,
+        9,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            color: complete
+                ? const Color(0xFF146BFF)
+                : const Color(0xFF9AAEBC),
+            size: 17,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFF8BA0B1),
+              fontSize: 7.2,
+              letterSpacing: 0.3,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: complete
+                  ? const Color(0xFF102C44)
+                  : const Color(0xFF8BA0B1),
+              fontSize: 8.8,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
       ),
     );
   }

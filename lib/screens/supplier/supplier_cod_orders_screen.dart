@@ -1,172 +1,703 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:isdalink/screens/supplier/cod_orders/widgets/supplier_order_card.dart';
 import 'package:isdalink/screens/supplier/cod_orders/widgets/supplier_orders_header.dart';
+import 'package:isdalink/screens/supplier/cod_orders/widgets/supplier_orders_status_cards.dart';
 import 'package:isdalink/services/supplier_order_service.dart';
 import 'package:isdalink/utils/order_helpers.dart';
 
-class SupplierCodOrdersScreen
-    extends
-        StatelessWidget {
+enum SupplierOrderFilter {
+  all,
+  pending,
+  accepted,
+  delivered,
+  cancelled,
+}
+
+class SupplierCodOrdersScreen extends StatefulWidget {
   const SupplierCodOrdersScreen({
     super.key,
   });
 
-  User? get currentUser => FirebaseAuth.instance.currentUser;
+  @override
+  State<SupplierCodOrdersScreen> createState() =>
+      _SupplierCodOrdersScreenState();
+}
 
-  SupplierOrderService get orderService => const SupplierOrderService();
+class _SupplierCodOrdersScreenState
+    extends State<SupplierCodOrdersScreen> {
+  final searchController = TextEditingController();
+  final orderService = const SupplierOrderService();
 
-  Future<
-    void
-  >
-  updateOrderStatus({
-    required BuildContext context,
-    required String documentId,
+  final busyOrderIds = <String>{};
+  final expandedOrderIds = <String>{};
+
+  SupplierOrderFilter selectedFilter =
+      SupplierOrderFilter.all;
+  int streamRevision = 0;
+
+  User? get currentUser =>
+      FirebaseAuth.instance.currentUser;
+
+  @override
+  void initState() {
+    super.initState();
+    searchController.addListener(refreshSearch);
+  }
+
+  @override
+  void dispose() {
+    searchController.removeListener(refreshSearch);
+    searchController.dispose();
+    super.dispose();
+  }
+
+  void refreshSearch() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  String firstString(
+    Map<String, dynamic> data,
+    List<String> keys, {
+    required String fallback,
+  }) {
+    for (final key in keys) {
+      final value = data[key]?.toString().trim() ?? '';
+
+      if (value.isNotEmpty) {
+        return value;
+      }
+    }
+
+    return fallback;
+  }
+
+  String normalizedStatus(
+    Map<String, dynamic> data,
+  ) {
+    final status = firstString(
+      data,
+      const [
+        'orderStatus',
+        'status',
+      ],
+      fallback: 'Pending',
+    ).toLowerCase();
+
+    if (status == 'completed') {
+      return 'delivered';
+    }
+
+    return status;
+  }
+
+  List<QueryDocumentSnapshot<Map<String, dynamic>>>
+      filteredDocuments(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>>
+        documents,
+  ) {
+    final query =
+        searchController.text.trim().toLowerCase();
+
+    return documents.where(
+      (
+        document,
+      ) {
+        final data = document.data();
+        final productName = firstString(
+          data,
+          const [
+            'productName',
+            'fishName',
+          ],
+          fallback: 'Fish Product',
+        ).toLowerCase();
+        final vendorName = firstString(
+          data,
+          const [
+            'vendorName',
+            'buyerName',
+            'customerName',
+          ],
+          fallback: 'Registered Vendor',
+        ).toLowerCase();
+        final orderNumber = firstString(
+          data,
+          const [
+            'orderNumber',
+            'referenceNumber',
+          ],
+          fallback: document.id,
+        ).toLowerCase();
+
+        final matchesSearch = query.isEmpty ||
+            productName.contains(query) ||
+            vendorName.contains(query) ||
+            orderNumber.contains(query);
+
+        if (!matchesSearch) {
+          return false;
+        }
+
+        final status = normalizedStatus(data);
+
+        switch (selectedFilter) {
+          case SupplierOrderFilter.all:
+            return true;
+          case SupplierOrderFilter.pending:
+            return status == 'pending';
+          case SupplierOrderFilter.accepted:
+            return status == 'accepted';
+          case SupplierOrderFilter.delivered:
+            return status == 'delivered';
+          case SupplierOrderFilter.cancelled:
+            return status == 'cancelled';
+        }
+      },
+    ).toList();
+  }
+
+  int countFilter({
+    required List<
+        QueryDocumentSnapshot<Map<String, dynamic>>>
+        documents,
+    required SupplierOrderFilter filter,
+  }) {
+    if (filter == SupplierOrderFilter.all) {
+      return documents.length;
+    }
+
+    return documents.where(
+      (
+        document,
+      ) {
+        final status = normalizedStatus(
+          document.data(),
+        );
+
+        switch (filter) {
+          case SupplierOrderFilter.pending:
+            return status == 'pending';
+          case SupplierOrderFilter.accepted:
+            return status == 'accepted';
+          case SupplierOrderFilter.delivered:
+            return status == 'delivered';
+          case SupplierOrderFilter.cancelled:
+            return status == 'cancelled';
+          case SupplierOrderFilter.all:
+            return true;
+        }
+      },
+    ).length;
+  }
+
+  String filterLabel(
+    SupplierOrderFilter filter,
+  ) {
+    switch (filter) {
+      case SupplierOrderFilter.all:
+        return 'All';
+      case SupplierOrderFilter.pending:
+        return 'Pending';
+      case SupplierOrderFilter.accepted:
+        return 'Accepted';
+      case SupplierOrderFilter.delivered:
+        return 'Delivered';
+      case SupplierOrderFilter.cancelled:
+        return 'Cancelled';
+    }
+  }
+
+  IconData filterIcon(
+    SupplierOrderFilter filter,
+  ) {
+    switch (filter) {
+      case SupplierOrderFilter.all:
+        return Icons.receipt_long_outlined;
+      case SupplierOrderFilter.pending:
+        return Icons.schedule_rounded;
+      case SupplierOrderFilter.accepted:
+        return Icons.inventory_2_outlined;
+      case SupplierOrderFilter.delivered:
+        return Icons.local_shipping_outlined;
+      case SupplierOrderFilter.cancelled:
+        return Icons.cancel_outlined;
+    }
+  }
+
+  void showMessage(
+    String message, {
+    bool isError = false,
+  }) {
+    if (!mounted) {
+      return;
+    }
+
+    final messenger = ScaffoldMessenger.of(context);
+
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.fromLTRB(
+            18,
+            0,
+            18,
+            18,
+          ),
+          backgroundColor: isError
+              ? const Color(0xFFD94A45)
+              : const Color(0xFF147D64),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          content: Row(
+            children: [
+              Icon(
+                isError
+                    ? Icons.error_outline_rounded
+                    : Icons.check_circle_outline_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  message,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+  }
+
+  void setBusy(
+    String documentId,
+    bool busy,
+  ) {
+    setState(() {
+      if (busy) {
+        busyOrderIds.add(documentId);
+      } else {
+        busyOrderIds.remove(documentId);
+      }
+    });
+  }
+
+  Future<bool> confirmStatusChange({
+    required String title,
+    required String message,
+    required String confirmLabel,
+    required IconData icon,
+    required Color color,
+    bool destructive = false,
+  }) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (
+        dialogContext,
+      ) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 25,
+          ),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(
+              20,
+              21,
+              20,
+              18,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(25),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x33000000),
+                  blurRadius: 28,
+                  offset: Offset(0, 16),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 58,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    color: color.withAlpha(18),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    color: color,
+                    size: 31,
+                  ),
+                ),
+                const SizedBox(height: 13),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Color(0xFF102C44),
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Color(0xFF657C8E),
+                    fontSize: 10.8,
+                    height: 1.4,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 17),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          Navigator.pop(
+                            dialogContext,
+                            false,
+                          );
+                        },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor:
+                              const Color(0xFF52677A),
+                          side: const BorderSide(
+                            color: Color(0xFFB9CBD7),
+                          ),
+                          minimumSize: const Size.fromHeight(47),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                        ),
+                        child: const Text(
+                          'Go Back',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 9),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(
+                            dialogContext,
+                            true,
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: destructive
+                              ? const Color(0xFFD94A45)
+                              : color,
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size.fromHeight(47),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                        ),
+                        child: Text(
+                          confirmLabel,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    return result ?? false;
+  }
+
+  Future<void> updateOrderStatus({
+    required QueryDocumentSnapshot<Map<String, dynamic>>
+        document,
     required String newStatus,
     required String paymentStatus,
   }) async {
+    if (busyOrderIds.contains(document.id)) {
+      return;
+    }
+
+    final data = document.data();
+    final productName = firstString(
+      data,
+      const [
+        'productName',
+        'fishName',
+      ],
+      fallback: 'this fish product',
+    );
+
+    late final String title;
+    late final String message;
+    late final String confirmLabel;
+    late final IconData icon;
+    late final Color color;
+    late final bool destructive;
+
+    switch (newStatus.toLowerCase()) {
+      case 'accepted':
+        title = 'Accept this COD order?';
+        message =
+            'Confirm that you can fulfill the requested $productName quantity. The vendor will be notified.';
+        confirmLabel = 'Accept Order';
+        icon = Icons.check_circle_outline_rounded;
+        color = const Color(0xFF146BFF);
+        destructive = false;
+        break;
+      case 'delivered':
+        title = 'Confirm delivery and payment?';
+        message =
+            'Use this only after the fish order is delivered and its Cash on Delivery payment has been received.';
+        confirmLabel = 'Confirm Delivery';
+        icon = Icons.local_shipping_rounded;
+        color = const Color(0xFF147D64);
+        destructive = false;
+        break;
+      case 'cancelled':
+        title = 'Cancel this COD order?';
+        message =
+            'The vendor will be notified and any reserved stock will be returned to the supplier inventory.';
+        confirmLabel = 'Cancel Order';
+        icon = Icons.cancel_outlined;
+        color = const Color(0xFFD94A45);
+        destructive = true;
+        break;
+      default:
+        return;
+    }
+
+    final confirmed = await confirmStatusChange(
+      title: title,
+      message: message,
+      confirmLabel: confirmLabel,
+      icon: icon,
+      color: color,
+      destructive: destructive,
+    );
+
+    if (!mounted || !confirmed) {
+      return;
+    }
+
+    setBusy(
+      document.id,
+      true,
+    );
+
     try {
       await orderService.updateOrderStatus(
-        documentId: documentId,
+        documentId: document.id,
         newStatus: newStatus,
         paymentStatus: paymentStatus,
       );
 
-      if (!context.mounted) return;
+      if (!mounted) {
+        return;
+      }
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
-        SnackBar(
-          content: Text(
-            newStatus.toLowerCase() ==
-                    'cancelled'
-                ? 'Order cancelled. Reserved stock has been returned and the vendor was notified.'
-                : 'Order marked as $newStatus. The vendor was notified.',
-          ),
-          backgroundColor: OrderHelpers.statusColor(
-            newStatus,
-          ),
-        ),
-      );
-    } catch (
-      error
-    ) {
-      if (!context.mounted) return;
+      final successMessage =
+          newStatus.toLowerCase() == 'cancelled'
+              ? 'Order cancelled. Reserved stock and vendor notification were processed.'
+              : newStatus.toLowerCase() == 'delivered'
+                  ? 'Delivery and COD payment were recorded successfully.'
+                  : 'Order accepted. The vendor was notified.';
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Failed to update order: $error',
-          ),
-          backgroundColor: const Color(
-            0xFFD32F2F,
-          ),
-        ),
+      showMessage(successMessage);
+    } on FirebaseException {
+      showMessage(
+        'Unable to update this COD order. Check your connection and try again.',
+        isError: true,
       );
+    } on StateError catch (error) {
+      showMessage(
+        error.message,
+        isError: true,
+      );
+    } catch (_) {
+      showMessage(
+        'Something went wrong while updating this COD order.',
+        isError: true,
+      );
+    } finally {
+      if (mounted) {
+        setBusy(
+          document.id,
+          false,
+        );
+      }
     }
   }
 
-  Widget emptyOrdersCard() {
+  void clearSearchAndFilters() {
+    searchController.clear();
+
+    setState(() {
+      selectedFilter = SupplierOrderFilter.all;
+    });
+  }
+
+  Widget controlsCard({
+    required List<
+        QueryDocumentSnapshot<Map<String, dynamic>>>
+        documents,
+  }) {
     return Container(
-      padding: const EdgeInsets.all(
-        18,
+      margin: const EdgeInsets.only(
+        bottom: 15,
       ),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(
-          24,
+        borderRadius: BorderRadius.circular(23),
+        border: Border.all(
+          color: const Color(0xFFE1EBF2),
         ),
         boxShadow: const [
           BoxShadow(
-            color: Color(
-              0x10000000,
-            ),
-            blurRadius: 14,
-            offset: Offset(
-              0,
-              7,
-            ),
+            color: Color(0x0D00152A),
+            blurRadius: 16,
+            offset: Offset(0, 8),
           ),
         ],
       ),
-      child: const Column(
+      child: Column(
         children: [
-          Icon(
-            Icons.receipt_long_outlined,
-            color: Color(
-              0xFF146BFF,
-            ),
-            size: 44,
-          ),
-          SizedBox(
-            height: 10,
-          ),
-          Text(
-            'No incoming COD orders yet',
-            style: TextStyle(
-              color: Color(
-                0xFF102C44,
+          TextField(
+            controller: searchController,
+            textInputAction: TextInputAction.search,
+            decoration: InputDecoration(
+              hintText: 'Search vendor, product, or order reference',
+              hintStyle: const TextStyle(
+                color: Color(0xFF8BA0B1),
+                fontSize: 11.2,
+                fontWeight: FontWeight.w600,
               ),
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          SizedBox(
-            height: 5,
-          ),
-          Text(
-            'Vendor COD orders for this supplier account will appear here.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(
-                0xFF7B8FA3,
+              prefixIcon: const Icon(
+                Icons.search_rounded,
+                color: Color(0xFF146BFF),
               ),
-              fontSize: 12,
-              height: 1.4,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget loadingOrdersCard() {
-    return Container(
-      padding: const EdgeInsets.all(
-        18,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(
-          24,
-        ),
-      ),
-      child: const Row(
-        children: [
-          SizedBox(
-            width: 34,
-            height: 34,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-            ),
-          ),
-          SizedBox(
-            width: 12,
-          ),
-          Expanded(
-            child: Text(
-              'Loading incoming COD orders from Firebase...',
-              style: TextStyle(
-                color: Color(
-                  0xFF7B8FA3,
+              suffixIcon: searchController.text.isEmpty
+                  ? null
+                  : IconButton(
+                      tooltip: 'Clear search',
+                      onPressed: searchController.clear,
+                      icon: const Icon(
+                        Icons.close_rounded,
+                      ),
+                    ),
+              filled: true,
+              fillColor: const Color(0xFFF2F7FB),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(17),
+                borderSide: const BorderSide(
+                  color: Color(0xFFE1EBF2),
                 ),
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
               ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(17),
+                borderSide: const BorderSide(
+                  color: Color(0xFF146BFF),
+                  width: 1.5,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 11),
+          SizedBox(
+            height: 38,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: SupplierOrderFilter.values.length,
+              separatorBuilder: (
+                context,
+                index,
+              ) {
+                return const SizedBox(width: 7);
+              },
+              itemBuilder: (
+                context,
+                index,
+              ) {
+                final filter =
+                    SupplierOrderFilter.values[index];
+                final selected =
+                    selectedFilter == filter;
+                final count = countFilter(
+                  documents: documents,
+                  filter: filter,
+                );
+
+                return FilterChip(
+                  selected: selected,
+                  showCheckmark: false,
+                  avatar: Icon(
+                    filterIcon(filter),
+                    size: 16,
+                    color: selected
+                        ? Colors.white
+                        : const Color(0xFF52677A),
+                  ),
+                  label: Text(
+                    '${filterLabel(filter)} $count',
+                    style: TextStyle(
+                      color: selected
+                          ? Colors.white
+                          : const Color(0xFF52677A),
+                      fontSize: 9.7,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  onSelected: (
+                    _,
+                  ) {
+                    setState(() {
+                      selectedFilter = filter;
+                    });
+                  },
+                  backgroundColor:
+                      const Color(0xFFF2F7FB),
+                  selectedColor:
+                      const Color(0xFF146BFF),
+                  side: BorderSide(
+                    color: selected
+                        ? const Color(0xFF146BFF)
+                        : const Color(0xFFDCE7EF),
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                );
+              },
             ),
           ),
         ],
@@ -174,145 +705,59 @@ class SupplierCodOrdersScreen
     );
   }
 
-  Widget errorOrdersCard(
-    Object error,
+  Widget queueTitle(
+    int count,
   ) {
-    return Container(
-      padding: const EdgeInsets.all(
-        18,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(
-          24,
-        ),
-      ),
-      child: Text(
-        'Unable to load Firebase COD orders: $error',
-        style: const TextStyle(
-          color: Color(
-            0xFFD32F2F,
-          ),
-          fontSize: 12,
-          height: 1.4,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-
-  Widget pendingOrdersNotice(
-    int pendingCount,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(
-        14,
-      ),
-      decoration: BoxDecoration(
-        color: const Color(
-          0xFFFFF4E0,
-        ),
-        borderRadius: BorderRadius.circular(
-          20,
-        ),
-        border: Border.all(
-          color: const Color(
-            0xFFFFDFA8,
-          ),
-        ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        2,
+        0,
+        2,
+        12,
       ),
       child: Row(
         children: [
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: const Color(
-                    0xFFFF7A1A,
-                  ),
-                  borderRadius: BorderRadius.circular(
-                    15,
-                  ),
-                ),
-                child: const Icon(
-                  Icons.notifications_active,
-                  color: Colors.white,
-                  size: 22,
-                ),
-              ),
-              Positioned(
-                right: -7,
-                top: -7,
-                child: Container(
-                  constraints: const BoxConstraints(
-                    minWidth: 21,
-                  ),
-                  height: 21,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(
-                      0xFFFF4D2D,
-                    ),
-                    borderRadius: BorderRadius.circular(
-                      99,
-                    ),
-                    border: Border.all(
-                      color: Colors.white,
-                      width: 2,
-                    ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      pendingCount > 99 ? '99+' : '$pendingCount',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(
-            width: 12,
-          ),
-          Expanded(
+          const Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
               children: [
                 Text(
-                  pendingCount == 1
-                      ? '1 new COD order needs review'
-                      : '$pendingCount new COD orders need review',
-                  style: const TextStyle(
-                    color: Color(
-                      0xFF102C44,
-                    ),
-                    fontSize: 13.5,
+                  'Supplier Order Queue',
+                  style: TextStyle(
+                    color: Color(0xFF102C44),
+                    fontSize: 17,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(
-                  height: 3,
-                ),
-                const Text(
-                  'Accept or cancel pending vendor requests below.',
+                SizedBox(height: 3),
+                Text(
+                  'Only COD orders assigned to this supplier account are shown.',
                   style: TextStyle(
-                    color: Color(
-                      0xFF7B8FA3,
-                    ),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF7B8FA3),
+                    fontSize: 9.8,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 9,
+              vertical: 6,
+            ),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEAF7FB),
+              borderRadius: BorderRadius.circular(99),
+            ),
+            child: Text(
+              '$count ${count == 1 ? 'order' : 'orders'}',
+              style: const TextStyle(
+                color: Color(0xFF146BFF),
+                fontSize: 8.8,
+                fontWeight: FontWeight.w900,
+              ),
             ),
           ),
         ],
@@ -320,185 +765,165 @@ class SupplierCodOrdersScreen
     );
   }
 
-  Widget bodyContent({
-    required BuildContext context,
+  Widget content({
     required List<
-      QueryDocumentSnapshot<
-        Map<
-          String,
-          dynamic
-        >
-      >
-    >
-    documents,
+        QueryDocumentSnapshot<Map<String, dynamic>>>
+        documents,
   }) {
-    final pendingCount = documents.where(
-      (
-        document,
-      ) {
-        final status = (document.data()['orderStatus'] ?? '')
-            .toString()
-            .toLowerCase();
+    final visibleDocuments = filteredDocuments(
+      documents,
+    );
 
-        return status == 'pending';
-      },
-    ).length;
-
-    return Column(
-      children: [
+    return CustomScrollView(
+      key: ValueKey(
+        'supplier-orders-$streamRevision',
+      ),
+      keyboardDismissBehavior:
+          ScrollViewKeyboardDismissBehavior.onDrag,
+      slivers: [
         SupplierOrdersHeader(
           documents: documents,
+          onBack: () {
+            Navigator.pop(context);
+          },
         ),
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(
-              18,
-              22,
-              18,
-              20,
-            ),
-            children: [
-              const Text(
-                'Incoming Orders',
-                style: TextStyle(
-                  color: Color(
-                    0xFF102C44,
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(
+            16,
+            16,
+            16,
+            28,
+          ),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate(
+              [
+                controlsCard(
+                  documents: documents,
+                ),
+                queueTitle(
+                  visibleDocuments.length,
+                ),
+                if (visibleDocuments.isEmpty)
+                  SupplierOrdersEmptyCard(
+                    filtered: documents.isNotEmpty &&
+                        (selectedFilter !=
+                                SupplierOrderFilter.all ||
+                            searchController.text
+                                .trim()
+                                .isNotEmpty),
+                    onClearFilters:
+                        clearSearchAndFilters,
+                  )
+                else
+                  ...visibleDocuments.map(
+                    (
+                      document,
+                    ) {
+                      return SupplierOrderCard(
+                        document: document,
+                        expanded:
+                            expandedOrderIds.contains(
+                          document.id,
+                        ),
+                        isBusy: busyOrderIds.contains(
+                          document.id,
+                        ),
+                        onToggle: () {
+                          setState(() {
+                            if (expandedOrderIds.contains(
+                              document.id,
+                            )) {
+                              expandedOrderIds.remove(
+                                document.id,
+                              );
+                            } else {
+                              expandedOrderIds.add(
+                                document.id,
+                              );
+                            }
+                          });
+                        },
+                        onAccept: () {
+                          updateOrderStatus(
+                            document: document,
+                            newStatus: 'Accepted',
+                            paymentStatus:
+                                'To be paid on delivery',
+                          );
+                        },
+                        onCancel: () {
+                          updateOrderStatus(
+                            document: document,
+                            newStatus: 'Cancelled',
+                            paymentStatus: 'Cancelled',
+                          );
+                        },
+                        onMarkDelivered: () {
+                          updateOrderStatus(
+                            document: document,
+                            newStatus: 'Delivered',
+                            paymentStatus: 'Paid',
+                          );
+                        },
+                      );
+                    },
                   ),
-                  fontSize: 19,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(
-                height: 4,
-              ),
-              const Text(
-                'Live vendor COD orders for this supplier account loaded from Firebase Firestore.',
-                style: TextStyle(
-                  color: Color(
-                    0xFF7B8FA3,
-                  ),
-                  fontSize: 12,
-                ),
-              ),
-              const SizedBox(
-                height: 18,
-              ),
-              if (pendingCount > 0) ...[
-                pendingOrdersNotice(
-                  pendingCount,
-                ),
-                const SizedBox(
-                  height: 14,
-                ),
               ],
-              if (documents.isEmpty)
-                emptyOrdersCard()
-              else
-                ...documents.map(
-                  (
-                    document,
-                  ) => SupplierOrderCard(
-                    document: document,
-                    onAccept: () => updateOrderStatus(
-                      context: context,
-                      documentId: document.id,
-                      newStatus: 'Accepted',
-                      paymentStatus: 'To be paid on delivery',
-                    ),
-                    onCancel: () => updateOrderStatus(
-                      context: context,
-                      documentId: document.id,
-                      newStatus: 'Cancelled',
-                      paymentStatus: 'Cancelled',
-                    ),
-                    onMarkDelivered: () => updateOrderStatus(
-                      context: context,
-                      documentId: document.id,
-                      newStatus: 'Delivered',
-                      paymentStatus: 'Paid',
-                    ),
-                  ),
-                ),
-            ],
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget loadingBody(
-    BuildContext context,
-  ) {
-    return Column(
-      children: [
-        const SupplierOrdersHeader(
-          documents: [],
+  Widget loadingBody() {
+    return CustomScrollView(
+      slivers: [
+        SupplierOrdersHeader(
+          documents: const [],
+          onBack: () {
+            Navigator.pop(context);
+          },
         ),
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(
-              18,
-              22,
-              18,
-              20,
-            ),
-            children: [
-              const Text(
-                'Incoming Orders',
-                style: TextStyle(
-                  color: Color(
-                    0xFF102C44,
-                  ),
-                  fontSize: 19,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(
-                height: 18,
-              ),
-              loadingOrdersCard(),
-            ],
+        const SliverPadding(
+          padding: EdgeInsets.fromLTRB(
+            16,
+            18,
+            16,
+            28,
+          ),
+          sliver: SliverToBoxAdapter(
+            child: SupplierOrdersLoadingCard(),
           ),
         ),
       ],
     );
   }
 
-  Widget errorBody(
-    BuildContext context,
-    Object error,
-  ) {
-    return Column(
-      children: [
-        const SupplierOrdersHeader(
-          documents: [],
+  Widget errorBody() {
+    return CustomScrollView(
+      slivers: [
+        SupplierOrdersHeader(
+          documents: const [],
+          onBack: () {
+            Navigator.pop(context);
+          },
         ),
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(
-              18,
-              22,
-              18,
-              20,
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(
+            16,
+            18,
+            16,
+            28,
+          ),
+          sliver: SliverToBoxAdapter(
+            child: SupplierOrdersErrorCard(
+              onRetry: () {
+                setState(() {
+                  streamRevision++;
+                });
+              },
             ),
-            children: [
-              const Text(
-                'Incoming Orders',
-                style: TextStyle(
-                  color: Color(
-                    0xFF102C44,
-                  ),
-                  fontSize: 19,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(
-                height: 18,
-              ),
-              errorOrdersCard(
-                error,
-              ),
-            ],
           ),
         ),
       ],
@@ -506,30 +931,19 @@ class SupplierCodOrdersScreen
   }
 
   Widget loggedOutBody() {
-    return Center(
-      child: Container(
-        margin: const EdgeInsets.all(
-          22,
-        ),
-        padding: const EdgeInsets.all(
-          18,
-        ),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(
-            24,
-          ),
-        ),
-        child: const Text(
-          'Please log in first to view incoming COD orders.',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Color(
-              0xFFD32F2F,
+    return const Scaffold(
+      backgroundColor: Color(0xFFF4F8FB),
+      body: Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Text(
+            'Please log in first to review incoming COD orders.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Color(0xFFD94A45),
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
             ),
-            fontSize: 13,
-            height: 1.4,
-            fontWeight: FontWeight.w700,
           ),
         ),
       ),
@@ -542,60 +956,49 @@ class SupplierCodOrdersScreen
   ) {
     final user = currentUser;
 
-    if (user ==
-        null) {
-      return Scaffold(
-        backgroundColor: const Color(
-          0xFFF4F8FB,
-        ),
-        body: loggedOutBody(),
-      );
+    if (user == null) {
+      return loggedOutBody();
     }
 
-    return Scaffold(
-      backgroundColor: const Color(
-        0xFFF4F8FB,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+        systemNavigationBarColor: Colors.white,
+        systemNavigationBarIconBrightness:
+            Brightness.dark,
       ),
-      body:
-          StreamBuilder<
-            QuerySnapshot<
-              Map<
-                String,
-                dynamic
-              >
-            >
-          >(
-            stream: orderService.ordersStream(
-              user.uid,
-            ),
-            builder:
-                (
-                  context,
-                  snapshot,
-                ) {
-                  if (snapshot.hasError) {
-                    return errorBody(
-                      context,
-                      snapshot.error!,
-                    );
-                  }
-
-                  if (!snapshot.hasData) {
-                    return loadingBody(
-                      context,
-                    );
-                  }
-
-                  final documents = OrderHelpers.sortDocuments(
-                    snapshot.data!.docs,
-                  );
-
-                  return bodyContent(
-                    context: context,
-                    documents: documents,
-                  );
-                },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF4F8FB),
+        body: StreamBuilder<
+            QuerySnapshot<Map<String, dynamic>>>(
+          key: ValueKey(streamRevision),
+          stream: orderService.ordersStream(
+            user.uid,
           ),
+          builder: (
+            context,
+            snapshot,
+          ) {
+            if (snapshot.hasError) {
+              return errorBody();
+            }
+
+            if (!snapshot.hasData) {
+              return loadingBody();
+            }
+
+            final documents = OrderHelpers.sortDocuments(
+              snapshot.data!.docs,
+            );
+
+            return content(
+              documents: documents,
+            );
+          },
+        ),
+      ),
     );
   }
 }

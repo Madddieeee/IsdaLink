@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:isdalink/screens/supplier/post_stock/widgets/post_stock_input_decoration.dart';
 import 'package:isdalink/screens/supplier/post_stock/widgets/post_stock_section_card.dart';
 
 class FishStockProductInformationCard extends StatelessWidget {
@@ -10,6 +12,8 @@ class FishStockProductInformationCard extends StatelessWidget {
     required this.selectedCategory,
     required this.onPreviewChanged,
     required this.onCategoryChanged,
+    this.productNameError,
+    this.descriptionError,
   });
 
   final TextEditingController productNameController;
@@ -18,183 +22,100 @@ class FishStockProductInformationCard extends StatelessWidget {
   final String selectedCategory;
   final VoidCallback onPreviewChanged;
   final ValueChanged<String> onCategoryChanged;
+  final String? productNameError;
+  final String? descriptionError;
 
   @override
   Widget build(BuildContext context) {
     return PostStockSectionCard(
       title: 'Product Information',
-      subtitle: 'Enter the fish product details shown to vendors.',
+      subtitle: 'Add the marketplace details vendors need.',
       icon: Icons.inventory_2_outlined,
+      badge: 'STEP 1',
       child: Column(
         children: [
-          CompactInputField(
+          TextField(
             controller: productNameController,
-            hintText: 'Fish product name',
-            icon: Icons.edit,
+            textCapitalization: TextCapitalization.words,
+            textInputAction: TextInputAction.next,
+            inputFormatters: [
+              LengthLimitingTextInputFormatter(60),
+            ],
             onChanged: (_) => onPreviewChanged(),
+            style: const TextStyle(
+              color: Color(0xFF102C44),
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+            ),
+            decoration: postStockInputDecoration(
+              label: 'Fish product name',
+              hintText: 'Example: Tamban',
+              icon: Icons.set_meal_outlined,
+              errorText: productNameError,
+            ),
           ),
-          const SizedBox(height: 10),
-          CompactDropdownField(
-            label: 'Category',
-            value: selectedCategory,
-            items: categories,
-            icon: Icons.category,
-            onChanged: onCategoryChanged,
+          const SizedBox(height: 11),
+          DropdownButtonFormField<String>(
+            initialValue: selectedCategory,
+            isExpanded: true,
+            decoration: postStockInputDecoration(
+              label: 'Category',
+              icon: Icons.category_outlined,
+            ),
+            dropdownColor: Colors.white,
+            icon: const Icon(
+              Icons.keyboard_arrow_down_rounded,
+              color: Color(0xFF52677A),
+            ),
+            style: const TextStyle(
+              color: Color(0xFF102C44),
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+            ),
+            items: categories.map(
+              (category) {
+                return DropdownMenuItem<String>(
+                  value: category,
+                  child: Text(
+                    category,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                );
+              },
+            ).toList(),
+            onChanged: (value) {
+              if (value != null) {
+                onCategoryChanged(value);
+              }
+            },
           ),
-          const SizedBox(height: 10),
-          CompactInputField(
+          const SizedBox(height: 11),
+          TextField(
             controller: descriptionController,
-            hintText: 'Description',
-            icon: Icons.description,
+            textCapitalization: TextCapitalization.sentences,
+            textInputAction: TextInputAction.newline,
+            minLines: 2,
             maxLines: 3,
+            inputFormatters: [
+              LengthLimitingTextInputFormatter(240),
+            ],
             onChanged: (_) => onPreviewChanged(),
+            style: const TextStyle(
+              color: Color(0xFF102C44),
+              fontSize: 13,
+              height: 1.35,
+              fontWeight: FontWeight.w700,
+            ),
+            decoration: postStockInputDecoration(
+              label: 'Description',
+              hintText: 'Freshness, size, or handling details.',
+              icon: Icons.description_outlined,
+              helperText: 'Use clear details that help vendors decide.',
+              errorText: descriptionError,
+            ),
           ),
         ],
       ),
-    );
-  }
-}
-
-class CompactInputField extends StatelessWidget {
-  const CompactInputField({
-    super.key,
-    required this.controller,
-    required this.hintText,
-    required this.icon,
-    required this.onChanged,
-    this.keyboardType,
-    this.maxLines = 1,
-  });
-
-  final TextEditingController controller;
-  final String hintText;
-  final IconData icon;
-  final ValueChanged<String> onChanged;
-  final TextInputType? keyboardType;
-  final int maxLines;
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      maxLines: maxLines,
-      onChanged: onChanged,
-      style: const TextStyle(
-        color: Color(0xFF102C44),
-        fontSize: 13,
-        fontWeight: FontWeight.w700,
-      ),
-      decoration: InputDecoration(
-        hintText: hintText,
-        hintStyle: const TextStyle(
-          color: Color(0xFF9AADBC),
-          fontSize: 12.5,
-          fontWeight: FontWeight.w600,
-        ),
-        prefixIcon: Icon(
-          icon,
-          color: const Color(0xFF146BFF),
-          size: 19,
-        ),
-        filled: true,
-        fillColor: const Color(0xFFF1F6FA),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 14,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(17),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(17),
-          borderSide: const BorderSide(
-            color: Color(0xFF146BFF),
-            width: 1.4,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class CompactDropdownField extends StatelessWidget {
-  const CompactDropdownField({
-    super.key,
-    required this.label,
-    required this.value,
-    required this.items,
-    required this.icon,
-    required this.onChanged,
-  });
-
-  final String label;
-  final String value;
-  final List<String> items;
-  final IconData icon;
-  final ValueChanged<String> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return DropdownButtonFormField<String>(
-      initialValue: value,
-      isExpanded: true,
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(
-          color: Color(0xFF7B8FA3),
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-        ),
-        prefixIcon: Icon(
-          icon,
-          color: const Color(0xFF146BFF),
-          size: 19,
-        ),
-        filled: true,
-        fillColor: const Color(0xFFF1F6FA),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 12,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(17),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(17),
-          borderSide: const BorderSide(
-            color: Color(0xFF146BFF),
-            width: 1.4,
-          ),
-        ),
-      ),
-      icon: const Icon(
-        Icons.keyboard_arrow_down,
-        color: Color(0xFF52677A),
-      ),
-      style: const TextStyle(
-        color: Color(0xFF102C44),
-        fontSize: 13,
-        fontWeight: FontWeight.w800,
-      ),
-      items: items.map(
-        (item) {
-          return DropdownMenuItem<String>(
-            value: item,
-            child: Text(
-              item,
-              overflow: TextOverflow.ellipsis,
-            ),
-          );
-        },
-      ).toList(),
-      onChanged: (value) {
-        if (value != null) {
-          onChanged(value);
-        }
-      },
     );
   }
 }

@@ -4,21 +4,11 @@ import 'package:isdalink/utils/order_helpers.dart';
 class SupplierOrderService {
   const SupplierOrderService();
 
-  Stream<
-    QuerySnapshot<
-      Map<
-        String,
-        dynamic
-      >
-    >
-  >
-  ordersStream(
+  Stream<QuerySnapshot<Map<String, dynamic>>> ordersStream(
     String supplierId,
   ) {
     return FirebaseFirestore.instance
-        .collection(
-          'orders',
-        )
+        .collection('orders')
         .where(
           'supplierId',
           isEqualTo: supplierId,
@@ -33,6 +23,7 @@ class SupplierOrderService {
       case 'accepted':
         return 'Order Accepted';
       case 'delivered':
+      case 'completed':
         return 'Order Delivered';
       case 'cancelled':
         return 'Order Cancelled';
@@ -50,9 +41,10 @@ class SupplierOrderService {
       case 'accepted':
         return 'Your COD order for $productName was accepted by $supplierName.';
       case 'delivered':
-        return 'Your COD order for $productName was marked as delivered by $supplierName.';
+      case 'completed':
+        return 'Your COD order for $productName was delivered and its COD payment was recorded by $supplierName.';
       case 'cancelled':
-        return 'Your COD order for $productName was cancelled by $supplierName. The reserved stock was returned.';
+        return 'Your COD order for $productName was cancelled by $supplierName. Any reserved stock was returned.';
       default:
         return 'Your COD order for $productName was updated by $supplierName.';
     }
@@ -60,11 +52,7 @@ class SupplierOrderService {
 
   void createNotificationInTransaction({
     required Transaction transaction,
-    required Map<
-      String,
-      dynamic
-    >
-    orderData,
+    required Map<String, dynamic> orderData,
     required String orderId,
     required String newStatus,
   }) {
@@ -91,19 +79,16 @@ class SupplierOrderService {
     );
 
     final notificationReference = FirebaseFirestore.instance
-        .collection(
-          'notifications',
-        )
+        .collection('notifications')
         .doc();
 
     transaction.set(
       notificationReference,
       {
         'vendorId': vendorId,
+        'userId': vendorId,
         'orderId': orderId,
-        'title': notificationTitle(
-          newStatus,
-        ),
+        'title': notificationTitle(newStatus),
         'message': notificationMessage(
           status: newStatus,
           productName: productName,
@@ -117,21 +102,36 @@ class SupplierOrderService {
     );
   }
 
-  Future<
-    void
-  >
-  updateOrderStatus({
+  bool isAllowedTransition({
+    required String currentStatus,
+    required String newStatus,
+  }) {
+    final current = currentStatus.toLowerCase();
+    final next = newStatus.toLowerCase();
+
+    if (current == next) {
+      return true;
+    }
+
+    if (current == 'pending') {
+      return next == 'accepted' || next == 'cancelled';
+    }
+
+    if (current == 'accepted') {
+      return next == 'delivered' || next == 'cancelled';
+    }
+
+    return false;
+  }
+
+  Future<void> updateOrderStatus({
     required String documentId,
     required String newStatus,
     required String paymentStatus,
   }) async {
     final orderReference = FirebaseFirestore.instance
-        .collection(
-          'orders',
-        )
-        .doc(
-          documentId,
-        );
+        .collection('orders')
+        .doc(documentId);
 
     await FirebaseFirestore.instance.runTransaction(
       (
@@ -142,32 +142,37 @@ class SupplierOrderService {
         );
 
         if (!orderSnapshot.exists) {
-          throw Exception(
-            'This order no longer exists.',
+          throw StateError(
+            'This order is no longer available.',
           );
         }
 
         final orderData =
-            orderSnapshot.data() ??
-            <
-              String,
-              dynamic
-            >{};
+            orderSnapshot.data() ?? <String, dynamic>{};
 
         final currentStatus = OrderHelpers.getStringValue(
           orderData,
           'orderStatus',
           'Pending',
-        ).toLowerCase();
+        );
 
-        if (currentStatus ==
+        if (!isAllowedTransition(
+          currentStatus: currentStatus,
+          newStatus: newStatus,
+        )) {
+          throw StateError(
+            'This order has already moved to another stage.',
+          );
+        }
+
+        if (currentStatus.toLowerCase() ==
             newStatus.toLowerCase()) {
           return;
         }
 
-        if (newStatus.toLowerCase() ==
-            'cancelled') {
-          await restoreStockIfNeeded(
+        if (newStatus.toLowerCase() == 'cancelled') {
+          final restorationProcessed =
+              await restoreStockIfNeeded(
             transaction: transaction,
             orderData: orderData,
           );
@@ -175,27 +180,37 @@ class SupplierOrderService {
           transaction.update(
             orderReference,
             {
-              'orderStatus': newStatus,
-              'paymentStatus': paymentStatus,
-              'stockRestored': true,
+              'orderStatus': 'Cancelled',
+              'paymentStatus': 'Cancelled',
+              'stockRestored': restorationProcessed,
+              'stockRestorePending':
+                  orderData['stockDeducted'] == true &&
+                      !restorationProcessed,
               'cancelledBy': 'supplier',
-              'restoredAt': FieldValue.serverTimestamp(),
+              'cancelledAt': FieldValue.serverTimestamp(),
+              'restoredAt': restorationProcessed
+                  ? FieldValue.serverTimestamp()
+                  : null,
               'updatedAt': FieldValue.serverTimestamp(),
             },
           );
         } else {
+          final delivered =
+              newStatus.toLowerCase() == 'delivered';
+
           transaction.update(
             orderReference,
             {
               'orderStatus': newStatus,
               'paymentStatus': paymentStatus,
               'updatedAt': FieldValue.serverTimestamp(),
-              if (newStatus.toLowerCase() ==
-                  'accepted')
+              if (newStatus.toLowerCase() == 'accepted')
                 'acceptedAt': FieldValue.serverTimestamp(),
-              if (newStatus.toLowerCase() ==
-                  'delivered')
+              if (delivered)
                 'deliveredAt': FieldValue.serverTimestamp(),
+              if (delivered)
+                'completedAt': FieldValue.serverTimestamp(),
+              if (delivered) 'isReviewEligible': true,
             },
           );
         }
@@ -210,23 +225,18 @@ class SupplierOrderService {
     );
   }
 
-  Future<
-    void
-  >
-  restoreStockIfNeeded({
+  Future<bool> restoreStockIfNeeded({
     required Transaction transaction,
-    required Map<
-      String,
-      dynamic
-    >
-    orderData,
+    required Map<String, dynamic> orderData,
   }) async {
     final stockRestored =
-        orderData['stockRestored'] ==
-        true;
+        orderData['stockRestored'] == true;
     final stockDeducted =
-        orderData['stockDeducted'] ==
-        true;
+        orderData['stockDeducted'] == true;
+
+    if (stockRestored || !stockDeducted) {
+      return true;
+    }
 
     final stockId = OrderHelpers.getStringValue(
       orderData,
@@ -243,53 +253,67 @@ class SupplierOrderService {
       'quantity',
     );
 
-    if (stockRestored ||
-        !stockDeducted ||
-        stockId.isEmpty ||
-        orderedQuantity <=
-            0) {
-      return;
+    if (stockId.isEmpty || orderedQuantity <= 0) {
+      return false;
     }
 
     final stockReference = FirebaseFirestore.instance
-        .collection(
-          'fishStocks',
-        )
-        .doc(
-          stockId,
-        );
+        .collection('fishStocks')
+        .doc(stockId);
 
     final stockSnapshot = await transaction.get(
       stockReference,
     );
 
     if (!stockSnapshot.exists) {
-      return;
+      return false;
     }
 
     final stockData =
-        stockSnapshot.data() ??
-        <
-          String,
-          dynamic
-        >{};
+        stockSnapshot.data() ?? <String, dynamic>{};
 
     final currentStock = OrderHelpers.getDoubleValue(
       stockData,
       'quantity',
     );
+    final lowStockLevel = OrderHelpers.getDoubleValue(
+      stockData,
+      'lowStockLevel',
+    );
+
+    final status = OrderHelpers.getStringValue(
+      stockData,
+      'status',
+      'available',
+    ).toLowerCase();
+
+    final hidden = status == 'unavailable' ||
+        stockData['isActive'] == false;
 
     final restoredStock =
-        currentStock +
-        orderedQuantity;
+        currentStock + orderedQuantity;
+
+    final stockStatus = hidden
+        ? 'hidden'
+        : restoredStock <= 0
+            ? 'outOfStock'
+            : restoredStock <= lowStockLevel
+                ? 'lowStock'
+                : 'available';
 
     transaction.update(
       stockReference,
       {
         'quantity': restoredStock,
-        'status': 'available',
+        'status': hidden ? 'unavailable' : 'available',
+        'isActive': !hidden,
+        'stockStatus': stockStatus,
+        if (!hidden && restoredStock > lowStockLevel)
+          'lastLowStockNotificationAt': null,
         'updatedAt': FieldValue.serverTimestamp(),
       },
     );
+
+    return true;
   }
 }

@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:isdalink/config/cloudinary_config.dart';
 import 'package:isdalink/screens/analytics/analytics_screen.dart';
 import 'package:isdalink/screens/profile/manage_profile_screen.dart';
+import 'package:isdalink/screens/profile/region_location_screen.dart';
 import 'package:isdalink/screens/supplier/post_fish_stock_screen.dart';
 import 'package:isdalink/screens/supplier/supplier_activation_screen.dart';
 import 'package:isdalink/screens/supplier/supplier_cod_orders_screen.dart';
@@ -574,7 +575,7 @@ class _MeScreenState extends State<MeScreen> {
                   const ManageProfileScreen(),
                 ),
                 onRegionAndLocation: () => openScreen(
-                  const ManageProfileScreen(),
+                  const RegionLocationScreen(),
                 ),
                 onHelp: () => showMessage(
                   'Help and support content will be available here.',
