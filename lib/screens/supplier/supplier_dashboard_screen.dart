@@ -7,6 +7,8 @@ import 'package:isdalink/screens/home/home_screen.dart';
 import 'package:isdalink/screens/supplier/post_fish_stock_screen.dart';
 import 'package:isdalink/screens/supplier/supplier_cod_orders_screen.dart';
 import 'package:isdalink/screens/supplier/supplier_manage_products_screen.dart';
+import 'package:isdalink/models/supplier.dart';
+import 'package:isdalink/screens/vendor/supplier_details_screen.dart';
 
 class SupplierDashboardScreen extends StatelessWidget {
   const SupplierDashboardScreen({
@@ -100,6 +102,282 @@ class SupplierDashboardScreen extends StatelessWidget {
     }
 
     return '';
+  }
+
+  String profileImageUrl(
+    Map<String, dynamic> data,
+  ) {
+    const keys = <String>[
+      'profileImageUrl',
+      'storePhotoUrl',
+      'photoUrl',
+    ];
+
+    for (final key in keys) {
+      final value = data[key]?.toString().trim() ?? '';
+
+      if (value.startsWith('http://') ||
+          value.startsWith('https://')) {
+        return value;
+      }
+    }
+
+    final application = data['supplierApplication'];
+
+    if (application is Map<String, dynamic>) {
+      final value =
+          application['storePhotoUrl']?.toString().trim() ?? '';
+
+      if (value.startsWith('http://') ||
+          value.startsWith('https://')) {
+        return value;
+      }
+    }
+
+    return '';
+  }
+
+  String supplierLocation(
+    Map<String, dynamic> data,
+  ) {
+    final savedLocation = stringValue(
+      data,
+      'location',
+      '',
+    );
+
+    if (savedLocation.isNotEmpty) {
+      return savedLocation;
+    }
+
+    final parts = <String>[
+      stringValue(data, 'storeAddress', ''),
+      stringValue(data, 'storeCityMunicipality', ''),
+      stringValue(data, 'storeProvince', ''),
+      'Caraga Region',
+    ].where((value) => value.trim().isNotEmpty).toList();
+
+    return parts.isEmpty ? 'Caraga Region' : parts.join(', ');
+  }
+
+  Supplier supplierFromProfile(
+    Map<String, dynamic> data,
+    User user,
+  ) {
+    final supplierName = stringValue(
+      data,
+      'supplierName',
+      stringValue(
+        data,
+        'storeName',
+        stringValue(
+          data,
+          'businessName',
+          user.displayName ?? 'Registered Supplier',
+        ),
+      ),
+    );
+
+    return Supplier(
+      name: supplierName,
+      location: supplierLocation(data),
+      contactNumber: stringValue(
+        data,
+        'phone',
+        stringValue(
+          data,
+          'contactNumber',
+          'No contact number',
+        ),
+      ),
+      description: stringValue(
+        data,
+        'description',
+        'Registered fish supplier in the IsdaLink platform.',
+      ),
+      rating: numberValue(
+        data,
+        'rating',
+      ),
+      reviews: numberValue(
+        data,
+        'reviews',
+      ).round(),
+      products: const [],
+      profileImageUrl: profileImageUrl(data),
+    );
+  }
+
+  Future<void> openOwnStore(
+    BuildContext context,
+  ) async {
+    final user = currentUser;
+
+    if (user == null) {
+      return;
+    }
+
+    try {
+      final profile = await FirebaseFirestore.instance
+          .collection('supplierProfiles')
+          .doc(user.uid)
+          .get();
+
+      if (!context.mounted) {
+        return;
+      }
+
+      if (!profile.exists) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Your supplier profile could not be found yet.',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+
+      final supplier = supplierFromProfile(
+        profile.data() ?? <String, dynamic>{},
+        user,
+      );
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SupplierDetailsScreen(
+            supplier: supplier,
+            supplierId: user.uid,
+            isOwnerView: true,
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!context.mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Unable to open your store: $error',
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Widget viewStoreCard(
+    BuildContext context,
+  ) {
+    return Container(
+      margin: const EdgeInsets.only(
+        bottom: 16,
+      ),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [
+            Color(0xFFE9F8FD),
+            Color(0xFFF2F8FF),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: const Color(0xFFCFE8F3),
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(22),
+        child: InkWell(
+          onTap: () => openOwnStore(context),
+          borderRadius: BorderRadius.circular(22),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              14,
+              13,
+              12,
+              13,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF0875D1),
+                        Color(0xFF12B6D6),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(
+                    Icons.storefront_rounded,
+                    color: Colors.white,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 11),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            'View Store',
+                            style: TextStyle(
+                              color: Color(0xFF102C44),
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          SizedBox(width: 7),
+                          _OwnerStoreBadge(),
+                        ],
+                      ),
+                      SizedBox(height: 3),
+                      Text(
+                        'See your public supplier profile exactly as vendors see it.',
+                        style: TextStyle(
+                          color: Color(0xFF657C8E),
+                          fontSize: 9.6,
+                          height: 1.3,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_rounded,
+                    color: Color(0xFF0875D1),
+                    size: 18,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   void openPostFishStock(BuildContext context) {
@@ -523,7 +801,7 @@ class SupplierDashboardScreen extends StatelessWidget {
                         : Image.network(
                             imageUrl,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) => fallbackImage(),
+                            errorBuilder: (_, __, ___) => fallbackImage(),
                           ),
                   ),
                 ),
@@ -653,6 +931,7 @@ class SupplierDashboardScreen extends StatelessWidget {
                 pending: pending,
                 alerts: alerts,
               ),
+              viewStoreCard(context),
               const _SectionHeading(
                 title: 'Supplier Tools',
                 subtitle: 'Quick access to daily supplier operations.',
@@ -744,6 +1023,35 @@ class SupplierDashboardScreen extends StatelessWidget {
               },
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+class _OwnerStoreBadge extends StatelessWidget {
+  const _OwnerStoreBadge();
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 7,
+        vertical: 4,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE4F6EE),
+        borderRadius: BorderRadius.circular(99),
+      ),
+      child: const Text(
+        'YOUR STORE',
+        style: TextStyle(
+          color: Color(0xFF147D64),
+          fontSize: 7.2,
+          letterSpacing: 0.45,
+          fontWeight: FontWeight.w900,
         ),
       ),
     );

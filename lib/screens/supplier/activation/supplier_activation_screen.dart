@@ -113,11 +113,14 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
       storeImageUrl.isNotEmpty &&
       !uploadsInProgress;
 
-  bool get reviewComplete =>
+  bool get reviewDetailsComplete =>
       ownerComplete &&
       storeComplete &&
       unitComplete &&
-      verificationComplete &&
+      verificationComplete;
+
+  bool get reviewComplete =>
+      reviewDetailsComplete &&
       confirmedAccuracy;
 
   bool get currentStepComplete {
@@ -1243,6 +1246,10 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
               label: 'Market Area',
               value: primaryMarketAreaController.text,
             ),
+            SupplierReviewRow(
+              label: 'Description',
+              value: storeDescriptionController.text,
+            ),
             const SupplierReviewRow(
               label: 'Payment',
               value: 'Cash on Delivery only',
@@ -1530,7 +1537,9 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                     )
                   : Icon(
                       isLastStep
-                          ? Icons.send_rounded
+                          ? reviewDetailsComplete && !confirmedAccuracy
+                              ? Icons.fact_check_outlined
+                              : Icons.send_rounded
                           : Icons.arrow_forward_rounded,
                       size: 19,
                     ),
@@ -1541,7 +1550,11 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                         ? isLastStep
                             ? 'Submit Application'
                             : 'Continue'
-                        : 'Complete Required Details',
+                        : isLastStep &&
+                                reviewDetailsComplete &&
+                                !confirmedAccuracy
+                            ? 'Confirm Accuracy to Submit'
+                            : 'Complete Required Details',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
@@ -1596,7 +1609,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                 onBack: closeScreen,
               ),
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 15, 16, 25),
+                padding: const EdgeInsets.fromLTRB(16, 15, 16, 34),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     if (!applicationSubmitted)

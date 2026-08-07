@@ -292,6 +292,42 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     }
   }
 
+  int reviewRatingOf(
+    Map<String, dynamic> data,
+  ) {
+    final value = data['reviewRating'];
+
+    if (value is int) {
+      return value.clamp(1, 5);
+    }
+
+    if (value is num) {
+      return value.toInt().clamp(1, 5);
+    }
+
+    if (value is String) {
+      final parsed = int.tryParse(value);
+      if (parsed != null) {
+        return parsed.clamp(1, 5);
+      }
+    }
+
+    return 0;
+  }
+
+  String ratingLabel(
+    int rating,
+  ) {
+    return switch (rating) {
+      1 => 'Poor',
+      2 => 'Fair',
+      3 => 'Good',
+      4 => 'Very Good',
+      5 => 'Excellent',
+      _ => 'Select your rating',
+    };
+  }
+
   Future<void> reviewCompletedOrder(
     QueryDocumentSnapshot<Map<String, dynamic>> document,
   ) async {
@@ -299,7 +335,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
 
     if (user == null) {
       showMessage(
-        'Please log in first to submit a review.',
+        'Please log in first to manage your review.',
         isError: true,
       );
       return;
@@ -319,9 +355,22 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
       'Supplier',
     );
 
+    final isEditing = data['reviewSubmitted'] == true;
+    final initialRating = isEditing ? reviewRatingOf(data) : 0;
+    final initialComment = isEditing
+        ? OrderHelpers.getStringValue(
+            data,
+            'reviewComment',
+            '',
+          )
+        : '';
+
     final result = await showReviewDialog(
       productName: productName,
       supplierName: supplierName,
+      initialRating: initialRating,
+      initialComment: initialComment,
+      isEditing: isEditing,
     );
 
     if (!mounted || result == null) {
@@ -329,21 +378,33 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     }
 
     try {
-      await reviewService.submitOrderReview(
-        user: user,
-        orderDocument: document,
-        input: ReviewInput(
-          rating: result.rating,
-          comment: result.comment,
-        ),
+      final input = ReviewInput(
+        rating: result.rating,
+        comment: result.comment,
       );
+
+      if (isEditing) {
+        await reviewService.updateOrderReview(
+          user: user,
+          orderDocument: document,
+          input: input,
+        );
+      } else {
+        await reviewService.submitOrderReview(
+          user: user,
+          orderDocument: document,
+          input: input,
+        );
+      }
 
       if (!mounted) {
         return;
       }
 
       showMessage(
-        'Review submitted. Thank you for rating the supplier.',
+        isEditing
+            ? 'Your review was updated.'
+            : 'Review submitted. Thank you for rating the supplier.',
       );
     } catch (error) {
       if (!mounted) {
@@ -351,7 +412,9 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
       }
 
       showMessage(
-        'Failed to submit review: $error',
+        isEditing
+            ? 'Failed to update review: $error'
+            : 'Failed to submit review: $error',
         isError: true,
       );
     }
@@ -360,129 +423,562 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
   Future<ReviewDialogResult?> showReviewDialog({
     required String productName,
     required String supplierName,
+    required int initialRating,
+    required String initialComment,
+    required bool isEditing,
   }) async {
-    int selectedRating = 5;
-    final reviewController = TextEditingController();
+    int selectedRating = initialRating;
+    String reviewText = initialComment;
 
-    final result = await showDialog<ReviewDialogResult>(
+    return showModalBottomSheet<ReviewDialogResult>(
       context: context,
-      builder: (dialogContext) {
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withAlpha(150),
+      builder: (sheetContext) {
         return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              backgroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(26),
-              ),
-              title: const Text(
-                'Rate Supplier',
-                style: TextStyle(
-                  color: Color(0xFF102C44),
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    supplierName,
-                    style: const TextStyle(
-                      color: Color(0xFF0875D1),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Order item: $productName',
-                    style: const TextStyle(
-                      color: Color(0xFF7B8FA3),
-                      fontSize: 11,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(
-                      5,
-                      (index) {
-                        final value = index + 1;
-                        final selected = value <= selectedRating;
+          builder: (
+            context,
+            setSheetState,
+          ) {
+            final canSubmit = selectedRating >= 1 && selectedRating <= 5;
 
-                        return IconButton(
-                          onPressed: () {
-                            setDialogState(
-                              () {
-                                selectedRating = value;
+            return AnimatedPadding(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
+              ),
+              child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.88,
+                ),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF8FBFD),
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(30),
+                  ),
+                ),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(
+                    18,
+                    10,
+                    18,
+                    20,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 42,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFBED0DC),
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Container(
+                            width: 46,
+                            height: 46,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Color(0xFF0875D1),
+                                  Color(0xFF12B6D6),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            child: Icon(
+                              isEditing
+                                  ? Icons.edit_note_rounded
+                                  : Icons.star_rounded,
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  isEditing
+                                      ? 'Edit Your Review'
+                                      : 'Rate Your Supplier',
+                                  style: const TextStyle(
+                                    color: Color(0xFF102C44),
+                                    fontSize: 19,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  isEditing
+                                      ? 'Update your rating or written feedback.'
+                                      : 'Share your experience from this completed COD order.',
+                                  style: const TextStyle(
+                                    color: Color(0xFF7B8FA3),
+                                    fontSize: 10.5,
+                                    height: 1.3,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: 'Close',
+                            onPressed: () => Navigator.pop(sheetContext),
+                            icon: const Icon(
+                              Icons.close_rounded,
+                              color: Color(0xFF52677A),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(13),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Color(0xFFEAF7FB),
+                              Color(0xFFF1F8FF),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: const Color(0xFFD5EAF4),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 39,
+                              height: 39,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(13),
+                              ),
+                              child: const Icon(
+                                Icons.storefront_rounded,
+                                color: Color(0xFF0875D1),
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    supplierName,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: Color(0xFF102C44),
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    productName,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: Color(0xFF7B8FA3),
+                                      fontSize: 9.8,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE6F7EF),
+                                borderRadius: BorderRadius.circular(99),
+                              ),
+                              child: const Text(
+                                'COMPLETED',
+                                style: TextStyle(
+                                  color: Color(0xFF147D64),
+                                  fontSize: 7.8,
+                                  letterSpacing: 0.45,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      const Text(
+                        'YOUR RATING',
+                        style: TextStyle(
+                          color: Color(0xFF7B8FA3),
+                          fontSize: 8.8,
+                          letterSpacing: 0.65,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 7),
+                      Center(
+                        child: Text(
+                          ratingLabel(selectedRating),
+                          style: TextStyle(
+                            color: selectedRating == 0
+                                ? const Color(0xFF7B8FA3)
+                                : const Color(0xFF102C44),
+                            fontSize: 15,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(
+                          5,
+                          (index) {
+                            final value = index + 1;
+                            final selected = value <= selectedRating;
+
+                            return IconButton(
+                              tooltip: '$value star${value == 1 ? '' : 's'}',
+                              visualDensity: VisualDensity.compact,
+                              onPressed: () {
+                                setSheetState(
+                                  () {
+                                    selectedRating = value;
+                                  },
+                                );
                               },
+                              icon: AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 150),
+                                child: Icon(
+                                  selected
+                                      ? Icons.star_rounded
+                                      : Icons.star_border_rounded,
+                                  key: ValueKey<bool>(selected),
+                                  color: const Color(0xFFFFB703),
+                                  size: 35,
+                                ),
+                              ),
                             );
                           },
-                          icon: Icon(
-                            selected
-                                ? Icons.star_rounded
-                                : Icons.star_border_rounded,
-                            color: const Color(0xFFFFB703),
-                            size: 30,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: reviewController,
-                    maxLines: 3,
-                    decoration: InputDecoration(
-                      labelText: 'Optional written review',
-                      alignLabelWithHint: true,
-                      filled: true,
-                      fillColor: const Color(0xFFF4F8FB),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
-                        borderSide: BorderSide.none,
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 6),
+                      Center(
+                        child: Text(
+                          selectedRating == 0
+                              ? 'Tap a star to continue'
+                              : '$selectedRating of 5 stars',
+                          style: const TextStyle(
+                            color: Color(0xFF7B8FA3),
+                            fontSize: 9.8,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      const Text(
+                        'WRITTEN REVIEW',
+                        style: TextStyle(
+                          color: Color(0xFF7B8FA3),
+                          fontSize: 8.8,
+                          letterSpacing: 0.65,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 7),
+                      TextFormField(
+                        initialValue: initialComment,
+                        minLines: 3,
+                        maxLines: 5,
+                        maxLength: 300,
+                        textCapitalization: TextCapitalization.sentences,
+                        onChanged: (value) {
+                          reviewText = value;
+                        },
+                        decoration: InputDecoration(
+                          hintText:
+                              'Optional: tell other vendors about your experience...',
+                          hintStyle: const TextStyle(
+                            color: Color(0xFF9AAEBC),
+                            fontSize: 11,
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.all(14),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(17),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFDDEAF2),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(17),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF0875D1),
+                              width: 1.4,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(11),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F6FA),
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: const Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.info_outline_rounded,
+                              color: Color(0xFF0875D1),
+                              size: 17,
+                            ),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Your rating is shown on the supplier profile. You can edit this review later from My Orders.',
+                                style: TextStyle(
+                                  color: Color(0xFF657C8E),
+                                  fontSize: 9.4,
+                                  height: 1.35,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.pop(sheetContext),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFF52677A),
+                                side: const BorderSide(
+                                  color: Color(0xFFC9D8E2),
+                                ),
+                                minimumSize: const Size.fromHeight(50),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
+                              ),
+                              child: const Text(
+                                'Cancel',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            flex: 2,
+                            child: ElevatedButton.icon(
+                              onPressed: canSubmit
+                                  ? () {
+                                      Navigator.pop(
+                                        sheetContext,
+                                        ReviewDialogResult(
+                                          rating: selectedRating,
+                                          comment: reviewText.trim(),
+                                        ),
+                                      );
+                                    }
+                                  : null,
+                              icon: Icon(
+                                isEditing
+                                    ? Icons.save_outlined
+                                    : Icons.send_rounded,
+                                size: 18,
+                              ),
+                              label: Text(
+                                isEditing
+                                    ? 'Save Changes'
+                                    : selectedRating == 0
+                                        ? 'Select a Rating'
+                                        : 'Submit Review',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF0875D1),
+                                disabledBackgroundColor:
+                                    const Color(0xFFDCE7EF),
+                                foregroundColor: Colors.white,
+                                disabledForegroundColor:
+                                    const Color(0xFF7B8FA3),
+                                elevation: canSubmit ? 3 : 0,
+                                minimumSize: const Size.fromHeight(50),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(
-                    dialogContext,
-                    ReviewDialogResult(
-                      rating: selectedRating,
-                      comment: reviewController.text,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0875D1),
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(13),
-                    ),
-                  ),
-                  child: const Text(
-                    'Submit Review',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
-              ],
             );
           },
         );
       },
     );
+  }
 
-    reviewController.dispose();
-    return result;
+  Widget reviewEditPanel(
+    QueryDocumentSnapshot<Map<String, dynamic>> document,
+  ) {
+    final data = document.data();
+    final rating = reviewRatingOf(data);
+    final comment = OrderHelpers.getStringValue(
+      data,
+      'reviewComment',
+      '',
+    );
+
+    return Transform.translate(
+      offset: const Offset(0, -8),
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(
+          5,
+          0,
+          5,
+          8,
+        ),
+        padding: const EdgeInsets.fromLTRB(
+          12,
+          10,
+          10,
+          10,
+        ),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: [
+              Color(0xFFEAF8F2),
+              Color(0xFFF1F8FF),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: const Color(0xFFCFE8DE),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 37,
+              height: 37,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.rate_review_outlined,
+                color: Color(0xFF147D64),
+                size: 19,
+              ),
+            ),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Text(
+                        'Your Review',
+                        style: TextStyle(
+                          color: Color(0xFF102C44),
+                          fontSize: 10.8,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(width: 7),
+                      ...List.generate(
+                        5,
+                        (index) => Icon(
+                          index < rating
+                              ? Icons.star_rounded
+                              : Icons.star_border_rounded,
+                          color: const Color(0xFFFFB703),
+                          size: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (comment.isNotEmpty) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      comment,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF657C8E),
+                        fontSize: 9.2,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            TextButton.icon(
+              onPressed: () => reviewCompletedOrder(document),
+              icon: const Icon(
+                Icons.edit_outlined,
+                size: 16,
+              ),
+              label: const Text(
+                'Edit',
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF0875D1),
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void showMessage(
@@ -857,15 +1353,27 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                 emptyOrdersCard()
               else
                 ...orders.map(
-                  (document) => VendorOrderCard(
-                    document: document,
-                    onCancelPendingOrder: () => cancelPendingOrder(
-                      document,
-                    ),
-                    onReviewOrder: () => reviewCompletedOrder(
-                      document,
-                    ),
-                  ),
+                  (document) {
+                    final reviewSubmitted =
+                        document.data()['reviewSubmitted'] == true;
+
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        VendorOrderCard(
+                          document: document,
+                          onCancelPendingOrder: () => cancelPendingOrder(
+                            document,
+                          ),
+                          onReviewOrder: () => reviewCompletedOrder(
+                            document,
+                          ),
+                        ),
+                        if (reviewSubmitted)
+                          reviewEditPanel(document),
+                      ],
+                    );
+                  },
                 ),
             ],
           ),
