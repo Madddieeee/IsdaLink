@@ -9,14 +9,14 @@ class ManageProductCard extends StatelessWidget {
     required this.document,
     required this.onEdit,
     required this.onToggleAvailability,
-    required this.onDelete,
+    required this.onArchive,
     this.isBusy = false,
   });
 
   final QueryDocumentSnapshot<Map<String, dynamic>> document;
   final VoidCallback onEdit;
   final VoidCallback onToggleAvailability;
-  final VoidCallback onDelete;
+  final VoidCallback onArchive;
   final bool isBusy;
 
   String firstString(
@@ -43,6 +43,12 @@ class ManageProductCard extends StatelessWidget {
         : value.toStringAsFixed(1);
   }
 
+  bool isArchived(
+    Map<String, dynamic> data,
+  ) {
+    return data['archived'] == true;
+  }
+
   bool isHidden(
     Map<String, dynamic> data,
   ) {
@@ -54,6 +60,10 @@ class ManageProductCard extends StatelessWidget {
     required double quantity,
     required double lowStockLevel,
   }) {
+    if (isArchived(data)) {
+      return 'Archived';
+    }
+
     if (isHidden(data)) {
       return 'Hidden';
     }
@@ -73,6 +83,7 @@ class ManageProductCard extends StatelessWidget {
     String status,
   ) {
     return switch (status) {
+      'Archived' => const Color(0xFF6B7280),
       'Hidden' => const Color(0xFF7B8FA3),
       'Out of Stock' => const Color(0xFFD94A45),
       'Low Stock' => const Color(0xFFFF7A1A),
@@ -183,6 +194,7 @@ class ManageProductCard extends StatelessWidget {
             ? lowStockLevel / referenceQuantity * 100
             : 20.0;
 
+    final archived = isArchived(data);
     final hidden = isHidden(data);
     final currentStatus = stockStatus(
       data: data,
@@ -383,7 +395,11 @@ class ManageProductCard extends StatelessWidget {
                     size: 18,
                   ),
                   label: Text(
-                    hidden ? 'Show' : 'Hide',
+                    archived
+                        ? 'Restore'
+                        : hidden
+                            ? 'Show'
+                            : 'Hide',
                     style: const TextStyle(
                       fontWeight: FontWeight.w900,
                     ),
@@ -412,8 +428,8 @@ class ManageProductCard extends StatelessWidget {
                   onSelected: (
                     value,
                   ) {
-                    if (value == 'delete') {
-                      onDelete();
+                    if (value == 'archive') {
+                      onArchive();
                     }
                   },
                   itemBuilder: (
@@ -421,19 +437,19 @@ class ManageProductCard extends StatelessWidget {
                   ) {
                     return const [
                       PopupMenuItem<String>(
-                        value: 'delete',
+                        value: 'archive',
                         child: Row(
                           children: [
                             Icon(
-                              Icons.delete_outline_rounded,
-                              color: Color(0xFFD94A45),
+                              Icons.archive_outlined,
+                              color: Color(0xFFB86500),
                               size: 20,
                             ),
                             SizedBox(width: 9),
                             Text(
-                              'Delete Product',
+                              'Archive Product',
                               style: TextStyle(
-                                color: Color(0xFFD94A45),
+                                color: Color(0xFFB86500),
                                 fontWeight: FontWeight.w800,
                               ),
                             ),

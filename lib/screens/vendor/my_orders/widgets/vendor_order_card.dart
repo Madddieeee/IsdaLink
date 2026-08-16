@@ -819,10 +819,25 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
 
     final imageUrl = productImageUrl(data);
 
-    final quantity = OrderHelpers.getDoubleValue(
+    final requestedQuantity =
+        OrderHelpers.getDoubleValue(
       data,
       'quantity',
     );
+    final storedFulfilledQuantity =
+        OrderHelpers.getDoubleValue(
+      data,
+      'fulfilledQuantity',
+    );
+    final quantity =
+        storedFulfilledQuantity > 0
+            ? storedFulfilledQuantity
+            : requestedQuantity;
+    final partialFulfillment =
+        data['partialFulfillment'] == true ||
+            (storedFulfilledQuantity > 0 &&
+                storedFulfilledQuantity <
+                    requestedQuantity);
 
     final quantityUnit = getString(
       data,
@@ -830,10 +845,20 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
       'kilo',
     );
 
-    final totalAmount = OrderHelpers.getDoubleValue(
+    final originalTotalAmount =
+        OrderHelpers.getDoubleValue(
       data,
       'totalAmount',
     );
+    final fulfilledTotalAmount =
+        OrderHelpers.getDoubleValue(
+      data,
+      'fulfilledTotalAmount',
+    );
+    final totalAmount =
+        fulfilledTotalAmount > 0
+            ? fulfilledTotalAmount
+            : originalTotalAmount;
 
     final paymentStatus = getString(
       data,
@@ -987,7 +1012,9 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           compactValue(
-                            label: 'Quantity',
+                            label: partialFulfillment
+                                ? 'Fulfilled'
+                                : 'Quantity',
                             value:
                                 '${OrderHelpers.formatNumber(quantity)} $quantityUnit',
                           ),
@@ -1002,6 +1029,32 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
                       ),
                     ],
                   ),
+                  if (partialFulfillment) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF6E9),
+                        borderRadius: BorderRadius.circular(13),
+                      ),
+                      child: Text(
+                        '${OrderHelpers.formatNumber(quantity)} of '
+                        '${OrderHelpers.formatNumber(requestedQuantity)} '
+                        '$quantityUnit accepted. Your COD total was adjusted '
+                        'to the fulfilled quantity.',
+                        style: const TextStyle(
+                          color: Color(0xFF8A5500),
+                          fontSize: 8.9,
+                          height: 1.3,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 10),
                   compactStatusBar(orderStatus),
                   AnimatedSize(

@@ -342,7 +342,7 @@ class AdminDashboardScreen
               ),
               const AdminSectionTitle(
                 title: 'System Overview',
-                subtitle: 'Quick snapshot of live Firestore records for thesis demonstration.',
+                subtitle: 'Quick snapshot of current marketplace and account records.',
                 icon: Icons.analytics_outlined,
               ),
               const SizedBox(

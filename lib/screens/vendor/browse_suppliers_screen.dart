@@ -88,7 +88,7 @@ class _BrowseSuppliersScreenState
     if (approvedDocuments.isEmpty) {
       return const BrowseSuppliersEmptyBody(
         title: 'No supplier profiles yet',
-        subtitle: 'Approved supplier accounts from Firebase will appear here after admin review.',
+        subtitle: 'Approved supplier stores will appear here when available.',
       );
     }
 

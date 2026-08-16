@@ -354,12 +354,9 @@ service cloud.firestore {
         || validVendorPurchaseStockUpdate(stockId)
         || validVendorCancellationStockRestore(stockId);
 
-      allow delete: if isAdmin()
-        || (
-          signedIn()
-          && resource.data.get('supplierId', '') == currentUid()
-          && isApprovedSupplierAccount(currentUid())
-        );
+      // Preserve listing/order history. Suppliers archive listings instead
+      // of hard-deleting fishStocks documents.
+      allow delete: if isAdmin();
 
       function validSupplierStockUpdate() {
         return signedIn()
@@ -549,9 +546,19 @@ service cloud.firestore {
               && changedOnly([
                 'orderStatus',
                 'paymentStatus',
+                'fulfilledQuantity',
+                'unfulfilledQuantity',
+                'fulfilledTotalAmount',
+                'reservedQuantity',
+                'partialFulfillment',
+                'fulfillmentStatus',
+                'partialStockRestored',
+                'partialRestoredQuantity',
+                'partialRestoredAt',
                 'acceptedAt',
                 'updatedAt'
               ])
+              && validSupplierAcceptance(orderId)
             )
             || (
               currentStatus == 'Accepted'
@@ -590,8 +597,81 @@ service cloud.firestore {
           );
       }
 
+      function validSupplierAcceptance(orderId) {
+        let ordered = resource.data.get('quantity', 0);
+        let fulfilled = request.resource.data.get(
+          'fulfilledQuantity',
+          0
+        );
+        let unfulfilled = request.resource.data.get(
+          'unfulfilledQuantity',
+          0
+        );
+        let unitPrice = resource.data.get('unitPrice', 0);
+        let expectedTotal = unitPrice * fulfilled;
+        let partial = fulfilled < ordered;
+        let stockId = resource.data.get('stockId', '');
+
+        return ordered is number
+          && ordered > 0
+          && fulfilled is number
+          && fulfilled > 0
+          && fulfilled <= ordered
+          && unfulfilled == ordered - fulfilled
+          && request.resource.data.get('reservedQuantity', 0)
+            == fulfilled
+          && request.resource.data.get('fulfilledTotalAmount', -1)
+            >= expectedTotal - 0.01
+          && request.resource.data.get('fulfilledTotalAmount', -1)
+            <= expectedTotal + 0.01
+          && request.resource.data.get(
+            'partialFulfillment',
+            false
+          ) == partial
+          && request.resource.data.get(
+            'fulfillmentStatus',
+            ''
+          ) == (partial ? 'partial' : 'full')
+          && request.resource.data.get(
+            'partialStockRestored',
+            false
+          ) == partial
+          && request.resource.data.get(
+            'partialRestoredQuantity',
+            -1
+          ) == unfulfilled
+          && (
+            !partial
+            || (
+              stockId is string
+              && stockId.size() > 0
+              && exists(stockPath(stockId))
+              && existsAfter(stockPath(stockId))
+              && getAfter(stockPath(stockId)).data.get(
+                'lastPartialFulfillmentOrderId',
+                ''
+              ) == orderId
+              && getAfter(stockPath(stockId)).data.get(
+                'quantity',
+                0
+              ) == get(stockPath(stockId)).data.get(
+                'quantity',
+                0
+              ) + unfulfilled
+            )
+          );
+      }
+
       function validCancellationRestoration(orderId) {
         let stockId = resource.data.get('stockId', '');
+        let fulfilled = resource.data.get(
+          'fulfilledQuantity',
+          0
+        );
+        let restorableQuantity =
+          fulfilled > 0
+            ? fulfilled
+            : resource.data.get('quantity', 0);
 
         return (
           resource.data.get('stockDeducted', false) != true
@@ -617,7 +697,7 @@ service cloud.firestore {
           ) == orderId
           && getAfter(stockPath(stockId)).data.get('quantity', 0)
             == get(stockPath(stockId)).data.get('quantity', 0)
-              + resource.data.get('quantity', 0)
+              + restorableQuantity
         );
       }
 

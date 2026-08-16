@@ -38,6 +38,37 @@ class _TopSellingFishStripState extends State<TopSellingFishStrip> {
     return status == 'delivered' || status == 'completed';
   }
 
+  String normalizedUnit(
+    String rawUnit,
+  ) {
+    final value = rawUnit
+        .trim()
+        .toLowerCase()
+        .replaceAll('_', ' ')
+        .replaceAll('-', ' ')
+        .replaceAll(RegExp(r'\s+'), ' ');
+
+    if (value == 'kg' ||
+        value == 'kilo' ||
+        value == 'kilos' ||
+        value == 'kilogram' ||
+        value == 'kilograms') {
+      return 'kilogram';
+    }
+
+    if (value == 'tabs') {
+      return 'tab';
+    }
+
+    if (value == 'ice box' ||
+        value == 'ice boxes' ||
+        value == 'iceboxes') {
+      return 'icebox';
+    }
+
+    return value.isEmpty ? 'kilogram' : value;
+  }
+
   List<TopSellingFish> buildTopSellingFish(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
   ) {
@@ -60,8 +91,17 @@ class _TopSellingFishStripState extends State<TopSellingFishStrip> {
         continue;
       }
 
-      final fishName = FishNameHelper.canonicalDisplayName(rawProductName);
-      final fishKey = FishNameHelper.canonicalKey(rawProductName);
+      final fishName =
+          FishNameHelper.canonicalDisplayName(rawProductName);
+      final quantityUnit = normalizedUnit(
+        OrderHelpers.getStringValue(
+          data,
+          'quantityUnit',
+          'kilogram',
+        ),
+      );
+      final fishKey =
+          '${FishNameHelper.canonicalKey(rawProductName)}|$quantityUnit';
 
       final emoji = OrderHelpers.getStringValue(
         data,
@@ -73,21 +113,38 @@ class _TopSellingFishStripState extends State<TopSellingFishStrip> {
         ),
       );
 
-      final quantity = OrderHelpers.getDoubleValue(
+      final storedFulfilledQuantity =
+          OrderHelpers.getDoubleValue(
         data,
-        'quantity',
+        'fulfilledQuantity',
       );
+      final quantity =
+          storedFulfilledQuantity > 0
+              ? storedFulfilledQuantity
+              : OrderHelpers.getDoubleValue(
+                  data,
+                  'quantity',
+                );
 
-      final revenue = OrderHelpers.getDoubleValue(
+      final fulfilledTotalAmount =
+          OrderHelpers.getDoubleValue(
         data,
-        'totalAmount',
+        'fulfilledTotalAmount',
       );
+      final revenue =
+          fulfilledTotalAmount > 0
+              ? fulfilledTotalAmount
+              : OrderHelpers.getDoubleValue(
+                  data,
+                  'totalAmount',
+                );
 
       final currentFish = fishMap[fishKey];
 
       fishMap[fishKey] = TopSellingFish(
         name: fishName,
         emoji: currentFish?.emoji ?? emoji,
+        quantityUnit: quantityUnit,
         quantity: (currentFish?.quantity ?? 0.0) + quantity,
         revenue: (currentFish?.revenue ?? 0.0) + revenue,
         orderCount: (currentFish?.orderCount ?? 0) + 1,
@@ -164,7 +221,7 @@ class _TopSellingFishStripState extends State<TopSellingFishStrip> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Available ${fish.name}',
+                            'Available ${fish.name} · ${fish.quantityUnit}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -244,8 +301,17 @@ class _TopSellingFishStripState extends State<TopSellingFishStrip> {
                           productName,
                         );
 
+                        final stockUnit = normalizedUnit(
+                          OrderHelpers.getStringValue(
+                            data,
+                            'quantityUnit',
+                            'kilogram',
+                          ),
+                        );
+
                         return stockFishKey ==
                                 FishNameHelper.canonicalKey(fish.name) &&
+                            stockUnit == fish.quantityUnit &&
                             (status == 'available' || status == 'active') &&
                             quantity > 0;
                       },
@@ -388,7 +454,7 @@ class _TopSellingFishStripState extends State<TopSellingFishStrip> {
                           ),
                           SizedBox(height: 3),
                           Text(
-                            'Grouped by fish name from your completed purchases.',
+                            'Grouped by fish product and quantity unit from your completed purchases.',
                             style: TextStyle(
                               color: Color(0xFF7B8FA3),
                               fontSize: 12,
@@ -804,7 +870,7 @@ class TopSellingFishListTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    '${formatNumber(fish.quantity)} units bought • ${fish.orderCount} completed orders',
+                    '${formatNumber(fish.quantity)} ${fish.quantityUnit} bought • ${fish.orderCount} completed orders',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -1043,6 +1109,7 @@ class TopSellingFish {
   const TopSellingFish({
     required this.name,
     required this.emoji,
+    required this.quantityUnit,
     required this.quantity,
     required this.revenue,
     required this.orderCount,
@@ -1050,6 +1117,7 @@ class TopSellingFish {
 
   final String name;
   final String emoji;
+  final String quantityUnit;
   final double quantity;
   final double revenue;
   final int orderCount;

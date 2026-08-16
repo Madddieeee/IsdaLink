@@ -37,9 +37,21 @@ class SupplierOrderService {
     required String status,
     required String productName,
     required String supplierName,
+    double requestedQuantity = 0,
+    double fulfilledQuantity = 0,
+    String quantityUnit = '',
   }) {
     switch (status.toLowerCase()) {
       case 'accepted':
+        if (requestedQuantity > 0 &&
+            fulfilledQuantity > 0 &&
+            fulfilledQuantity < requestedQuantity) {
+          return '$supplierName accepted ${OrderHelpers.formatNumber(fulfilledQuantity)} '
+              'of ${OrderHelpers.formatNumber(requestedQuantity)} '
+              '$quantityUnit for your $productName COD order. '
+              'The unfulfilled quantity was returned to stock.';
+        }
+
         return 'Your COD order for $productName was accepted by $supplierName.';
       case 'delivered':
       case 'completed':
@@ -56,6 +68,7 @@ class SupplierOrderService {
     required Map<String, dynamic> orderData,
     required String orderId,
     required String newStatus,
+    double? fulfilledQuantity,
   }) {
     final vendorId = OrderHelpers.getStringValue(
       orderData,
@@ -79,6 +92,18 @@ class SupplierOrderService {
       'Supplier',
     );
 
+    final requestedQuantity = OrderHelpers.getDoubleValue(
+      orderData,
+      'quantity',
+    );
+    final quantityUnit = OrderHelpers.getStringValue(
+      orderData,
+      'quantityUnit',
+      'unit',
+    );
+    final acceptedQuantity =
+        fulfilledQuantity ?? requestedQuantity;
+
     final notificationReference = FirebaseFirestore.instance
         .collection('notifications')
         .doc();
@@ -94,6 +119,9 @@ class SupplierOrderService {
           status: newStatus,
           productName: productName,
           supplierName: supplierName,
+          requestedQuantity: requestedQuantity,
+          fulfilledQuantity: acceptedQuantity,
+          quantityUnit: quantityUnit,
         ),
         'status': newStatus,
         'type': 'order_status',
@@ -129,6 +157,7 @@ class SupplierOrderService {
     required String documentId,
     required String newStatus,
     required String paymentStatus,
+    double? fulfilledQuantity,
   }) async {
     final orderReference = FirebaseFirestore.instance
         .collection('orders')
@@ -197,24 +226,107 @@ class SupplierOrderService {
             },
           );
         } else {
+          final normalizedNewStatus =
+              newStatus.toLowerCase();
           final delivered =
-              newStatus.toLowerCase() == 'delivered';
+              normalizedNewStatus == 'delivered';
 
-          transaction.update(
-            orderReference,
-            {
-              'orderStatus': newStatus,
-              'paymentStatus': paymentStatus,
-              'updatedAt': FieldValue.serverTimestamp(),
-              if (newStatus.toLowerCase() == 'accepted')
-                'acceptedAt': FieldValue.serverTimestamp(),
-              if (delivered)
-                'deliveredAt': FieldValue.serverTimestamp(),
-              if (delivered)
-                'completedAt': FieldValue.serverTimestamp(),
-              if (delivered) 'isReviewEligible': true,
-            },
-          );
+          if (normalizedNewStatus == 'accepted') {
+            final requestedQuantity =
+                OrderHelpers.getDoubleValue(
+              orderData,
+              'quantity',
+            );
+
+            if (requestedQuantity <= 0) {
+              throw StateError(
+                'This order has an invalid requested quantity.',
+              );
+            }
+
+            final acceptedQuantity =
+                fulfilledQuantity ?? requestedQuantity;
+
+            if (acceptedQuantity <= 0 ||
+                acceptedQuantity > requestedQuantity) {
+              throw StateError(
+                'Fulfilled quantity must be between 1 and the requested quantity.',
+              );
+            }
+
+            final unfulfilledQuantity =
+                requestedQuantity - acceptedQuantity;
+            final partialFulfillment =
+                unfulfilledQuantity > 0;
+
+            if (partialFulfillment) {
+              await restoreUnfulfilledQuantity(
+                transaction: transaction,
+                orderData: orderData,
+                orderId: documentId,
+                quantityToRestore:
+                    unfulfilledQuantity,
+              );
+            }
+
+            final unitPrice =
+                OrderHelpers.getDoubleValue(
+              orderData,
+              'unitPrice',
+            );
+
+            transaction.update(
+              orderReference,
+              {
+                'orderStatus': 'Accepted',
+                'paymentStatus':
+                    'To be paid on delivery',
+                'fulfilledQuantity':
+                    acceptedQuantity,
+                'unfulfilledQuantity':
+                    unfulfilledQuantity,
+                'fulfilledTotalAmount':
+                    unitPrice * acceptedQuantity,
+                'reservedQuantity':
+                    acceptedQuantity,
+                'partialFulfillment':
+                    partialFulfillment,
+                'fulfillmentStatus':
+                    partialFulfillment
+                        ? 'partial'
+                        : 'full',
+                'partialStockRestored':
+                    partialFulfillment,
+                'partialRestoredQuantity':
+                    unfulfilledQuantity,
+                if (partialFulfillment)
+                  'partialRestoredAt':
+                      FieldValue.serverTimestamp(),
+                'acceptedAt':
+                    FieldValue.serverTimestamp(),
+                'updatedAt':
+                    FieldValue.serverTimestamp(),
+              },
+            );
+          } else {
+            transaction.update(
+              orderReference,
+              {
+                'orderStatus': newStatus,
+                'paymentStatus': paymentStatus,
+                'updatedAt':
+                    FieldValue.serverTimestamp(),
+                if (delivered)
+                  'deliveredAt':
+                      FieldValue.serverTimestamp(),
+                if (delivered)
+                  'completedAt':
+                      FieldValue.serverTimestamp(),
+                if (delivered)
+                  'isReviewEligible': true,
+              },
+            );
+          }
         }
 
         createNotificationInTransaction(
@@ -222,7 +334,78 @@ class SupplierOrderService {
           orderData: orderData,
           orderId: documentId,
           newStatus: newStatus,
+          fulfilledQuantity:
+              newStatus.toLowerCase() == 'accepted'
+                  ? fulfilledQuantity
+                  : null,
         );
+      },
+    );
+  }
+
+  Future<void> restoreUnfulfilledQuantity({
+    required Transaction transaction,
+    required Map<String, dynamic> orderData,
+    required String orderId,
+    required double quantityToRestore,
+  }) async {
+    if (quantityToRestore <= 0) {
+      return;
+    }
+
+    final stockId = OrderHelpers.getStringValue(
+      orderData,
+      'stockId',
+      OrderHelpers.getStringValue(
+        orderData,
+        'fishStockId',
+        '',
+      ),
+    );
+
+    if (stockId.isEmpty) {
+      throw StateError(
+        'The stock record for this order is unavailable.',
+      );
+    }
+
+    final stockReference = FirebaseFirestore.instance
+        .collection('fishStocks')
+        .doc(stockId);
+
+    final stockSnapshot = await transaction.get(
+      stockReference,
+    );
+
+    if (!stockSnapshot.exists) {
+      throw StateError(
+        'The stock record for this order no longer exists.',
+      );
+    }
+
+    final stockData =
+        stockSnapshot.data() ?? <String, dynamic>{};
+
+    final restoredStock =
+        StockState.quantity(stockData) + quantityToRestore;
+    final hidden =
+        StockState.isIntentionallyHidden(stockData);
+
+    transaction.update(
+      stockReference,
+      {
+        ...StockState.fieldsForQuantity(
+          stockData,
+          quantity: restoredStock,
+        ),
+        if (!hidden && restoredStock > 0) ...{
+          'lastLowStockNotificationAt': null,
+          'lastLowStockNotificationStatus': null,
+        },
+        'lastPartialFulfillmentOrderId':
+            orderId,
+        'updatedAt':
+            FieldValue.serverTimestamp(),
       },
     );
   }
@@ -255,8 +438,24 @@ class SupplierOrderService {
       orderData,
       'quantity',
     );
+    final fulfilledQuantity =
+        OrderHelpers.getDoubleValue(
+      orderData,
+      'fulfilledQuantity',
+    );
+    final currentStatus = OrderHelpers.getStringValue(
+      orderData,
+      'orderStatus',
+      'Pending',
+    ).toLowerCase();
 
-    if (stockId.isEmpty || orderedQuantity <= 0) {
+    final quantityToRestore =
+        currentStatus == 'accepted' &&
+                fulfilledQuantity > 0
+            ? fulfilledQuantity
+            : orderedQuantity;
+
+    if (stockId.isEmpty || quantityToRestore <= 0) {
       return false;
     }
 
@@ -276,7 +475,7 @@ class SupplierOrderService {
         stockSnapshot.data() ?? <String, dynamic>{};
 
     final restoredStock =
-        StockState.quantity(stockData) + orderedQuantity;
+        StockState.quantity(stockData) + quantityToRestore;
     final hidden = StockState.isIntentionallyHidden(stockData);
 
     transaction.update(

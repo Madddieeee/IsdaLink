@@ -280,18 +280,45 @@ class SupplierProductService {
         data,
         active: makeActive,
       ),
+      if (makeActive && data['archived'] == true) ...{
+        'archived': false,
+        'restoredFromArchiveAt':
+            FieldValue.serverTimestamp(),
+      },
       'updatedAt': FieldValue.serverTimestamp(),
     });
 
     return newStatus;
   }
 
-  Future<void> deleteProduct(
+  Future<void> archiveProduct(
     String documentId,
   ) async {
-    await FirebaseFirestore.instance
+    final reference = FirebaseFirestore.instance
         .collection('fishStocks')
-        .doc(documentId)
-        .delete();
+        .doc(documentId);
+
+    final snapshot = await reference.get();
+
+    if (!snapshot.exists) {
+      throw Exception(
+        'This fish listing no longer exists.',
+      );
+    }
+
+    final data =
+        snapshot.data() ?? <String, dynamic>{};
+
+    await reference.update({
+      ...StockState.fieldsForVisibility(
+        data,
+        active: false,
+      ),
+      'archived': true,
+      'archivedAt':
+          FieldValue.serverTimestamp(),
+      'updatedAt':
+          FieldValue.serverTimestamp(),
+    });
   }
 }

@@ -521,13 +521,30 @@ class SupplierOrderCard extends StatelessWidget {
       ],
       fallback: 'Caraga Region',
     );
-    final quantity = firstDouble(
+    final requestedQuantity = firstDouble(
+      data,
+      const [
+        'quantity',
+      ],
+    );
+    final fulfilledQuantity = firstDouble(
       data,
       const [
         'fulfilledQuantity',
         'quantity',
       ],
     );
+    final unfulfilledQuantity = firstDouble(
+      data,
+      const [
+        'unfulfilledQuantity',
+      ],
+    );
+    final partialFulfillment =
+        data['partialFulfillment'] == true ||
+            (fulfilledQuantity > 0 &&
+                requestedQuantity > fulfilledQuantity);
+    final quantity = fulfilledQuantity;
     final quantityUnit = firstString(
       data,
       const [
@@ -721,6 +738,49 @@ class SupplierOrderCard extends StatelessWidget {
                       ),
                     ],
                   ),
+                  if (partialFulfillment) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 11,
+                        vertical: 9,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF6E9),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: const Color(0xFFFFD9A6),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.call_split_rounded,
+                            color: Color(0xFFB86500),
+                            size: 17,
+                          ),
+                          const SizedBox(width: 7),
+                          Expanded(
+                            child: Text(
+                              'Partial fulfillment: '
+                              '${OrderHelpers.formatNumber(fulfilledQuantity)} of '
+                              '${OrderHelpers.formatNumber(requestedQuantity)} '
+                              '$quantityUnit accepted. '
+                              '${OrderHelpers.formatNumber(unfulfilledQuantity)} '
+                              '$quantityUnit returned to stock.',
+                              style: const TextStyle(
+                                color: Color(0xFF8A5500),
+                                fontSize: 9.1,
+                                height: 1.3,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 10),
                   Material(
                     color: Colors.transparent,

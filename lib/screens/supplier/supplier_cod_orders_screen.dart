@@ -437,6 +437,322 @@ class _SupplierCodOrdersScreenState
     return result ?? false;
   }
 
+  Future<double?> chooseFulfilledQuantity(
+    QueryDocumentSnapshot<Map<String, dynamic>> document,
+  ) async {
+    final data = document.data();
+    final requestedQuantity =
+        OrderHelpers.getDoubleValue(
+      data,
+      'quantity',
+    );
+    final quantityUnit = firstString(
+      data,
+      const [
+        'quantityUnit',
+        'unit',
+      ],
+      fallback: 'unit',
+    );
+    final productName = firstString(
+      data,
+      const [
+        'productName',
+        'fishName',
+      ],
+      fallback: 'Fish Product',
+    );
+
+    if (requestedQuantity <= 0) {
+      return null;
+    }
+
+    final requestedWhole =
+        requestedQuantity.round();
+    var selectedQuantity = requestedWhole;
+
+    final result = await showDialog<int>(
+      context: context,
+      builder: (
+        dialogContext,
+      ) {
+        return StatefulBuilder(
+          builder: (
+            context,
+            setDialogState,
+          ) {
+            final returnedQuantity =
+                requestedWhole - selectedQuantity;
+            final partial =
+                selectedQuantity < requestedWhole;
+
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              insetPadding:
+                  const EdgeInsets.symmetric(
+                horizontal: 23,
+              ),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(
+                  20,
+                  20,
+                  20,
+                  18,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius:
+                      BorderRadius.circular(25),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x33000000),
+                      blurRadius: 28,
+                      offset: Offset(0, 16),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 58,
+                      height: 58,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFEAF3FF),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.inventory_2_outlined,
+                        color: Color(0xFF146BFF),
+                        size: 30,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Accept COD Order',
+                      style: TextStyle(
+                        color: Color(0xFF102C44),
+                        fontSize: 17,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      '$productName requested: '
+                      '${OrderHelpers.formatNumber(requestedQuantity)} '
+                      '$quantityUnit',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Color(0xFF657C8E),
+                        fontSize: 10.6,
+                        height: 1.35,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(13),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF3F8FB),
+                        borderRadius:
+                            BorderRadius.circular(18),
+                        border: Border.all(
+                          color:
+                              const Color(0xFFDDE8F0),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          const Text(
+                            'FULFILLED QUANTITY',
+                            style: TextStyle(
+                              color: Color(0xFF7B8FA3),
+                              fontSize: 8.4,
+                              letterSpacing: 0.5,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 9),
+                          Row(
+                            mainAxisAlignment:
+                                MainAxisAlignment.center,
+                            children: [
+                              IconButton.filledTonal(
+                                onPressed:
+                                    selectedQuantity > 1
+                                        ? () {
+                                            setDialogState(
+                                              () {
+                                                selectedQuantity--;
+                                              },
+                                            );
+                                          }
+                                        : null,
+                                icon: const Icon(
+                                  Icons.remove_rounded,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Column(
+                                children: [
+                                  Text(
+                                    '$selectedQuantity',
+                                    style:
+                                        const TextStyle(
+                                      color:
+                                          Color(0xFF102C44),
+                                      fontSize: 28,
+                                      fontWeight:
+                                          FontWeight.w900,
+                                    ),
+                                  ),
+                                  Text(
+                                    quantityUnit,
+                                    style:
+                                        const TextStyle(
+                                      color:
+                                          Color(0xFF7B8FA3),
+                                      fontSize: 9.5,
+                                      fontWeight:
+                                          FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(width: 16),
+                              IconButton.filled(
+                                onPressed:
+                                    selectedQuantity <
+                                            requestedWhole
+                                        ? () {
+                                            setDialogState(
+                                              () {
+                                                selectedQuantity++;
+                                              },
+                                            );
+                                          }
+                                        : null,
+                                icon: const Icon(
+                                  Icons.add_rounded,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 11),
+                    Container(
+                      width: double.infinity,
+                      padding:
+                          const EdgeInsets.all(11),
+                      decoration: BoxDecoration(
+                        color: partial
+                            ? const Color(0xFFFFF6E9)
+                            : const Color(0xFFEAF8F2),
+                        borderRadius:
+                            BorderRadius.circular(15),
+                      ),
+                      child: Text(
+                        partial
+                            ? '$returnedQuantity $quantityUnit will be returned to stock. '
+                                'The vendor will pay only for the fulfilled quantity.'
+                            : 'The full requested quantity will be fulfilled.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: partial
+                              ? const Color(0xFFB86500)
+                              : const Color(0xFF147D64),
+                          fontSize: 9.4,
+                          height: 1.35,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () {
+                              Navigator.pop(
+                                dialogContext,
+                              );
+                            },
+                            style:
+                                OutlinedButton.styleFrom(
+                              foregroundColor:
+                                  const Color(0xFF52677A),
+                              side: const BorderSide(
+                                color:
+                                    Color(0xFFB9CBD7),
+                              ),
+                              minimumSize:
+                                  const Size.fromHeight(47),
+                              shape:
+                                  RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius.circular(15),
+                              ),
+                            ),
+                            child: const Text(
+                              'Go Back',
+                              style: TextStyle(
+                                fontWeight:
+                                    FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 9),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.pop(
+                                dialogContext,
+                                selectedQuantity,
+                              );
+                            },
+                            style:
+                                ElevatedButton.styleFrom(
+                              backgroundColor:
+                                  const Color(0xFF146BFF),
+                              foregroundColor:
+                                  Colors.white,
+                              minimumSize:
+                                  const Size.fromHeight(47),
+                              elevation: 0,
+                              shape:
+                                  RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius.circular(15),
+                              ),
+                            ),
+                            child: Text(
+                              partial
+                                  ? 'Accept Partial'
+                                  : 'Accept Full',
+                              style: const TextStyle(
+                                fontWeight:
+                                    FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    return result?.toDouble();
+  }
+
   Future<void> updateOrderStatus({
     required QueryDocumentSnapshot<Map<String, dynamic>>
         document,
@@ -496,17 +812,32 @@ class _SupplierCodOrdersScreenState
         return;
     }
 
-    final confirmed = await confirmStatusChange(
-      title: title,
-      message: message,
-      confirmLabel: confirmLabel,
-      icon: icon,
-      color: color,
-      destructive: destructive,
-    );
+    double? acceptedFulfilledQuantity;
 
-    if (!mounted || !confirmed) {
-      return;
+    if (newStatus.toLowerCase() == 'accepted') {
+      acceptedFulfilledQuantity =
+          await chooseFulfilledQuantity(
+        document,
+      );
+
+      if (!mounted ||
+          acceptedFulfilledQuantity == null) {
+        return;
+      }
+    } else {
+      final confirmed =
+          await confirmStatusChange(
+        title: title,
+        message: message,
+        confirmLabel: confirmLabel,
+        icon: icon,
+        color: color,
+        destructive: destructive,
+      );
+
+      if (!mounted || !confirmed) {
+        return;
+      }
     }
 
     setBusy(
@@ -519,18 +850,33 @@ class _SupplierCodOrdersScreenState
         documentId: document.id,
         newStatus: newStatus,
         paymentStatus: paymentStatus,
+        fulfilledQuantity:
+            acceptedFulfilledQuantity,
       );
 
       if (!mounted) {
         return;
       }
 
+      final requestedQuantity =
+          OrderHelpers.getDoubleValue(
+        data,
+        'quantity',
+      );
+      final acceptedPartial =
+          newStatus.toLowerCase() == 'accepted' &&
+              acceptedFulfilledQuantity != null &&
+              acceptedFulfilledQuantity <
+                  requestedQuantity;
+
       final successMessage =
           newStatus.toLowerCase() == 'cancelled'
               ? 'Order cancelled. Reserved stock and vendor notification were processed.'
               : newStatus.toLowerCase() == 'delivered'
                   ? 'Delivery and COD payment were recorded successfully.'
-                  : 'Order accepted. The vendor was notified.';
+                  : acceptedPartial
+                      ? 'Partial fulfillment accepted. The unfulfilled quantity was returned to stock and the vendor was notified.'
+                      : 'Order accepted in full. The vendor was notified.';
 
       showMessage(successMessage);
     } on FirebaseException {

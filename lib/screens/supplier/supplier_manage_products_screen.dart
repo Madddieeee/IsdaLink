@@ -342,7 +342,7 @@ class _SupplierManageProductsScreenState
     }
   }
 
-  Future<void> deleteProduct(
+  Future<void> archiveProduct(
     QueryDocumentSnapshot<Map<String, dynamic>>
         document,
   ) async {
@@ -353,7 +353,7 @@ class _SupplierManageProductsScreenState
     );
 
     final confirmed =
-        await ManageProductDialogs.showDeleteDialog(
+        await ManageProductDialogs.showArchiveDialog(
       context: context,
       productName: productName,
     );
@@ -368,21 +368,21 @@ class _SupplierManageProductsScreenState
     );
 
     try {
-      await productService.deleteProduct(
+      await productService.archiveProduct(
         document.id,
       );
 
       showMessage(
-        '$productName was deleted.',
+        '$productName was archived and hidden from vendors.',
       );
     } on FirebaseException {
       showMessage(
-        'Unable to delete this product. Please try again.',
+        'Unable to archive this product. Please try again.',
         isError: true,
       );
     } catch (_) {
       showMessage(
-        'Something went wrong while deleting this product.',
+        'Something went wrong while archiving this product.',
         isError: true,
       );
     } finally {
@@ -699,8 +699,8 @@ class _SupplierManageProductsScreenState
                         onToggleAvailability: () {
                           toggleAvailability(document);
                         },
-                        onDelete: () {
-                          deleteProduct(document);
+                        onArchive: () {
+                          archiveProduct(document);
                         },
                       );
                     },

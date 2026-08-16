@@ -43,3 +43,11 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# IsdaLink local import/admin files
+**/node_modules/
+tools/historical_id_map.json
+dataset/*.csv
+*firebase-adminsdk*.json
+firebase-debug.log
+firebase-debug.*.log

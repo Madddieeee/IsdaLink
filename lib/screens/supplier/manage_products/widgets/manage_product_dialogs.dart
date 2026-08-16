@@ -182,7 +182,7 @@ class ManageProductDialogs {
     return result ?? false;
   }
 
-  static Future<bool> showDeleteDialog({
+  static Future<bool> showArchiveDialog({
     required BuildContext context,
     required String productName,
   }) async {
@@ -225,14 +225,14 @@ class ManageProductDialogs {
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
-                    Icons.delete_forever_outlined,
+                    Icons.archive_outlined,
                     color: Color(0xFFD94A45),
                     size: 32,
                   ),
                 ),
                 const SizedBox(height: 13),
                 const Text(
-                  'Delete this product?',
+                  'Archive this product?',
                   style: TextStyle(
                     color: Color(0xFF102C44),
                     fontSize: 17,
@@ -241,7 +241,7 @@ class ManageProductDialogs {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  '$productName will be permanently removed from your supplier inventory. This cannot be undone.',
+                  '$productName will be hidden from vendors but kept in your inventory history. You can restore it later.',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: Color(0xFF657C8E),
@@ -273,7 +273,7 @@ class ManageProductDialogs {
                           ),
                         ),
                         child: const Text(
-                          'Keep Product',
+                          'Keep Active',
                           style: TextStyle(
                             fontWeight: FontWeight.w900,
                           ),
@@ -291,7 +291,7 @@ class ManageProductDialogs {
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor:
-                              const Color(0xFFD94A45),
+                              const Color(0xFFB86500),
                           foregroundColor: Colors.white,
                           minimumSize: const Size.fromHeight(47),
                           elevation: 0,
@@ -300,7 +300,7 @@ class ManageProductDialogs {
                           ),
                         ),
                         child: const Text(
-                          'Delete',
+                          'Archive',
                           style: TextStyle(
                             fontWeight: FontWeight.w900,
                           ),
@@ -635,7 +635,7 @@ class _EditProductSheetState extends State<_EditProductSheet> {
             18,
           ),
           backgroundColor: isError
-              ? const Color(0xFFD94A45)
+              ? const Color(0xFFB86500)
               : const Color(0xFF147D64),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
