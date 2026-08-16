@@ -107,8 +107,22 @@ class PlaceOrderService {
     String buyerName = '',
     String buyerPhone = '',
     String buyerAddress = '',
+    required double deliveryLatitude,
+    required double deliveryLongitude,
   }) async {
     final requestedSupplierId = supplierId.trim();
+
+    final validDeliveryPin =
+        deliveryLatitude >= 7.55 &&
+        deliveryLatitude <= 10.75 &&
+        deliveryLongitude >= 124.65 &&
+        deliveryLongitude <= 126.85;
+
+    if (!validDeliveryPin) {
+      throw Exception(
+        'Choose a valid delivery-reference pin inside the Caraga map area.',
+      );
+    }
 
     if (requestedSupplierId.isNotEmpty &&
         requestedSupplierId == user.uid) {
@@ -279,6 +293,9 @@ class PlaceOrderService {
           'vendorPhone': finalVendorPhone,
           'vendorAddress': finalVendorAddress,
           'deliveryAddress': finalVendorAddress,
+          'deliveryLatitude': deliveryLatitude,
+          'deliveryLongitude': deliveryLongitude,
+          'deliveryReferenceType': 'map_pin',
           'quantity': quantity,
           'quantityUnit': product.quantityUnit,
           'unitPrice': product.price,

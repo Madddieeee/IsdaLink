@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:isdalink/screens/map/caraga_location_picker_screen.dart';
 import 'package:isdalink/screens/supplier/activation/supplier_caraga_locations.dart';
 import 'package:isdalink/screens/supplier/activation/widgets/supplier_activation_common.dart';
 import 'package:isdalink/screens/supplier/activation/widgets/supplier_activation_header.dart';
@@ -57,6 +58,8 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
 
   String? selectedProvince;
   String? selectedLocality;
+  double? storeLatitude;
+  double? storeLongitude;
   XFile? permitImage;
   XFile? storeImage;
   String permitImageUrl = '';
@@ -102,6 +105,8 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
         locality: selectedLocality,
       ) &&
       storeAddressController.text.trim().length >= 5 &&
+      storeLatitude != null &&
+      storeLongitude != null &&
       primaryMarketAreaController.text.trim().length >= 2 &&
       storeDescriptionController.text.trim().length >= 8;
 
@@ -148,6 +153,8 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
         for (final controller in controllers) controller.text.trim(),
         selectedProvince ?? '',
         selectedLocality ?? '',
+        storeLatitude?.toStringAsFixed(6) ?? '',
+        storeLongitude?.toStringAsFixed(6) ?? '',
         kiloUnit.toString(),
         tabUnit.toString(),
         iceboxUnit.toString(),
@@ -265,6 +272,20 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
           activationService.getStringValue(data, 'businessPermitUrl', '');
       storeImageUrl =
           activationService.getStringValue(data, 'storePhotoUrl', '');
+
+      final savedLatitude = data['storeLatitude'];
+      final savedLongitude = data['storeLongitude'];
+
+      storeLatitude = savedLatitude is num
+          ? savedLatitude.toDouble()
+          : double.tryParse(
+              savedLatitude?.toString() ?? '',
+            );
+      storeLongitude = savedLongitude is num
+          ? savedLongitude.toDouble()
+          : double.tryParse(
+              savedLongitude?.toString() ?? '',
+            );
 
       final savedProvince =
           activationService.getStringValue(data, 'storeProvince', '');
@@ -511,7 +532,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
   String incompleteMessage() {
     return switch (currentStep) {
       0 => 'Complete the valid owner and contact details before continuing.',
-      1 => 'Complete the structured Caraga store location and store details.',
+      1 => 'Complete the structured Caraga store location, business-location pin, and store details.',
       2 => 'Select at least one supported selling unit.',
       3 => 'Enter the matching permit number and upload both verification photos.',
       _ => 'Review the details and confirm their accuracy before submitting.',
@@ -537,10 +558,19 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
     }
 
     setState(() {
+      final provinceChanged =
+          selectedProvince != value;
+
       selectedProvince = value;
+
       if (!SupplierCaragaLocations.localitiesFor(value)
           .contains(selectedLocality)) {
         selectedLocality = null;
+      }
+
+      if (provinceChanged) {
+        storeLatitude = null;
+        storeLongitude = null;
       }
     });
   }
@@ -549,6 +579,8 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
     setState(() {
       selectedProvince = null;
       selectedLocality = null;
+      storeLatitude = null;
+      storeLongitude = null;
     });
   }
 
@@ -580,11 +612,63 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
     }
 
     setState(() {
+      final localityChanged =
+          selectedLocality != value;
+
       selectedLocality = value;
+
+      if (localityChanged) {
+        storeLatitude = null;
+        storeLongitude = null;
+      }
+
       if (primaryMarketAreaController.text.trim().isEmpty) {
         primaryMarketAreaController.text = value;
       }
     });
+  }
+
+  Future<void> selectBusinessLocationPin() async {
+    if (selectedProvince == null ||
+        selectedLocality == null) {
+      showMessage(
+        'Select the store province and city or municipality before placing the business-location pin.',
+        isError: true,
+      );
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+
+    final result =
+        await Navigator.of(context)
+            .push<CaragaLocationResult>(
+      MaterialPageRoute(
+        builder: (_) =>
+            CaragaLocationPickerScreen(
+          title: 'Business Location Pin',
+          subtitle:
+              '$selectedLocality, $selectedProvince',
+          province: selectedProvince,
+          locality: selectedLocality,
+          initialLatitude: storeLatitude,
+          initialLongitude: storeLongitude,
+        ),
+      ),
+    );
+
+    if (!mounted || result == null) {
+      return;
+    }
+
+    setState(() {
+      storeLatitude = result.latitude;
+      storeLongitude = result.longitude;
+    });
+
+    showMessage(
+      'Business location pin saved.',
+    );
   }
 
   Future<ImageSource?> chooseImageSource() {
@@ -772,6 +856,8 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
           storeProvince: selectedProvince,
           storeCityMunicipality: selectedLocality!,
           storeAddress: storeAddressController.text.trim(),
+          storeLatitude: storeLatitude!,
+          storeLongitude: storeLongitude!,
           primaryMarketArea: primaryMarketAreaController.text.trim(),
           storeDescription: storeDescriptionController.text.trim(),
           supportedUnits: supportedUnits,
@@ -1018,6 +1104,189 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
               ),
             ),
             gap(),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(13),
+              decoration: BoxDecoration(
+                color: storeLatitude != null &&
+                        storeLongitude != null
+                    ? const Color(0xFFE8F8F2)
+                    : const Color(0xFFF2F7FF),
+                borderRadius:
+                    BorderRadius.circular(19),
+                border: Border.all(
+                  color: storeLatitude != null &&
+                          storeLongitude != null
+                      ? const Color(0xFF77D7B7)
+                      : const Color(0xFFD4E2FF),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 35,
+                        height: 35,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius:
+                              BorderRadius.circular(
+                            12,
+                          ),
+                        ),
+                        child: Icon(
+                          storeLatitude != null &&
+                                  storeLongitude !=
+                                      null
+                              ? Icons
+                                  .location_on_rounded
+                              : Icons
+                                  .add_location_alt_outlined,
+                          color:
+                              const Color(0xFF146BFF),
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 9),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Business Location Pin',
+                              style: TextStyle(
+                                color:
+                                    Color(0xFF102C44),
+                                fontSize: 11.4,
+                                fontWeight:
+                                    FontWeight.w900,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Pin the physical store as a reference for vendors and admin review.',
+                              style: TextStyle(
+                                color:
+                                    Color(0xFF657C8E),
+                                fontSize: 8.9,
+                                height: 1.3,
+                                fontWeight:
+                                    FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding:
+                        const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 9,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius:
+                          BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          storeLatitude != null &&
+                                  storeLongitude !=
+                                      null
+                              ? Icons
+                                  .check_circle_rounded
+                              : Icons
+                                  .location_searching_rounded,
+                          color: storeLatitude != null &&
+                                  storeLongitude !=
+                                      null
+                              ? const Color(
+                                  0xFF147D64,
+                                )
+                              : const Color(
+                                  0xFF7B8FA3,
+                                ),
+                          size: 17,
+                        ),
+                        const SizedBox(width: 7),
+                        Expanded(
+                          child: Text(
+                            storeLatitude != null &&
+                                    storeLongitude !=
+                                        null
+                                ? '${storeLatitude!.toStringAsFixed(6)}, '
+                                    '${storeLongitude!.toStringAsFixed(6)}'
+                                : 'No business-location pin selected.',
+                            style: const TextStyle(
+                              color:
+                                  Color(0xFF52677A),
+                              fontSize: 9.2,
+                              fontWeight:
+                                  FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 9),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 45,
+                    child: OutlinedButton.icon(
+                      onPressed:
+                          selectBusinessLocationPin,
+                      icon: Icon(
+                        storeLatitude != null &&
+                                storeLongitude !=
+                                    null
+                            ? Icons.edit_location_alt_outlined
+                            : Icons.map_outlined,
+                        size: 18,
+                      ),
+                      label: Text(
+                        storeLatitude != null &&
+                                storeLongitude !=
+                                    null
+                            ? 'Update Map Pin'
+                            : 'Choose on Caraga Map',
+                        style: const TextStyle(
+                          fontSize: 10.2,
+                          fontWeight:
+                              FontWeight.w900,
+                        ),
+                      ),
+                      style:
+                          OutlinedButton.styleFrom(
+                        foregroundColor:
+                            const Color(0xFF146BFF),
+                        side: const BorderSide(
+                          color:
+                              Color(0xFF146BFF),
+                        ),
+                        shape:
+                            RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(
+                            14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            gap(),
             TextField(
               controller: primaryMarketAreaController,
               textCapitalization: TextCapitalization.words,
@@ -1243,6 +1512,14 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
             SupplierReviewRow(label: 'Store', value: businessNameController.text),
             SupplierReviewRow(label: 'Location', value: formattedStoreLocation),
             SupplierReviewRow(
+              label: 'Map Pin',
+              value: storeLatitude != null &&
+                      storeLongitude != null
+                  ? '${storeLatitude!.toStringAsFixed(6)}, '
+                      '${storeLongitude!.toStringAsFixed(6)}'
+                  : '',
+            ),
+            SupplierReviewRow(
               label: 'Market Area',
               value: primaryMarketAreaController.text,
             ),
@@ -1319,7 +1596,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                 child: Padding(
                   padding: EdgeInsets.only(top: 9),
                   child: Text(
-                    'I confirm that the permit number, contact number, store details, selling units, and verification photos are accurate and valid.',
+                    'I confirm that the permit number, contact number, store details, business-location pin, selling units, and verification photos are accurate and valid.',
                     style: TextStyle(
                       color: Color(0xFF52677A),
                       fontSize: 10.3,

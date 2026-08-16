@@ -176,6 +176,7 @@ service cloud.firestore {
         && request.resource.data.get('status', '') == 'pending'
         && request.resource.data.get('verificationStatus', '') == 'pending'
         && request.resource.data.get('paymentMethod', '') == 'COD'
+        && validStoreLocationPin(request.resource.data)
         && !request.resource.data.keys().hasAny([
           'rating',
           'reviews',
@@ -189,6 +190,20 @@ service cloud.firestore {
         || validReviewAggregateUpdate(supplierId);
 
       allow delete: if isAdmin();
+
+      function validStoreLocationPin(data) {
+        let latitude = data.get('storeLatitude', null);
+        let longitude = data.get('storeLongitude', null);
+
+        // Rectangular Caraga map-area guard. The structured province/locality
+        // remains the authoritative administrative location selection.
+        return latitude is number
+          && longitude is number
+          && latitude >= 7.55
+          && latitude <= 10.75
+          && longitude >= 124.65
+          && longitude <= 126.85;
+      }
 
       function validOwnerSupplierProfileUpdate(supplierId) {
         return signedIn()
@@ -230,6 +245,7 @@ service cloud.firestore {
           && request.resource.data.get('status', '') == 'pending'
           && request.resource.data.get('verificationStatus', '') == 'pending'
           && request.resource.data.get('paymentMethod', '') == 'COD'
+          && validStoreLocationPin(request.resource.data)
           && request.resource.data.get('rating', 0)
               == resource.data.get('rating', 0)
           && request.resource.data.get('reviews', 0)
@@ -251,6 +267,8 @@ service cloud.firestore {
             'storeProvince',
             'storeCityMunicipality',
             'storeAddress',
+            'storeLatitude',
+            'storeLongitude',
             'location',
             'storeLocation',
             'primaryMarketArea',
@@ -499,6 +517,7 @@ service cloud.firestore {
           && request.resource.data.get('totalAmount', -1)
               == beforeStock.get('price', 0) * orderedQuantity
           && request.resource.data.get('paymentMethod', '') == 'COD'
+          && validDeliveryReferencePin(request.resource.data)
           && request.resource.data.get('paymentStatus', '')
               == 'To be paid on delivery'
           && request.resource.data.get('orderStatus', '') == 'Pending'
@@ -509,6 +528,19 @@ service cloud.firestore {
           && afterStock.get('quantity', 0)
               == beforeStock.get('quantity', 0) - orderedQuantity
           && afterStock.get('lastOrderId', '') == orderId;
+      }
+
+      function validDeliveryReferencePin(data) {
+        let latitude = data.get('deliveryLatitude', null);
+        let longitude = data.get('deliveryLongitude', null);
+
+        return latitude is number
+          && longitude is number
+          && latitude >= 7.55
+          && latitude <= 10.75
+          && longitude >= 124.65
+          && longitude <= 126.85
+          && data.get('deliveryReferenceType', '') == 'map_pin';
       }
 
       function validVendorCancellation(orderId) {

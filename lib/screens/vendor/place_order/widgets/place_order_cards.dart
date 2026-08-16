@@ -92,6 +92,9 @@ class BuyerDetailsCard extends StatelessWidget {
     required this.addressController,
     required this.isLoading,
     required this.errorMessage,
+    required this.deliveryLatitude,
+    required this.deliveryLongitude,
+    required this.onChooseDeliveryPin,
   });
 
   final TextEditingController nameController;
@@ -99,6 +102,9 @@ class BuyerDetailsCard extends StatelessWidget {
   final TextEditingController addressController;
   final bool isLoading;
   final String errorMessage;
+  final double? deliveryLatitude;
+  final double? deliveryLongitude;
+  final VoidCallback onChooseDeliveryPin;
 
   InputDecoration fieldDecoration({
     required String label,
@@ -192,6 +198,114 @@ class BuyerDetailsCard extends StatelessWidget {
               decoration: fieldDecoration(
                 label: 'Delivery address',
                 icon: Icons.home_outlined,
+              ),
+            ),
+            const SizedBox(height: 9),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(11),
+              decoration: BoxDecoration(
+                color: deliveryLatitude != null &&
+                        deliveryLongitude != null
+                    ? const Color(0xFFE8F8F2)
+                    : const Color(0xFFF2F7FF),
+                borderRadius:
+                    BorderRadius.circular(15),
+                border: Border.all(
+                  color: deliveryLatitude != null &&
+                          deliveryLongitude != null
+                      ? const Color(0xFF77D7B7)
+                      : const Color(0xFFD4E2FF),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        deliveryLatitude != null &&
+                                deliveryLongitude != null
+                            ? Icons.location_on_rounded
+                            : Icons.add_location_alt_outlined,
+                        color:
+                            const Color(0xFF0875D1),
+                        size: 19,
+                      ),
+                      const SizedBox(width: 7),
+                      const Expanded(
+                        child: Text(
+                          'Delivery Reference Pin',
+                          style: TextStyle(
+                            color:
+                                Color(0xFF102C44),
+                            fontSize: 10.8,
+                            fontWeight:
+                                FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    deliveryLatitude != null &&
+                            deliveryLongitude != null
+                        ? '${deliveryLatitude!.toStringAsFixed(6)}, '
+                            '${deliveryLongitude!.toStringAsFixed(6)}'
+                        : 'Choose the COD delivery reference point on the Caraga map.',
+                    style: const TextStyle(
+                      color: Color(0xFF657C8E),
+                      fontSize: 8.9,
+                      height: 1.3,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 41,
+                    child: OutlinedButton.icon(
+                      onPressed:
+                          onChooseDeliveryPin,
+                      icon: Icon(
+                        deliveryLatitude != null &&
+                                deliveryLongitude != null
+                            ? Icons.edit_location_alt_outlined
+                            : Icons.map_outlined,
+                        size: 17,
+                      ),
+                      label: Text(
+                        deliveryLatitude != null &&
+                                deliveryLongitude != null
+                            ? 'Update Delivery Pin'
+                            : 'Choose on Caraga Map',
+                        style: const TextStyle(
+                          fontSize: 9.8,
+                          fontWeight:
+                              FontWeight.w900,
+                        ),
+                      ),
+                      style:
+                          OutlinedButton.styleFrom(
+                        foregroundColor:
+                            const Color(0xFF0875D1),
+                        side: const BorderSide(
+                          color:
+                              Color(0xFF0875D1),
+                        ),
+                        shape:
+                            RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(
+                            13,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             if (errorMessage.trim().isNotEmpty) ...[

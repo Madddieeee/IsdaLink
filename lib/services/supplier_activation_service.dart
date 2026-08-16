@@ -11,6 +11,8 @@ class SupplierApplicationInput {
     required this.storeProvince,
     required this.storeCityMunicipality,
     required this.storeAddress,
+    required this.storeLatitude,
+    required this.storeLongitude,
     required this.primaryMarketArea,
     required this.storeDescription,
     required this.supportedUnits,
@@ -27,6 +29,8 @@ class SupplierApplicationInput {
   final String? storeProvince;
   final String storeCityMunicipality;
   final String storeAddress;
+  final double storeLatitude;
+  final double storeLongitude;
   final String primaryMarketArea;
   final String storeDescription;
   final List<String> supportedUnits;
@@ -116,6 +120,8 @@ class SupplierActivationService {
       'storeProvince': input.storeProvince,
       'storeCityMunicipality': input.storeCityMunicipality,
       'storeAddress': input.storeAddress,
+      'storeLatitude': input.storeLatitude,
+      'storeLongitude': input.storeLongitude,
       'location': input.storeLocation,
       'storeLocation': input.storeLocation,
       'primaryMarketArea': input.primaryMarketArea,
@@ -132,7 +138,7 @@ class SupplierActivationService {
       'hasStorePhoto': true,
       'verificationStatus': 'pending',
       'paymentMethod': 'COD',
-      'applicationVersion': 2,
+      'applicationVersion': 3,
       'accountCreatedAt': ?accountCreatedAt,
       'submittedAt': FieldValue.serverTimestamp(),
     };

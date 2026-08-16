@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:isdalink/models/fish_product.dart';
 import 'package:isdalink/models/supplier.dart';
+import 'package:isdalink/screens/map/caraga_location_picker_screen.dart';
 import 'package:isdalink/screens/vendor/my_orders_screen.dart';
 import 'package:isdalink/screens/vendor/place_order/widgets/place_order_cards.dart';
 import 'package:isdalink/screens/vendor/place_order/widgets/place_order_header.dart';
@@ -36,21 +37,54 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
   bool isSubmitting = false;
   bool isLoadingBuyer = true;
   String buyerLoadError = '';
+  String buyerProvince = '';
+  String buyerLocality = '';
+  double? deliveryLatitude;
+  double? deliveryLongitude;
+  String pinnedDeliveryAddress = '';
 
   double get totalAmount => widget.product.price * quantity;
 
   @override
   void initState() {
     super.initState();
+    buyerAddressController.addListener(
+      handleDeliveryAddressChanged,
+    );
     loadBuyerDetails();
   }
 
   @override
   void dispose() {
+    buyerAddressController.removeListener(
+      handleDeliveryAddressChanged,
+    );
     buyerNameController.dispose();
     buyerPhoneController.dispose();
     buyerAddressController.dispose();
     super.dispose();
+  }
+
+  void handleDeliveryAddressChanged() {
+    if (deliveryLatitude == null ||
+        deliveryLongitude == null) {
+      return;
+    }
+
+    if (buyerAddressController.text.trim() ==
+        pinnedDeliveryAddress.trim()) {
+      return;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      deliveryLatitude = null;
+      deliveryLongitude = null;
+      pinnedDeliveryAddress = '';
+    });
   }
 
   String firstNonEmpty(
@@ -116,6 +150,21 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
         fallback: 'Caraga Region',
       );
 
+      buyerProvince = firstNonEmpty(
+        userData,
+        const ['province'],
+      );
+
+      buyerLocality = firstNonEmpty(
+        userData,
+        const [
+          'cityMunicipality',
+          'city',
+          'municipality',
+          'locality',
+        ],
+      );
+
       if (!mounted) return;
       setState(() {
         isLoadingBuyer = false;
@@ -133,6 +182,64 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
             'Some profile details could not be loaded. You can enter them below.';
       });
     }
+  }
+
+  Future<void> chooseDeliveryReferencePin() async {
+    final address = buyerAddressController.text.trim();
+
+    if (address.isEmpty) {
+      showMessage(
+        'Enter the delivery address before choosing the delivery-reference pin.',
+        isError: true,
+      );
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+
+    final result =
+        await Navigator.of(context)
+            .push<CaragaLocationResult>(
+      MaterialPageRoute(
+        builder: (_) =>
+            CaragaLocationPickerScreen(
+          title: 'Delivery Reference Pin',
+          subtitle: address,
+          province:
+              buyerProvince.trim().isEmpty
+                  ? null
+                  : buyerProvince,
+          locality:
+              buyerLocality.trim().isEmpty
+                  ? null
+                  : buyerLocality,
+          initialLatitude: deliveryLatitude,
+          initialLongitude: deliveryLongitude,
+          instructionText:
+              'Tap the map at the COD delivery reference point. '
+              'This pin is only a location reference and does not calculate routes.',
+          markerTitle:
+              'COD delivery reference point',
+          confirmButtonLabel:
+              'Confirm Delivery Location',
+        ),
+      ),
+    );
+
+    if (!mounted || result == null) {
+      return;
+    }
+
+    setState(() {
+      deliveryLatitude = result.latitude;
+      deliveryLongitude = result.longitude;
+      pinnedDeliveryAddress =
+          buyerAddressController.text.trim();
+    });
+
+    showMessage(
+      'Delivery reference pin saved.',
+    );
   }
 
   void decreaseQuantity() {
@@ -189,6 +296,24 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
 
     if (buyerAddressController.text.trim().isEmpty) {
       showMessage('Please enter the delivery address.', isError: true);
+      return false;
+    }
+
+    if (deliveryLatitude == null ||
+        deliveryLongitude == null) {
+      showMessage(
+        'Please choose the delivery-reference pin on the Caraga map.',
+        isError: true,
+      );
+      return false;
+    }
+
+    if (pinnedDeliveryAddress.trim() !=
+        buyerAddressController.text.trim()) {
+      showMessage(
+        'The delivery address changed. Please select the delivery-reference pin again.',
+        isError: true,
+      );
       return false;
     }
 
@@ -280,6 +405,10 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                       const _ConfirmationRow(
                         label: 'Payment',
                         value: 'Cash on Delivery',
+                      ),
+                      const _ConfirmationRow(
+                        label: 'Delivery Pin',
+                        value: 'Selected',
                       ),
                       const Divider(
                         height: 20,
@@ -445,6 +574,8 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
         buyerName: buyerNameController.text.trim(),
         buyerPhone: buyerPhoneController.text.trim(),
         buyerAddress: buyerAddressController.text.trim(),
+        deliveryLatitude: deliveryLatitude!,
+        deliveryLongitude: deliveryLongitude!,
       );
 
       if (!mounted) return;
@@ -751,6 +882,10 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                   addressController: buyerAddressController,
                   isLoading: isLoadingBuyer,
                   errorMessage: buyerLoadError,
+                  deliveryLatitude: deliveryLatitude,
+                  deliveryLongitude: deliveryLongitude,
+                  onChooseDeliveryPin:
+                      chooseDeliveryReferencePin,
                 ),
                 ProductOrderCard(
                   supplier: widget.supplier,

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:isdalink/screens/map/caraga_location_picker_screen.dart';
 import 'package:isdalink/utils/order_helpers.dart';
 
 class SupplierOrderCard extends StatelessWidget {
@@ -348,6 +349,33 @@ class SupplierOrderCard extends StatelessWidget {
     );
   }
 
+  Future<void> openDeliveryPin({
+    required BuildContext context,
+    required double latitude,
+    required double longitude,
+    required String vendorName,
+    required String deliveryAddress,
+  }) async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) =>
+            CaragaLocationPickerScreen(
+          title: 'Delivery Reference Pin',
+          subtitle:
+              '$vendorName · $deliveryAddress',
+          initialLatitude: latitude,
+          initialLongitude: longitude,
+          instructionText:
+              'This is the vendor-selected COD delivery reference point. '
+              'It is a location reference only and does not calculate routes.',
+          markerTitle:
+              'COD delivery reference point',
+          readOnly: true,
+        ),
+      ),
+    );
+  }
+
   Widget progressStage({
     required IconData icon,
     required String label,
@@ -521,6 +549,17 @@ class SupplierOrderCard extends StatelessWidget {
       ],
       fallback: 'Caraga Region',
     );
+    final deliveryLatitude = firstDouble(
+      data,
+      const ['deliveryLatitude'],
+    );
+    final deliveryLongitude = firstDouble(
+      data,
+      const ['deliveryLongitude'],
+    );
+    final hasDeliveryPin =
+        deliveryLatitude != 0 &&
+        deliveryLongitude != 0;
     final requestedQuantity = firstDouble(
       data,
       const [
@@ -889,6 +928,62 @@ class SupplierOrderCard extends StatelessWidget {
                                   label: 'Location',
                                   value: vendorLocation,
                                 ),
+                                if (hasDeliveryPin) ...[
+                                  const SizedBox(height: 7),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    height: 41,
+                                    child:
+                                        OutlinedButton.icon(
+                                      onPressed: () {
+                                        openDeliveryPin(
+                                          context: context,
+                                          latitude:
+                                              deliveryLatitude,
+                                          longitude:
+                                              deliveryLongitude,
+                                          vendorName:
+                                              vendorName,
+                                          deliveryAddress:
+                                              vendorLocation,
+                                        );
+                                      },
+                                      icon: const Icon(
+                                        Icons.map_outlined,
+                                        size: 17,
+                                      ),
+                                      label: const Text(
+                                        'View Delivery Pin',
+                                        style: TextStyle(
+                                          fontSize: 9.8,
+                                          fontWeight:
+                                              FontWeight.w900,
+                                        ),
+                                      ),
+                                      style: OutlinedButton
+                                          .styleFrom(
+                                        foregroundColor:
+                                            const Color(
+                                          0xFF146BFF,
+                                        ),
+                                        side:
+                                            const BorderSide(
+                                          color: Color(
+                                            0xFF146BFF,
+                                          ),
+                                        ),
+                                        shape:
+                                            RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius
+                                                  .circular(
+                                            13,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
                           ),
