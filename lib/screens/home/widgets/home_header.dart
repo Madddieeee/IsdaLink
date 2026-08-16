@@ -302,6 +302,7 @@ class HomeHeader extends StatelessWidget {
         return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
           stream: FirebaseFirestore.instance
               .collection('supplierProfiles')
+              .where('status', isEqualTo: 'approved')
               .snapshots(),
           builder: (context, supplierSnapshot) {
             final supplierCount = supplierSnapshot.hasData

@@ -116,8 +116,19 @@ class AdminDashboardService {
       supplierRef,
       {
         'status': 'approved',
+        'verificationStatus': 'approved',
         'approvedAt': FieldValue.serverTimestamp(),
         'accountCreatedAt': ?accountCreatedAt,
+
+        // Supplier verification evidence remains in the private
+        // users/{uid}.supplierApplication record for owner/admin access.
+        // It is removed from the approved public supplier profile before
+        // marketplace users are allowed to read that profile.
+        'ownerAddress': FieldValue.delete(),
+        'email': FieldValue.delete(),
+        'businessPermitNumber': FieldValue.delete(),
+        'businessPermitUrl': FieldValue.delete(),
+
         'updatedAt': FieldValue.serverTimestamp(),
       },
       SetOptions(merge: true),
@@ -161,6 +172,7 @@ class AdminDashboardService {
       supplierRef,
       {
         'status': 'rejected',
+        'verificationStatus': 'rejected',
         'rejectedAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       },

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:isdalink/utils/order_helpers.dart';
+import 'package:isdalink/utils/stock_state.dart';
 
 class ManageProductCard extends StatelessWidget {
   const ManageProductCard({
@@ -45,14 +46,7 @@ class ManageProductCard extends StatelessWidget {
   bool isHidden(
     Map<String, dynamic> data,
   ) {
-    final status = OrderHelpers.getStringValue(
-      data,
-      'status',
-      'available',
-    ).toLowerCase();
-
-    return status == 'unavailable' ||
-        data['isActive'] == false;
+    return StockState.isIntentionallyHidden(data);
   }
 
   String stockStatus({

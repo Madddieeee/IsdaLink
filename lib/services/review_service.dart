@@ -193,6 +193,9 @@ class ReviewService {
               'rating': newRating,
               'reviews': newReviews,
               'ratingTotal': newRatingTotal,
+              // Allows Security Rules to verify that only this completed
+              // order review changed the supplier's rating aggregates.
+              'lastReviewOrderId': orderDocument.id,
               'updatedAt': FieldValue.serverTimestamp(),
             },
             SetOptions(
@@ -354,6 +357,7 @@ class ReviewService {
               'rating': adjustedRating,
               'reviews': currentReviews,
               'ratingTotal': adjustedRatingTotal,
+              'lastReviewOrderId': orderDocument.id,
               'updatedAt': FieldValue.serverTimestamp(),
             },
             SetOptions(

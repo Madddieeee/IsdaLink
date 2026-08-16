@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:isdalink/utils/order_helpers.dart';
+import 'package:isdalink/utils/stock_state.dart';
 
 class VendorOrderService {
   const VendorOrderService();
@@ -78,23 +79,12 @@ class VendorOrderService {
     await batch.commit();
   }
 
-  Future<
-    void
-  >
-  cancelPendingOrder({
+  Future<void> cancelPendingOrder({
     required User user,
-    required QueryDocumentSnapshot<
-      Map<
-        String,
-        dynamic
-      >
-    >
-    document,
+    required QueryDocumentSnapshot<Map<String, dynamic>> document,
   }) async {
     await FirebaseFirestore.instance.runTransaction(
-      (
-        transaction,
-      ) async {
+      (transaction) async {
         final orderSnapshot = await transaction.get(
           document.reference,
         );
@@ -106,11 +96,7 @@ class VendorOrderService {
         }
 
         final orderData =
-            orderSnapshot.data() ??
-            <
-              String,
-              dynamic
-            >{};
+            orderSnapshot.data() ?? <String, dynamic>{};
 
         final orderVendorId = OrderHelpers.getStringValue(
           orderData,
@@ -118,8 +104,7 @@ class VendorOrderService {
           '',
         );
 
-        if (orderVendorId !=
-            user.uid) {
+        if (orderVendorId != user.uid) {
           throw Exception(
             'You can only cancel your own order.',
           );
@@ -131,92 +116,108 @@ class VendorOrderService {
           'Pending',
         );
 
-        if (latestStatus.toLowerCase() !=
-            'pending') {
+        if (latestStatus.toLowerCase() != 'pending') {
           throw Exception(
             'This order is no longer pending and cannot be cancelled.',
           );
         }
 
-        final stockRestored =
-            orderData['stockRestored'] ==
-            true;
-        final stockDeducted =
-            orderData['stockDeducted'] ==
-            true;
-
-        final stockId = OrderHelpers.getStringValue(
-          orderData,
-          'stockId',
-          OrderHelpers.getStringValue(
-            orderData,
-            'fishStockId',
-            '',
-          ),
+        final restorationProcessed = await restoreStockIfNeeded(
+          transaction: transaction,
+          orderData: orderData,
+          orderId: document.id,
         );
 
-        final orderedQuantity = OrderHelpers.getDoubleValue(
-          orderData,
-          'quantity',
-        );
-
-        if (!stockRestored &&
-            stockDeducted &&
-            stockId.isNotEmpty &&
-            orderedQuantity >
-                0) {
-          final stockReference = FirebaseFirestore.instance
-              .collection(
-                'fishStocks',
-              )
-              .doc(
-                stockId,
-              );
-
-          final stockSnapshot = await transaction.get(
-            stockReference,
-          );
-
-          if (stockSnapshot.exists) {
-            final stockData =
-                stockSnapshot.data() ??
-                <
-                  String,
-                  dynamic
-                >{};
-
-            final currentStock = OrderHelpers.getDoubleValue(
-              stockData,
-              'quantity',
-            );
-
-            final restoredStock =
-                currentStock +
-                orderedQuantity;
-
-            transaction.update(
-              stockReference,
-              {
-                'quantity': restoredStock,
-                'status': 'available',
-                'updatedAt': FieldValue.serverTimestamp(),
-              },
-            );
-          }
-        }
+        final stockDeducted = orderData['stockDeducted'] == true;
 
         transaction.update(
           document.reference,
           {
             'orderStatus': 'Cancelled',
             'paymentStatus': 'Cancelled',
-            'stockRestored': true,
+            'stockRestored': restorationProcessed,
+            'stockRestorePending':
+                stockDeducted && !restorationProcessed,
             'cancelledBy': 'vendor',
             'cancelledAt': FieldValue.serverTimestamp(),
+            if (restorationProcessed)
+              'restoredAt': FieldValue.serverTimestamp(),
             'updatedAt': FieldValue.serverTimestamp(),
           },
         );
       },
     );
   }
+
+  Future<bool> restoreStockIfNeeded({
+    required Transaction transaction,
+    required Map<String, dynamic> orderData,
+    required String orderId,
+  }) async {
+    final stockRestored = orderData['stockRestored'] == true;
+    final stockDeducted = orderData['stockDeducted'] == true;
+
+    if (stockRestored || !stockDeducted) {
+      return true;
+    }
+
+    final stockId = OrderHelpers.getStringValue(
+      orderData,
+      'stockId',
+      OrderHelpers.getStringValue(
+        orderData,
+        'fishStockId',
+        '',
+      ),
+    );
+
+    final orderedQuantity = OrderHelpers.getDoubleValue(
+      orderData,
+      'quantity',
+    );
+
+    if (stockId.isEmpty || orderedQuantity <= 0) {
+      return false;
+    }
+
+    final stockReference = FirebaseFirestore.instance
+        .collection('fishStocks')
+        .doc(stockId);
+
+    final stockSnapshot = await transaction.get(
+      stockReference,
+    );
+
+    if (!stockSnapshot.exists) {
+      return false;
+    }
+
+    final stockData =
+        stockSnapshot.data() ?? <String, dynamic>{};
+
+    final restoredStock =
+        StockState.quantity(stockData) + orderedQuantity;
+
+    transaction.update(
+      stockReference,
+      {
+        ...StockState.fieldsForQuantity(
+          stockData,
+          quantity: restoredStock,
+        ),
+        if (!StockState.isIntentionallyHidden(stockData) &&
+            restoredStock > 0) ...{
+          'lastLowStockNotificationAt': null,
+          'lastLowStockNotificationStatus': null,
+        },
+        // Security Rules use this marker to verify that the stock increase
+        // belongs to this vendor cancellation transaction.
+        'lastStockRestoreOrderId': orderId,
+        'updatedAt': FieldValue.serverTimestamp(),
+      },
+    );
+
+    return true;
+  }
+
 }

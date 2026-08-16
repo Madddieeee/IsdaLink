@@ -131,6 +131,7 @@ class FishStockService {
       'lowStockAlertEnabled': true,
       'lowStockNotificationEnabled': true,
       'lastLowStockNotificationAt': null,
+      'lastLowStockNotificationStatus': null,
       'stockStatus': stockStatus,
       'paymentMethod': 'COD',
       'supplierId': user.uid,

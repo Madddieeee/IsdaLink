@@ -1,0 +1,851 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------------------------------------------------------------
+    // Shared helpers
+    // ---------------------------------------------------------------------
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function currentUid() {
+      return request.auth.uid;
+    }
+
+    function userPath(uid) {
+      return /databases/$(database)/documents/users/$(uid);
+    }
+
+    function supplierPath(uid) {
+      return /databases/$(database)/documents/supplierProfiles/$(uid);
+    }
+
+    function stockPath(stockId) {
+      return /databases/$(database)/documents/fishStocks/$(stockId);
+    }
+
+    function orderPath(orderId) {
+      return /databases/$(database)/documents/orders/$(orderId);
+    }
+
+    function reviewPath(orderId) {
+      return /databases/$(database)/documents/reviews/$(orderId);
+    }
+
+    function currentUserData() {
+      return get(userPath(currentUid())).data;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && exists(userPath(currentUid()))
+        && currentUserData().get('role', '') == 'admin';
+    }
+
+    function isApprovedSupplierAccount(uid) {
+      return signedIn()
+        && currentUid() == uid
+        && exists(userPath(uid))
+        && (
+          get(userPath(uid)).data.get('role', '') == 'supplier'
+          || get(userPath(uid)).data.get('supplierStatus', '') == 'approved'
+        );
+    }
+
+    function changedOnly(fields) {
+      return request.resource.data
+        .diff(resource.data)
+        .affectedKeys()
+        .hasOnly(fields);
+    }
+
+    function isCompletedOrder(data) {
+      return data.get('orderStatus', '') == 'Delivered'
+        || data.get('orderStatus', '') == 'Completed'
+        || data.get('orderStatus', '') == 'delivered'
+        || data.get('orderStatus', '') == 'completed';
+    }
+
+    function isPublicApprovedSupplier(data) {
+      return signedIn() && data.get('status', '') == 'approved';
+    }
+
+    function notificationOwnedByCurrentUser(data) {
+      return signedIn() && (
+        data.get('userId', '') == currentUid()
+        || data.get('vendorId', '') == currentUid()
+        || data.get('supplierId', '') == currentUid()
+      );
+    }
+
+    // ---------------------------------------------------------------------
+    // USERS
+    // ---------------------------------------------------------------------
+
+    match /users/{userId} {
+      allow get: if signedIn() && (currentUid() == userId || isAdmin());
+      allow list: if isAdmin();
+
+      allow create: if signedIn()
+        && currentUid() == userId
+        && request.resource.data.get('uid', '') == userId
+        && request.resource.data.get('role', '') == 'vendor'
+        && request.resource.data.get('accountType', '') == 'vendor'
+        && request.resource.data.get('supplierStatus', '') == 'not_applicable';
+
+      allow update: if isAdmin()
+        || (
+          signedIn()
+          && currentUid() == userId
+
+          // Identity/privilege fields cannot be self-promoted.
+          && request.resource.data.get('uid', userId)
+              == resource.data.get('uid', userId)
+          && request.resource.data.get('role', 'vendor')
+              == resource.data.get('role', 'vendor')
+          && request.resource.data.get('accountType', 'vendor')
+              == resource.data.get('accountType', 'vendor')
+          && request.resource.data.get('createdAt', null)
+              == resource.data.get('createdAt', null)
+
+          // A normal account can only keep its supplier status unchanged or
+          // submit/resubmit an application into the pending state.
+          && (
+            request.resource.data.get('supplierStatus', 'not_applicable')
+              == resource.data.get('supplierStatus', 'not_applicable')
+            || (
+              (
+                resource.data.get('supplierStatus', 'not_applicable')
+                  == 'not_applicable'
+                || resource.data.get('supplierStatus', 'not_applicable')
+                  == 'rejected'
+              )
+              && request.resource.data.get('supplierStatus', '')
+                == 'pending'
+            )
+          )
+
+          // Verification evidence may be written only when the account moves
+          // into a new pending application. After submission/approval, direct
+          // client edits cannot silently replace the stored application copy.
+          // Historical participant links are assigned only by the trusted
+          // one-time Admin SDK importer. A client cannot relink itself to
+          // another field participant ID.
+          && request.resource.data.get('historicalVendorId', null)
+              == resource.data.get('historicalVendorId', null)
+          && request.resource.data.get('historicalSupplierId', null)
+              == resource.data.get('historicalSupplierId', null)
+
+          && (
+            request.resource.data.get('supplierApplication', null)
+              == resource.data.get('supplierApplication', null)
+            || (
+              (
+                resource.data.get('supplierStatus', 'not_applicable')
+                  == 'not_applicable'
+                || resource.data.get('supplierStatus', 'not_applicable')
+                  == 'rejected'
+              )
+              && request.resource.data.get('supplierStatus', '')
+                == 'pending'
+            )
+          )
+        );
+
+      allow delete: if isAdmin();
+    }
+
+    // ---------------------------------------------------------------------
+    // SUPPLIER PROFILES
+    //
+    // Pending/rejected verification evidence is private to the applicant and
+    // administrator. Approved supplier profiles become marketplace-readable.
+    // ---------------------------------------------------------------------
+
+    match /supplierProfiles/{supplierId} {
+      allow read: if isAdmin()
+        || (signedIn() && currentUid() == supplierId)
+        || isPublicApprovedSupplier(resource.data);
+
+      allow create: if signedIn()
+        && currentUid() == supplierId
+        && request.resource.data.get('uid', '') == supplierId
+        && request.resource.data.get('status', '') == 'pending'
+        && request.resource.data.get('verificationStatus', '') == 'pending'
+        && request.resource.data.get('paymentMethod', '') == 'COD'
+        && !request.resource.data.keys().hasAny([
+          'rating',
+          'reviews',
+          'ratingTotal',
+          'approvedAt'
+        ]);
+
+      allow update: if isAdmin()
+        || validOwnerSupplierProfileUpdate(supplierId)
+        || validSupplierReapplication(supplierId)
+        || validReviewAggregateUpdate(supplierId);
+
+      allow delete: if isAdmin();
+
+      function validOwnerSupplierProfileUpdate(supplierId) {
+        return signedIn()
+          && currentUid() == supplierId
+          && request.resource.data.get('uid', supplierId)
+              == resource.data.get('uid', supplierId)
+          && request.resource.data.get('status', '')
+              == resource.data.get('status', '')
+          && request.resource.data.get('verificationStatus', '')
+              == resource.data.get('verificationStatus', '')
+          && request.resource.data.get('rating', 0)
+              == resource.data.get('rating', 0)
+          && request.resource.data.get('reviews', 0)
+              == resource.data.get('reviews', 0)
+          && request.resource.data.get('ratingTotal', 0)
+              == resource.data.get('ratingTotal', 0)
+          && changedOnly([
+            'ownerName',
+            'phone',
+            'contactNumber',
+            'profileImageUrl',
+            'region',
+            'province',
+            'provinceCode',
+            'cityMunicipality',
+            'cityMunicipalityCode',
+            'cityMunicipalityType',
+            'location',
+            'marketLocation',
+            'updatedAt'
+          ]);
+      }
+
+      function validSupplierReapplication(supplierId) {
+        return signedIn()
+          && currentUid() == supplierId
+          && resource.data.get('status', '') == 'rejected'
+          && request.resource.data.get('uid', supplierId) == supplierId
+          && request.resource.data.get('status', '') == 'pending'
+          && request.resource.data.get('verificationStatus', '') == 'pending'
+          && request.resource.data.get('paymentMethod', '') == 'COD'
+          && request.resource.data.get('rating', 0)
+              == resource.data.get('rating', 0)
+          && request.resource.data.get('reviews', 0)
+              == resource.data.get('reviews', 0)
+          && request.resource.data.get('ratingTotal', 0)
+              == resource.data.get('ratingTotal', 0)
+          && changedOnly([
+            'uid',
+            'ownerName',
+            'ownerAddress',
+            'email',
+            'contactNumber',
+            'phone',
+            'storeName',
+            'supplierName',
+            'businessName',
+            'supplierType',
+            'region',
+            'storeProvince',
+            'storeCityMunicipality',
+            'storeAddress',
+            'location',
+            'storeLocation',
+            'primaryMarketArea',
+            'serviceArea',
+            'description',
+            'supportedUnits',
+            'businessPermitNumber',
+            'businessPermitUrl',
+            'storePhotoUrl',
+            'coverImageUrl',
+            'profileImageUrl',
+            'hasBusinessPermit',
+            'hasStorePhoto',
+            'verificationStatus',
+            'paymentMethod',
+            'applicationVersion',
+            'accountCreatedAt',
+            'submittedAt',
+            'status',
+            'createdAt',
+            'updatedAt'
+          ]);
+      }
+
+      function validReviewAggregateUpdate(supplierId) {
+        let orderId = request.resource.data.get('lastReviewOrderId', '');
+        let afterReview = getAfter(reviewPath(orderId)).data;
+        let oldCount = resource.data.get('reviews', 0);
+        let oldTotal = resource.data.get(
+          'ratingTotal',
+          resource.data.get('rating', 0) * oldCount
+        );
+        let newCount = request.resource.data.get('reviews', 0);
+        let newTotal = request.resource.data.get('ratingTotal', 0);
+
+        return signedIn()
+          && orderId is string
+          && orderId.size() > 0
+          && existsAfter(reviewPath(orderId))
+          && afterReview.get('orderId', '') == orderId
+          && afterReview.get('supplierId', '') == supplierId
+          && afterReview.get('vendorId', '') == currentUid()
+          && afterReview.get('rating', 0) is int
+          && afterReview.get('rating', 0) >= 1
+          && afterReview.get('rating', 0) <= 5
+          && changedOnly([
+            'rating',
+            'reviews',
+            'ratingTotal',
+            'lastReviewOrderId',
+            'updatedAt'
+          ])
+          && (
+            (
+              !exists(reviewPath(orderId))
+              && newCount == oldCount + 1
+              && newTotal == oldTotal + afterReview.get('rating', 0)
+              && request.resource.data.get('rating', 0)
+                == newTotal / newCount
+            )
+            || (
+              exists(reviewPath(orderId))
+              && get(reviewPath(orderId)).data.get('vendorId', '')
+                == currentUid()
+              && newCount == oldCount
+              && newCount > 0
+              && newTotal
+                == oldTotal
+                  - get(reviewPath(orderId)).data.get('rating', 0)
+                  + afterReview.get('rating', 0)
+              && request.resource.data.get('rating', 0)
+                == newTotal / newCount
+            )
+          );
+      }
+    }
+
+    // ---------------------------------------------------------------------
+    // FISH STOCKS
+    //
+    // Signed-in marketplace users may read stock listings because quantity,
+    // price and unit availability are required for ordering. Only the owning
+    // approved supplier may manage listing content. Vendor quantity changes
+    // are limited to validated COD order/cancellation transactions.
+    // ---------------------------------------------------------------------
+
+    match /fishStocks/{stockId} {
+      allow read: if signedIn();
+
+      allow create: if signedIn()
+        && request.resource.data.get('supplierId', '') == currentUid()
+        && isApprovedSupplierAccount(currentUid())
+        && request.resource.data.get('paymentMethod', '') == 'COD'
+        && request.resource.data.get('quantity', -1) is number
+        && request.resource.data.get('quantity', -1) >= 0
+        && request.resource.data.get('status', '') == 'available'
+        && request.resource.data.get('isActive', false) == true;
+
+      allow update: if isAdmin()
+        || validSupplierStockUpdate()
+        || validVendorPurchaseStockUpdate(stockId)
+        || validVendorCancellationStockRestore(stockId);
+
+      allow delete: if isAdmin()
+        || (
+          signedIn()
+          && resource.data.get('supplierId', '') == currentUid()
+          && isApprovedSupplierAccount(currentUid())
+        );
+
+      function validSupplierStockUpdate() {
+        return signedIn()
+          && resource.data.get('supplierId', '') == currentUid()
+          && isApprovedSupplierAccount(currentUid())
+          && request.resource.data.get('supplierId', '') == currentUid()
+          && request.resource.data.get('paymentMethod', 'COD') == 'COD';
+      }
+
+      function validVendorPurchaseStockUpdate(stockId) {
+        let orderId = request.resource.data.get('lastOrderId', '');
+        let afterOrder = getAfter(orderPath(orderId)).data;
+
+        return signedIn()
+          && resource.data.get('supplierId', '') != currentUid()
+          && orderId is string
+          && orderId.size() > 0
+          && !exists(orderPath(orderId))
+          && existsAfter(orderPath(orderId))
+          && changedOnly([
+            'quantity',
+            'stockStatus',
+            'lastLowStockNotificationAt',
+            'lastLowStockNotificationStatus',
+            'lastOrderId',
+            'updatedAt'
+          ])
+          && request.resource.data.get('supplierId', '')
+              == resource.data.get('supplierId', '')
+          && request.resource.data.get('status', '')
+              == resource.data.get('status', '')
+          && request.resource.data.get('isActive', true)
+              == resource.data.get('isActive', true)
+          && request.resource.data.get('quantity', 0)
+              < resource.data.get('quantity', 0)
+          && afterOrder.get('vendorId', '') == currentUid()
+          && afterOrder.get('supplierId', '')
+              == resource.data.get('supplierId', '')
+          && afterOrder.get('stockId', '') == stockId
+          && afterOrder.get('quantity', 0)
+              == resource.data.get('quantity', 0)
+                - request.resource.data.get('quantity', 0)
+          && afterOrder.get('orderStatus', '') == 'Pending'
+          && afterOrder.get('paymentMethod', '') == 'COD'
+          && afterOrder.get('stockDeducted', false) == true
+          && afterOrder.get('stockRestored', true) == false;
+      }
+
+      function validVendorCancellationStockRestore(stockId) {
+        let orderId = request.resource.data.get(
+          'lastStockRestoreOrderId',
+          ''
+        );
+        let afterOrder = getAfter(orderPath(orderId)).data;
+
+        return signedIn()
+          && resource.data.get('supplierId', '') != currentUid()
+          && orderId is string
+          && orderId.size() > 0
+          && exists(orderPath(orderId))
+          && existsAfter(orderPath(orderId))
+          && changedOnly([
+            'quantity',
+            'stockStatus',
+            'lastLowStockNotificationAt',
+            'lastLowStockNotificationStatus',
+            'lastStockRestoreOrderId',
+            'updatedAt'
+          ])
+          && request.resource.data.get('supplierId', '')
+              == resource.data.get('supplierId', '')
+          && request.resource.data.get('status', '')
+              == resource.data.get('status', '')
+          && request.resource.data.get('isActive', true)
+              == resource.data.get('isActive', true)
+          && request.resource.data.get('quantity', 0)
+              > resource.data.get('quantity', 0)
+          && afterOrder.get('vendorId', '') == currentUid()
+          && afterOrder.get('stockId', '') == stockId
+          && afterOrder.get('orderStatus', '') == 'Cancelled'
+          && afterOrder.get('cancelledBy', '') == 'vendor'
+          && afterOrder.get('stockRestored', false) == true
+          && afterOrder.get('quantity', 0)
+              == request.resource.data.get('quantity', 0)
+                - resource.data.get('quantity', 0);
+      }
+    }
+
+    // ---------------------------------------------------------------------
+    // ORDERS
+    // ---------------------------------------------------------------------
+
+    match /orders/{orderId} {
+      allow read: if isAdmin()
+        || (
+          signedIn()
+          && (
+            resource.data.get('vendorId', '') == currentUid()
+            || resource.data.get('supplierId', '') == currentUid()
+          )
+        );
+
+      allow create: if validCodOrderCreate(orderId);
+
+      allow update: if isAdmin()
+        || validVendorCancellation(orderId)
+        || validSupplierOrderTransition(orderId)
+        || validNewReviewOrderUpdate(orderId)
+        || validEditedReviewOrderUpdate(orderId);
+
+      allow delete: if false;
+
+      function validCodOrderCreate(orderId) {
+        let stockId = request.resource.data.get('stockId', '');
+        let beforeStock = get(stockPath(stockId)).data;
+        let afterStock = getAfter(stockPath(stockId)).data;
+        let orderedQuantity = request.resource.data.get('quantity', 0);
+
+        return signedIn()
+          && stockId is string
+          && stockId.size() > 0
+          && exists(stockPath(stockId))
+          && existsAfter(stockPath(stockId))
+          && request.resource.data.get('vendorId', '') == currentUid()
+          && request.resource.data.get('supplierId', '') != currentUid()
+          && request.resource.data.get('supplierId', '')
+              == beforeStock.get('supplierId', '')
+          && request.resource.data.get('fishStockId', '') == stockId
+          && request.resource.data.get('productName', '')
+              == beforeStock.get('productName', '')
+          && request.resource.data.get('quantityUnit', '')
+              == beforeStock.get('quantityUnit', '')
+          && request.resource.data.get('unitPrice', -1)
+              == beforeStock.get('price', -2)
+          && orderedQuantity is number
+          && orderedQuantity > 0
+          && beforeStock.get('quantity', 0) >= orderedQuantity
+          && beforeStock.get('status', 'available') != 'unavailable'
+          && beforeStock.get('isActive', true) == true
+          && request.resource.data.get('totalAmount', -1)
+              == beforeStock.get('price', 0) * orderedQuantity
+          && request.resource.data.get('paymentMethod', '') == 'COD'
+          && request.resource.data.get('paymentStatus', '')
+              == 'To be paid on delivery'
+          && request.resource.data.get('orderStatus', '') == 'Pending'
+          && request.resource.data.get('stockDeducted', false) == true
+          && request.resource.data.get('stockRestored', true) == false
+          && afterStock.get('supplierId', '')
+              == beforeStock.get('supplierId', '')
+          && afterStock.get('quantity', 0)
+              == beforeStock.get('quantity', 0) - orderedQuantity
+          && afterStock.get('lastOrderId', '') == orderId;
+      }
+
+      function validVendorCancellation(orderId) {
+        return signedIn()
+          && resource.data.get('vendorId', '') == currentUid()
+          && resource.data.get('orderStatus', '') == 'Pending'
+          && request.resource.data.get('orderStatus', '') == 'Cancelled'
+          && request.resource.data.get('paymentStatus', '') == 'Cancelled'
+          && request.resource.data.get('cancelledBy', '') == 'vendor'
+          && changedOnly([
+            'orderStatus',
+            'paymentStatus',
+            'stockRestored',
+            'stockRestorePending',
+            'cancelledBy',
+            'cancelledAt',
+            'restoredAt',
+            'updatedAt'
+          ])
+          && validCancellationRestoration(orderId);
+      }
+
+      function validSupplierOrderTransition(orderId) {
+        let currentStatus = resource.data.get('orderStatus', '');
+        let nextStatus = request.resource.data.get('orderStatus', '');
+
+        return signedIn()
+          && resource.data.get('supplierId', '') == currentUid()
+          && (
+            (
+              currentStatus == 'Pending'
+              && nextStatus == 'Accepted'
+              && request.resource.data.get('paymentStatus', '')
+                == 'To be paid on delivery'
+              && changedOnly([
+                'orderStatus',
+                'paymentStatus',
+                'acceptedAt',
+                'updatedAt'
+              ])
+            )
+            || (
+              currentStatus == 'Accepted'
+              && nextStatus == 'Delivered'
+              && request.resource.data.get('paymentStatus', '') == 'Paid'
+              && request.resource.data.get('isReviewEligible', false) == true
+              && changedOnly([
+                'orderStatus',
+                'paymentStatus',
+                'deliveredAt',
+                'completedAt',
+                'isReviewEligible',
+                'updatedAt'
+              ])
+            )
+            || (
+              (
+                currentStatus == 'Pending'
+                || currentStatus == 'Accepted'
+              )
+              && nextStatus == 'Cancelled'
+              && request.resource.data.get('paymentStatus', '') == 'Cancelled'
+              && request.resource.data.get('cancelledBy', '') == 'supplier'
+              && changedOnly([
+                'orderStatus',
+                'paymentStatus',
+                'stockRestored',
+                'stockRestorePending',
+                'cancelledBy',
+                'cancelledAt',
+                'restoredAt',
+                'updatedAt'
+              ])
+              && validCancellationRestoration(orderId)
+            )
+          );
+      }
+
+      function validCancellationRestoration(orderId) {
+        let stockId = resource.data.get('stockId', '');
+
+        return (
+          resource.data.get('stockDeducted', false) != true
+          && request.resource.data.get('stockRestored', false) == true
+        )
+        || (
+          stockId is string
+          && stockId.size() > 0
+          && !exists(stockPath(stockId))
+          && request.resource.data.get('stockRestored', true) == false
+          && request.resource.data.get('stockRestorePending', false) == true
+        )
+        || (
+          stockId is string
+          && stockId.size() > 0
+          && exists(stockPath(stockId))
+          && existsAfter(stockPath(stockId))
+          && request.resource.data.get('stockRestored', false) == true
+          && request.resource.data.get('stockRestorePending', true) == false
+          && getAfter(stockPath(stockId)).data.get(
+            'lastStockRestoreOrderId',
+            ''
+          ) == orderId
+          && getAfter(stockPath(stockId)).data.get('quantity', 0)
+            == get(stockPath(stockId)).data.get('quantity', 0)
+              + resource.data.get('quantity', 0)
+        );
+      }
+
+      function validNewReviewOrderUpdate(orderId) {
+        let afterReview = getAfter(reviewPath(orderId)).data;
+
+        return signedIn()
+          && resource.data.get('vendorId', '') == currentUid()
+          && isCompletedOrder(resource.data)
+          && resource.data.get('reviewSubmitted', false) != true
+          && !exists(reviewPath(orderId))
+          && existsAfter(reviewPath(orderId))
+          && request.resource.data.get('reviewSubmitted', false) == true
+          && afterReview.get('orderId', '') == orderId
+          && afterReview.get('vendorId', '') == currentUid()
+          && afterReview.get('supplierId', '')
+              == resource.data.get('supplierId', '')
+          && request.resource.data.get('reviewRating', 0)
+              == afterReview.get('rating', 0)
+          && request.resource.data.get('reviewComment', '')
+              == afterReview.get('comment', '')
+          && changedOnly([
+            'reviewSubmitted',
+            'reviewRating',
+            'reviewComment',
+            'reviewedAt',
+            'updatedAt'
+          ]);
+      }
+
+      function validEditedReviewOrderUpdate(orderId) {
+        let afterReview = getAfter(reviewPath(orderId)).data;
+
+        return signedIn()
+          && resource.data.get('vendorId', '') == currentUid()
+          && isCompletedOrder(resource.data)
+          && exists(reviewPath(orderId))
+          && existsAfter(reviewPath(orderId))
+          && get(reviewPath(orderId)).data.get('vendorId', '')
+              == currentUid()
+          && request.resource.data.get('reviewSubmitted', false) == true
+          && afterReview.get('orderId', '') == orderId
+          && afterReview.get('vendorId', '') == currentUid()
+          && afterReview.get('supplierId', '')
+              == resource.data.get('supplierId', '')
+          && request.resource.data.get('reviewRating', 0)
+              == afterReview.get('rating', 0)
+          && request.resource.data.get('reviewComment', '')
+              == afterReview.get('comment', '')
+          && changedOnly([
+            'reviewSubmitted',
+            'reviewRating',
+            'reviewComment',
+            'reviewUpdatedAt',
+            'updatedAt'
+          ]);
+      }
+    }
+
+    // ---------------------------------------------------------------------
+    // HISTORICAL TRANSACTIONS
+    //
+    // Imported only from a trusted Admin SDK script. Client apps are
+    // read-only and may query only records linked to their Firebase UID.
+    // ---------------------------------------------------------------------
+
+    match /historicalTransactions/{transactionId} {
+      allow read: if isAdmin()
+        || (
+          signedIn()
+          && (
+            resource.data.get('vendorUid', '') == currentUid()
+            || resource.data.get('supplierUid', '') == currentUid()
+          )
+        );
+
+      allow create, update, delete: if false;
+    }
+
+    match /historicalImports/{importId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // REVIEWS
+    // ---------------------------------------------------------------------
+
+    match /reviews/{orderId} {
+      allow read: if signedIn();
+
+      allow create: if validReviewCreate(orderId);
+
+      allow update: if validReviewEdit(orderId);
+
+      allow delete: if false;
+
+      function validReviewCreate(orderId) {
+        let order = get(orderPath(orderId)).data;
+
+        return signedIn()
+          && exists(orderPath(orderId))
+          && isCompletedOrder(order)
+          && order.get('vendorId', '') == currentUid()
+          && request.resource.data.get('orderId', '') == orderId
+          && request.resource.data.get('vendorId', '') == currentUid()
+          && request.resource.data.get('supplierId', '')
+              == order.get('supplierId', '')
+          && request.resource.data.get('rating', 0) is int
+          && request.resource.data.get('rating', 0) >= 1
+          && request.resource.data.get('rating', 0) <= 5
+          && request.resource.data.get('comment', '') is string
+          && request.resource.data.get('comment', '').size() <= 300;
+      }
+
+      function validReviewEdit(orderId) {
+        let order = get(orderPath(orderId)).data;
+
+        return signedIn()
+          && exists(orderPath(orderId))
+          && isCompletedOrder(order)
+          && resource.data.get('vendorId', '') == currentUid()
+          && order.get('vendorId', '') == currentUid()
+          && request.resource.data.get('orderId', '') == orderId
+          && request.resource.data.get('vendorId', '') == currentUid()
+          && request.resource.data.get('supplierId', '')
+              == resource.data.get('supplierId', '')
+          && request.resource.data.get('rating', 0) is int
+          && request.resource.data.get('rating', 0) >= 1
+          && request.resource.data.get('rating', 0) <= 5
+          && request.resource.data.get('comment', '') is string
+          && request.resource.data.get('comment', '').size() <= 300
+          && changedOnly([
+            'rating',
+            'comment',
+            'edited',
+            'updatedAt'
+          ]);
+      }
+    }
+
+    // ---------------------------------------------------------------------
+    // NOTIFICATIONS
+    // ---------------------------------------------------------------------
+
+    match /notifications/{notificationId} {
+      allow read: if notificationOwnedByCurrentUser(resource.data)
+        || isAdmin();
+
+      allow create: if isAdmin()
+        || validOrderStatusNotification()
+        || validStockAlertNotification();
+
+      allow update: if isAdmin()
+        || (
+          notificationOwnedByCurrentUser(resource.data)
+          && request.resource.data.get('isRead', false) == true
+          && changedOnly([
+            'isRead',
+            'readAt'
+          ])
+        );
+
+      allow delete: if isAdmin();
+
+      function validOrderStatusNotification() {
+        let orderId = request.resource.data.get('orderId', '');
+        let afterOrder = getAfter(orderPath(orderId)).data;
+
+        return signedIn()
+          && request.resource.data.get('type', '') == 'order_status'
+          && orderId is string
+          && orderId.size() > 0
+          && existsAfter(orderPath(orderId))
+          && afterOrder.get('supplierId', '') == currentUid()
+          && request.resource.data.get('vendorId', '')
+              == afterOrder.get('vendorId', '')
+          && request.resource.data.get('userId', '')
+              == afterOrder.get('vendorId', '')
+          && request.resource.data.get('status', '')
+              == afterOrder.get('orderStatus', '');
+      }
+
+      function validStockAlertNotification() {
+        let stockId = request.resource.data.get('stockId', '');
+        let sourceOrderId = request.resource.data.get('sourceOrderId', '');
+        let afterStock = getAfter(stockPath(stockId)).data;
+
+        return signedIn()
+          && request.resource.data.get('type', '') == 'stock_alert'
+          && stockId is string
+          && stockId.size() > 0
+          && existsAfter(stockPath(stockId))
+          && request.resource.data.get('supplierId', '')
+              == afterStock.get('supplierId', '')
+          && request.resource.data.get('userId', '')
+              == afterStock.get('supplierId', '')
+          && request.resource.data.get('stockStatus', '')
+              == afterStock.get('stockStatus', '')
+          && (
+            (
+              currentUid() == afterStock.get('supplierId', '')
+              && isApprovedSupplierAccount(currentUid())
+            )
+            || (
+              sourceOrderId is string
+              && sourceOrderId.size() > 0
+              && existsAfter(orderPath(sourceOrderId))
+              && getAfter(orderPath(sourceOrderId)).data.get(
+                'vendorId',
+                ''
+              ) == currentUid()
+              && getAfter(orderPath(sourceOrderId)).data.get(
+                'supplierId',
+                ''
+              ) == afterStock.get('supplierId', '')
+              && getAfter(orderPath(sourceOrderId)).data.get(
+                'stockId',
+                ''
+              ) == stockId
+            )
+          );
+      }
+    }
+
+    // Deny anything not explicitly covered above.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

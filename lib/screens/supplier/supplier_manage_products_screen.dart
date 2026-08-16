@@ -9,6 +9,7 @@ import 'package:isdalink/screens/supplier/manage_products/widgets/manage_product
 import 'package:isdalink/screens/supplier/post_fish_stock_screen.dart';
 import 'package:isdalink/services/supplier_product_service.dart';
 import 'package:isdalink/utils/order_helpers.dart';
+import 'package:isdalink/utils/stock_state.dart';
 
 enum ManageProductFilter {
   all,
@@ -84,14 +85,7 @@ class _SupplierManageProductsScreenState
   bool isHidden(
     Map<String, dynamic> data,
   ) {
-    final status = OrderHelpers.getStringValue(
-      data,
-      'status',
-      'available',
-    ).toLowerCase();
-
-    return status == 'unavailable' ||
-        data['isActive'] == false;
+    return StockState.isIntentionallyHidden(data);
   }
 
   String filterStatus(

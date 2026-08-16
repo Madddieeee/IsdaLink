@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:isdalink/services/stock_notification_service.dart';
 import 'package:isdalink/utils/order_helpers.dart';
+import 'package:isdalink/utils/stock_state.dart';
 
 class SupplierProductStats {
   const SupplierProductStats({
@@ -47,6 +49,9 @@ class SupplierProductUpdateInput {
 class SupplierProductService {
   const SupplierProductService();
 
+  StockNotificationService get stockNotificationService =>
+      const StockNotificationService();
+
   Stream<QuerySnapshot<Map<String, dynamic>>> fishStocksStream(
     String supplierId,
   ) {
@@ -62,15 +67,7 @@ class SupplierProductService {
   bool isHidden(
     Map<String, dynamic> data,
   ) {
-    final status = OrderHelpers.getStringValue(
-      data,
-      'status',
-      'available',
-    ).toLowerCase();
-
-    final isActive = data['isActive'];
-
-    return status == 'unavailable' || isActive == false;
+    return StockState.isIntentionallyHidden(data);
   }
 
   String calculatedStockStatus(
@@ -194,39 +191,74 @@ class SupplierProductService {
         .collection('fishStocks')
         .doc(documentId);
 
-    final snapshot = await reference.get();
-    final currentData = snapshot.data() ?? <String, dynamic>{};
+    await FirebaseFirestore.instance.runTransaction(
+      (transaction) async {
+        final snapshot = await transaction.get(reference);
 
-    final hidden = isHidden(currentData);
-    final lowStockLevel = input.lowStockLevel;
+        if (!snapshot.exists) {
+          throw Exception(
+            'This fish listing no longer exists.',
+          );
+        }
 
-    final stockStatus = hidden
-        ? 'hidden'
-        : input.quantity <= 0
-            ? 'outOfStock'
-            : input.quantity <= lowStockLevel
-                ? 'lowStock'
-                : 'available';
+        final currentData =
+            snapshot.data() ?? <String, dynamic>{};
 
-    await reference.update({
-      'productName': input.productName.trim(),
-      'description': input.description.trim(),
-      'category': input.category,
-      'imageUrl': input.imageUrl,
-      'productImageUrl': input.imageUrl,
-      'price': input.price,
-      'priceUnit': 'per ${input.unit}',
-      'quantity': input.quantity,
-      'quantityUnit': input.unit,
-      'referenceStockQuantity': input.quantity,
-      'lowStockPercentage':
-          input.lowStockPercentage.clamp(1, 100).toDouble(),
-      'lowStockLevel': lowStockLevel,
-      'lowStockAlertEnabled': true,
-      'lowStockNotificationEnabled': true,
-      'stockStatus': stockStatus,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+        final hidden = isHidden(currentData);
+        final lowStockLevel = input.lowStockLevel;
+
+        final stockTransition = stockNotificationService.transitionFor(
+          stockData: currentData,
+          nextQuantity: input.quantity,
+          lowStockLevelOverride: lowStockLevel,
+          hiddenOverride: hidden,
+        );
+
+        final stockStatus = StockState.calculatedStockStatus(
+          currentData,
+          quantityOverride: input.quantity,
+          lowStockLevelOverride: lowStockLevel,
+          hiddenOverride: hidden,
+        );
+
+        transaction.update(
+          reference,
+          {
+            'productName': input.productName.trim(),
+            'description': input.description.trim(),
+            'category': input.category,
+            'imageUrl': input.imageUrl,
+            'productImageUrl': input.imageUrl,
+            'price': input.price,
+            'priceUnit': 'per ${input.unit}',
+            'quantity': input.quantity,
+            'quantityUnit': input.unit,
+            'referenceStockQuantity': input.quantity,
+            'lowStockPercentage':
+                input.lowStockPercentage.clamp(1, 100).toDouble(),
+            'lowStockLevel': lowStockLevel,
+            'lowStockAlertEnabled': true,
+            'lowStockNotificationEnabled': true,
+            'status': hidden ? 'unavailable' : 'available',
+            'isActive': !hidden,
+            'stockStatus': stockStatus,
+            ...stockTransition.markerFields(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          },
+        );
+
+        stockNotificationService.createNotificationInTransaction(
+          transaction: transaction,
+          stockReference: reference,
+          stockData: currentData,
+          nextQuantity: input.quantity,
+          transition: stockTransition,
+          productNameOverride: input.productName,
+          quantityUnitOverride: input.unit,
+          lowStockLevelOverride: lowStockLevel,
+        );
+      },
+    );
   }
 
   Future<String> toggleAvailability({
@@ -240,30 +272,14 @@ class SupplierProductService {
     final data = snapshot.data() ?? <String, dynamic>{};
 
     final currentlyHidden = isHidden(data);
-    final newStatus =
-        currentlyHidden ? 'available' : 'unavailable';
-
-    final quantity = OrderHelpers.getDoubleValue(
-      data,
-      'quantity',
-    );
-    final lowStockLevel = OrderHelpers.getDoubleValue(
-      data,
-      'lowStockLevel',
-    );
-
-    final stockStatus = newStatus == 'unavailable'
-        ? 'hidden'
-        : quantity <= 0
-            ? 'outOfStock'
-            : quantity <= lowStockLevel
-                ? 'lowStock'
-                : 'available';
+    final makeActive = currentlyHidden;
+    final newStatus = makeActive ? 'available' : 'unavailable';
 
     await reference.update({
-      'status': newStatus,
-      'isActive': newStatus == 'available',
-      'stockStatus': stockStatus,
+      ...StockState.fieldsForVisibility(
+        data,
+        active: makeActive,
+      ),
       'updatedAt': FieldValue.serverTimestamp(),
     });
 

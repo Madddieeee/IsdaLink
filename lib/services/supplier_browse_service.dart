@@ -8,6 +8,9 @@ class SupplierBrowseService {
   Stream<QuerySnapshot<Map<String, dynamic>>> get suppliersStream {
     return FirebaseFirestore.instance
         .collection('supplierProfiles')
+        // Firestore Rules keep pending/rejected verification records private.
+        // Marketplace queries must therefore request approved profiles only.
+        .where('status', isEqualTo: 'approved')
         .snapshots();
   }
 

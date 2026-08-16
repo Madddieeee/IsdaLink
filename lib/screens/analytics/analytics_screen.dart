@@ -40,8 +40,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   String get roleLabel => isSupplier ? 'SUPPLIER SIDE' : 'VENDOR SIDE';
 
   String get subtitle => isSupplier
-      ? 'Sales trends, forecasts, stock alerts, and product insights from completed COD orders.'
-      : 'Purchase trends, forecasts, and restocking insights from completed COD orders.';
+      ? 'Sales trends, forecasts, stock alerts, and product insights from validated historical records and completed COD orders.'
+      : 'Purchase trends, forecasts, and restocking insights from validated historical records and completed COD orders.';
 
   String get amountLabel => isSupplier ? 'Sales' : 'Amount';
 
@@ -56,8 +56,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       : 'No completed purchase history yet';
 
   String get emptyDescription => isSupplier
-      ? 'Complete COD orders to generate sales trends, forecasts, accuracy evaluation, and product insights.'
-      : 'Complete COD orders to generate purchase trends, forecasts, accuracy evaluation, and restocking insights.';
+      ? 'Link validated historical transactions or complete COD orders to generate sales trends, forecasts, accuracy evaluation, and product insights.'
+      : 'Link validated historical transactions or complete COD orders to generate purchase trends, forecasts, accuracy evaluation, and restocking insights.';
 
   String get emptyActionLabel =>
       isSupplier ? 'Review COD Orders' : 'Browse Suppliers';
@@ -69,6 +69,18 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         .collection('orders')
         .where(
           isSupplier ? 'supplierId' : 'vendorId',
+          isEqualTo: uid,
+        )
+        .snapshots();
+  }
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> historicalTransactionsStream(
+    String uid,
+  ) {
+    return FirebaseFirestore.instance
+        .collection('historicalTransactions')
+        .where(
+          isSupplier ? 'supplierUid' : 'vendorUid',
           isEqualTo: uid,
         )
         .snapshots();
@@ -155,10 +167,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     Map<String, dynamic> data,
   ) {
     const keys = [
+      // Analytics is grouped by the transaction/order date, not by the
+      // completion date. Completion timestamps remain fallback values for
+      // legacy records that do not yet store a separate transaction date.
+      'transactionDate',
+      'orderDate',
+      'createdAt',
       'completedAt',
       'deliveredAt',
       'updatedAt',
-      'createdAt',
     ];
 
     for (final key in keys) {
@@ -211,6 +228,184 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         'grandTotal',
       ],
     );
+  }
+
+  String normalizeAnalyticsUnit(
+    String rawUnit,
+  ) {
+    final normalized = rawUnit
+        .trim()
+        .toLowerCase()
+        .replaceAll('_', ' ')
+        .replaceAll('-', ' ')
+        .replaceAll(RegExp(r'\s+'), ' ');
+
+    if (normalized == 'kg' ||
+        normalized == 'kgs' ||
+        normalized == 'kilo' ||
+        normalized == 'kilos' ||
+        normalized == 'kilogram' ||
+        normalized == 'kilograms') {
+      return 'kilogram';
+    }
+
+    if (normalized == 'tab' || normalized == 'tabs') {
+      return 'tab';
+    }
+
+    if (normalized == 'ice box' ||
+        normalized == 'ice boxes' ||
+        normalized == 'icebox' ||
+        normalized == 'iceboxes') {
+      return 'icebox';
+    }
+
+    return normalized.isEmpty ? 'kilogram' : normalized;
+  }
+
+  String analyticsProductKey(
+    String productName,
+  ) {
+    return productName
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'\s+'), ' ');
+  }
+
+  bool isEligibleHistoricalTransaction(
+    Map<String, dynamic> data,
+  ) {
+    final analyticsEligible = data['analyticsEligible'];
+
+    if (analyticsEligible is bool && !analyticsEligible) {
+      return false;
+    }
+
+    final orderStatus = firstString(
+      data,
+      const [
+        'orderStatus',
+        'order_status',
+      ],
+      fallback: '',
+    ).toLowerCase();
+
+    final validationStatus = firstString(
+      data,
+      const [
+        'validationStatus',
+        'validation_status',
+      ],
+      fallback: '',
+    ).toLowerCase();
+
+    return orderStatus == 'completed' &&
+        validationStatus == 'validated';
+  }
+
+  DateTime historicalTransactionDate(
+    Map<String, dynamic> data,
+  ) {
+    const keys = [
+      'transactionDate',
+      'transaction_date',
+      'transactionDateIso',
+    ];
+
+    for (final key in keys) {
+      final value = data[key];
+
+      if (value is Timestamp) {
+        return value.toDate().toLocal();
+      }
+
+      if (value is DateTime) {
+        return value.toLocal();
+      }
+
+      if (value is String) {
+        final parsed = DateTime.tryParse(value.trim());
+
+        if (parsed != null) {
+          return parsed.toLocal();
+        }
+      }
+    }
+
+    return DateTime.now();
+  }
+
+  List<_OrderLine> extractHistoricalLines(
+    Map<String, dynamic> data,
+  ) {
+    if (!isEligibleHistoricalTransaction(data)) {
+      return const [];
+    }
+
+    final quantity = firstPositiveDouble(
+      data,
+      const [
+        'quantityFulfilled',
+        'quantity_fulfilled',
+      ],
+    );
+
+    if (quantity <= 0) {
+      return const [];
+    }
+
+    final productName = firstString(
+      data,
+      const [
+        'productName',
+        'fishProduct',
+        'fish_product',
+      ],
+      fallback: 'Fish Product',
+    );
+
+    final quantityUnit = normalizeAnalyticsUnit(
+      firstString(
+        data,
+        const [
+          'quantityUnit',
+          'quantity_unit',
+        ],
+        fallback: 'kilogram',
+      ),
+    );
+
+    var amount = firstPositiveDouble(
+      data,
+      const [
+        'totalAmount',
+        'totalAmountPhp',
+        'total_amount_php',
+      ],
+    );
+
+    if (amount <= 0) {
+      final unitPrice = firstPositiveDouble(
+        data,
+        const [
+          'unitPrice',
+          'unitPricePhp',
+          'unit_price_php',
+        ],
+      );
+      amount = unitPrice * quantity;
+    }
+
+    return [
+      _OrderLine(
+        productId: analyticsProductKey(productName),
+        productName: productName,
+        quantityUnit: quantityUnit,
+        emoji: '🐟',
+        quantity: quantity,
+        amount: amount,
+      ),
+    ];
   }
 
   DateTime periodStart(
@@ -324,14 +519,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           fallback: productName.toLowerCase(),
         );
 
-        final quantityUnit = firstString(
-          item,
-          const [
-            'quantityUnit',
-            'unit',
-            'unitType',
-          ],
-          fallback: 'kilo',
+        final quantityUnit = normalizeAnalyticsUnit(
+          firstString(
+            item,
+            const [
+              'quantityUnit',
+              'unit',
+              'unitType',
+            ],
+            fallback: 'kilogram',
+          ),
         );
 
         final emoji = firstString(
@@ -416,14 +613,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       fallback: productName.toLowerCase(),
     );
 
-    final quantityUnit = firstString(
-      order,
-      const [
-        'quantityUnit',
-        'unit',
-        'unitType',
-      ],
-      fallback: 'kilo',
+    final quantityUnit = normalizeAnalyticsUnit(
+      firstString(
+        order,
+        const [
+          'quantityUnit',
+          'unit',
+          'unitType',
+        ],
+        fallback: 'kilogram',
+      ),
     );
 
     final emoji = firstString(
@@ -449,10 +648,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   AnalyticsData buildAnalyticsData({
     required List<QueryDocumentSnapshot<Map<String, dynamic>>> orders,
+    required List<QueryDocumentSnapshot<Map<String, dynamic>>>
+        historicalTransactions,
     required List<QueryDocumentSnapshot<Map<String, dynamic>>> stocks,
   }) {
     final completedOrders = orders.where(
       (document) => isCompletedOrder(document.data()),
+    ).toList();
+
+    final eligibleHistorical = historicalTransactions.where(
+      (document) => isEligibleHistoricalTransaction(document.data()),
     ).toList();
 
     double totalAmount = 0;
@@ -461,12 +666,55 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     final productPeriodMap = <String, Map<String, PeriodPoint>>{};
     final quantityUnits = <String>{};
 
+    void addLine({
+      required _OrderLine line,
+      required DateTime date,
+      required double fallbackAmount,
+    }) {
+      final normalizedUnit = normalizeAnalyticsUnit(
+        line.quantityUnit,
+      );
+      final normalizedProductName = analyticsProductKey(
+        line.productName,
+      );
+      final productKey = '$normalizedProductName|$normalizedUnit';
+
+      quantityUnits.add(normalizedUnit);
+
+      final lineAmount = line.amount > 0 ? line.amount : fallbackAmount;
+      final existingProduct = productMap[productKey];
+
+      productMap[productKey] = ProductSummary(
+        seriesKey: productKey,
+        productName: line.productName,
+        quantityUnit: normalizedUnit,
+        emoji: line.emoji,
+        quantity: (existingProduct?.quantity ?? 0) + line.quantity,
+        amount: (existingProduct?.amount ?? 0) + lineAmount,
+        transactionCount:
+            (existingProduct?.transactionCount ?? 0) + 1,
+      );
+
+      final dateKey = periodKey(date);
+      final series = productPeriodMap.putIfAbsent(
+        productKey,
+        () => <String, PeriodPoint>{},
+      );
+      final existingPoint = series[dateKey];
+
+      series[dateKey] = PeriodPoint(
+        date: date,
+        quantity: (existingPoint?.quantity ?? 0) + line.quantity,
+        amount: (existingPoint?.amount ?? 0) + lineAmount,
+      );
+    }
+
+    // Live operational orders.
     for (final document in completedOrders) {
       final data = document.data();
       final date = periodStart(
         orderDate(data),
       );
-      final dateKey = periodKey(date);
       final lines = extractOrderLines(data);
       final orderTotal = completedAmount(data);
       final lineTotals = lines.fold<double>(
@@ -477,40 +725,51 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       totalAmount += orderTotal > 0 ? orderTotal : lineTotals;
 
       for (final line in lines) {
-        final normalizedUnit = line.quantityUnit.trim().toLowerCase();
-        final normalizedProductId = line.productId.trim().toLowerCase();
-        final productKey = '$normalizedProductId|$normalizedUnit';
-
-        quantityUnits.add(normalizedUnit);
-
-        final existingProduct = productMap[productKey];
-
-        productMap[productKey] = ProductSummary(
-          seriesKey: productKey,
-          productName: line.productName,
-          quantityUnit: line.quantityUnit,
-          emoji: line.emoji,
-          quantity: (existingProduct?.quantity ?? 0) + line.quantity,
-          amount: (existingProduct?.amount ?? 0) +
-              (line.amount > 0
-                  ? line.amount
-                  : lines.length == 1
-                      ? orderTotal
-                      : 0),
-          transactionCount:
-              (existingProduct?.transactionCount ?? 0) + 1,
-        );
-
-        final series = productPeriodMap.putIfAbsent(
-          productKey,
-          () => <String, PeriodPoint>{},
-        );
-        final existingPoint = series[dateKey];
-
-        series[dateKey] = PeriodPoint(
+        addLine(
+          line: line,
           date: date,
-          quantity: (existingPoint?.quantity ?? 0) + line.quantity,
-          amount: (existingPoint?.amount ?? 0) + line.amount,
+          fallbackAmount: lines.length == 1 ? orderTotal : 0,
+        );
+      }
+    }
+
+    // Historical field records imported from the verified Transaction Log.
+    // The source manual defines transaction_date as the analytics grouping
+    // date and quantity_fulfilled as the completed purchase/sale quantity.
+    for (final document in eligibleHistorical) {
+      final data = document.data();
+      final date = periodStart(
+        historicalTransactionDate(data),
+      );
+      final lines = extractHistoricalLines(data);
+
+      if (lines.isEmpty) {
+        continue;
+      }
+
+      final historicalTotal = firstPositiveDouble(
+        data,
+        const [
+          'totalAmount',
+          'totalAmountPhp',
+          'total_amount_php',
+        ],
+      );
+
+      final lineTotals = lines.fold<double>(
+        0,
+        (total, line) => total + line.amount,
+      );
+
+      totalAmount += historicalTotal > 0
+          ? historicalTotal
+          : lineTotals;
+
+      for (final line in lines) {
+        addLine(
+          line: line,
+          date: date,
+          fallbackAmount: historicalTotal,
         );
       }
     }
@@ -562,17 +821,27 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         )
         .toList();
 
-    final simpleForecast = simpleMovingAverageForecast(quantities);
+    final simpleForecast = simpleMovingAverageForecast(selectedPoints);
     final seasonalForecast = seasonalMovingAverageForecast(selectedPoints);
-    final evaluation = evaluateForecast(quantities);
+    final simpleEvaluation = evaluateSimpleMovingAverage(selectedPoints);
+    final seasonalEvaluation = evaluateSeasonalMovingAverage(selectedPoints);
+    final selectedMethod = selectForecastMethod(
+      simpleForecast: simpleForecast,
+      seasonalForecast: seasonalForecast,
+      simpleEvaluation: simpleEvaluation,
+      seasonalEvaluation: seasonalEvaluation,
+    );
     final variabilityValue = variability(quantities);
 
     final rankingBasis = mixedUnits
-        ? 'Ranked by completed transaction amount because product series use different units.'
+        ? 'Ranked by completed transaction amount because fish-and-unit series use different units.'
         : 'Ranked by completed quantity within ${quantityUnits.isEmpty ? 'the recorded unit' : quantityUnits.first}.';
 
     return AnalyticsData(
-      completedOrders: completedOrders.length,
+      completedOrders:
+          completedOrders.length + eligibleHistorical.length,
+      liveCompletedOrders: completedOrders.length,
+      historicalTransactions: eligibleHistorical.length,
       totalAmount: totalAmount,
       products: products,
       selectedProduct: selectedProduct,
@@ -580,7 +849,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       rankingBasis: rankingBasis,
       simpleForecast: simpleForecast,
       seasonalForecast: seasonalForecast,
-      evaluation: evaluation,
+      simpleEvaluation: simpleEvaluation,
+      seasonalEvaluation: seasonalEvaluation,
+      selectedMethod: selectedMethod,
       variability: variabilityValue,
       suggestions: buildSuggestions(
         products: products,
@@ -590,26 +861,205 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  ForecastResult simpleMovingAverageForecast(
-    List<double> values, {
-    int window = 3,
-  }) {
-    if (values.length < window) {
-      return ForecastResult.unavailable(
-        reason: 'At least $window completed periods are required.',
+  int get smaWindow {
+    return selectedPeriod == AnalyticsPeriod.weekly ? 4 : 3;
+  }
+
+  int get seasonalInterval {
+    return selectedPeriod == AnalyticsPeriod.weekly ? 4 : 12;
+  }
+
+  int get seasonalComparablePeriods {
+    return selectedPeriod == AnalyticsPeriod.weekly ? 3 : 2;
+  }
+
+  int get seasonalMinimumPrecedingPeriods {
+    return seasonalInterval * seasonalComparablePeriods;
+  }
+
+  String get periodName {
+    return selectedPeriod == AnalyticsPeriod.weekly
+        ? 'weekly'
+        : 'monthly';
+  }
+
+  DateTime shiftAnalyticsPeriod(
+    DateTime date,
+    int offset,
+  ) {
+    final start = periodStart(date);
+
+    if (selectedPeriod == AnalyticsPeriod.monthly) {
+      return DateTime(
+        start.year,
+        start.month + offset,
       );
     }
 
-    final recent = values.sublist(
-      values.length - window,
+    return start.add(
+      Duration(
+        days: 7 * offset,
+      ),
     );
-    final total = recent.fold<double>(
-      0,
-      (total, value) => total + value,
-    );
+  }
+
+  bool sameAnalyticsPeriod(
+    DateTime left,
+    DateTime right,
+  ) {
+    final leftStart = periodStart(left);
+    final rightStart = periodStart(right);
+
+    return leftStart.year == rightStart.year &&
+        leftStart.month == rightStart.month &&
+        leftStart.day == rightStart.day;
+  }
+
+  PeriodPoint? pointForAnalyticsPeriod(
+    List<PeriodPoint> points,
+    DateTime targetDate,
+  ) {
+    for (final point in points) {
+      if (sameAnalyticsPeriod(
+        point.date,
+        targetDate,
+      )) {
+        return point;
+      }
+    }
+
+    return null;
+  }
+
+  double meanOf(
+    List<double> values,
+  ) {
+    if (values.isEmpty) {
+      return 0;
+    }
+
+    return values.fold<double>(
+          0,
+          (total, value) => total + value,
+        ) /
+        values.length;
+  }
+
+  ForecastResult simpleMovingAverageForTarget({
+    required List<PeriodPoint> precedingPoints,
+    required DateTime targetDate,
+  }) {
+    final values = <double>[];
+
+    for (var offset = smaWindow; offset >= 1; offset--) {
+      final expectedDate = shiftAnalyticsPeriod(
+        targetDate,
+        -offset,
+      );
+      final point = pointForAnalyticsPeriod(
+        precedingPoints,
+        expectedDate,
+      );
+
+      if (point == null) {
+        return ForecastResult.unavailable(
+          reason:
+              'Requires $smaWindow consecutive preceding $periodName periods.',
+        );
+      }
+
+      values.add(
+        point.quantity,
+      );
+    }
 
     return ForecastResult.available(
-      total / window,
+      meanOf(values),
+    );
+  }
+
+  ForecastResult simpleMovingAverageForecast(
+    List<PeriodPoint> points,
+  ) {
+    if (points.isEmpty) {
+      return ForecastResult.unavailable(
+        reason: 'No completed periods are available.',
+      );
+    }
+
+    final targetDate = shiftAnalyticsPeriod(
+      points.last.date,
+      1,
+    );
+
+    return simpleMovingAverageForTarget(
+      precedingPoints: points,
+      targetDate: targetDate,
+    );
+  }
+
+  ForecastResult seasonalMovingAverageForTarget({
+    required List<PeriodPoint> precedingPoints,
+    required DateTime targetDate,
+  }) {
+    // The final configuration requires not only the comparable lags but the
+    // full preceding-history coverage: 12 weekly periods or 24 monthly
+    // periods before the target.
+    for (
+      var offset = 1;
+      offset <= seasonalMinimumPrecedingPeriods;
+      offset++
+    ) {
+      final expectedDate = shiftAnalyticsPeriod(
+        targetDate,
+        -offset,
+      );
+
+      if (pointForAnalyticsPeriod(
+            precedingPoints,
+            expectedDate,
+          ) ==
+          null) {
+        return ForecastResult.unavailable(
+          reason: selectedPeriod == AnalyticsPeriod.weekly
+              ? 'Requires 12 consecutive preceding weekly observations before the three 4-week seasonal comparisons can be evaluated.'
+              : 'Requires 24 consecutive preceding monthly observations before the two 12-month seasonal comparisons can be evaluated.',
+        );
+      }
+    }
+
+    final comparableValues = <double>[];
+
+    for (
+      var comparableIndex = 1;
+      comparableIndex <= seasonalComparablePeriods;
+      comparableIndex++
+    ) {
+      final expectedDate = shiftAnalyticsPeriod(
+        targetDate,
+        -(seasonalInterval * comparableIndex),
+      );
+
+      final point = pointForAnalyticsPeriod(
+        precedingPoints,
+        expectedDate,
+      );
+
+      if (point == null) {
+        return ForecastResult.unavailable(
+          reason: selectedPeriod == AnalyticsPeriod.weekly
+              ? 'Requires 3 comparable weekly observations spaced 4 weeks apart, with at least 12 preceding weeks.'
+              : 'Requires 2 comparable monthly observations spaced 12 months apart, with at least 24 preceding months.',
+        );
+      }
+
+      comparableValues.add(
+        point.quantity,
+      );
+    }
+
+    return ForecastResult.available(
+      meanOf(comparableValues),
     );
   }
 
@@ -622,124 +1072,221 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       );
     }
 
-    final lastDate = points.last.date;
-
-    if (selectedPeriod == AnalyticsPeriod.monthly) {
-      final nextMonth = lastDate.month == 12 ? 1 : lastDate.month + 1;
-
-      final comparable = points
-          .where(
-            (point) => point.date.month == nextMonth,
-          )
-          .map(
-            (point) => point.quantity,
-          )
-          .toList();
-
-      if (comparable.isEmpty) {
-        return ForecastResult.unavailable(
-          reason: 'No comparable recurring monthly period is available yet.',
-        );
-      }
-
-      final total = comparable.fold<double>(
-        0,
-        (total, value) => total + value,
-      );
-
-      return ForecastResult.available(
-        total / comparable.length,
-      );
-    }
-
-    final nextDate = lastDate.add(
-      const Duration(days: 7),
-    );
-    final nextWeekPosition = ((nextDate.day - 1) ~/ 7) + 1;
-
-    final comparable = points.where(
-      (point) {
-        final weekPosition = ((point.date.day - 1) ~/ 7) + 1;
-
-        return weekPosition == nextWeekPosition &&
-            point.date.isBefore(lastDate);
-      },
-    ).map(
-      (point) => point.quantity,
-    ).toList();
-
-    if (comparable.isEmpty) {
-      return ForecastResult.unavailable(
-        reason: 'No comparable recurring weekly period is available yet.',
-      );
-    }
-
-    final total = comparable.fold<double>(
-      0,
-      (total, value) => total + value,
+    final targetDate = shiftAnalyticsPeriod(
+      points.last.date,
+      1,
     );
 
-    return ForecastResult.available(
-      total / comparable.length,
+    return seasonalMovingAverageForTarget(
+      precedingPoints: points,
+      targetDate: targetDate,
     );
   }
 
-  ForecastEvaluation evaluateForecast(
-    List<double> values, {
-    int window = 3,
-  }) {
-    if (values.length <= window) {
-      return const ForecastEvaluation(
-        mape: 0,
-        mae: 0,
-        hasEnoughData: false,
-      );
-    }
+  ForecastEvaluation evaluateSimpleMovingAverage(
+    List<PeriodPoint> points,
+  ) {
+    return evaluateForecastMethod(
+      points: points,
+      method: ForecastingMethod.simpleMovingAverage,
+    );
+  }
 
+  ForecastEvaluation evaluateSeasonalMovingAverage(
+    List<PeriodPoint> points,
+  ) {
+    return evaluateForecastMethod(
+      points: points,
+      method: ForecastingMethod.seasonalMovingAverage,
+    );
+  }
+
+  ForecastEvaluation evaluateForecastMethod({
+    required List<PeriodPoint> points,
+    required ForecastingMethod method,
+  }) {
     final absoluteErrors = <double>[];
     final percentageErrors = <double>[];
+    var zeroActualMapeExclusions = 0;
 
-    for (var index = window; index < values.length; index++) {
-      final previous = values.sublist(
-        index - window,
+    for (var index = 0; index < points.length; index++) {
+      final target = points[index];
+      final preceding = points.sublist(
+        0,
         index,
       );
-      final forecast = previous.fold<double>(
-            0,
-            (total, value) => total + value,
-          ) /
-          window;
-      final actual = values[index];
-      final error = (actual - forecast).abs();
 
-      absoluteErrors.add(error);
+      final forecast = switch (method) {
+        ForecastingMethod.simpleMovingAverage =>
+          simpleMovingAverageForTarget(
+            precedingPoints: preceding,
+            targetDate: target.date,
+          ),
+        ForecastingMethod.seasonalMovingAverage =>
+          seasonalMovingAverageForTarget(
+            precedingPoints: preceding,
+            targetDate: target.date,
+          ),
+      };
 
-      if (actual > 0) {
+      if (!forecast.hasValue) {
+        continue;
+      }
+
+      final actual = target.quantity;
+      final absoluteError = (actual - forecast.value).abs();
+
+      // MAE keeps every otherwise valid actual-versus-forecast pair,
+      // including a valid target period whose actual quantity equals zero.
+      absoluteErrors.add(
+        absoluteError,
+      );
+
+      // MAPE excludes zero actuals because the actual value is the
+      // denominator. The exclusion is counted and surfaced in the UI.
+      if (actual == 0) {
+        zeroActualMapeExclusions++;
+      } else {
         percentageErrors.add(
-          error / actual * 100,
+          absoluteError / actual.abs() * 100,
         );
       }
     }
 
-    final mae = absoluteErrors.fold<double>(
-          0,
-          (total, value) => total + value,
-        ) /
-        absoluteErrors.length;
+    if (absoluteErrors.isEmpty) {
+      final reason = method == ForecastingMethod.simpleMovingAverage
+          ? 'No target period yet has $smaWindow valid preceding $periodName observations for one-period-ahead SMA evaluation.'
+          : selectedPeriod == AnalyticsPeriod.weekly
+              ? 'No target period yet has the 12 preceding weeks needed for three 4-week seasonal comparisons.'
+              : 'No target period yet has the 24 preceding months needed for two 12-month seasonal comparisons.';
 
-    final double mape = percentageErrors.isEmpty
-        ? 0.0
-        : percentageErrors.fold<double>(
-              0,
-              (total, value) => total + value,
-            ) /
-            percentageErrors.length;
+      return ForecastEvaluation.unavailable(
+        reason: reason,
+      );
+    }
 
-    return ForecastEvaluation(
+    final mae = meanOf(
+      absoluteErrors,
+    );
+
+    final hasMape = percentageErrors.isNotEmpty;
+    final mape = hasMape
+        ? meanOf(
+            percentageErrors,
+          )
+        : 0.0;
+
+    return ForecastEvaluation.available(
       mape: mape,
       mae: mae,
-      hasEnoughData: true,
+      hasMape: hasMape,
+      maePairCount: absoluteErrors.length,
+      mapePairCount: percentageErrors.length,
+      zeroActualMapeExclusions: zeroActualMapeExclusions,
+      reason: hasMape
+          ? ''
+          : 'MAPE is unavailable because every valid evaluation pair has an actual quantity of zero. MAE remains valid.',
     );
+  }
+
+  ForecastMethodSelection selectForecastMethod({
+    required ForecastResult simpleForecast,
+    required ForecastResult seasonalForecast,
+    required ForecastEvaluation simpleEvaluation,
+    required ForecastEvaluation seasonalEvaluation,
+  }) {
+    final simpleEligible = simpleForecast.hasValue &&
+        simpleEvaluation.hasMae &&
+        simpleEvaluation.hasMape;
+
+    final seasonalEligible = seasonalForecast.hasValue &&
+        seasonalEvaluation.hasMae &&
+        seasonalEvaluation.hasMape;
+
+    if (simpleEligible && !seasonalEligible) {
+      return ForecastMethodSelection.selected(
+        method: ForecastingMethod.simpleMovingAverage,
+        forecast: simpleForecast.value,
+        reason:
+            'Simple Moving Average is the only method currently eligible for accuracy-based selection.',
+      );
+    }
+
+    if (!simpleEligible && seasonalEligible) {
+      return ForecastMethodSelection.selected(
+        method: ForecastingMethod.seasonalMovingAverage,
+        forecast: seasonalForecast.value,
+        reason:
+            'Seasonal Moving Average is the only method currently eligible for accuracy-based selection.',
+      );
+    }
+
+    if (!simpleEligible && !seasonalEligible) {
+      return ForecastMethodSelection.unavailable(
+        reason:
+            'A selected method will appear when at least one forecast has a valid MAPE evaluation.',
+      );
+    }
+
+    const tolerance = 0.0000001;
+    final mapeDifference =
+        (simpleEvaluation.mape - seasonalEvaluation.mape).abs();
+
+    if (mapeDifference > tolerance) {
+      if (simpleEvaluation.mape < seasonalEvaluation.mape) {
+        return ForecastMethodSelection.selected(
+          method: ForecastingMethod.simpleMovingAverage,
+          forecast: simpleForecast.value,
+          reason: 'Selected because it has the lower MAPE.',
+        );
+      }
+
+      return ForecastMethodSelection.selected(
+        method: ForecastingMethod.seasonalMovingAverage,
+        forecast: seasonalForecast.value,
+        reason: 'Selected because it has the lower MAPE.',
+      );
+    }
+
+    final maeDifference =
+        (simpleEvaluation.mae - seasonalEvaluation.mae).abs();
+
+    if (maeDifference > tolerance) {
+      if (simpleEvaluation.mae < seasonalEvaluation.mae) {
+        return ForecastMethodSelection.selected(
+          method: ForecastingMethod.simpleMovingAverage,
+          forecast: simpleForecast.value,
+          reason:
+              'MAPE is tied, so Simple Moving Average is selected by the lower MAE.',
+        );
+      }
+
+      return ForecastMethodSelection.selected(
+        method: ForecastingMethod.seasonalMovingAverage,
+        forecast: seasonalForecast.value,
+        reason:
+            'MAPE is tied, so Seasonal Moving Average is selected by the lower MAE.',
+      );
+    }
+
+    // The controlling analytics configuration defines lower MAE as the
+    // tie-break after MAPE, but it does not define a third tie-break when
+    // both measures are exactly equal. Do not invent one.
+    return ForecastMethodSelection.unavailable(
+      reason:
+          'MAPE and MAE are tied for both eligible methods, so no method is automatically preferred.',
+    );
+  }
+
+  double roundForecastQuantity(
+    double value,
+  ) {
+    final nonNegative = math.max(
+      0,
+      value,
+    ).toDouble();
+
+    return (nonNegative * 100).roundToDouble() / 100;
   }
 
   double variability(
@@ -759,6 +1306,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       return 0;
     }
 
+    // Final analytics configuration uses the sample standard deviation,
+    // therefore variance is divided by n - 1 rather than n.
     final variance = values.map(
       (value) => math.pow(
         value - mean,
@@ -768,7 +1317,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           0,
           (total, value) => total + value,
         ) /
-        values.length;
+        (values.length - 1);
 
     return math.sqrt(variance) / mean * 100;
   }
@@ -856,23 +1405,36 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     final suggestions = <RestockingSuggestion>[];
 
     for (final product in products.take(4)) {
-      final points = productSeries[product.seriesKey] ?? const <PeriodPoint>[];
-      final quantities = points
-          .map(
-            (point) => point.quantity,
-          )
-          .toList();
-      final simple = simpleMovingAverageForecast(quantities);
-      final seasonal = seasonalMovingAverageForecast(points);
+      final points =
+          productSeries[product.seriesKey] ?? const <PeriodPoint>[];
 
-      if (!simple.hasValue && !seasonal.hasValue) {
+      final simple = simpleMovingAverageForecast(
+        points,
+      );
+      final seasonal = seasonalMovingAverageForecast(
+        points,
+      );
+      final simpleEvaluation = evaluateSimpleMovingAverage(
+        points,
+      );
+      final seasonalEvaluation = evaluateSeasonalMovingAverage(
+        points,
+      );
+
+      final selection = selectForecastMethod(
+        simpleForecast: simple,
+        seasonalForecast: seasonal,
+        simpleEvaluation: simpleEvaluation,
+        seasonalEvaluation: seasonalEvaluation,
+      );
+
+      if (!selection.hasSelection) {
         continue;
       }
 
-      final suggestedQuantity = math.max(
-        simple.hasValue ? simple.value : 0,
-        seasonal.hasValue ? seasonal.value : 0,
-      ).toDouble();
+      final suggestedQuantity = roundForecastQuantity(
+        selection.forecast,
+      );
 
       if (suggestedQuantity <= 0) {
         continue;
@@ -884,11 +1446,21 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           emoji: product.emoji,
           quantityUnit: product.quantityUnit,
           suggestedQuantity: suggestedQuantity,
+          selectedMethod: selection.method!,
         ),
       );
     }
 
     return suggestions;
+  }
+
+  String forecastingMethodLabel(
+    ForecastingMethod method,
+  ) {
+    return switch (method) {
+      ForecastingMethod.simpleMovingAverage => 'Simple Moving Average',
+      ForecastingMethod.seasonalMovingAverage => 'Seasonal Moving Average',
+    };
   }
 
   String formatNumber(
@@ -1812,6 +2384,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     required ForecastResult result,
     required String unit,
     required IconData icon,
+    bool selected = false,
   }) {
     final available = result.hasValue;
 
@@ -1864,13 +2437,39 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Color(0xFF102C44),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          color: Color(0xFF102C44),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    if (selected)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE4F6EE),
+                          borderRadius: BorderRadius.circular(99),
+                        ),
+                        child: const Text(
+                          'SELECTED',
+                          style: TextStyle(
+                            color: Color(0xFF147D64),
+                            fontSize: 7.2,
+                            letterSpacing: 0.4,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 3),
                 Text(
@@ -1975,40 +2574,201 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
+  Widget methodEvaluationCard({
+    required String title,
+    required ForecastEvaluation evaluation,
+    required String unit,
+    required bool selected,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(
+        bottom: 10,
+      ),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: selected
+            ? const Color(0xFFF0FAF6)
+            : const Color(0xFFF7FAFC),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: selected
+              ? const Color(0xFFBEE7D8)
+              : const Color(0xFFE0EAF0),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: Color(0xFF102C44),
+                    fontSize: 12.2,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              if (selected)
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: Color(0xFF147D64),
+                  size: 18,
+                ),
+            ],
+          ),
+          const SizedBox(height: 9),
+          if (!evaluation.hasMae)
+            Text(
+              evaluation.reason,
+              style: const TextStyle(
+                color: Color(0xFF7B8FA3),
+                fontSize: 9.5,
+                height: 1.35,
+                fontWeight: FontWeight.w600,
+              ),
+            )
+          else ...[
+            Row(
+              children: [
+                evaluationTile(
+                  label: 'MAPE',
+                  value: evaluation.hasMape
+                      ? '${evaluation.mape.toStringAsFixed(2)}%'
+                      : 'N/A',
+                  subtitle: evaluation.hasMape
+                      ? '${evaluation.mapePairCount} valid percentage-error pair${evaluation.mapePairCount == 1 ? '' : 's'}'
+                      : 'Zero actuals cannot enter MAPE',
+                  color: const Color(0xFF176BFF),
+                ),
+                const SizedBox(width: 9),
+                evaluationTile(
+                  label: 'MAE',
+                  value:
+                      '${formatNumber(evaluation.mae)} $unit',
+                  subtitle:
+                      '${evaluation.maePairCount} valid absolute-error pair${evaluation.maePairCount == 1 ? '' : 's'}',
+                  color: const Color(0xFFFF7A1A),
+                ),
+              ],
+            ),
+            if (evaluation.zeroActualMapeExclusions > 0) ...[
+              const SizedBox(height: 8),
+              Text(
+                '${evaluation.zeroActualMapeExclusions} valid pair${evaluation.zeroActualMapeExclusions == 1 ? '' : 's'} with actual quantity 0 ${evaluation.zeroActualMapeExclusions == 1 ? 'was' : 'were'} excluded from MAPE but retained in MAE.',
+                style: const TextStyle(
+                  color: Color(0xFF7B8FA3),
+                  fontSize: 8.9,
+                  height: 1.3,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget forecastEvaluation(
     AnalyticsData data,
   ) {
     final product = data.selectedProduct;
-    final evaluation = data.evaluation;
 
     if (product == null) {
       return const SizedBox.shrink();
     }
 
-    if (!evaluation.hasEnoughData) {
-      return const _CompactEmptyState(
-        icon: Icons.fact_check_outlined,
-        title: 'Forecast evaluation unavailable',
-        subtitle:
-            'At least four completed periods are required for SMA back-testing, MAPE, and MAE.',
-      );
-    }
+    final selection = data.selectedMethod;
 
-    return Row(
+    return Column(
       children: [
-        evaluationTile(
-          label: 'MAPE',
-          value: '${evaluation.mape.toStringAsFixed(2)}%',
-          subtitle: 'Primary percentage error',
-          color: const Color(0xFF176BFF),
+        Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(
+            bottom: 11,
+          ),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: selection.hasSelection
+                ? const Color(0xFFEAF7FB)
+                : const Color(0xFFF6F8FA),
+            borderRadius: BorderRadius.circular(17),
+            border: Border.all(
+              color: selection.hasSelection
+                  ? const Color(0xFFCBE6F1)
+                  : const Color(0xFFE0E7EC),
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                selection.hasSelection
+                    ? Icons.workspace_premium_rounded
+                    : Icons.hourglass_top_rounded,
+                color: selection.hasSelection
+                    ? const Color(0xFF087AC0)
+                    : const Color(0xFF7B8FA3),
+                size: 21,
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      selection.hasSelection
+                          ? 'Selected Method: ${forecastingMethodLabel(selection.method!)}'
+                          : 'Method Selection Pending',
+                      style: const TextStyle(
+                        color: Color(0xFF102C44),
+                        fontSize: 11.8,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      selection.reason,
+                      style: const TextStyle(
+                        color: Color(0xFF657C8E),
+                        fontSize: 9.3,
+                        height: 1.3,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (selection.hasSelection) ...[
+                      const SizedBox(height: 5),
+                      Text(
+                        'Next-period forecast: ${formatNumber(selection.forecast, decimals: 2)} ${product.quantityUnit}',
+                        style: const TextStyle(
+                          color: Color(0xFF087AC0),
+                          fontSize: 9.8,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(width: 10),
-        evaluationTile(
-          label: 'MAE',
-          value:
-              '${formatNumber(evaluation.mae)} ${product.quantityUnit}',
-          subtitle: 'Supporting absolute error',
-          color: const Color(0xFFFF7A1A),
+        methodEvaluationCard(
+          title: 'Simple Moving Average',
+          evaluation: data.simpleEvaluation,
+          unit: product.quantityUnit,
+          selected: selection.method ==
+              ForecastingMethod.simpleMovingAverage,
+        ),
+        methodEvaluationCard(
+          title: 'Seasonal Moving Average',
+          evaluation: data.seasonalEvaluation,
+          unit: product.quantityUnit,
+          selected: selection.method ==
+              ForecastingMethod.seasonalMovingAverage,
         ),
       ],
     );
@@ -2025,13 +2785,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       label = 'Not enough data';
       message = 'At least two completed periods are required.';
       color = const Color(0xFF8BA0B1);
-    } else if (value < 15) {
+    } else if (value <= 10) {
       label = 'Low variability';
-      message = 'Completed quantities are relatively consistent.';
+      message = 'Coefficient of variation is 10% or less.';
       color = const Color(0xFF147D64);
-    } else if (value < 35) {
+    } else if (value <= 25) {
       label = 'Moderate variability';
-      message = 'Completed quantities change across periods.';
+      message = 'Coefficient of variation is above 10% through 25%.';
       color = const Color(0xFFFF7A1A);
     } else {
       label = 'High variability';
@@ -2112,7 +2872,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         icon: Icons.notifications_none_rounded,
         title: 'No restocking suggestion yet',
         subtitle:
-            'At least three completed periods are needed for a forecast-based suggestion.',
+            'A suggestion appears after an eligible forecast method has an accuracy evaluation for the selected product-and-unit series.',
       );
     }
 
@@ -2166,13 +2926,22 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       const SizedBox(height: 3),
                       Text(
                         isSupplier
-                            ? 'Consider preparing ${formatNumber(suggestion.suggestedQuantity)} ${suggestion.quantityUnit} for the next period.'
-                            : 'Consider purchasing ${formatNumber(suggestion.suggestedQuantity)} ${suggestion.quantityUnit} for the next period.',
+                            ? 'Consider preparing ${formatNumber(suggestion.suggestedQuantity, decimals: 2)} ${suggestion.quantityUnit} for the next period.'
+                            : 'Consider purchasing ${formatNumber(suggestion.suggestedQuantity, decimals: 2)} ${suggestion.quantityUnit} for the next period.',
                         style: const TextStyle(
                           color: Color(0xFF657C8E),
                           fontSize: 10.1,
                           height: 1.3,
                           fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'Based on ${forecastingMethodLabel(suggestion.selectedMethod)}.',
+                        style: const TextStyle(
+                          color: Color(0xFF087AC0),
+                          fontSize: 8.8,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
                     ],
@@ -2377,7 +3146,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  Widget roleDataNote() {
+  Widget roleDataNote(
+    AnalyticsData data,
+  ) {
     return Container(
       padding: const EdgeInsets.fromLTRB(
         14,
@@ -2425,8 +3196,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 const SizedBox(height: 4),
                 Text(
                   isSupplier
-                      ? 'This screen uses completed COD sales and inventory owned by this supplier account.'
-                      : 'This screen uses only this account’s completed COD purchases. Supplier sales are excluded.',
+                      ? 'This screen combines ${data.historicalTransactions} linked validated historical sale${data.historicalTransactions == 1 ? '' : 's'} with ${data.liveCompletedOrders} completed live COD sale${data.liveCompletedOrders == 1 ? '' : 's'} for this supplier account. Current inventory is used only for stock alerts.'
+                      : 'This screen combines ${data.historicalTransactions} linked validated historical purchase${data.historicalTransactions == 1 ? '' : 's'} with ${data.liveCompletedOrders} completed live COD purchase${data.liveCompletedOrders == 1 ? '' : 's'} for this vendor account. Supplier sales are excluded.',
                   style: const TextStyle(
                     color: Color(0xFF52677A),
                     fontSize: 10.5,
@@ -2607,7 +3378,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     child: stockAlerts(data.stockAlerts),
                   ),
                 ],
-                roleDataNote(),
+                roleDataNote(data),
               ],
             ),
           ),
@@ -2656,19 +3427,25 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     children: [
                       forecastMethodCard(
                         title: 'Simple Moving Average',
-                        description:
-                            'Uses the three most recent completed ${selectedPeriod == AnalyticsPeriod.weekly ? 'weekly' : 'monthly'} periods.',
+                        description: selectedPeriod == AnalyticsPeriod.weekly
+                            ? 'Uses the 4 immediately preceding weekly observations.'
+                            : 'Uses the 3 immediately preceding monthly observations.',
                         result: data.simpleForecast,
                         unit: selectedProduct?.quantityUnit ?? 'unit',
                         icon: Icons.show_chart_rounded,
+                        selected: data.selectedMethod.method ==
+                            ForecastingMethod.simpleMovingAverage,
                       ),
                       forecastMethodCard(
                         title: 'Seasonal Moving Average',
-                        description:
-                            'Uses comparable recurring ${selectedPeriod == AnalyticsPeriod.weekly ? 'weekly' : 'monthly'} periods when available.',
+                        description: selectedPeriod == AnalyticsPeriod.weekly
+                            ? 'Averages 3 comparable weekly observations spaced 4 weeks apart; requires at least 12 preceding weeks.'
+                            : 'Averages 2 comparable monthly observations spaced 12 months apart; requires at least 24 preceding months.',
                         result: data.seasonalForecast,
                         unit: selectedProduct?.quantityUnit ?? 'unit',
                         icon: Icons.calendar_month_rounded,
+                        selected: data.selectedMethod.method ==
+                            ForecastingMethod.seasonalMovingAverage,
                       ),
                     ],
                   ),
@@ -2676,7 +3453,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 sectionCard(
                   title: 'Forecast Evaluation',
                   subtitle:
-                      'MAPE is the primary accuracy measure and MAE provides the average error in the recorded unit.',
+                      'SMA and Seasonal Moving Average are evaluated separately using one-period-ahead forecasts. Lower MAPE selects the method; lower MAE breaks a MAPE tie.',
                   icon: Icons.fact_check_outlined,
                   child: forecastEvaluation(data),
                 ),
@@ -2713,7 +3490,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   icon: Icons.emoji_events_outlined,
                   child: topProducts(data.products),
                 ),
-                roleDataNote(),
+                roleDataNote(data),
               ],
             ),
           ),
@@ -2806,37 +3583,59 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             return loadingBody();
           }
 
-          if (!isSupplier) {
-            final data = buildAnalyticsData(
-              orders: orderSnapshot.data!.docs,
-              stocks: const [],
-            );
-
-            return analyticsContent(data);
-          }
-
           return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-            stream: supplierStocksStream(user.uid),
+            stream: historicalTransactionsStream(user.uid),
             builder: (
               context,
-              stockSnapshot,
+              historicalSnapshot,
             ) {
-              if (stockSnapshot.hasError) {
+              if (historicalSnapshot.hasError) {
                 return errorBody(
-                  stockSnapshot.error!,
+                  historicalSnapshot.error!,
                 );
               }
 
-              if (!stockSnapshot.hasData) {
+              if (!historicalSnapshot.hasData) {
                 return loadingBody();
               }
 
-              final data = buildAnalyticsData(
-                orders: orderSnapshot.data!.docs,
-                stocks: stockSnapshot.data!.docs,
-              );
+              if (!isSupplier) {
+                final data = buildAnalyticsData(
+                  orders: orderSnapshot.data!.docs,
+                  historicalTransactions:
+                      historicalSnapshot.data!.docs,
+                  stocks: const [],
+                );
 
-              return analyticsContent(data);
+                return analyticsContent(data);
+              }
+
+              return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                stream: supplierStocksStream(user.uid),
+                builder: (
+                  context,
+                  stockSnapshot,
+                ) {
+                  if (stockSnapshot.hasError) {
+                    return errorBody(
+                      stockSnapshot.error!,
+                    );
+                  }
+
+                  if (!stockSnapshot.hasData) {
+                    return loadingBody();
+                  }
+
+                  final data = buildAnalyticsData(
+                    orders: orderSnapshot.data!.docs,
+                    historicalTransactions:
+                        historicalSnapshot.data!.docs,
+                    stocks: stockSnapshot.data!.docs,
+                  );
+
+                  return analyticsContent(data);
+                },
+              );
             },
           );
         },
@@ -2848,6 +3647,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 class AnalyticsData {
   const AnalyticsData({
     required this.completedOrders,
+    required this.liveCompletedOrders,
+    required this.historicalTransactions,
     required this.totalAmount,
     required this.products,
     required this.selectedProduct,
@@ -2855,13 +3656,17 @@ class AnalyticsData {
     required this.rankingBasis,
     required this.simpleForecast,
     required this.seasonalForecast,
-    required this.evaluation,
+    required this.simpleEvaluation,
+    required this.seasonalEvaluation,
+    required this.selectedMethod,
     required this.variability,
     required this.suggestions,
     required this.stockAlerts,
   });
 
   final int completedOrders;
+  final int liveCompletedOrders;
+  final int historicalTransactions;
   final double totalAmount;
   final List<ProductSummary> products;
   final ProductSummary? selectedProduct;
@@ -2869,7 +3674,9 @@ class AnalyticsData {
   final String rankingBasis;
   final ForecastResult simpleForecast;
   final ForecastResult seasonalForecast;
-  final ForecastEvaluation evaluation;
+  final ForecastEvaluation simpleEvaluation;
+  final ForecastEvaluation seasonalEvaluation;
+  final ForecastMethodSelection selectedMethod;
   final double variability;
   final List<RestockingSuggestion> suggestions;
   final List<StockAlert> stockAlerts;
@@ -2881,6 +3688,8 @@ class AnalyticsData {
   factory AnalyticsData.empty() {
     return AnalyticsData(
       completedOrders: 0,
+      liveCompletedOrders: 0,
+      historicalTransactions: 0,
       totalAmount: 0,
       products: const [],
       selectedProduct: null,
@@ -2892,10 +3701,14 @@ class AnalyticsData {
       seasonalForecast: ForecastResult.unavailable(
         reason: 'No completed periods are available.',
       ),
-      evaluation: const ForecastEvaluation(
-        mape: 0,
-        mae: 0,
-        hasEnoughData: false,
+      simpleEvaluation: ForecastEvaluation.unavailable(
+        reason: 'No completed periods are available.',
+      ),
+      seasonalEvaluation: ForecastEvaluation.unavailable(
+        reason: 'No completed periods are available.',
+      ),
+      selectedMethod: ForecastMethodSelection.unavailable(
+        reason: 'No completed periods are available.',
       ),
       variability: 0,
       suggestions: const [],
@@ -2976,12 +3789,14 @@ class RestockingSuggestion {
     required this.emoji,
     required this.quantityUnit,
     required this.suggestedQuantity,
+    required this.selectedMethod,
   });
 
   final String productName;
   final String emoji;
   final String quantityUnit;
   final double suggestedQuantity;
+  final ForecastingMethod selectedMethod;
 }
 
 class ForecastResult {
@@ -3016,16 +3831,103 @@ class ForecastResult {
   }
 }
 
+enum ForecastingMethod {
+  simpleMovingAverage,
+  seasonalMovingAverage,
+}
+
 class ForecastEvaluation {
-  const ForecastEvaluation({
+  const ForecastEvaluation._({
     required this.mape,
     required this.mae,
-    required this.hasEnoughData,
+    required this.hasMape,
+    required this.hasMae,
+    required this.maePairCount,
+    required this.mapePairCount,
+    required this.zeroActualMapeExclusions,
+    required this.reason,
   });
 
   final double mape;
   final double mae;
-  final bool hasEnoughData;
+  final bool hasMape;
+  final bool hasMae;
+  final int maePairCount;
+  final int mapePairCount;
+  final int zeroActualMapeExclusions;
+  final String reason;
+
+  factory ForecastEvaluation.available({
+    required double mape,
+    required double mae,
+    required bool hasMape,
+    required int maePairCount,
+    required int mapePairCount,
+    required int zeroActualMapeExclusions,
+    required String reason,
+  }) {
+    return ForecastEvaluation._(
+      mape: mape,
+      mae: mae,
+      hasMape: hasMape,
+      hasMae: true,
+      maePairCount: maePairCount,
+      mapePairCount: mapePairCount,
+      zeroActualMapeExclusions: zeroActualMapeExclusions,
+      reason: reason,
+    );
+  }
+
+  factory ForecastEvaluation.unavailable({
+    required String reason,
+  }) {
+    return ForecastEvaluation._(
+      mape: 0,
+      mae: 0,
+      hasMape: false,
+      hasMae: false,
+      maePairCount: 0,
+      mapePairCount: 0,
+      zeroActualMapeExclusions: 0,
+      reason: reason,
+    );
+  }
+}
+
+class ForecastMethodSelection {
+  const ForecastMethodSelection._({
+    required this.method,
+    required this.forecast,
+    required this.reason,
+  });
+
+  final ForecastingMethod? method;
+  final double forecast;
+  final String reason;
+
+  bool get hasSelection => method != null;
+
+  factory ForecastMethodSelection.selected({
+    required ForecastingMethod method,
+    required double forecast,
+    required String reason,
+  }) {
+    return ForecastMethodSelection._(
+      method: method,
+      forecast: forecast,
+      reason: reason,
+    );
+  }
+
+  factory ForecastMethodSelection.unavailable({
+    required String reason,
+  }) {
+    return ForecastMethodSelection._(
+      method: null,
+      forecast: 0,
+      reason: reason,
+    );
+  }
 }
 
 class _HeaderButton extends StatelessWidget {

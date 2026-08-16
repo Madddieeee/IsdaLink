@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:isdalink/utils/order_helpers.dart';
+import 'package:isdalink/utils/stock_state.dart';
 
 class SupplierOrderService {
   const SupplierOrderService();
@@ -175,6 +176,7 @@ class SupplierOrderService {
               await restoreStockIfNeeded(
             transaction: transaction,
             orderData: orderData,
+            orderId: documentId,
           );
 
           transaction.update(
@@ -228,6 +230,7 @@ class SupplierOrderService {
   Future<bool> restoreStockIfNeeded({
     required Transaction transaction,
     required Map<String, dynamic> orderData,
+    required String orderId,
   }) async {
     final stockRestored =
         orderData['stockRestored'] == true;
@@ -272,44 +275,24 @@ class SupplierOrderService {
     final stockData =
         stockSnapshot.data() ?? <String, dynamic>{};
 
-    final currentStock = OrderHelpers.getDoubleValue(
-      stockData,
-      'quantity',
-    );
-    final lowStockLevel = OrderHelpers.getDoubleValue(
-      stockData,
-      'lowStockLevel',
-    );
-
-    final status = OrderHelpers.getStringValue(
-      stockData,
-      'status',
-      'available',
-    ).toLowerCase();
-
-    final hidden = status == 'unavailable' ||
-        stockData['isActive'] == false;
-
     final restoredStock =
-        currentStock + orderedQuantity;
-
-    final stockStatus = hidden
-        ? 'hidden'
-        : restoredStock <= 0
-            ? 'outOfStock'
-            : restoredStock <= lowStockLevel
-                ? 'lowStock'
-                : 'available';
+        StockState.quantity(stockData) + orderedQuantity;
+    final hidden = StockState.isIntentionallyHidden(stockData);
 
     transaction.update(
       stockReference,
       {
-        'quantity': restoredStock,
-        'status': hidden ? 'unavailable' : 'available',
-        'isActive': !hidden,
-        'stockStatus': stockStatus,
-        if (!hidden && restoredStock > lowStockLevel)
+        ...StockState.fieldsForQuantity(
+          stockData,
+          quantity: restoredStock,
+        ),
+        if (!hidden && restoredStock > 0) ...{
           'lastLowStockNotificationAt': null,
+          'lastLowStockNotificationStatus': null,
+        },
+        // Links the stock restoration to the cancelled order so Rules can
+        // validate the order and stock writes as one atomic operation.
+        'lastStockRestoreOrderId': orderId,
         'updatedAt': FieldValue.serverTimestamp(),
       },
     );

@@ -1,0 +1,17 @@
+{
+  "name": "isdalink-historical-import-tools",
+  "private": true,
+  "version": "1.0.0",
+  "description": "One-time validated historical Transaction Log importer for IsdaLink.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "historical:check": "node import_historical_transactions.js ../dataset/transaction_log_FINAL_VERIFIED.csv historical_id_map.json",
+    "historical:import": "node import_historical_transactions.js ../dataset/transaction_log_FINAL_VERIFIED.csv historical_id_map.json --commit"
+  },
+  "dependencies": {
+    "csv-parse": "7.0.2",
+    "firebase-admin": "14.2.0"
+  }
+}

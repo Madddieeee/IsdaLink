@@ -388,6 +388,18 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
     return result == true;
   }
 
+  String readableOrderError(
+    Object error,
+  ) {
+    final text = error.toString().trim();
+
+    if (text.startsWith('Exception: ')) {
+      return text.substring('Exception: '.length);
+    }
+
+    return text;
+  }
+
   Future<void> confirmOrder() async {
     if (isSubmitting || isLoadingBuyer) return;
 
@@ -396,6 +408,16 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
     if (user == null) {
       showMessage(
         'Please log in first before placing an order.',
+        isError: true,
+      );
+      return;
+    }
+
+    final ownerUid = widget.supplierId.trim();
+
+    if (ownerUid.isNotEmpty && ownerUid == user.uid) {
+      showMessage(
+        'You cannot place an order from your own supplier store.',
         isError: true,
       );
       return;
@@ -439,8 +461,10 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
         isSubmitting = false;
       });
 
+      final message = readableOrderError(error);
+
       showMessage(
-        'Failed to place order: $error',
+        message,
         isError: true,
       );
     }

@@ -9,6 +9,8 @@ import 'package:isdalink/screens/supplier/supplier_cod_orders_screen.dart';
 import 'package:isdalink/screens/supplier/supplier_manage_products_screen.dart';
 import 'package:isdalink/models/supplier.dart';
 import 'package:isdalink/screens/vendor/supplier_details_screen.dart';
+import 'package:isdalink/services/stock_notification_service.dart';
+import 'package:isdalink/utils/stock_state.dart';
 
 class SupplierDashboardScreen extends StatelessWidget {
   const SupplierDashboardScreen({
@@ -16,6 +18,9 @@ class SupplierDashboardScreen extends StatelessWidget {
   });
 
   User? get currentUser => FirebaseAuth.instance.currentUser;
+
+  StockNotificationService get stockNotificationService =>
+      const StockNotificationService();
 
   double numberValue(Map<String, dynamic> data, String key) {
     final value = data[key];
@@ -61,8 +66,7 @@ class SupplierDashboardScreen extends StatelessWidget {
   }
 
   bool isHidden(Map<String, dynamic> data) {
-    final status = stringValue(data, 'status', 'available').toLowerCase();
-    return status == 'unavailable' || status == 'hidden';
+    return StockState.isIntentionallyHidden(data);
   }
 
   bool isOutOfStock(Map<String, dynamic> data) {
@@ -606,6 +610,203 @@ class SupplierDashboardScreen extends StatelessWidget {
     );
   }
 
+  Widget stockNotificationPanel({
+    required BuildContext context,
+    required List<QueryDocumentSnapshot<Map<String, dynamic>>> notifications,
+  }) {
+    final unread =
+        stockNotificationService.unreadStockNotifications(
+      notifications,
+    );
+
+    if (unread.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final visible = unread.take(2).toList();
+
+    return Container(
+      margin: const EdgeInsets.only(
+        bottom: 14,
+      ),
+      padding: const EdgeInsets.all(
+        14,
+      ),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFFFFBF4),
+            Color(0xFFF4FAFF),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(
+          22,
+        ),
+        border: Border.all(
+          color: const Color(0xFFFFE2B8),
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0E00152A),
+            blurRadius: 12,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFEFE1),
+                  borderRadius: BorderRadius.circular(
+                    13,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.notifications_active_rounded,
+                  color: Color(0xFFFF7A1A),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Stock Notifications',
+                      style: TextStyle(
+                        color: Color(0xFF102C44),
+                        fontSize: 12.8,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'New automatic alerts from your published listings.',
+                      style: TextStyle(
+                        color: Color(0xFF71889A),
+                        fontSize: 9.3,
+                        height: 1.25,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFE9D5),
+                  borderRadius: BorderRadius.circular(
+                    99,
+                  ),
+                ),
+                child: Text(
+                  unread.length > 9
+                      ? '9+ NEW'
+                      : '${unread.length} NEW',
+                  style: const TextStyle(
+                    color: Color(0xFFC45C00),
+                    fontSize: 7.8,
+                    letterSpacing: 0.35,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const Divider(
+            height: 1,
+            color: Color(0xFFE8EEF2),
+          ),
+          ...visible.map(
+            (notification) {
+              final data = notification.data();
+              final title = stringValue(
+                data,
+                'title',
+                'Stock Alert',
+              );
+              final message = stringValue(
+                data,
+                'message',
+                'A fish listing reached its stock alert level.',
+              );
+              final stockStatus = stringValue(
+                data,
+                'stockStatus',
+                'lowStock',
+              ).toLowerCase();
+              final critical =
+                  stockStatus == 'outofstock';
+
+              return Padding(
+                padding: const EdgeInsets.only(
+                  top: 10,
+                ),
+                child: _AlertRow(
+                  icon: critical
+                      ? Icons.error_outline_rounded
+                      : Icons.inventory_2_outlined,
+                  color: critical
+                      ? const Color(0xFFD94135)
+                      : const Color(0xFFFF7A1A),
+                  title: title,
+                  subtitle: message,
+                  actionLabel: 'Review Stock',
+                  onTap: () => openManageProducts(
+                    context,
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: TextButton.icon(
+              onPressed: () =>
+                  stockNotificationService.markNotificationsRead(
+                unread,
+              ),
+              icon: const Icon(
+                Icons.done_all_rounded,
+                size: 17,
+              ),
+              label: const Text(
+                'Mark Stock Notifications as Read',
+                style: TextStyle(
+                  fontSize: 10.2,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF0875D1),
+                backgroundColor: const Color(0xFFEAF7FD),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                    13,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget alertPanel({
     required BuildContext context,
     required int pending,
@@ -801,7 +1002,7 @@ class SupplierDashboardScreen extends StatelessWidget {
                         : Image.network(
                             imageUrl,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => fallbackImage(),
+                            errorBuilder: (_, _, _) => fallbackImage(),
                           ),
                   ),
                 ),
@@ -901,6 +1102,7 @@ class SupplierDashboardScreen extends StatelessWidget {
     required BuildContext context,
     required List<QueryDocumentSnapshot<Map<String, dynamic>>> stocks,
     required List<QueryDocumentSnapshot<Map<String, dynamic>>> orders,
+    required List<QueryDocumentSnapshot<Map<String, dynamic>>> notifications,
   }) {
     final sortedStocks = sortStocks(stocks);
     final activeListings = sortedStocks.where((doc) {
@@ -926,6 +1128,10 @@ class SupplierDashboardScreen extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(18, 16, 18, 32),
             children: [
+              stockNotificationPanel(
+                context: context,
+                notifications: notifications,
+              ),
               alertPanel(
                 context: context,
                 pending: pending,
@@ -1015,10 +1221,27 @@ class SupplierDashboardScreen extends StatelessWidget {
                 final orders = orderSnapshot.data?.docs ??
                     <QueryDocumentSnapshot<Map<String, dynamic>>>[];
 
-                return dashboardBody(
-                  context: context,
-                  stocks: stockSnapshot.data!.docs,
-                  orders: orders,
+                return StreamBuilder<
+                    QuerySnapshot<Map<String, dynamic>>>(
+                  stream: stockNotificationService.notificationsStream(
+                    user.uid,
+                  ),
+                  builder: (
+                    context,
+                    notificationSnapshot,
+                  ) {
+                    final notifications =
+                        notificationSnapshot.data?.docs ??
+                            <QueryDocumentSnapshot<
+                                Map<String, dynamic>>>[];
+
+                    return dashboardBody(
+                      context: context,
+                      stocks: stockSnapshot.data!.docs,
+                      orders: orders,
+                      notifications: notifications,
+                    );
+                  },
                 );
               },
             );

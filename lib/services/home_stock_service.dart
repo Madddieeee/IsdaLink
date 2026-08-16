@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:isdalink/models/fish_product.dart';
 import 'package:isdalink/models/supplier.dart';
 import 'package:isdalink/utils/order_helpers.dart';
+import 'package:isdalink/utils/stock_state.dart';
 
 class HomeStockService {
   const HomeStockService();
@@ -14,11 +15,12 @@ class HomeStockService {
         .snapshots();
   }
 
-  bool isAvailableStock(QueryDocumentSnapshot<Map<String, dynamic>> document) {
-    final data = document.data();
-    final status = OrderHelpers.getStringValue(data, 'status', 'available').toLowerCase();
-    final quantity = OrderHelpers.getDoubleValue(data, 'quantity');
-    return (status == 'available' || status == 'active') && quantity > 0;
+  bool isAvailableStock(
+    QueryDocumentSnapshot<Map<String, dynamic>> document,
+  ) {
+    return StockState.isMarketplaceOrderable(
+      document.data(),
+    );
   }
 
   Supplier? supplierForStock(Map<String, dynamic> data) {

@@ -36,6 +36,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
 
   static const locationsByProvince = <String, List<String>>{
     'Agusan del Norte': [
+      'Butuan City',
       'Buenavista',
       'Carmen',
       'City of Cabadbaran',
@@ -93,7 +94,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
       'Santa Monica',
       'Sison',
       'Socorro',
-      'Tagana-An',
+      'Tagana-an',
       'Tubod',
     ],
     'Surigao del Sur': [
@@ -122,6 +123,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
   static const locationCodesByProvince =
       <String, Map<String, String>>{
     'Agusan del Norte': {
+      'Butuan City': butuanCityCode,
       'Buenavista': '1600201000',
       'City of Cabadbaran': '1600203000',
       'Carmen': '1600204000',
@@ -179,7 +181,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
       'Sison': '1606722000',
       'Socorro': '1606723000',
       'City of Surigao': '1606724000',
-      'Tagana-An': '1606725000',
+      'Tagana-an': '1606725000',
       'Tubod': '1606727000',
     },
     'Surigao del Sur': {
@@ -226,10 +228,6 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
         supplierStatus == 'pending';
   }
 
-  bool get isButuanCity {
-    return selectedCity == 'City of Butuan';
-  }
-
   bool get hasChanges {
     return selectedProvince != initialProvince ||
         selectedCity != initialCity;
@@ -239,9 +237,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
     final province = selectedProvince;
 
     if (province == null) {
-      return const [
-        'City of Butuan',
-      ];
+      return const <String>[];
     }
 
     final values = locationsByProvince[province] ?? const <String>[];
@@ -255,15 +251,11 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
   }
 
   String get locationPreview {
-    if (isButuanCity) {
-      return 'City of Butuan, Caraga Region';
-    }
-
     if (selectedProvince == null || selectedCity == null) {
       return 'Location not selected';
     }
 
-    return '$selectedCity, $selectedProvince';
+    return '$selectedCity, $selectedProvince, Caraga Region';
   }
 
   @override
@@ -339,9 +331,10 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
       );
 
       if (storedCity == 'City of Butuan' ||
+          storedCity == 'Butuan City' ||
           legacyLocation.toLowerCase().contains('butuan')) {
-        selectedProvince = null;
-        selectedCity = 'City of Butuan';
+        selectedProvince = 'Agusan del Norte';
+        selectedCity = 'Butuan City';
       } else {
         selectedProvince = provinces.contains(storedProvince)
             ? storedProvince
@@ -378,10 +371,6 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
   String? validateProvince(
     String? value,
   ) {
-    if (selectedCity == 'City of Butuan') {
-      return null;
-    }
-
     if (value == null || !provinces.contains(value)) {
       return 'Select your province.';
     }
@@ -394,10 +383,6 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
   ) {
     if (value == null || value.trim().isEmpty) {
       return 'Select your city or municipality.';
-    }
-
-    if (value == 'City of Butuan') {
-      return null;
     }
 
     if (selectedProvince == null) {
@@ -414,11 +399,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
   String localityType(
     String value,
   ) {
-    if (value == 'City of Butuan') {
-      return 'Independent highly urbanized city';
-    }
-
-    if (value.startsWith('City of ')) {
+    if (value == 'Butuan City' || value.startsWith('City of ')) {
       return 'City';
     }
 
@@ -785,10 +766,18 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
       return;
     }
 
+    final province = selectedProvince;
+
+    if (province == null) {
+      setState(() {
+        submitted = true;
+      });
+      return;
+    }
+
     final selected = await showSelectionSheet(
       title: 'Select City or Municipality',
-      subtitle: selectedProvince ??
-          'Choose City of Butuan or select a province first',
+      subtitle: 'Choose a city or municipality in $province',
       options: availableCities,
       icon: Icons.location_city_outlined,
       selectedValue: selectedCity,
@@ -801,10 +790,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
 
     setState(() {
       selectedCity = selected;
-
-      if (selected == 'City of Butuan') {
-        selectedProvince = null;
-      }
+      submitted = false;
     });
   }
 
@@ -826,26 +812,11 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
     }
 
     final city = selectedCity!;
-    final butuan = city == 'City of Butuan';
-    final province = butuan ? null : selectedProvince;
-
-    final location = butuan
-        ? 'City of Butuan, Caraga Region'
-        : '$city, $province';
-
-    final provinceCode = butuan
-        ? null
-        : provinceCodes[province];
-
-    final cityCode = butuan
-        ? butuanCityCode
-        : locationCodesByProvince[province]?[city];
-
-    final cityType = butuan
-        ? 'Highly Urbanized City'
-        : city.startsWith('City of ')
-            ? 'City'
-            : 'Municipality';
+    final province = selectedProvince!;
+    final location = '$city, $province, Caraga Region';
+    final provinceCode = provinceCodes[province];
+    final cityCode = locationCodesByProvince[province]?[city];
+    final cityType = localityType(city);
 
     setState(() {
       isSaving = true;
@@ -859,16 +830,12 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
         'region': 'Caraga Region',
         'province': province,
         'provinceCode': provinceCode,
-        'administrativeArea': butuan
-            ? 'City of Butuan'
-            : province,
-        'administrativeAreaType': butuan
-            ? 'Highly Urbanized City'
-            : 'Province',
+        'administrativeArea': province,
+        'administrativeAreaType': 'Province',
         'cityMunicipality': city,
         'cityMunicipalityCode': cityCode,
         'cityMunicipalityType': cityType,
-        'isHighlyUrbanizedCity': butuan,
+        'isHighlyUrbanizedCity': false,
         'location': location,
         'marketLocation': location,
         'updatedAt': FieldValue.serverTimestamp(),
@@ -981,18 +948,6 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
           ),
         ),
       );
-  }
-
-  void selectButuanCity() {
-    if (isSaving) {
-      return;
-    }
-
-    setState(() {
-      selectedProvince = null;
-      selectedCity = 'City of Butuan';
-      submitted = false;
-    });
   }
 
   Widget header() {
@@ -1543,157 +1498,6 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
     );
   }
 
-  Widget butuanClassificationCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(
-        14,
-        14,
-        14,
-        13,
-      ),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFEAF8FF),
-            Color(0xFFEAFBF5),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFF39C9A0).withAlpha(95),
-        ),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFDFF7EF),
-                  borderRadius: BorderRadius.circular(13),
-                ),
-                child: const Icon(
-                  Icons.location_city_rounded,
-                  color: Color(0xFF147D64),
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 11),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'CITY OF BUTUAN',
-                      style: TextStyle(
-                        color: Color(0xFF147D64),
-                        fontSize: 9,
-                        letterSpacing: 0.7,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Independent Highly Urbanized City',
-                      style: TextStyle(
-                        color: Color(0xFF102C44),
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    SizedBox(height: 3),
-                    Text(
-                      'Part of Caraga Region and administratively independent of a province.',
-                      style: TextStyle(
-                        color: Color(0xFF52677A),
-                        fontSize: 9.8,
-                        height: 1.35,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(
-                Icons.verified_rounded,
-                color: Color(0xFF1DBB8A),
-                size: 22,
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            height: 42,
-            child: OutlinedButton.icon(
-              onPressed: isSaving
-                  ? null
-                  : showProvincePicker,
-              icon: const Icon(
-                Icons.swap_horiz_rounded,
-                size: 19,
-              ),
-              label: const Text(
-                'Choose a Province Instead',
-                style: TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF146BFF),
-                side: const BorderSide(
-                  color: Color(0xFF9BD6FF),
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget useButuanAction() {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: TextButton.icon(
-        onPressed: isSaving
-            ? null
-            : selectButuanCity,
-        style: TextButton.styleFrom(
-          foregroundColor: const Color(0xFF146BFF),
-          padding: const EdgeInsets.fromLTRB(
-            2,
-            7,
-            6,
-            4,
-          ),
-          minimumSize: Size.zero,
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        ),
-        icon: const Icon(
-          Icons.location_city_outlined,
-          size: 17,
-        ),
-        label: const Text(
-          'Use City of Butuan instead',
-          style: TextStyle(
-            fontSize: 10.5,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget locationPreviewCard() {
     final hasLocation = selectedCity != null;
 
@@ -1811,33 +1615,27 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
             const SizedBox(height: 17),
             lockedRegionTile(),
             const SizedBox(height: 12),
-            if (isButuanCity)
-              butuanClassificationCard()
-            else ...[
-              pickerField(
-                label: 'Province',
-                value: selectedProvince,
-                icon: Icons.map_outlined,
-                onTap: showProvincePicker,
-                validator: validateProvince,
-                emptyDisplay: 'Select province',
-                helperText:
-                    'Choose one of Caraga Region’s five provinces.',
-              ),
-              const SizedBox(height: 12),
-              pickerField(
-                label: 'City or Municipality',
-                value: selectedCity,
-                icon: Icons.location_city_outlined,
-                onTap: showCityPicker,
-                validator: validateCity,
-                helperText: selectedProvince == null
-                    ? 'Select a province first, or choose City of Butuan.'
-                    : 'Search within $selectedProvince.',
-              ),
-              if (selectedProvince != null)
-                useButuanAction(),
-            ],
+            pickerField(
+              label: 'Province',
+              value: selectedProvince,
+              icon: Icons.map_outlined,
+              onTap: showProvincePicker,
+              validator: validateProvince,
+              emptyDisplay: 'Select province',
+              helperText:
+                  'Choose one of Caraga Region’s five provinces.',
+            ),
+            const SizedBox(height: 12),
+            pickerField(
+              label: 'City or Municipality',
+              value: selectedCity,
+              icon: Icons.location_city_outlined,
+              onTap: showCityPicker,
+              validator: validateCity,
+              helperText: selectedProvince == null
+                  ? 'Select a province first.'
+                  : 'Search within $selectedProvince.',
+            ),
             const SizedBox(height: 14),
             locationPreviewCard(),
           ],

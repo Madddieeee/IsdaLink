@@ -50,6 +50,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   static const locationsByProvince = <String, List<String>>{
     'Agusan del Norte': [
+      'Butuan City',
       'Buenavista',
       'Carmen',
       'City of Cabadbaran',
@@ -107,7 +108,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       'Santa Monica',
       'Sison',
       'Socorro',
-      'Tagana-An',
+      'Tagana-an',
       'Tubod',
     ],
     'Surigao del Sur': [
@@ -135,6 +136,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   static const locationCodesByProvince = <String, Map<String, String>>{
     'Agusan del Norte': {
+      'Butuan City': butuanCityCode,
       'Buenavista': '1600201000',
       'City of Cabadbaran': '1600203000',
       'Carmen': '1600204000',
@@ -192,7 +194,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       'Sison': '1606722000',
       'Socorro': '1606723000',
       'City of Surigao': '1606724000',
-      'Tagana-An': '1606725000',
+      'Tagana-an': '1606725000',
       'Tubod': '1606727000',
     },
     'Surigao del Sur': {
@@ -229,7 +231,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? selectedCity;
   String? registrationError;
 
-  bool get isButuanCitySelection => selectedCity == 'City of Butuan';
 
   List<String> get availableCities {
     final values = locationsByProvince[selectedProvince];
@@ -245,18 +246,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
   }
 
-  List<String> get cityPickerOptions {
-    if (selectedProvince == null) {
-      return const [
-        'City of Butuan',
-      ];
-    }
-
-    return [
-      ...availableCities,
-      'City of Butuan',
-    ];
-  }
+  List<String> get cityPickerOptions => availableCities;
 
   bool get hasMinimumLength => passwordController.text.length >= 8;
 
@@ -272,19 +262,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
         passwordController.text,
       );
 
-  String? get provinceDisplayValue {
-    if (isButuanCitySelection) {
-      return 'Not required';
-    }
-
-    return selectedProvince;
-  }
+  String? get provinceDisplayValue => selectedProvince;
 
   String get locationPreview {
-    if (isButuanCitySelection) {
-      return 'City of Butuan, Caraga Region';
-    }
-
     final city = selectedCity;
     final province = selectedProvince;
 
@@ -292,34 +272,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return '';
     }
 
-    return '$city, $province';
+    return '$city, $province, Caraga Region';
   }
 
   String get selectedLocalityType {
-    if (isButuanCitySelection) {
-      return 'Highly Urbanized City';
-    }
-
     final city = selectedCity ?? '';
 
-    return city.startsWith('City of ')
+    return city == 'Butuan City' || city.startsWith('City of ')
         ? 'City'
         : 'Municipality';
   }
 
-  String? get selectedProvinceCode {
-    if (isButuanCitySelection) {
-      return null;
-    }
-
-    return provinceCodes[selectedProvince];
-  }
+  String? get selectedProvinceCode => provinceCodes[selectedProvince];
 
   String? get selectedLocalityCode {
-    if (isButuanCitySelection) {
-      return butuanCityCode;
-    }
-
     final province = selectedProvince;
     final city = selectedCity;
 
@@ -527,10 +493,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? validateProvince(
     String? value,
   ) {
-    if (isButuanCitySelection) {
-      return null;
-    }
-
     if (value == null || value.trim().isEmpty) {
       return 'Select your province.';
     }
@@ -547,10 +509,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   ) {
     if (value == null || value.trim().isEmpty) {
       return 'Select your city or municipality.';
-    }
-
-    if (value == 'City of Butuan') {
-      return null;
     }
 
     if (selectedProvince == null) {
@@ -611,10 +569,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool fieldIsValid(
     String field,
   ) {
-    if (field == 'province' && isButuanCitySelection) {
-      return true;
-    }
-
     if (!touchedFields.contains(field)) {
       return false;
     }
@@ -627,9 +581,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       case 'phone':
         return validatePhone(phoneController.text) == null;
       case 'province':
-        return isButuanCitySelection ||
-            (selectedProvince != null &&
-                validateProvince(selectedProvince) == null);
+        return selectedProvince != null &&
+            validateProvince(selectedProvince) == null;
       case 'city':
         return validateCity(selectedCity) == null;
       case 'confirmPassword':
@@ -1057,7 +1010,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       selectedProvince = selected;
 
-      if (provinceChanged || isButuanCitySelection) {
+      if (provinceChanged) {
         selectedCity = null;
         touchedFields.remove('city');
       }
@@ -1075,25 +1028,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
     FocusScope.of(context).unfocus();
 
     final province = selectedProvince;
+
+    if (province == null) {
+      setState(() {
+        touchedFields.add('province');
+      });
+      return;
+    }
+
     final options = cityPickerOptions;
 
     final selected = await showSelectionSheet(
       title: 'Select City or Municipality',
-      subtitle: province == null
-          ? 'Choose City of Butuan, or select a province for other locations'
-          : 'Complete locations in $province, plus City of Butuan',
+      subtitle: 'Choose a city or municipality in $province',
       options: options,
       icon: Icons.location_city_outlined,
       selectedValue: selectedCity,
       searchable: options.length > 10,
-      optionSubtitleBuilder: (
-        option,
-      ) {
-        if (option == 'City of Butuan') {
-          return 'Independent highly urbanized city · No province';
-        }
-
-        return option.startsWith('City of ')
+      optionSubtitleBuilder: (option) {
+        return option == 'Butuan City' || option.startsWith('City of ')
             ? 'City · $province'
             : 'Municipality · $province';
       },
@@ -1105,12 +1058,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     setState(() {
       selectedCity = selected;
-
-      if (selected == 'City of Butuan') {
-        selectedProvince = null;
-        touchedFields.remove('province');
-      }
-
       registrationError = null;
       touchedFields.add('city');
     });
@@ -1583,12 +1530,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final phone = normalizePhilippinePhone(
       phoneController.text,
     );
-    final province = isButuanCitySelection
-        ? null
-        : selectedProvince;
-    final administrativeArea = isButuanCitySelection
-        ? 'City of Butuan'
-        : selectedProvince!;
+    final province = selectedProvince!;
+    final administrativeArea = selectedProvince!;
     final city = selectedCity!;
     final location = locationPreview;
     final provinceCode = selectedProvinceCode;
@@ -1649,13 +1592,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'province': province,
         'provinceCode': provinceCode,
         'administrativeArea': administrativeArea,
-        'administrativeAreaType': isButuanCitySelection
-            ? 'highly_urbanized_city'
-            : 'province',
+        'administrativeAreaType': 'province',
         'cityMunicipality': city,
         'cityMunicipalityCode': localityCode,
         'cityMunicipalityType': localityType,
-        'isHighlyUrbanizedCity': isButuanCitySelection,
+        'isHighlyUrbanizedCity': false,
         'location': location,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
@@ -2664,11 +2605,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
               onTap: showProvincePicker,
               validator: validateProvince,
               fieldKey: 'province',
-              helperText: isButuanCitySelection
-                  ? 'No province is required for the independent City of Butuan. Tap to choose a province instead.'
-                  : selectedProvince == null
-                      ? 'Choose one of Caraga’s five provinces.'
-                      : 'Used to filter the city and municipality choices.',
+              helperText: selectedProvince == null
+                  ? 'Choose one of Caraga’s five provinces.'
+                  : 'Used to filter the city and municipality choices.',
             ),
             const SizedBox(height: 11),
             buildPickerField(
@@ -2678,14 +2617,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
               onTap: showCityPicker,
               validator: validateCity,
               fieldKey: 'city',
-              helperText: isButuanCitySelection
-                  ? 'Independent highly urbanized city in Caraga.'
-                  : selectedProvince == null
-                      ? 'Select a province first, or choose City of Butuan here.'
-                      : selectedCity == null
-                          ? 'Tap to search all locations in $selectedProvince.'
-                          : '$selectedLocalityType in $selectedProvince.',
-              enabled: true,
+              helperText: selectedProvince == null
+                  ? 'Select a province first.'
+                  : selectedCity == null
+                      ? 'Tap to search all locations in $selectedProvince.'
+                      : '$selectedLocalityType in $selectedProvince.',
+              enabled: selectedProvince != null,
             ),
             if (locationPreview.isNotEmpty) ...[
               const SizedBox(height: 11),

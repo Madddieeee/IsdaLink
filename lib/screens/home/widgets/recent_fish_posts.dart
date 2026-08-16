@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:isdalink/models/fish_product.dart';
 import 'package:isdalink/models/supplier.dart';
@@ -54,6 +55,26 @@ class RecentFishPosts extends StatelessWidget {
             );
           },
           onOrderNow: () {
+            final currentUid = FirebaseAuth.instance.currentUser?.uid;
+
+            if (currentUid != null &&
+                supplierId.trim().isNotEmpty &&
+                currentUid == supplierId.trim()) {
+              Navigator.pop(sheetContext);
+
+              if (navigator.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'You cannot place an order from your own supplier store.',
+                    ),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+              return;
+            }
+
             Navigator.pop(sheetContext);
 
             Future.microtask(
@@ -307,6 +328,15 @@ class HomeFishPreviewSheet extends StatelessWidget {
   final String supplierId;
   final VoidCallback onMoreInfo;
   final VoidCallback onOrderNow;
+
+  bool get isOwnListing {
+    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+    final ownerUid = supplierId.trim();
+
+    return currentUid != null &&
+        ownerUid.isNotEmpty &&
+        currentUid == ownerUid;
+  }
 
   bool hasNetworkImage(
     String value,
@@ -906,7 +936,8 @@ class HomeFishPreviewSheet extends StatelessWidget {
     BuildContext context,
     Supplier activeSupplier,
   ) {
-    final canOrder = product.availableQuantity > 0;
+    final canOrder =
+        product.availableQuantity > 0 && !isOwnListing;
 
     return SafeArea(
       top: false,
@@ -983,7 +1014,11 @@ class HomeFishPreviewSheet extends StatelessWidget {
                       ),
                     ),
                     child: Text(
-                      canOrder ? 'Order Now' : 'Out of Stock',
+                      isOwnListing
+                          ? 'Your Listing'
+                          : canOrder
+                              ? 'Order Now'
+                              : 'Out of Stock',
                       style: const TextStyle(
                         fontWeight: FontWeight.w900,
                       ),

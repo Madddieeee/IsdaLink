@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:isdalink/models/fish_product.dart';
 import 'package:isdalink/models/supplier.dart';
+import 'package:isdalink/utils/stock_state.dart';
 
 class SupplierDetailsStats {
   const SupplierDetailsStats({
@@ -140,16 +141,7 @@ class SupplierDetailsService {
   bool isOrderableStock(
     Map<String, dynamic> data,
   ) {
-    final status = getStringValue(
-      data,
-      'status',
-      'available',
-    ).toLowerCase();
-
-    final quantity = getDoubleValue(data, 'quantity');
-
-    return (status == 'available' || status == 'active') &&
-        quantity > 0;
+    return StockState.isMarketplaceOrderable(data);
   }
 
   bool isLimitedStock(

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:isdalink/models/fish_product.dart';
 import 'package:isdalink/models/supplier.dart';
@@ -378,7 +379,7 @@ class _TopSellingFishStripState extends State<TopSellingFishStrip> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'All Top-Selling Fish',
+                            'Your Top Purchased Fish',
                             style: TextStyle(
                               color: Color(0xFF102C44),
                               fontSize: 18,
@@ -387,7 +388,7 @@ class _TopSellingFishStripState extends State<TopSellingFishStrip> {
                           ),
                           SizedBox(height: 3),
                           Text(
-                            'Grouped by fish name from completed vendor purchases.',
+                            'Grouped by fish name from your completed purchases.',
                             style: TextStyle(
                               color: Color(0xFF7B8FA3),
                               fontSize: 12,
@@ -404,7 +405,7 @@ class _TopSellingFishStripState extends State<TopSellingFishStrip> {
                 child: fishList.isEmpty
                     ? const Center(
                         child: Text(
-                          'No completed vendor purchase records yet.',
+                          'You do not have completed purchase records yet.',
                           style: TextStyle(
                             color: Color(0xFF7B8FA3),
                             fontSize: 13,
@@ -442,8 +443,22 @@ class _TopSellingFishStripState extends State<TopSellingFishStrip> {
   Widget build(
     BuildContext context,
   ) {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+
+    if (userId == null || userId.isEmpty) {
+      return const TopSellingStateLine(
+        text: 'Your top fish will appear after completed purchases.',
+      );
+    }
+
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance.collection('orders').snapshots(),
+      // Order documents contain private vendor contact and delivery data.
+      // Read only the signed-in vendor's orders instead of the whole
+      // marketplace order collection.
+      stream: FirebaseFirestore.instance
+          .collection('orders')
+          .where('vendorId', isEqualTo: userId)
+          .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return TopSellingStateLine(
@@ -461,7 +476,7 @@ class _TopSellingFishStripState extends State<TopSellingFishStrip> {
 
         if (topFiveFish.isEmpty) {
           return const TopSellingStateLine(
-            text: 'Top-selling fish will appear after completed orders.',
+            text: 'Your top fish will appear after completed purchases.',
           );
         }
 
@@ -523,7 +538,7 @@ class _TopSellingFishStripState extends State<TopSellingFishStrip> {
                             ),
                             SizedBox(width: 4),
                             Text(
-                              'Top Selling Fish',
+                              'Your Top Fish',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 10,

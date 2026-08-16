@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:isdalink/models/fish_product.dart';
 import 'package:isdalink/models/supplier.dart';
+import 'package:isdalink/screens/supplier/supplier_manage_products_screen.dart';
 import 'package:isdalink/screens/vendor/place_order_screen.dart';
 import 'package:isdalink/screens/vendor/supplier_details_screen.dart';
 
@@ -414,11 +416,126 @@ class ProductDetailsScreen extends StatelessWidget {
         '${localDate.day}, ${localDate.year}';
   }
 
+  String listingSupplierId(
+    Map<String, dynamic>? stockData,
+  ) {
+    return getStringValue(
+      stockData,
+      'supplierId',
+      supplierId,
+    ).trim();
+  }
+
+  bool isOwnListing(
+    Map<String, dynamic>? stockData,
+  ) {
+    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+    final ownerUid = listingSupplierId(stockData);
+
+    return currentUid != null &&
+        ownerUid.isNotEmpty &&
+        currentUid == ownerUid;
+  }
+
+  void openManageProducts(
+    BuildContext context,
+  ) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const SupplierManageProductsScreen(),
+      ),
+    );
+  }
+
+  Widget ownerListingNotice() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(13, 12, 12, 12),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [
+            Color(0xFFE8F8F2),
+            Color(0xFFEDF8FF),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: const Color(0xFFCDE8DD),
+        ),
+      ),
+      child: const Row(
+        children: [
+          SizedBox(
+            width: 40,
+            height: 40,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.all(
+                  Radius.circular(13),
+                ),
+              ),
+              child: Icon(
+                Icons.storefront_rounded,
+                color: Color(0xFF147D64),
+                size: 20,
+              ),
+            ),
+          ),
+          SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Your Product Listing',
+                  style: TextStyle(
+                    color: Color(0xFF102C44),
+                    fontSize: 12.4,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                SizedBox(height: 3),
+                Text(
+                  'You are viewing your own store listing. Ordering is disabled for supplier-owned products.',
+                  style: TextStyle(
+                    color: Color(0xFF657C8E),
+                    fontSize: 9.3,
+                    height: 1.35,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void openCheckout(
     BuildContext context,
     Supplier activeSupplier,
     FishProduct activeProduct,
   ) {
+    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+
+    if (currentUid != null &&
+        supplierId.trim().isNotEmpty &&
+        currentUid == supplierId.trim()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'You cannot place an order from your own supplier store.',
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     if (activeProduct.availableQuantity <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -1624,8 +1741,9 @@ class ProductDetailsScreen extends StatelessWidget {
   Widget bottomOrderBar(
     BuildContext context,
     Supplier activeSupplier,
-    FishProduct activeProduct,
-  ) {
+    FishProduct activeProduct, {
+    required bool ownerListing,
+  }) {
     final isOutOfStock = activeProduct.availableQuantity <= 0;
 
     return Container(
@@ -1683,50 +1801,67 @@ class ProductDetailsScreen extends StatelessWidget {
                 height: 49,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    gradient: isOutOfStock
+                    gradient: ownerListing
                         ? const LinearGradient(
-                            colors: [
-                              Color(0xFFCAD6E0),
-                              Color(0xFFB9C7D2),
-                            ],
-                          )
-                        : const LinearGradient(
                             begin: Alignment.centerLeft,
                             end: Alignment.centerRight,
                             colors: [
-                              Color(0xFF0875D1),
-                              Color(0xFF0B88E8),
+                              Color(0xFF147D64),
+                              Color(0xFF1AAA82),
                             ],
-                          ),
+                          )
+                        : isOutOfStock
+                            ? const LinearGradient(
+                                colors: [
+                                  Color(0xFFCAD6E0),
+                                  Color(0xFFB9C7D2),
+                                ],
+                              )
+                            : const LinearGradient(
+                                begin: Alignment.centerLeft,
+                                end: Alignment.centerRight,
+                                colors: [
+                                  Color(0xFF0875D1),
+                                  Color(0xFF0B88E8),
+                                ],
+                              ),
                     borderRadius: BorderRadius.circular(16),
-                    boxShadow: isOutOfStock
+                    boxShadow: isOutOfStock && !ownerListing
                         ? null
-                        : const [
+                        : [
                             BoxShadow(
-                              color: Color(0x360875D1),
+                              color: ownerListing
+                                  ? const Color(0x32147D64)
+                                  : const Color(0x360875D1),
                               blurRadius: 13,
-                              offset: Offset(0, 6),
+                              offset: const Offset(0, 6),
                             ),
                           ],
                   ),
                   child: ElevatedButton.icon(
-                    onPressed: isOutOfStock
-                        ? null
-                        : () => openCheckout(
-                              context,
-                              activeSupplier,
-                              activeProduct,
-                            ),
+                    onPressed: ownerListing
+                        ? () => openManageProducts(context)
+                        : isOutOfStock
+                            ? null
+                            : () => openCheckout(
+                                  context,
+                                  activeSupplier,
+                                  activeProduct,
+                                ),
                     icon: Icon(
-                      isOutOfStock
-                          ? Icons.block_rounded
-                          : Icons.arrow_forward_rounded,
+                      ownerListing
+                          ? Icons.edit_outlined
+                          : isOutOfStock
+                              ? Icons.block_rounded
+                              : Icons.arrow_forward_rounded,
                       size: 18,
                     ),
                     label: Text(
-                      isOutOfStock
-                          ? 'Out of Stock'
-                          : 'Proceed to Checkout',
+                      ownerListing
+                          ? 'Manage Product'
+                          : isOutOfStock
+                              ? 'Out of Stock'
+                              : 'Proceed to Checkout',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -1764,6 +1899,7 @@ class ProductDetailsScreen extends StatelessWidget {
     final updatedLabel = listingDateLabel(
       listingDate(stockData),
     );
+    final ownerListing = isOwnListing(stockData);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F8FB),
@@ -1785,6 +1921,10 @@ class ProductDetailsScreen extends StatelessWidget {
             sliver: SliverList(
               delegate: SliverChildListDelegate(
                 [
+                  if (ownerListing) ...[
+                    ownerListingNotice(),
+                    const SizedBox(height: 11),
+                  ],
                   productSummaryCard(
                     activeProduct,
                     updatedLabel: updatedLabel,
@@ -1810,6 +1950,7 @@ class ProductDetailsScreen extends StatelessWidget {
         context,
         activeSupplier,
         activeProduct,
+        ownerListing: ownerListing,
       ),
     );
   }

@@ -2,7 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:isdalink/models/fish_product.dart';
 import 'package:isdalink/models/supplier.dart';
+import 'package:isdalink/services/stock_notification_service.dart';
 import 'package:isdalink/utils/order_helpers.dart';
+import 'package:isdalink/utils/stock_state.dart';
 
 class PlaceOrderResult {
   const PlaceOrderResult({
@@ -18,6 +20,9 @@ class PlaceOrderResult {
 
 class PlaceOrderService {
   const PlaceOrderService();
+
+  StockNotificationService get stockNotificationService =>
+      const StockNotificationService();
 
   String firstNonEmpty(
     Map<String, dynamic> data,
@@ -103,6 +108,15 @@ class PlaceOrderService {
     String buyerPhone = '',
     String buyerAddress = '',
   }) async {
+    final requestedSupplierId = supplierId.trim();
+
+    if (requestedSupplierId.isNotEmpty &&
+        requestedSupplierId == user.uid) {
+      throw Exception(
+        'You cannot place an order from your own supplier store.',
+      );
+    }
+
     final resolvedStockId = await resolveStockId(
       supplier: supplier,
       product: product,
@@ -166,13 +180,7 @@ class PlaceOrderService {
         'quantity',
       );
 
-      final currentStatus = OrderHelpers.getStringValue(
-        stockData,
-        'status',
-        'available',
-      ).toLowerCase();
-
-      if (currentStatus != 'available' && currentStatus != 'active') {
+      if (!StockState.isMarketplaceOrderable(stockData)) {
         throw Exception(
           'This product is no longer available for ordering.',
         );
@@ -191,7 +199,13 @@ class PlaceOrderService {
         stockData,
         'supplierId',
         supplierId,
-      );
+      ).trim();
+
+      if (realSupplierId.isNotEmpty && realSupplierId == user.uid) {
+        throw Exception(
+          'You cannot place an order from your own supplier store.',
+        );
+      }
 
       final realSupplierName = OrderHelpers.getStringValue(
         stockData,
@@ -211,13 +225,37 @@ class PlaceOrderService {
         supplier.contactNumber,
       );
 
+      final stockTransition = stockNotificationService.transitionFor(
+        stockData: stockData,
+        nextQuantity: remainingStock,
+      );
+
       transaction.update(
         stockReference,
         {
-          'quantity': remainingStock,
-          'status': remainingStock <= 0 ? 'unavailable' : 'available',
+          ...StockState.fieldsForQuantity(
+            stockData,
+            quantity: remainingStock,
+          ),
+          ...stockTransition.markerFields(),
+          // Links this exact stock deduction to the order created in the
+          // same Firestore transaction. Security Rules validate both writes
+          // together so another signed-in user cannot drain supplier stock.
+          'lastOrderId': orderReference.id,
           'updatedAt': FieldValue.serverTimestamp(),
         },
+      );
+
+      stockNotificationService.createNotificationInTransaction(
+        transaction: transaction,
+        stockReference: stockReference,
+        stockData: stockData,
+        nextQuantity: remainingStock,
+        transition: stockTransition,
+        supplierIdOverride: realSupplierId,
+        productNameOverride: product.name,
+        quantityUnitOverride: product.quantityUnit,
+        sourceOrderId: orderReference.id,
       );
 
       transaction.set(
