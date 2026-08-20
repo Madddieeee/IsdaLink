@@ -3,7 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 
 import 'core/app_colors.dart';
 import 'firebase_options.dart';
-import 'screens/welcome_screen.dart';
+import 'screens/auth/auth_gate.dart';
 
 void
 main() async {
@@ -38,7 +38,7 @@ class IsdaLinkApp
         ),
         useMaterial3: true,
       ),
-      home: const WelcomeScreen(),
+      home: const AuthGate(),
     );
   }
 }
