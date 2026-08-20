@@ -9,11 +9,13 @@ class SupplierDetailsHeader extends StatelessWidget {
     required this.supplier,
     required this.stats,
     required this.onBack,
+    this.businessLocationPreview,
   });
 
   final Supplier supplier;
   final SupplierDetailsStats stats;
   final VoidCallback onBack;
+  final Widget? businessLocationPreview;
 
   bool get hasNetworkImage {
     final imageUrl = supplier.profileImageUrl.trim();
@@ -455,47 +457,72 @@ class SupplierDetailsHeader extends StatelessWidget {
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          const Text(
-                                            'FRESH FISH MARKET',
-                                            style: TextStyle(
-                                              color: Color(0xFFCBF5FF),
-                                              fontSize: 9.2,
-                                              fontWeight: FontWeight.w900,
-                                              letterSpacing: 1.1,
-                                            ),
+                                          Row(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    const Text(
+                                                      'FRESH FISH MARKET',
+                                                      style: TextStyle(
+                                                        color: Color(0xFFCBF5FF),
+                                                        fontSize: 9.2,
+                                                        fontWeight:
+                                                            FontWeight.w900,
+                                                        letterSpacing: 1.1,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 6),
+                                                    Text(
+                                                      supplier.name,
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 24,
+                                                        fontWeight:
+                                                            FontWeight.w900,
+                                                        height: 1.02,
+                                                        letterSpacing: -0.3,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                           const SizedBox(height: 7),
-                                          Text(
-                                            supplier.name,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 26,
-                                              fontWeight: FontWeight.w900,
-                                              height: 1.02,
-                                              letterSpacing: -0.3,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 8),
                                           Row(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
-                                              const Icon(
-                                                Icons.location_on_rounded,
-                                                color: Color(0xFFEAF5FB),
-                                                size: 14,
+                                              const Padding(
+                                                padding:
+                                                    EdgeInsets.only(top: 1),
+                                                child: Icon(
+                                                  Icons.location_on_rounded,
+                                                  color: Color(0xFFEAF5FB),
+                                                  size: 14,
+                                                ),
                                               ),
                                               const SizedBox(width: 4),
                                               Expanded(
                                                 child: Text(
                                                   supplier.location,
-                                                  maxLines: 1,
+                                                  maxLines: 2,
                                                   overflow:
                                                       TextOverflow.ellipsis,
                                                   style: const TextStyle(
                                                     color: Color(0xFFEAF5FB),
-                                                    fontSize: 10.8,
-                                                    fontWeight: FontWeight.w700,
+                                                    fontSize: 10.3,
+                                                    height: 1.22,
+                                                    fontWeight:
+                                                        FontWeight.w700,
                                                   ),
                                                 ),
                                               ),
@@ -509,50 +536,73 @@ class SupplierDetailsHeader extends StatelessWidget {
                                   ],
                                 ),
                                 const SizedBox(height: 12),
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
+                                Row(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.center,
                                   children: [
-                                    headerChip(
-                                      icon: Icons.payments_outlined,
-                                      text: 'COD only',
-                                    ),
-                                    headerChip(
-                                      icon: Icons.storefront_rounded,
-                                      text: 'Fish supplier',
-                                    ),
-                                    if (supplier.isNewSupplier)
-                                      headerChip(
-                                        icon:
-                                            Icons.auto_awesome_rounded,
-                                        text: 'New supplier',
-                                        foregroundColor:
-                                            const Color(0xFF8A4D00),
-                                        backgroundColor:
-                                            const Color(0xFFFFE29A),
-                                        outlined: false,
+                                    Expanded(
+                                      child: Wrap(
+                                        spacing: 8,
+                                        runSpacing: 8,
+                                        children: [
+                                          headerChip(
+                                            icon:
+                                                Icons.payments_outlined,
+                                            text: 'COD only',
+                                          ),
+                                          headerChip(
+                                            icon:
+                                                Icons.storefront_rounded,
+                                            text: 'Fish supplier',
+                                          ),
+                                          if (supplier.isNewSupplier)
+                                            headerChip(
+                                              icon: Icons
+                                                  .auto_awesome_rounded,
+                                              text: 'New supplier',
+                                              foregroundColor:
+                                                  const Color(
+                                                0xFF8A4D00,
+                                              ),
+                                              backgroundColor:
+                                                  const Color(
+                                                0xFFFFE29A,
+                                              ),
+                                              outlined: false,
+                                            ),
+                                        ],
                                       ),
+                                    ),
+                                    if (businessLocationPreview !=
+                                        null) ...[
+                                      const SizedBox(width: 10),
+                                      businessLocationPreview!,
+                                    ],
                                   ],
                                 ),
                                 if (description.isNotEmpty) ...[
                                   const SizedBox(height: 12),
                                   Container(
                                     width: double.infinity,
-                                    padding: const EdgeInsets.symmetric(
+                                    padding:
+                                        const EdgeInsets.symmetric(
                                       horizontal: 12,
                                       vertical: 10,
                                     ),
                                     decoration: BoxDecoration(
                                       color: Colors.white.withAlpha(10),
-                                      borderRadius: BorderRadius.circular(16),
+                                      borderRadius:
+                                          BorderRadius.circular(16),
                                       border: Border.all(
-                                        color: Colors.white.withAlpha(12),
+                                        color:
+                                            Colors.white.withAlpha(12),
                                       ),
                                     ),
                                     child: Text(
                                       description,
                                       maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
+                                      overflow:
+                                          TextOverflow.ellipsis,
                                       style: const TextStyle(
                                         color: Color(0xFFEAF5FB),
                                         fontSize: 10.7,

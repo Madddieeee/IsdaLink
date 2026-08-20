@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:isdalink/models/supplier.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:isdalink/screens/vendor/product_details_screen.dart';
 import 'package:isdalink/screens/supplier/supplier_manage_products_screen.dart';
 import 'package:isdalink/screens/vendor/supplier_details/widgets/supplier_details_header.dart';
@@ -9,6 +10,306 @@ import 'package:isdalink/screens/vendor/supplier_details/widgets/supplier_detail
 import 'package:isdalink/screens/vendor/supplier_details/widgets/supplier_product_card.dart';
 import 'package:isdalink/screens/vendor/supplier_details/widgets/supplier_reviews_section.dart';
 import 'package:isdalink/services/supplier_details_service.dart';
+
+
+class _SupplierBusinessMapViewer
+    extends StatelessWidget {
+  const _SupplierBusinessMapViewer({
+    required this.storeName,
+    required this.locationLabel,
+    required this.position,
+  });
+
+  final String storeName;
+  final String locationLabel;
+  final LatLng position;
+
+  static final LatLngBounds _caragaBounds =
+      LatLngBounds(
+    southwest: const LatLng(
+      7.55,
+      124.65,
+    ),
+    northeast: const LatLng(
+      10.75,
+      126.85,
+    ),
+  );
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    return Scaffold(
+      backgroundColor: const Color(
+        0xFFF4F8FB,
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding:
+                  const EdgeInsets.fromLTRB(
+                15,
+                10,
+                15,
+                11,
+              ),
+              decoration:
+                  const BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  bottom: BorderSide(
+                    color: Color(
+                      0xFFE1EBF2,
+                    ),
+                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Material(
+                    color: const Color(
+                      0xFFEAF3FF,
+                    ),
+                    borderRadius:
+                        BorderRadius.circular(
+                      14,
+                    ),
+                    child: InkWell(
+                      borderRadius:
+                          BorderRadius.circular(
+                        14,
+                      ),
+                      onTap: () =>
+                          Navigator.pop(
+                        context,
+                      ),
+                      child:
+                          const SizedBox(
+                        width: 42,
+                        height: 42,
+                        child: Icon(
+                          Icons
+                              .arrow_back_rounded,
+                          color: Color(
+                            0xFF146BFF,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(
+                    width: 11,
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment:
+                          CrossAxisAlignment
+                              .start,
+                      children: [
+                        Text(
+                          '$storeName Location',
+                          maxLines: 1,
+                          overflow:
+                              TextOverflow
+                                  .ellipsis,
+                          style:
+                              const TextStyle(
+                            color: Color(
+                              0xFF102C44,
+                            ),
+                            fontSize: 16.2,
+                            fontWeight:
+                                FontWeight.w900,
+                          ),
+                        ),
+                        if (locationLabel
+                            .isNotEmpty) ...[
+                          const SizedBox(
+                            height: 2,
+                          ),
+                          Text(
+                            locationLabel,
+                            maxLines: 1,
+                            overflow:
+                                TextOverflow
+                                    .ellipsis,
+                            style:
+                                const TextStyle(
+                              color: Color(
+                                0xFF7B8FA3,
+                              ),
+                              fontSize: 9.4,
+                              fontWeight:
+                                  FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Stack(
+                children: [
+                  GoogleMap(
+                    initialCameraPosition:
+                        CameraPosition(
+                      target: position,
+                      zoom: 16,
+                    ),
+                    cameraTargetBounds:
+                        CameraTargetBounds(
+                      _caragaBounds,
+                    ),
+                    minMaxZoomPreference:
+                        const MinMaxZoomPreference(
+                      7.6,
+                      20,
+                    ),
+                    markers: {
+                      Marker(
+                        markerId:
+                            const MarkerId(
+                          'supplier_business_location',
+                        ),
+                        position: position,
+                        draggable: false,
+                        infoWindow:
+                            InfoWindow(
+                          title:
+                              '$storeName Location',
+                          snippet:
+                              locationLabel
+                                      .isEmpty
+                                  ? null
+                                  : locationLabel,
+                        ),
+                      ),
+                    },
+                    myLocationEnabled:
+                        false,
+                    myLocationButtonEnabled:
+                        false,
+                    zoomControlsEnabled:
+                        true,
+                    compassEnabled: true,
+                    mapToolbarEnabled:
+                        false,
+                    rotateGesturesEnabled:
+                        true,
+                    scrollGesturesEnabled:
+                        true,
+                    zoomGesturesEnabled:
+                        true,
+                    tiltGesturesEnabled:
+                        true,
+                    trafficEnabled:
+                        false,
+                    indoorViewEnabled:
+                        false,
+                    buildingsEnabled:
+                        true,
+                  ),
+                  Positioned(
+                    left: 14,
+                    right: 14,
+                    top: 14,
+                    child: IgnorePointer(
+                      child: Container(
+                        padding:
+                            const EdgeInsets
+                                .fromLTRB(
+                          11,
+                          9,
+                          11,
+                          9,
+                        ),
+                        decoration:
+                            BoxDecoration(
+                          color: Colors.white
+                              .withValues(
+                            alpha: 0.95,
+                          ),
+                          borderRadius:
+                              BorderRadius
+                                  .circular(
+                            16,
+                          ),
+                          border:
+                              Border.all(
+                            color:
+                                const Color(
+                              0xFFDCE8F1,
+                            ),
+                          ),
+                          boxShadow:
+                              const [
+                            BoxShadow(
+                              color: Color(
+                                0x1800152A,
+                              ),
+                              blurRadius:
+                                  12,
+                              offset:
+                                  Offset(
+                                0,
+                                5,
+                              ),
+                            ),
+                          ],
+                        ),
+                        child:
+                            const Row(
+                          children: [
+                            Icon(
+                              Icons
+                                  .open_with_rounded,
+                              color: Color(
+                                0xFF146BFF,
+                              ),
+                              size: 18,
+                            ),
+                            SizedBox(
+                              width: 8,
+                            ),
+                            Expanded(
+                              child: Text(
+                                'Drag and zoom the map to explore the area. '
+                                'The supplier business pin remains fixed.',
+                                style:
+                                    TextStyle(
+                                  color: Color(
+                                    0xFF52677A,
+                                  ),
+                                  fontSize:
+                                      9.2,
+                                  height:
+                                      1.3,
+                                  fontWeight:
+                                      FontWeight
+                                          .w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class SupplierDetailsScreen extends StatefulWidget {
   const SupplierDetailsScreen({
@@ -53,6 +354,263 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
     return currentUid != null &&
         storeUid.isNotEmpty &&
         currentUid == storeUid;
+  }
+
+  double? mapCoordinate(
+    dynamic value,
+  ) {
+    if (value is num) {
+      return value.toDouble();
+    }
+
+    if (value is String) {
+      return double.tryParse(
+        value.trim(),
+      );
+    }
+
+    return null;
+  }
+
+  Widget supplierBusinessLocationPreview() {
+    final storeUid = supplierId?.trim() ?? '';
+
+    if (storeUid.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return StreamBuilder<
+      DocumentSnapshot<
+        Map<
+          String,
+          dynamic
+        >
+      >
+    >(
+      stream: FirebaseFirestore.instance
+          .collection(
+            'supplierProfiles',
+          )
+          .doc(
+            storeUid,
+          )
+          .snapshots(),
+      builder: (
+        context,
+        snapshot,
+      ) {
+        final data = snapshot.data?.data();
+
+        if (data == null) {
+          return const SizedBox.shrink();
+        }
+
+        final latitude = mapCoordinate(
+          data['storeLatitude'],
+        );
+        final longitude = mapCoordinate(
+          data['storeLongitude'],
+        );
+
+        if (latitude == null ||
+            longitude == null) {
+          return const SizedBox.shrink();
+        }
+
+        final province = detailsService.getStringValue(
+          data,
+          'storeProvince',
+          '',
+        );
+        final locality = detailsService.getStringValue(
+          data,
+          'storeCityMunicipality',
+          '',
+        );
+
+        final locationParts = <String>[
+          if (locality.trim().isNotEmpty)
+            locality.trim(),
+          if (province.trim().isNotEmpty)
+            province.trim(),
+        ];
+
+        final locationLabel = locationParts.isEmpty
+            ? supplier.location.trim()
+            : locationParts.join(', ');
+
+        final storeName = supplier.name.trim().isEmpty
+            ? 'Supplier'
+            : supplier.name.trim();
+
+        final position = LatLng(
+          latitude,
+          longitude,
+        );
+
+        void openFullMap() {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) =>
+                  _SupplierBusinessMapViewer(
+                storeName: storeName,
+                locationLabel: locationLabel,
+                position: position,
+              ),
+            ),
+          );
+        }
+
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: openFullMap,
+          child: Container(
+            width: 86,
+            height: 58,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(
+                color: Colors.white.withValues(
+                  alpha: 0.32,
+                ),
+                width: 1.2,
+              ),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x2400152A),
+                  blurRadius: 10,
+                  offset: Offset(0, 5),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  IgnorePointer(
+                    child: GoogleMap(
+                      initialCameraPosition:
+                          CameraPosition(
+                        target: position,
+                        zoom: 15.2,
+                      ),
+                      markers: {
+                        Marker(
+                          markerId: MarkerId(
+                            'supplier_header_business_$storeUid',
+                          ),
+                          position: position,
+                        ),
+                      },
+                      myLocationEnabled: false,
+                      myLocationButtonEnabled: false,
+                      zoomControlsEnabled: false,
+                      compassEnabled: false,
+                      mapToolbarEnabled: false,
+                      rotateGesturesEnabled: false,
+                      scrollGesturesEnabled: false,
+                      zoomGesturesEnabled: false,
+                      tiltGesturesEnabled: false,
+                      trafficEnabled: false,
+                      indoorViewEnabled: false,
+                      buildingsEnabled: true,
+                    ),
+                  ),
+                  const Positioned(
+                    right: 4,
+                    top: 4,
+                    child: IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Color(0xEFFFFFFF),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Padding(
+                          padding: EdgeInsets.all(3),
+                          child: Icon(
+                            Icons.open_in_full_rounded,
+                            color: Color(0xFF31536D),
+                            size: 9,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: 5,
+                    right: 5,
+                    bottom: 4,
+                    child: IgnorePointer(
+                      child: Container(
+                        height: 18,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(
+                            alpha: 0.94,
+                          ),
+                          borderRadius: BorderRadius.circular(
+                            8,
+                          ),
+                          border: Border.all(
+                            color: const Color(
+                              0xFFDCEAF2,
+                            ),
+                            width: 0.7,
+                          ),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(
+                                0x1600152A,
+                              ),
+                              blurRadius: 5,
+                              offset: Offset(
+                                0,
+                                2,
+                              ),
+                            ),
+                          ],
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment:
+                              MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.map_outlined,
+                              color: Color(
+                                0xFF146BFF,
+                              ),
+                              size: 10,
+                            ),
+                            SizedBox(
+                              width: 2,
+                            ),
+                            Text(
+                              'View map',
+                              style: TextStyle(
+                                color: Color(
+                                  0xFF146BFF,
+                                ),
+                                fontSize: 7.4,
+                                fontWeight:
+                                    FontWeight.w900,
+                                height: 1,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -217,9 +775,9 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
   Widget storeTabs() {
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(18, 10, 18, 10),
+      padding: const EdgeInsets.fromLTRB(18, 7, 18, 7),
       child: Container(
-        height: 46,
+        height: 42,
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
           color: const Color(0xFFF0F6FA),
@@ -321,10 +879,10 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
     }
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(23),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: const Color(0xFFE0EEF5),
         ),
@@ -379,9 +937,10 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
                     ),
               filled: true,
               fillColor: const Color(0xFFF4F8FB),
+              isDense: true,
               contentPadding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 12,
+                horizontal: 12,
+                vertical: 10,
               ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(17),
@@ -402,12 +961,12 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
                 child: SizedBox(
-                  height: 35,
+                  height: 32,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: unitOptions.length,
@@ -491,7 +1050,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
                   ];
                 },
                 child: Container(
-                  height: 35,
+                  height: 32,
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   decoration: BoxDecoration(
                     color: const Color(0xFFE8F8FD),
@@ -521,18 +1080,6 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 9),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              sortLabel(sortMode),
-              style: const TextStyle(
-                color: Color(0xFF7B8FA3),
-                fontSize: 9.8,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
           ),
         ],
       ),
@@ -642,86 +1189,86 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
       sortMode: sortMode,
     );
 
-    return ListView(
-      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: const EdgeInsets.fromLTRB(18, 10, 18, 24),
-      children: [
-        searchAndFilterCard(units),
-        const SizedBox(height: 18),
-        Row(
-          children: [
-            const Expanded(
-              child: Text(
-                'Available Fish',
-                style: TextStyle(
-                  color: Color(0xFF102C44),
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 7, 18, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          searchAndFilterCard(units),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Available Fish',
+                  style: TextStyle(
+                    color: Color(0xFF102C44),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 6,
-              ),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE8F8FD),
-                borderRadius: BorderRadius.circular(99),
-              ),
-              child: Text(
-                '${visibleProducts.length} listing'
-                '${visibleProducts.length == 1 ? '' : 's'}',
-                style: const TextStyle(
-                  color: Color(0xFF087AC0),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F8FD),
+                  borderRadius: BorderRadius.circular(99),
+                ),
+                child: Text(
+                  '${visibleProducts.length} listing'
+                  '${visibleProducts.length == 1 ? '' : 's'}',
+                  style: const TextStyle(
+                    color: Color(0xFF087AC0),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          ownerMode
-              ? 'These are the active listings currently visible to vendors.'
-              : 'Current COD stock posted by ${supplier.name}.',
-          style: const TextStyle(
-            color: Color(0xFF7B8FA3),
-            fontSize: 11.3,
-            fontWeight: FontWeight.w600,
+            ],
           ),
-        ),
-        const SizedBox(height: 14),
-        if (orderable.isEmpty)
-          SupplierDetailsEmptyCard(
-            title: 'No fish available right now',
-            subtitle: ownerMode
-                ? 'You currently have no active listings visible to vendors.'
-                : 'This supplier has no active fish stock for ordering at the moment.',
-          )
-        else if (visibleProducts.isEmpty)
-          const SupplierDetailsEmptyCard(
-            title: 'No matching fish found',
-            subtitle:
-                'Try another fish name or change the selected unit filter.',
-            icon: Icons.search_off_rounded,
-          )
-        else
-          productGrid(visibleProducts),
-      ],
+          const SizedBox(height: 4),
+          Text(
+            ownerMode
+                ? 'These are the active listings currently visible to vendors.'
+                : 'Current COD stock posted by ${supplier.name}.',
+            style: const TextStyle(
+              color: Color(0xFF7B8FA3),
+              fontSize: 11.3,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 14),
+          if (orderable.isEmpty)
+            SupplierDetailsEmptyCard(
+              title: 'No fish available right now',
+              subtitle: ownerMode
+                  ? 'You currently have no active listings visible to vendors.'
+                  : 'This supplier has no active fish stock for ordering at the moment.',
+            )
+          else if (visibleProducts.isEmpty)
+            const SupplierDetailsEmptyCard(
+              title: 'No matching fish found',
+              subtitle:
+                  'Try another fish name or change the selected unit filter.',
+              icon: Icons.search_off_rounded,
+            )
+          else
+            productGrid(visibleProducts),
+        ],
+      ),
     );
   }
 
   Widget reviewsBody() {
-    return ListView(
+    return Padding(
       padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
-      children: [
-        SupplierReviewsSection(
-          supplierId: supplierId,
-          supplierName: supplier.name,
-        ),
-      ],
+      child: SupplierReviewsSection(
+        supplierId: supplierId,
+        supplierName: supplier.name,
+      ),
     );
   }
 
@@ -736,33 +1283,44 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
 
     final stats = detailsService.calculateStats(documents);
 
-    return Column(
+    return ListView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: EdgeInsets.zero,
       children: [
         SupplierDetailsHeader(
           supplier: supplier,
           stats: stats,
           onBack: () => Navigator.pop(context),
+          businessLocationPreview:
+              supplierBusinessLocationPreview(),
         ),
         if (ownerMode)
           ownerPreviewBanner(),
         storeTabs(),
-        Expanded(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 220),
-            switchInCurve: Curves.easeOut,
-            switchOutCurve: Curves.easeIn,
-            child: selectedTab == 0
-                ? KeyedSubtree(
-                    key: const ValueKey('products'),
-                    child: productsBody(
-                      documents: documents,
-                    ),
-                  )
-                : KeyedSubtree(
-                    key: const ValueKey('reviews'),
-                    child: reviewsBody(),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 220),
+          switchInCurve: Curves.easeOut,
+          switchOutCurve: Curves.easeIn,
+          layoutBuilder: (currentChild, previousChildren) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ...previousChildren,
+                ?currentChild,
+              ],
+            );
+          },
+          child: selectedTab == 0
+              ? KeyedSubtree(
+                  key: const ValueKey('products'),
+                  child: productsBody(
+                    documents: documents,
                   ),
-          ),
+                )
+              : KeyedSubtree(
+                  key: const ValueKey('reviews'),
+                  child: reviewsBody(),
+                ),
         ),
       ],
     );
@@ -773,23 +1331,22 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
       const [],
     );
 
-    return Column(
+    return ListView(
+      padding: EdgeInsets.zero,
       children: [
         SupplierDetailsHeader(
           supplier: supplier,
           stats: stats,
           onBack: () => Navigator.pop(context),
+          businessLocationPreview:
+              supplierBusinessLocationPreview(),
         ),
         if (ownerMode)
           ownerPreviewBanner(),
         storeTabs(),
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
-            children: const [
-              SupplierDetailsLoadingCard(),
-            ],
-          ),
+        const Padding(
+          padding: EdgeInsets.fromLTRB(18, 16, 18, 24),
+          child: SupplierDetailsLoadingCard(),
         ),
       ],
     );
@@ -800,23 +1357,22 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
       const [],
     );
 
-    return Column(
+    return ListView(
+      padding: EdgeInsets.zero,
       children: [
         SupplierDetailsHeader(
           supplier: supplier,
           stats: stats,
           onBack: () => Navigator.pop(context),
+          businessLocationPreview:
+              supplierBusinessLocationPreview(),
         ),
         if (ownerMode)
           ownerPreviewBanner(),
         storeTabs(),
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
-            children: const [
-              SupplierDetailsErrorCard(),
-            ],
-          ),
+        const Padding(
+          padding: EdgeInsets.fromLTRB(18, 16, 18, 24),
+          child: SupplierDetailsErrorCard(),
         ),
       ],
     );

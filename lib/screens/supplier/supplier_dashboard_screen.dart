@@ -7,6 +7,7 @@ import 'package:isdalink/screens/home/home_screen.dart';
 import 'package:isdalink/screens/supplier/post_fish_stock_screen.dart';
 import 'package:isdalink/screens/supplier/supplier_cod_orders_screen.dart';
 import 'package:isdalink/screens/supplier/supplier_manage_products_screen.dart';
+import 'package:isdalink/screens/profile/supplier_profile_screen.dart';
 import 'package:isdalink/models/supplier.dart';
 import 'package:isdalink/screens/vendor/supplier_details_screen.dart';
 import 'package:isdalink/services/stock_notification_service.dart';
@@ -212,6 +213,17 @@ class SupplierDashboardScreen extends StatelessWidget {
     );
   }
 
+  void openSupplierProfile(
+    BuildContext context,
+  ) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const SupplierProfileScreen(),
+      ),
+    );
+  }
+
   Future<void> openOwnStore(
     BuildContext context,
   ) async {
@@ -373,6 +385,146 @@ class SupplierDashboardScreen extends StatelessWidget {
                   child: const Icon(
                     Icons.arrow_forward_rounded,
                     color: Color(0xFF0875D1),
+                    size: 18,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget supplierProfileCard(
+    BuildContext context,
+  ) {
+    return Container(
+      margin: const EdgeInsets.only(
+        bottom: 16,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(
+          22,
+        ),
+        border: Border.all(
+          color: const Color(
+            0xFFDDE9F1,
+          ),
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(
+              0x0D102C44,
+            ),
+            blurRadius: 15,
+            offset: Offset(
+              0,
+              7,
+            ),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(
+          22,
+        ),
+        child: InkWell(
+          onTap: () => openSupplierProfile(
+            context,
+          ),
+          borderRadius: BorderRadius.circular(
+            22,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              14,
+              12,
+              12,
+              12,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: const Color(
+                      0xFFEAF5FF,
+                    ),
+                    borderRadius:
+                        BorderRadius.circular(
+                      14,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.badge_outlined,
+                    color: Color(
+                      0xFF146BFF,
+                    ),
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(
+                  width: 11,
+                ),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Supplier Profile',
+                        style: TextStyle(
+                          color: Color(
+                            0xFF102C44,
+                          ),
+                          fontSize: 13.5,
+                          fontWeight:
+                              FontWeight.w900,
+                        ),
+                      ),
+                      SizedBox(
+                        height: 3,
+                      ),
+                      Text(
+                        'Manage your approved store and business information.',
+                        style: TextStyle(
+                          color: Color(
+                            0xFF657C8E,
+                          ),
+                          fontSize: 9.6,
+                          height: 1.3,
+                          fontWeight:
+                              FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(
+                  width: 8,
+                ),
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: const Color(
+                      0xFFF1F7FC,
+                    ),
+                    borderRadius:
+                        BorderRadius.circular(
+                      11,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons
+                        .arrow_forward_rounded,
+                    color: Color(
+                      0xFF146BFF,
+                    ),
                     size: 18,
                   ),
                 ),
@@ -1138,6 +1290,7 @@ class SupplierDashboardScreen extends StatelessWidget {
                 alerts: alerts,
               ),
               viewStoreCard(context),
+              supplierProfileCard(context),
               const _SectionHeading(
                 title: 'Supplier Tools',
                 subtitle: 'Quick access to daily supplier operations.',
