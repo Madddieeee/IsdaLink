@@ -124,16 +124,10 @@ class _SupplierVerifiedChangeRequestScreenState
 
   bool get needsStorePhotoEvidence =>
       selectedChanges.contains(
-        _VerifiedChangeType.businessLocation,
-      ) ||
-      selectedChanges.contains(
         _VerifiedChangeType.storePhoto,
       );
 
   bool get needsPermitEvidence =>
-      selectedChanges.contains(
-        _VerifiedChangeType.storeName,
-      ) ||
       selectedChanges.contains(
         _VerifiedChangeType.businessPermit,
       );
@@ -550,7 +544,10 @@ class _SupplierVerifiedChangeRequestScreenState
       changes.add('Business location');
     }
 
-    if (requestedStorePhotoUrl.isNotEmpty &&
+    if (selectedChanges.contains(
+          _VerifiedChangeType.storePhoto,
+        ) &&
+        requestedStorePhotoUrl.isNotEmpty &&
         requestedStorePhotoUrl != currentStorePhotoUrl) {
       changes.add('Store photo');
     }
@@ -560,7 +557,10 @@ class _SupplierVerifiedChangeRequestScreenState
             (requestedPermitPhotoUrl.isNotEmpty &&
                 requestedPermitPhotoUrl != currentPermitUrl);
 
-    if (needsPermitEvidence && permitChanged) {
+    if (selectedChanges.contains(
+          _VerifiedChangeType.businessPermit,
+        ) &&
+        permitChanged) {
       changes.add('Business permit');
     }
 
@@ -773,11 +773,26 @@ class _SupplierVerifiedChangeRequestScreenState
 
     final fields = submissionChangedFields();
 
-    final permitUrl = requestedPermitPhotoUrl.isNotEmpty
+    final changesStoreName = selectedChanges.contains(
+      _VerifiedChangeType.storeName,
+    );
+    final changesLocation = selectedChanges.contains(
+      _VerifiedChangeType.businessLocation,
+    );
+    final changesStorePhoto = selectedChanges.contains(
+      _VerifiedChangeType.storePhoto,
+    );
+    final changesPermit = selectedChanges.contains(
+      _VerifiedChangeType.businessPermit,
+    );
+
+    final permitUrl = changesPermit &&
+            requestedPermitPhotoUrl.isNotEmpty
         ? requestedPermitPhotoUrl
         : currentPermitUrl;
 
-    final storePhotoUrl = requestedStorePhotoUrl.isNotEmpty
+    final storePhotoUrl = changesStorePhoto &&
+            requestedStorePhotoUrl.isNotEmpty
         ? requestedStorePhotoUrl
         : currentStorePhotoUrl;
 
@@ -797,19 +812,26 @@ class _SupplierVerifiedChangeRequestScreenState
       await profileService.submitVerifiedChangeRequest(
         uid: widget.uid,
         supplierName: currentStoreName,
-        requestedStoreName:
-            storeNameController.text.trim(),
-        requestedStoreProvince: selectedProvince,
+        requestedStoreName: changesStoreName
+            ? storeNameController.text.trim()
+            : currentStoreName,
+        requestedStoreProvince: changesLocation
+            ? selectedProvince
+            : currentProvince,
         requestedStoreCityMunicipality:
-            selectedLocality,
-        requestedStoreAddress:
-            storeAddressController.text.trim(),
-        requestedStoreLatitude:
-            selectedLatitude ?? currentLatitude!,
-        requestedStoreLongitude:
-            selectedLongitude ?? currentLongitude!,
-        requestedBusinessPermitNumber:
-            permitNumberController.text.trim(),
+            changesLocation ? selectedLocality : currentLocality,
+        requestedStoreAddress: changesLocation
+            ? storeAddressController.text.trim()
+            : currentAddress,
+        requestedStoreLatitude: changesLocation
+            ? selectedLatitude ?? currentLatitude!
+            : currentLatitude!,
+        requestedStoreLongitude: changesLocation
+            ? selectedLongitude ?? currentLongitude!
+            : currentLongitude!,
+        requestedBusinessPermitNumber: changesPermit
+            ? permitNumberController.text.trim()
+            : currentPermitNumber,
         requestedBusinessPermitUrl: permitUrl,
         requestedStorePhotoUrl: storePhotoUrl,
         changedFields: fields,
@@ -854,13 +876,13 @@ class _SupplierVerifiedChangeRequestScreenState
   String changeSubtitle(_VerifiedChangeType type) {
     switch (type) {
       case _VerifiedChangeType.storeName:
-        return 'Change the verified name vendors see';
+        return 'Update only the approved name vendors see';
       case _VerifiedChangeType.businessLocation:
-        return 'Move the approved address and map pin';
+        return 'Update only the approved address and map pin';
       case _VerifiedChangeType.storePhoto:
-        return 'Replace the approved main store image';
+        return 'Replace only the approved main store image';
       case _VerifiedChangeType.businessPermit:
-        return 'Update permit number or permit evidence';
+        return 'Update only the permit number or evidence';
     }
   }
 
@@ -956,6 +978,43 @@ class _SupplierVerifiedChangeRequestScreenState
         SupplierCaragaLocations.localitiesFor(
       selectedProvince,
     );
+    final changesStoreName = selectedChanges.contains(
+      _VerifiedChangeType.storeName,
+    );
+    final changesLocation = selectedChanges.contains(
+      _VerifiedChangeType.businessLocation,
+    );
+    final changesStorePhoto = selectedChanges.contains(
+      _VerifiedChangeType.storePhoto,
+    );
+    final changesPermit = selectedChanges.contains(
+      _VerifiedChangeType.businessPermit,
+    );
+    final hasEvidenceSection =
+        changesStorePhoto || changesPermit;
+
+    var nextSectionNumber = 1;
+    final nameSectionNumber = changesStoreName
+        ? nextSectionNumber++
+        : null;
+    final locationSectionNumber = changesLocation
+        ? nextSectionNumber++
+        : null;
+    final evidenceSectionNumber = hasEvidenceSection
+        ? nextSectionNumber++
+        : null;
+    final reasonSectionNumber = nextSectionNumber;
+
+    final evidenceTitle = changesStorePhoto && changesPermit
+        ? 'Store Photo and Business Permit'
+        : changesStorePhoto
+            ? 'Store Photo'
+            : 'Business Permit';
+    final evidenceSubtitle = changesStorePhoto && changesPermit
+        ? 'Upload the new store image and updated permit evidence.'
+        : changesStorePhoto
+            ? 'Upload the new main store image for Admin review.'
+            : 'Enter the updated permit details and upload its evidence.';
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(
@@ -965,20 +1024,12 @@ class _SupplierVerifiedChangeRequestScreenState
         24,
       ),
       children: [
-        _SelectedChangesSummary(
-          labels: selectedChanges
-              .map(changeTitle)
-              .toList(),
-        ),
-        if (selectedChanges.contains(
-          _VerifiedChangeType.storeName,
-        )) ...[
-          const SizedBox(height: 12),
+        if (changesStoreName) ...[
           _FinalFormCard(
-            number: '1',
-            title: 'Business Identity',
+            number: nameSectionNumber!.toString(),
+            title: 'Business / Store Name',
             subtitle:
-                'Enter the requested verified store name.',
+                'Enter only the new approved name vendors should see.',
             icon: Icons.storefront_outlined,
             child: TextField(
               controller: storeNameController,
@@ -989,12 +1040,10 @@ class _SupplierVerifiedChangeRequestScreenState
             ),
           ),
         ],
-        if (selectedChanges.contains(
-          _VerifiedChangeType.businessLocation,
-        )) ...[
+        if (changesLocation) ...[
           const SizedBox(height: 12),
           _FinalFormCard(
-            number: '2',
+            number: locationSectionNumber!.toString(),
             title: 'Business Location',
             subtitle:
                 'Update the address and map reference vendors will see after approval.',
@@ -1095,14 +1144,12 @@ class _SupplierVerifiedChangeRequestScreenState
             ),
           ),
         ],
-        if (needsStorePhotoEvidence ||
-            needsPermitEvidence) ...[
+        if (hasEvidenceSection) ...[
           const SizedBox(height: 12),
           _FinalFormCard(
-            number: '3',
-            title: 'Verification Evidence',
-            subtitle:
-                'Upload only the evidence needed for the selected protected changes.',
+            number: evidenceSectionNumber!.toString(),
+            title: evidenceTitle,
+            subtitle: evidenceSubtitle,
             icon: Icons.photo_library_outlined,
             child: Column(
               children: [
@@ -1110,8 +1157,8 @@ class _SupplierVerifiedChangeRequestScreenState
                   _UploadEvidenceCard(
                     title: 'Current Store Photo',
                     subtitle: requestedStorePhotoUrl.isEmpty
-                        ? 'Required. After approval, this becomes the main supplier/store profile image.'
-                        : 'Ready for Admin review. Approval will make this the main supplier/store image.',
+                        ? 'Upload the new image that should replace the approved store photo.'
+                        : 'New store photo ready for Admin review.',
                     imageUrl: requestedStorePhotoUrl,
                     busy: uploadingStorePhoto,
                     requiredBadge: true,
@@ -1135,11 +1182,11 @@ class _SupplierVerifiedChangeRequestScreenState
                   ),
                   const SizedBox(height: 10),
                   _UploadEvidenceCard(
-                    title: 'Permit Evidence',
+                    title: 'Business Permit Evidence',
                     subtitle:
                         requestedPermitPhotoUrl.isEmpty
-                            ? 'Required for the selected business identity / permit change.'
-                            : 'Updated permit evidence ready for review.',
+                            ? 'Upload the document matching the updated permit details.'
+                            : 'Updated permit evidence ready for Admin review.',
                     imageUrl: requestedPermitPhotoUrl,
                     busy: uploadingPermitPhoto,
                     requiredBadge: true,
@@ -1156,7 +1203,7 @@ class _SupplierVerifiedChangeRequestScreenState
         ],
         const SizedBox(height: 12),
         _FinalFormCard(
-          number: '4',
+          number: reasonSectionNumber.toString(),
           title: 'Reason for Change',
           subtitle:
               'Tell Admin why this verified information needs to be updated.',
@@ -1180,6 +1227,23 @@ class _SupplierVerifiedChangeRequestScreenState
 
   Widget reviewStep() {
     final changes = submissionChangedFields();
+    final hasRequestedDetails = changes.any(
+      (change) => change != 'Store photo',
+    );
+    final hasStorePhotoChange = changes.contains(
+      'Store photo',
+    );
+    final permitNumberChanged =
+        permitNumberController.text.trim() != currentPermitNumber;
+
+    var nextSectionNumber = 1;
+    final requestedDetailsSectionNumber = hasRequestedDetails
+        ? nextSectionNumber++
+        : null;
+    final storePhotoSectionNumber = hasStorePhotoChange
+        ? nextSectionNumber++
+        : null;
+    final reasonSectionNumber = nextSectionNumber;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(
@@ -1190,49 +1254,55 @@ class _SupplierVerifiedChangeRequestScreenState
       ),
       children: [
         const _ReviewReadyHero(),
-        const SizedBox(height: 12),
-        _FinalFormCard(
-          number: '1',
-          title: 'Requested Changes',
-          subtitle:
-              'Review each change before sending it to Admin.',
-          icon: Icons.fact_check_outlined,
-          child: Column(
-            children: [
-              if (changes.contains('Store name'))
-                _CurrentRequestedRow(
-                  label: 'Store / business name',
-                  currentValue: currentStoreName,
-                  requestedValue:
-                      storeNameController.text.trim(),
-                ),
-              if (changes.contains(
-                'Business location',
-              ))
-                _CurrentRequestedRow(
-                  label: 'Business location',
-                  currentValue: currentLocation,
-                  requestedValue: requestedLocation,
-                ),
-              if (changes.contains(
-                'Business permit',
-              ))
-                _CurrentRequestedRow(
-                  label: 'Business permit',
-                  currentValue:
-                      currentPermitNumber.isEmpty
-                          ? 'Current permit on file'
-                          : currentPermitNumber,
-                  requestedValue:
-                      permitNumberController.text.trim(),
-                ),
-            ],
-          ),
-        ),
-        if (changes.contains('Store photo')) ...[
+        if (hasRequestedDetails) ...[
           const SizedBox(height: 12),
           _FinalFormCard(
-            number: '2',
+            number: requestedDetailsSectionNumber!.toString(),
+            title: 'Requested Changes',
+            subtitle:
+                'Review each change before sending it to Admin.',
+            icon: Icons.fact_check_outlined,
+            child: Column(
+              children: [
+                if (changes.contains('Store name'))
+                  _CurrentRequestedRow(
+                    label: 'Store / business name',
+                    currentValue: currentStoreName,
+                    requestedValue:
+                        storeNameController.text.trim(),
+                  ),
+                if (changes.contains(
+                  'Business location',
+                ))
+                  _CurrentRequestedRow(
+                    label: 'Business location',
+                    currentValue: currentLocation,
+                    requestedValue: requestedLocation,
+                  ),
+                if (changes.contains(
+                  'Business permit',
+                ))
+                  _CurrentRequestedRow(
+                    label: permitNumberChanged
+                        ? 'Business permit number'
+                        : 'Business permit evidence',
+                    currentValue: permitNumberChanged
+                        ? currentPermitNumber.isEmpty
+                            ? 'Current permit on file'
+                            : currentPermitNumber
+                        : 'Current permit document',
+                    requestedValue: permitNumberChanged
+                        ? permitNumberController.text.trim()
+                        : 'New permit document uploaded',
+                  ),
+              ],
+            ),
+          ),
+        ],
+        if (hasStorePhotoChange) ...[
+          const SizedBox(height: 12),
+          _FinalFormCard(
+            number: storePhotoSectionNumber!.toString(),
             title: 'Store Photo',
             subtitle:
                 'The requested photo becomes the main supplier/store image only after approval.',
@@ -1245,7 +1315,7 @@ class _SupplierVerifiedChangeRequestScreenState
         ],
         const SizedBox(height: 12),
         _FinalFormCard(
-          number: '3',
+          number: reasonSectionNumber.toString(),
           title: 'Reason',
           subtitle:
               'This explanation will be visible to the reviewing administrator.',
@@ -1900,80 +1970,6 @@ class _ChangeSelectionCard extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _SelectedChangesSummary extends StatelessWidget {
-  const _SelectedChangesSummary({
-    required this.labels,
-  });
-
-  final List<String> labels;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEAF4FF),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: const Color(0xFFCFE3FF),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(
-                Icons.tune_rounded,
-                color: Color(0xFF146BFF),
-                size: 17,
-              ),
-              SizedBox(width: 7),
-              Text(
-                'Selected verified changes',
-                style: TextStyle(
-                  color: Color(0xFF17354D),
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: labels
-                .map(
-                  (label) => Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius:
-                          BorderRadius.circular(99),
-                    ),
-                    child: Text(
-                      label,
-                      style: const TextStyle(
-                        color: Color(0xFF146BFF),
-                        fontSize: 8,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
-                )
-                .toList(),
-          ),
-        ],
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:isdalink/screens/profile/supplier_verified_change_request_screen.dart';
+import 'package:isdalink/services/supplier_notification_service.dart';
 import 'package:isdalink/services/supplier_profile_service.dart';
 
 class SupplierProfileScreen extends StatefulWidget {
@@ -16,6 +17,7 @@ class SupplierProfileScreen extends StatefulWidget {
 
 class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
   final profileService = const SupplierProfileService();
+  final notificationService = const SupplierNotificationService();
 
   User? get currentUser => FirebaseAuth.instance.currentUser;
 
@@ -218,6 +220,21 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
     }
   }
 
+  Future<void> acknowledgeProfileChangeNotifications(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> notifications,
+  ) async {
+    try {
+      await notificationService.markNotificationsRead(
+        notifications,
+      );
+    } catch (_) {
+      showMessage(
+        'Could not dismiss the notification. Try again.',
+        isError: true,
+      );
+    }
+  }
+
   Future<void> openVerifiedChangeRequest({
     required String uid,
     required Map<String, dynamic> profileData,
@@ -315,8 +332,6 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
                   'storeLocation',
                   stringValue(data, 'location', 'Location not available'),
                 );
-                final province = stringValue(data, 'storeProvince');
-                final city = stringValue(data, 'storeCityMunicipality');
                 final primaryMarketArea = stringValue(
                   data,
                   'primaryMarketArea',
@@ -329,8 +344,36 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
                 );
                 final units = supportedUnits(data);
 
-                return Column(
-                  children: [
+                return StreamBuilder<
+                    QuerySnapshot<Map<String, dynamic>>>(
+                  stream: notificationService.notificationsStream(
+                    user.uid,
+                  ),
+                  builder: (context, notificationSnapshot) {
+                    final notifications =
+                        notificationSnapshot.data?.docs ??
+                            <QueryDocumentSnapshot<
+                                Map<String, dynamic>>>[];
+                    final unreadProfileChanges = notificationService
+                        .unreadProfileChangeNotifications(
+                      notifications,
+                    );
+                    final matchingNotifications = unreadProfileChanges.where(
+                      (notification) => stringValue(
+                        notification.data(),
+                        'status',
+                      ).toLowerCase() == requestStatus,
+                    );
+                    final resolvedNotification = matchingNotifications.isEmpty
+                        ? null
+                        : matchingNotifications.first;
+                    final showRequestStatus = hasPendingRequest ||
+                        ((requestStatus == 'approved' ||
+                                requestStatus == 'rejected') &&
+                            resolvedNotification != null);
+
+                    return Column(
+                      children: [
                     _SupplierProfileTopBar(
                       onBack: () => Navigator.pop(context),
                     ),
@@ -343,7 +386,7 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
                             location: location,
                             imageUrl: storeImageUrl(data),
                           ),
-                          if (requestStatus != 'none') ...[
+                          if (showRequestStatus) ...[
                             const SizedBox(height: 12),
                             _ChangeRequestStatusCard(
                               status: requestStatus,
@@ -357,6 +400,11 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
                                         uid: user.uid,
                                       )
                                   : null,
+                              onAcknowledge: resolvedNotification == null
+                                  ? null
+                                  : () => acknowledgeProfileChangeNotifications(
+                                        unreadProfileChanges,
+                                      ),
                             ),
                           ],
                           const SizedBox(height: 12),
@@ -407,44 +455,9 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
                           ),
                           const SizedBox(height: 12),
                           _ProfileSectionCard(
-                            title: 'Approved Business Identity',
+                            title: 'Protected Account Details',
                             subtitle:
-                                'Verified information currently shown to vendors',
-                            icon: Icons.verified_user_rounded,
-                            locked: true,
-                            children: [
-                              _ProfileInfoRow(
-                                icon: Icons.badge_outlined,
-                                label: 'Store / business name',
-                                value: storeName,
-                              ),
-                              _ProfileInfoRow(
-                                icon: Icons.place_outlined,
-                                label: 'Approved store location',
-                                value: location,
-                              ),
-                              _ProfileInfoRow(
-                                icon: Icons.map_outlined,
-                                label: 'City / Municipality',
-                                value: city.isEmpty
-                                    ? 'Not specified'
-                                    : city,
-                              ),
-                              _ProfileInfoRow(
-                                icon: Icons.public_outlined,
-                                label: 'Province',
-                                value: province.isEmpty
-                                    ? 'Not specified'
-                                    : province,
-                                showDivider: false,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          _ProfileSectionCard(
-                            title: 'Verification Protection',
-                            subtitle:
-                                'Core approval details cannot be changed directly',
+                                'Owner identity and COD status remain tied to approval',
                             icon: Icons.shield_outlined,
                             locked: true,
                             children: [
@@ -466,7 +479,9 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
                         ],
                       ),
                     ),
-                  ],
+                      ],
+                    );
+                  },
                 );
               },
             );
@@ -1390,60 +1405,51 @@ class _ChangeRequestStatusCard extends StatelessWidget {
     required this.adminNote,
     required this.changedFields,
     required this.onWithdraw,
+    required this.onAcknowledge,
   });
 
   final String status;
   final String adminNote;
   final dynamic changedFields;
   final VoidCallback? onWithdraw;
+  final VoidCallback? onAcknowledge;
 
   @override
   Widget build(BuildContext context) {
     final pending = status == 'pending';
     final approved = status == 'approved';
-    final withdrawn = status == 'withdrawn';
 
     final title = pending
         ? 'Pending Admin Review'
         : approved
             ? 'Verified change approved'
-            : withdrawn
-                ? 'Change request withdrawn'
-                : 'Change request needs revision';
+            : 'Change request needs revision';
 
     final subtitle = pending
         ? 'Your current approved profile stays public while Admin reviews the request.'
         : approved
             ? 'The approved verified changes are now live in your supplier profile.'
-            : withdrawn
-                ? 'Nothing changed publicly. You can continue from this request whenever needed.'
-                : adminNote.isEmpty
-                    ? 'Your approved profile was not changed. Revise the request and submit again.'
-                    : 'Admin note: $adminNote';
+            : adminNote.isEmpty
+                ? 'Your approved profile was not changed. Revise the request and submit again.'
+                : 'Admin note: $adminNote';
 
     final icon = pending
         ? Icons.hourglass_top_rounded
         : approved
             ? Icons.check_circle_rounded
-            : withdrawn
-                ? Icons.undo_rounded
-                : Icons.info_outline_rounded;
+            : Icons.info_outline_rounded;
 
     final background = pending
         ? const Color(0xFFFFF8E9)
         : approved
             ? const Color(0xFFECF8F4)
-            : withdrawn
-                ? const Color(0xFFF1F5F8)
-                : const Color(0xFFFFEEEE);
+            : const Color(0xFFFFEEEE);
 
     final foreground = pending
         ? const Color(0xFF956A15)
         : approved
             ? const Color(0xFF16845C)
-            : withdrawn
-                ? const Color(0xFF5F7485)
-                : const Color(0xFFB53A36);
+            : const Color(0xFFB53A36);
 
     final changes = changedFields is List
         ? (changedFields as List)
@@ -1568,6 +1574,34 @@ class _ChangeRequestStatusCard extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius:
                         BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ],
+          if (!pending && onAcknowledge != null) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              height: 38,
+              child: FilledButton.icon(
+                onPressed: onAcknowledge,
+                icon: const Icon(
+                  Icons.done_rounded,
+                  size: 16,
+                ),
+                label: const Text(
+                  'Got it',
+                  style: TextStyle(
+                    fontSize: 9.4,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: foreground,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
               ),

@@ -85,6 +85,7 @@ class SupplierChangeRequestReviewScreen extends StatelessWidget {
   Future<String?> requestAdminNote(
     BuildContext context, {
     required bool rejecting,
+    bool changesStorePhoto = false,
   }) async {
     final controller = TextEditingController();
 
@@ -109,7 +110,9 @@ class SupplierChangeRequestReviewScreen extends StatelessWidget {
               Text(
                 rejecting
                     ? 'The current approved supplier information will remain unchanged. Add a short reason so the supplier knows what to correct.'
-                    : 'The requested verified information will replace the current approved supplier information shown to vendors. The requested store photo will also become the supplier/store profile image across IsdaLink.',
+                    : changesStorePhoto
+                        ? 'Only the requested verified changes will be approved. The requested store photo will become the main supplier/store image across IsdaLink.'
+                        : 'Only the requested verified changes will be approved. Unselected supplier information will remain unchanged.',
                 style: const TextStyle(
                   color: Color(0xFF52677A),
                   height: 1.4,
@@ -173,11 +176,13 @@ class SupplierChangeRequestReviewScreen extends StatelessWidget {
   }
 
   Future<void> approve(
-    BuildContext context,
-  ) async {
+    BuildContext context, {
+    required bool changesStorePhoto,
+  }) async {
     final note = await requestAdminNote(
       context,
       rejecting: false,
+      changesStorePhoto: changesStorePhoto,
     );
 
     if (note == null || !context.mounted) {
@@ -473,6 +478,22 @@ class SupplierChangeRequestReviewScreen extends StatelessWidget {
                     request,
                     'requestedStorePhotoUrl',
                   );
+                  final changesStoreName = hasChange(
+                    request,
+                    'Store name',
+                  );
+                  final changesLocation = hasChange(
+                    request,
+                    'Business location',
+                  );
+                  final changesStorePhoto = hasChange(
+                    request,
+                    'Store photo',
+                  );
+                  final changesPermit = hasChange(
+                    request,
+                    'Business permit',
+                  );
 
                   return ListView(
                     padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
@@ -492,40 +513,46 @@ class SupplierChangeRequestReviewScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      const _ApprovalImpactCard(),
-                      const SizedBox(height: 12),
-                      if (hasChange(request, 'Store name') ||
-                          hasChange(request, 'Business permit'))
-                        _CompareSection(
-                        title: 'Business Identity',
-                        icon: Icons.storefront_rounded,
-                        currentChildren: [
-                          _ReviewInfoRow(
-                            label: 'Store / business name',
-                            value: currentName,
-                          ),
-                          _ReviewInfoRow(
-                            label: 'Permit number',
-                            value: currentPermitNumber,
-                            showDivider: false,
-                          ),
-                        ],
-                        requestedChildren: [
-                          _ReviewInfoRow(
-                            label: 'Store / business name',
-                            value: requestedName,
-                          ),
-                          _ReviewInfoRow(
-                            label: 'Permit number',
-                            value: requestedPermitNumber,
-                            showDivider: false,
-                          ),
-                        ],
+                      _ApprovalImpactCard(
+                        changesStorePhoto: changesStorePhoto,
                       ),
-                      if (hasChange(request, 'Store name') ||
-                          hasChange(request, 'Business permit'))
+                      const SizedBox(height: 12),
+                      if (changesStoreName || changesPermit)
+                        _CompareSection(
+                          title: 'Business Identity',
+                          icon: Icons.storefront_rounded,
+                          currentChildren: [
+                            if (changesStoreName)
+                              _ReviewInfoRow(
+                                label: 'Store / business name',
+                                value: currentName,
+                                showDivider: changesPermit,
+                              ),
+                            if (changesPermit)
+                              _ReviewInfoRow(
+                                label: 'Permit number',
+                                value: currentPermitNumber,
+                                showDivider: false,
+                              ),
+                          ],
+                          requestedChildren: [
+                            if (changesStoreName)
+                              _ReviewInfoRow(
+                                label: 'Store / business name',
+                                value: requestedName,
+                                showDivider: changesPermit,
+                              ),
+                            if (changesPermit)
+                              _ReviewInfoRow(
+                                label: 'Permit number',
+                                value: requestedPermitNumber,
+                                showDivider: false,
+                              ),
+                          ],
+                        ),
+                      if (changesStoreName || changesPermit)
                         const SizedBox(height: 12),
-                      if (hasChange(request, 'Business location'))
+                      if (changesLocation)
                         _CompareSection(
                         title: 'Business Location',
                         icon: Icons.location_on_rounded,
@@ -572,36 +599,41 @@ class SupplierChangeRequestReviewScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                      if (hasChange(request, 'Business location'))
+                      if (changesLocation)
                         const SizedBox(height: 12),
-                      if (hasChange(request, 'Store photo') ||
-                          hasChange(request, 'Business permit'))
+                      if (changesStorePhoto || changesPermit)
                         _CompareSection(
                         title: 'Verification Evidence',
                         icon: Icons.photo_library_outlined,
                         currentChildren: [
-                          _EvidencePreview(
-                            label: 'Current store photo',
-                            imageUrl: currentStorePhoto,
-                          ),
-                          const SizedBox(height: 10),
-                          VerificationLinkButton(
-                            label: 'Current Permit',
-                            icon: Icons.description_outlined,
-                            url: currentPermitUrl,
-                          ),
+                          if (changesStorePhoto)
+                            _EvidencePreview(
+                              label: 'Current store photo',
+                              imageUrl: currentStorePhoto,
+                            ),
+                          if (changesStorePhoto && changesPermit)
+                            const SizedBox(height: 10),
+                          if (changesPermit)
+                            VerificationLinkButton(
+                              label: 'Current Permit',
+                              icon: Icons.description_outlined,
+                              url: currentPermitUrl,
+                            ),
                         ],
                         requestedChildren: [
-                          _EvidencePreview(
-                            label: 'Requested store photo',
-                            imageUrl: requestedStorePhoto,
-                          ),
-                          const SizedBox(height: 10),
-                          VerificationLinkButton(
-                            label: 'Requested Permit',
-                            icon: Icons.description_outlined,
-                            url: requestedPermitUrl,
-                          ),
+                          if (changesStorePhoto)
+                            _EvidencePreview(
+                              label: 'Requested store photo',
+                              imageUrl: requestedStorePhoto,
+                            ),
+                          if (changesStorePhoto && changesPermit)
+                            const SizedBox(height: 10),
+                          if (changesPermit)
+                            VerificationLinkButton(
+                              label: 'Requested Permit',
+                              icon: Icons.description_outlined,
+                              url: requestedPermitUrl,
+                            ),
                         ],
                       ),
                       if (!isPending) ...[
@@ -635,7 +667,10 @@ class SupplierChangeRequestReviewScreen extends StatelessWidget {
                             const SizedBox(width: 10),
                             Expanded(
                               child: ElevatedButton.icon(
-                                onPressed: () => approve(context),
+                                onPressed: () => approve(
+                                  context,
+                                  changesStorePhoto: changesStorePhoto,
+                                ),
                                 icon: const Icon(Icons.check_circle_rounded),
                                 label: const Text('Approve Change'),
                                 style: ElevatedButton.styleFrom(
@@ -850,7 +885,11 @@ class _RequestReasonCard extends StatelessWidget {
 }
 
 class _ApprovalImpactCard extends StatelessWidget {
-  const _ApprovalImpactCard();
+  const _ApprovalImpactCard({
+    required this.changesStorePhoto,
+  });
+
+  final bool changesStorePhoto;
 
   @override
   Widget build(BuildContext context) {
@@ -863,20 +902,22 @@ class _ApprovalImpactCard extends StatelessWidget {
           color: const Color(0xFFF0E0B5),
         ),
       ),
-      child: const Row(
+      child: Row(
         crossAxisAlignment:
             CrossAxisAlignment.start,
         children: [
-          Icon(
+          const Icon(
             Icons.admin_panel_settings_outlined,
             color: Color(0xFF9B721F),
             size: 19,
           ),
-          SizedBox(width: 9),
+          const SizedBox(width: 9),
           Expanded(
             child: Text(
-              'Approval replaces the currently approved verified business information. The requested store photo also becomes the main supplier/store profile image. Rejection leaves all current public information unchanged.',
-              style: TextStyle(
+              changesStorePhoto
+                  ? 'Approval applies only the listed changes. The requested store photo becomes the main supplier/store image. Rejection leaves the approved profile unchanged.'
+                  : 'Approval applies only the listed changes. Unselected supplier information remains unchanged. Rejection leaves the approved profile unchanged.',
+              style: const TextStyle(
                 color: Color(0xFF745A25),
                 fontSize: 9.3,
                 height: 1.42,

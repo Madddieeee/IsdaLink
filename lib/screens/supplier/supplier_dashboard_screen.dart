@@ -10,7 +10,7 @@ import 'package:isdalink/screens/supplier/supplier_manage_products_screen.dart';
 import 'package:isdalink/screens/profile/supplier_profile_screen.dart';
 import 'package:isdalink/models/supplier.dart';
 import 'package:isdalink/screens/vendor/supplier_details_screen.dart';
-import 'package:isdalink/services/stock_notification_service.dart';
+import 'package:isdalink/services/supplier_notification_service.dart';
 import 'package:isdalink/utils/stock_state.dart';
 
 class SupplierDashboardScreen extends StatelessWidget {
@@ -20,8 +20,8 @@ class SupplierDashboardScreen extends StatelessWidget {
 
   User? get currentUser => FirebaseAuth.instance.currentUser;
 
-  StockNotificationService get stockNotificationService =>
-      const StockNotificationService();
+  SupplierNotificationService get supplierNotificationService =>
+      const SupplierNotificationService();
 
   double numberValue(Map<String, dynamic> data, String key) {
     final value = data[key];
@@ -405,8 +405,9 @@ class SupplierDashboardScreen extends StatelessWidget {
   }
 
   Widget supplierProfileCard(
-    BuildContext context,
-  ) {
+    BuildContext context, {
+    required int unreadProfileChanges,
+  }) {
     return Container(
       margin: const EdgeInsets.only(
         bottom: 16,
@@ -478,26 +479,52 @@ class SupplierDashboardScreen extends StatelessWidget {
                 const SizedBox(
                   width: 11,
                 ),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment:
                         CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Supplier Profile',
-                        style: TextStyle(
-                          color: Color(
-                            0xFF102C44,
+                      Row(
+                        children: [
+                          const Text(
+                            'Supplier Profile',
+                            style: TextStyle(
+                              color: Color(
+                                0xFF102C44,
+                              ),
+                              fontSize: 13.5,
+                              fontWeight:
+                                  FontWeight.w900,
+                            ),
                           ),
-                          fontSize: 13.5,
-                          fontWeight:
-                              FontWeight.w900,
-                        ),
+                          if (unreadProfileChanges > 0) ...[
+                            const SizedBox(width: 7),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE6F7F0),
+                                borderRadius: BorderRadius.circular(99),
+                              ),
+                              child: const Text(
+                                'NEW',
+                                style: TextStyle(
+                                  color: Color(0xFF16845C),
+                                  fontSize: 7.2,
+                                  letterSpacing: 0.35,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
-                      SizedBox(
+                      const SizedBox(
                         height: 3,
                       ),
-                      Text(
+                      const Text(
                         'Manage your approved store and business information.',
                         style: TextStyle(
                           color: Color(
@@ -770,12 +797,158 @@ class SupplierDashboardScreen extends StatelessWidget {
     );
   }
 
+  Widget profileChangeNotificationPanel({
+    required BuildContext context,
+    required List<QueryDocumentSnapshot<Map<String, dynamic>>> notifications,
+  }) {
+    final unread = supplierNotificationService
+        .unreadProfileChangeNotifications(
+      notifications,
+    );
+
+    if (unread.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final latest = unread.first.data();
+    final status = stringValue(
+      latest,
+      'status',
+      'approved',
+    ).toLowerCase();
+    final approved = status == 'approved';
+    final color = approved
+        ? const Color(0xFF16845C)
+        : const Color(0xFFB53A36);
+    final background = approved
+        ? const Color(0xFFECF8F4)
+        : const Color(0xFFFFEEEE);
+    final title = stringValue(
+      latest,
+      'title',
+      approved
+          ? 'Verified profile change approved'
+          : 'Verified profile change needs revision',
+    );
+    final message = stringValue(
+      latest,
+      'message',
+      approved
+          ? 'Your approved changes are now live.'
+          : 'Open your supplier profile to review the Admin note.',
+    );
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: color.withValues(alpha: 0.22),
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0E00152A),
+            blurRadius: 12,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Icon(
+                  approved
+                      ? Icons.verified_rounded
+                      : Icons.info_outline_rounded,
+                  color: color,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Supplier Profile Notification',
+                      style: TextStyle(
+                        color: Color(0xFF102C44),
+                        fontSize: 12.8,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Review the result, then acknowledge it in your profile.',
+                      style: TextStyle(
+                        color: Color(0xFF71889A),
+                        fontSize: 9.3,
+                        height: 1.25,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(99),
+                ),
+                child: Text(
+                  unread.length > 9 ? '9+ NEW' : '${unread.length} NEW',
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 7.8,
+                    letterSpacing: 0.35,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const Divider(
+            height: 1,
+            color: Color(0xFFE1ECE7),
+          ),
+          const SizedBox(height: 10),
+          _AlertRow(
+            icon: approved
+                ? Icons.check_circle_outline_rounded
+                : Icons.edit_note_rounded,
+            color: color,
+            title: title,
+            subtitle: message,
+            actionLabel: 'View Profile',
+            onTap: () => openSupplierProfile(context),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget stockNotificationPanel({
     required BuildContext context,
     required List<QueryDocumentSnapshot<Map<String, dynamic>>> notifications,
   }) {
     final unread =
-        stockNotificationService.unreadStockNotifications(
+        supplierNotificationService.unreadStockNotifications(
       notifications,
     );
 
@@ -937,7 +1110,7 @@ class SupplierDashboardScreen extends StatelessWidget {
             width: double.infinity,
             child: TextButton.icon(
               onPressed: () =>
-                  stockNotificationService.markNotificationsRead(
+                  supplierNotificationService.markNotificationsRead(
                 unread,
               ),
               icon: const Icon(
@@ -1275,6 +1448,10 @@ class SupplierDashboardScreen extends StatelessWidget {
     final activeCod = activeOrders(orders);
     final pending = pendingOrders(orders);
     final hasOutOfStock = alerts.any((doc) => isOutOfStock(doc.data()));
+    final unreadProfileChanges = supplierNotificationService
+        .unreadProfileChangeNotifications(
+      notifications,
+    );
 
     return Column(
       children: [
@@ -1288,6 +1465,10 @@ class SupplierDashboardScreen extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(18, 16, 18, 32),
             children: [
+              profileChangeNotificationPanel(
+                context: context,
+                notifications: notifications,
+              ),
               stockNotificationPanel(
                 context: context,
                 notifications: notifications,
@@ -1298,7 +1479,10 @@ class SupplierDashboardScreen extends StatelessWidget {
                 alerts: alerts,
               ),
               viewStoreCard(context),
-              supplierProfileCard(context),
+              supplierProfileCard(
+                context,
+                unreadProfileChanges: unreadProfileChanges.length,
+              ),
               const _SectionHeading(
                 title: 'Supplier Tools',
                 subtitle: 'Quick access to daily supplier operations.',
@@ -1384,7 +1568,7 @@ class SupplierDashboardScreen extends StatelessWidget {
 
                 return StreamBuilder<
                     QuerySnapshot<Map<String, dynamic>>>(
-                  stream: stockNotificationService.notificationsStream(
+                  stream: supplierNotificationService.notificationsStream(
                     user.uid,
                   ),
                   builder: (

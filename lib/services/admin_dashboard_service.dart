@@ -148,6 +148,25 @@ class AdminDashboardService {
       throw StateError('The supplier profile is not currently approved.');
     }
 
+    final rawChangedFields = requestData['changedFields'];
+    final changedFields = rawChangedFields is List
+        ? rawChangedFields
+            .map((value) => value.toString().trim())
+            .where((value) => value.isNotEmpty)
+            .toSet()
+        : <String>{};
+    final changesStoreName = changedFields.contains('Store name');
+    final changesLocation = changedFields.contains('Business location');
+    final changesStorePhoto = changedFields.contains('Store photo');
+    final changesPermit = changedFields.contains('Business permit');
+
+    if (!changesStoreName &&
+        !changesLocation &&
+        !changesStorePhoto &&
+        !changesPermit) {
+      throw StateError('This request does not contain a valid change.');
+    }
+
     final requestedStoreName = getStringValue(
       requestData,
       'requestedStoreName',
@@ -191,7 +210,8 @@ class AdminDashboardService {
     final requestedLatitude = requestData['requestedStoreLatitude'];
     final requestedLongitude = requestData['requestedStoreLongitude'];
 
-    if (requestedLatitude is! num || requestedLongitude is! num) {
+    if (changesLocation &&
+        (requestedLatitude is! num || requestedLongitude is! num)) {
       throw StateError('The requested business pin is invalid.');
     }
 
@@ -204,24 +224,32 @@ class AdminDashboardService {
 
     final updatedApplication = <String, dynamic>{
       ...existingApplication,
-      'storeName': requestedStoreName,
-      'supplierName': requestedStoreName,
-      'businessName': requestedStoreName,
-      'storeProvince': requestedProvince,
-      'storeCityMunicipality': requestedCity,
-      'storeAddress': requestedAddress,
-      'storeLatitude': requestedLatitude.toDouble(),
-      'storeLongitude': requestedLongitude.toDouble(),
-      'location': requestedLocation,
-      'storeLocation': requestedLocation,
-      'businessPermitNumber': requestedPermitNumber,
-      'businessPermitUrl': requestedPermitUrl,
-      'storePhotoUrl': requestedStorePhotoUrl,
-      'coverImageUrl': requestedStorePhotoUrl,
-      'profileImageUrl': requestedStorePhotoUrl,
-      'photoUrl': requestedStorePhotoUrl,
-      'hasBusinessPermit': true,
-      'hasStorePhoto': true,
+      if (changesStoreName) ...<String, dynamic>{
+        'storeName': requestedStoreName,
+        'supplierName': requestedStoreName,
+        'businessName': requestedStoreName,
+      },
+      if (changesLocation) ...<String, dynamic>{
+        'storeProvince': requestedProvince,
+        'storeCityMunicipality': requestedCity,
+        'storeAddress': requestedAddress,
+        'storeLatitude': (requestedLatitude as num).toDouble(),
+        'storeLongitude': (requestedLongitude as num).toDouble(),
+        'location': requestedLocation,
+        'storeLocation': requestedLocation,
+      },
+      if (changesPermit) ...<String, dynamic>{
+        'businessPermitNumber': requestedPermitNumber,
+        'businessPermitUrl': requestedPermitUrl,
+        'hasBusinessPermit': true,
+      },
+      if (changesStorePhoto) ...<String, dynamic>{
+        'storePhotoUrl': requestedStorePhotoUrl,
+        'coverImageUrl': requestedStorePhotoUrl,
+        'profileImageUrl': requestedStorePhotoUrl,
+        'photoUrl': requestedStorePhotoUrl,
+        'hasStorePhoto': true,
+      },
       'verificationStatus': 'approved',
     };
 
@@ -231,20 +259,26 @@ class AdminDashboardService {
     batch.update(
       supplierRef,
       <String, dynamic>{
-        'storeName': requestedStoreName,
-        'supplierName': requestedStoreName,
-        'businessName': requestedStoreName,
-        'storeProvince': requestedProvince,
-        'storeCityMunicipality': requestedCity,
-        'storeAddress': requestedAddress,
-        'storeLatitude': requestedLatitude.toDouble(),
-        'storeLongitude': requestedLongitude.toDouble(),
-        'location': requestedLocation,
-        'storeLocation': requestedLocation,
-        'storePhotoUrl': requestedStorePhotoUrl,
-        'coverImageUrl': requestedStorePhotoUrl,
-        'profileImageUrl': requestedStorePhotoUrl,
-        'photoUrl': requestedStorePhotoUrl,
+        if (changesStoreName) ...<String, dynamic>{
+          'storeName': requestedStoreName,
+          'supplierName': requestedStoreName,
+          'businessName': requestedStoreName,
+        },
+        if (changesLocation) ...<String, dynamic>{
+          'storeProvince': requestedProvince,
+          'storeCityMunicipality': requestedCity,
+          'storeAddress': requestedAddress,
+          'storeLatitude': (requestedLatitude as num).toDouble(),
+          'storeLongitude': (requestedLongitude as num).toDouble(),
+          'location': requestedLocation,
+          'storeLocation': requestedLocation,
+        },
+        if (changesStorePhoto) ...<String, dynamic>{
+          'storePhotoUrl': requestedStorePhotoUrl,
+          'coverImageUrl': requestedStorePhotoUrl,
+          'profileImageUrl': requestedStorePhotoUrl,
+          'photoUrl': requestedStorePhotoUrl,
+        },
         'updatedAt': FieldValue.serverTimestamp(),
       },
     );
@@ -252,10 +286,12 @@ class AdminDashboardService {
     batch.update(
       userRef,
       <String, dynamic>{
-        'supplierLocation': requestedLocation,
+        if (changesLocation) 'supplierLocation': requestedLocation,
         'supplierApplication': updatedApplication,
-        'profileImageUrl': requestedStorePhotoUrl,
-        'photoUrl': requestedStorePhotoUrl,
+        if (changesStorePhoto) ...<String, dynamic>{
+          'profileImageUrl': requestedStorePhotoUrl,
+          'photoUrl': requestedStorePhotoUrl,
+        },
         'updatedAt': FieldValue.serverTimestamp(),
       },
     );
@@ -282,6 +318,8 @@ class AdminDashboardService {
             'Your verified supplier business change request was approved and is now visible to vendors.',
         'type': 'supplier_profile_change',
         'status': 'approved',
+        'requestId': supplierId,
+        'changedFields': changedFields.toList(),
         'isRead': false,
         'createdAt': FieldValue.serverTimestamp(),
       },
@@ -336,6 +374,10 @@ class AdminDashboardService {
         'message': 'Admin note: $note',
         'type': 'supplier_profile_change',
         'status': 'rejected',
+        'requestId': supplierId,
+        'changedFields': requestData['changedFields'] is List
+            ? List<dynamic>.from(requestData['changedFields'] as List)
+            : const <dynamic>[],
         'isRead': false,
         'createdAt': FieldValue.serverTimestamp(),
       },
