@@ -14,6 +14,12 @@ class AdminDashboardService {
         .snapshots();
   }
 
+  Stream<QuerySnapshot<Map<String, dynamic>>> get supplierChangeRequestsStream {
+    return FirebaseFirestore.instance
+        .collection('supplierChangeRequests')
+        .snapshots();
+  }
+
   Stream<QuerySnapshot<Map<String, dynamic>>> get fishStocksStream {
     return FirebaseFirestore.instance.collection('fishStocks').snapshots();
   }
@@ -76,6 +82,266 @@ class AdminDashboardService {
         return status == 'approved' || status == 'active';
       },
     ).toList();
+  }
+
+  List<QueryDocumentSnapshot<Map<String, dynamic>>> pendingChangeRequests(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> requests,
+  ) {
+    final pending = requests.where(
+      (document) {
+        final status = getStringValue(
+          document.data(),
+          'status',
+          '',
+        ).toLowerCase();
+
+        return status == 'pending';
+      },
+    ).toList();
+
+    pending.sort(
+      (a, b) {
+        final aValue = a.data()['submittedAt'];
+        final bValue = b.data()['submittedAt'];
+        final aDate = aValue is Timestamp
+            ? aValue.toDate()
+            : DateTime.fromMillisecondsSinceEpoch(0);
+        final bDate = bValue is Timestamp
+            ? bValue.toDate()
+            : DateTime.fromMillisecondsSinceEpoch(0);
+
+        return bDate.compareTo(aDate);
+      },
+    );
+
+    return pending;
+  }
+
+  Future<void> approveSupplierChangeRequest(
+    String supplierId, {
+    String adminNote = '',
+  }) async {
+    final firestore = FirebaseFirestore.instance;
+    final requestRef = firestore
+        .collection('supplierChangeRequests')
+        .doc(supplierId);
+    final supplierRef = firestore
+        .collection('supplierProfiles')
+        .doc(supplierId);
+    final userRef = firestore.collection('users').doc(supplierId);
+
+    final requestSnapshot = await requestRef.get();
+    final supplierSnapshot = await supplierRef.get();
+    final userSnapshot = await userRef.get();
+
+    final requestData = requestSnapshot.data();
+    final supplierData = supplierSnapshot.data();
+    final userData = userSnapshot.data();
+
+    if (requestData == null ||
+        getStringValue(requestData, 'status', '').toLowerCase() != 'pending') {
+      throw StateError('This supplier change request is no longer pending.');
+    }
+
+    if (supplierData == null ||
+        getStringValue(supplierData, 'status', '').toLowerCase() != 'approved') {
+      throw StateError('The supplier profile is not currently approved.');
+    }
+
+    final requestedStoreName = getStringValue(
+      requestData,
+      'requestedStoreName',
+      getStringValue(supplierData, 'storeName', 'Fish Supplier'),
+    );
+    final requestedProvince = getStringValue(
+      requestData,
+      'requestedStoreProvince',
+      getStringValue(supplierData, 'storeProvince', ''),
+    );
+    final requestedCity = getStringValue(
+      requestData,
+      'requestedStoreCityMunicipality',
+      getStringValue(supplierData, 'storeCityMunicipality', ''),
+    );
+    final requestedAddress = getStringValue(
+      requestData,
+      'requestedStoreAddress',
+      getStringValue(supplierData, 'storeAddress', ''),
+    );
+    final requestedLocation = getStringValue(
+      requestData,
+      'requestedLocation',
+      getStringValue(supplierData, 'storeLocation', ''),
+    );
+    final requestedPermitNumber = getStringValue(
+      requestData,
+      'requestedBusinessPermitNumber',
+      '',
+    );
+    final requestedPermitUrl = getStringValue(
+      requestData,
+      'requestedBusinessPermitUrl',
+      '',
+    );
+    final requestedStorePhotoUrl = getStringValue(
+      requestData,
+      'requestedStorePhotoUrl',
+      getStringValue(supplierData, 'storePhotoUrl', ''),
+    );
+    final requestedLatitude = requestData['requestedStoreLatitude'];
+    final requestedLongitude = requestData['requestedStoreLongitude'];
+
+    if (requestedLatitude is! num || requestedLongitude is! num) {
+      throw StateError('The requested business pin is invalid.');
+    }
+
+    final existingApplicationRaw = userData?['supplierApplication'];
+    final existingApplication = existingApplicationRaw is Map<String, dynamic>
+        ? Map<String, dynamic>.from(existingApplicationRaw)
+        : existingApplicationRaw is Map
+            ? Map<String, dynamic>.from(existingApplicationRaw)
+            : <String, dynamic>{};
+
+    final updatedApplication = <String, dynamic>{
+      ...existingApplication,
+      'storeName': requestedStoreName,
+      'supplierName': requestedStoreName,
+      'businessName': requestedStoreName,
+      'storeProvince': requestedProvince,
+      'storeCityMunicipality': requestedCity,
+      'storeAddress': requestedAddress,
+      'storeLatitude': requestedLatitude.toDouble(),
+      'storeLongitude': requestedLongitude.toDouble(),
+      'location': requestedLocation,
+      'storeLocation': requestedLocation,
+      'businessPermitNumber': requestedPermitNumber,
+      'businessPermitUrl': requestedPermitUrl,
+      'storePhotoUrl': requestedStorePhotoUrl,
+      'coverImageUrl': requestedStorePhotoUrl,
+      'profileImageUrl': requestedStorePhotoUrl,
+      'photoUrl': requestedStorePhotoUrl,
+      'hasBusinessPermit': true,
+      'hasStorePhoto': true,
+      'verificationStatus': 'approved',
+    };
+
+    final adminUid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final batch = firestore.batch();
+
+    batch.update(
+      supplierRef,
+      <String, dynamic>{
+        'storeName': requestedStoreName,
+        'supplierName': requestedStoreName,
+        'businessName': requestedStoreName,
+        'storeProvince': requestedProvince,
+        'storeCityMunicipality': requestedCity,
+        'storeAddress': requestedAddress,
+        'storeLatitude': requestedLatitude.toDouble(),
+        'storeLongitude': requestedLongitude.toDouble(),
+        'location': requestedLocation,
+        'storeLocation': requestedLocation,
+        'storePhotoUrl': requestedStorePhotoUrl,
+        'coverImageUrl': requestedStorePhotoUrl,
+        'profileImageUrl': requestedStorePhotoUrl,
+        'photoUrl': requestedStorePhotoUrl,
+        'updatedAt': FieldValue.serverTimestamp(),
+      },
+    );
+
+    batch.update(
+      userRef,
+      <String, dynamic>{
+        'supplierLocation': requestedLocation,
+        'supplierApplication': updatedApplication,
+        'profileImageUrl': requestedStorePhotoUrl,
+        'photoUrl': requestedStorePhotoUrl,
+        'updatedAt': FieldValue.serverTimestamp(),
+      },
+    );
+
+    batch.update(
+      requestRef,
+      <String, dynamic>{
+        'status': 'approved',
+        'adminNote': adminNote.trim(),
+        'reviewedAt': FieldValue.serverTimestamp(),
+        'reviewedBy': adminUid,
+        'updatedAt': FieldValue.serverTimestamp(),
+      },
+    );
+
+    final notificationRef = firestore.collection('notifications').doc();
+    batch.set(
+      notificationRef,
+      <String, dynamic>{
+        'userId': supplierId,
+        'supplierId': supplierId,
+        'title': 'Supplier profile change approved',
+        'message':
+            'Your verified supplier business change request was approved and is now visible to vendors.',
+        'type': 'supplier_profile_change',
+        'status': 'approved',
+        'isRead': false,
+        'createdAt': FieldValue.serverTimestamp(),
+      },
+    );
+
+    await batch.commit();
+  }
+
+  Future<void> rejectSupplierChangeRequest(
+    String supplierId, {
+    required String adminNote,
+  }) async {
+    final firestore = FirebaseFirestore.instance;
+    final requestRef = firestore
+        .collection('supplierChangeRequests')
+        .doc(supplierId);
+    final requestSnapshot = await requestRef.get();
+    final requestData = requestSnapshot.data();
+
+    if (requestData == null ||
+        getStringValue(requestData, 'status', '').toLowerCase() != 'pending') {
+      throw StateError('This supplier change request is no longer pending.');
+    }
+
+    final note = adminNote.trim();
+
+    if (note.length < 3) {
+      throw StateError('Add a short rejection reason.');
+    }
+
+    final adminUid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final batch = firestore.batch();
+
+    batch.update(
+      requestRef,
+      <String, dynamic>{
+        'status': 'rejected',
+        'adminNote': note,
+        'reviewedAt': FieldValue.serverTimestamp(),
+        'reviewedBy': adminUid,
+        'updatedAt': FieldValue.serverTimestamp(),
+      },
+    );
+
+    final notificationRef = firestore.collection('notifications').doc();
+    batch.set(
+      notificationRef,
+      <String, dynamic>{
+        'userId': supplierId,
+        'supplierId': supplierId,
+        'title': 'Supplier profile change needs revision',
+        'message': 'Admin note: $note',
+        'type': 'supplier_profile_change',
+        'status': 'rejected',
+        'isRead': false,
+        'createdAt': FieldValue.serverTimestamp(),
+      },
+    );
+
+    await batch.commit();
   }
 
   Future<void> approveSupplier(

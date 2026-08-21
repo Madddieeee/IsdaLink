@@ -146,6 +146,16 @@ class ProductDetailsScreen extends StatelessWidget {
   String profileImageFromData(
     Map<String, dynamic>? data,
   ) {
+    final storePhotoUrl = getStringValue(
+      data,
+      'storePhotoUrl',
+      '',
+    );
+
+    if (storePhotoUrl.isNotEmpty) {
+      return storePhotoUrl;
+    }
+
     final profileImageUrl = getStringValue(
       data,
       'profileImageUrl',
@@ -164,16 +174,6 @@ class ProductDetailsScreen extends StatelessWidget {
 
     if (photoUrl.isNotEmpty) {
       return photoUrl;
-    }
-
-    final storePhotoUrl = getStringValue(
-      data,
-      'storePhotoUrl',
-      '',
-    );
-
-    if (storePhotoUrl.isNotEmpty) {
-      return storePhotoUrl;
     }
 
     final application = data?['supplierApplication'];
@@ -269,10 +269,10 @@ class ProductDetailsScreen extends StatelessWidget {
       ),
       location: getStringValue(
         data,
-        'location',
+        'storeLocation',
         getStringValue(
           data,
-          'storeLocation',
+          'location',
           supplier.location,
         ),
       ),

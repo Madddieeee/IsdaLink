@@ -360,11 +360,12 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
         SetOptions(merge: true),
       );
 
-      if (isSupplierEnabled || supplierStatus == 'pending') {
+      if (isSupplierEnabled) {
         batch.set(
           firestore.collection('supplierProfiles').doc(user.uid),
           {
-            'ownerName': name,
+            // Store contact is a low-risk supplier profile field.
+            // Verified owner identity remains unchanged after approval.
             'phone': phone,
             'contactNumber': phone,
             'updatedAt': FieldValue.serverTimestamp(),
@@ -1165,9 +1166,11 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  isSupplierEnabled || supplierStatus == 'pending'
-                      ? 'Saving updates Account Center and your supplier profile details.'
-                      : 'Saving updates the name and contact number shown in Account Center.',
+                  isSupplierEnabled
+                      ? 'Saving updates Account Center. Your contact number also updates the supplier storefront; verified owner identity stays protected.'
+                      : supplierStatus == 'pending'
+                          ? 'Saving updates Account Center only. Submitted supplier verification details stay unchanged while under review.'
+                          : 'Saving updates the name and contact number shown in Account Center.',
                   style: const TextStyle(
                     color: Color(0xFF52677A),
                     fontSize: 10.5,

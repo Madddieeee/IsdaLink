@@ -166,7 +166,7 @@ class AdminDashboardHeader
             height: 8,
           ),
           const Text(
-            'Monitor users, supplier applications, stocks, and COD orders.',
+            'Monitor users, supplier reviews, stocks, and COD orders.',
             style: TextStyle(
               color: Color(
                 0xFFDCE9F5,

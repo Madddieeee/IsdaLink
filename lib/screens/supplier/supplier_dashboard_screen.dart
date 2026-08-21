@@ -113,8 +113,8 @@ class SupplierDashboardScreen extends StatelessWidget {
     Map<String, dynamic> data,
   ) {
     const keys = <String>[
-      'profileImageUrl',
       'storePhotoUrl',
+      'profileImageUrl',
       'photoUrl',
     ];
 
@@ -145,14 +145,14 @@ class SupplierDashboardScreen extends StatelessWidget {
   String supplierLocation(
     Map<String, dynamic> data,
   ) {
-    final savedLocation = stringValue(
+    final approvedStoreLocation = stringValue(
       data,
-      'location',
+      'storeLocation',
       '',
     );
 
-    if (savedLocation.isNotEmpty) {
-      return savedLocation;
+    if (approvedStoreLocation.isNotEmpty) {
+      return approvedStoreLocation;
     }
 
     final parts = <String>[
@@ -162,7 +162,15 @@ class SupplierDashboardScreen extends StatelessWidget {
       'Caraga Region',
     ].where((value) => value.trim().isNotEmpty).toList();
 
-    return parts.isEmpty ? 'Caraga Region' : parts.join(', ');
+    if (parts.length > 1) {
+      return parts.join(', ');
+    }
+
+    return stringValue(
+      data,
+      'location',
+      'Caraga Region',
+    );
   }
 
   Supplier supplierFromProfile(

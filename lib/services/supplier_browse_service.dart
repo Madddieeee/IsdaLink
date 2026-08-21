@@ -230,8 +230,8 @@ class SupplierBrowseService {
     final directLocation = firstAvailableText(
       data,
       const [
-        'location',
         'storeLocation',
+        'location',
         'businessAddress',
         'storeAddress',
         'address',
@@ -269,8 +269,8 @@ class SupplierBrowseService {
     final directImage = firstAvailableText(
       data,
       const [
-        'profileImageUrl',
         'storePhotoUrl',
+        'profileImageUrl',
         'businessPhotoUrl',
         'photoUrl',
         'imageUrl',

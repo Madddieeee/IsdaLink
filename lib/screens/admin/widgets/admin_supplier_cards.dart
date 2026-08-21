@@ -337,16 +337,20 @@ class ApprovedSupplierCard extends StatelessWidget {
 
     final location = getStringValue(
       data,
-      'location',
-      'Caraga Region',
+      'storeLocation',
+      getStringValue(
+        data,
+        'location',
+        'Caraga Region',
+      ),
     );
 
     final profileImageUrl = getStringValue(
       data,
-      'profileImageUrl',
+      'storePhotoUrl',
       getStringValue(
         data,
-        'storePhotoUrl',
+        'profileImageUrl',
         '',
       ),
     );

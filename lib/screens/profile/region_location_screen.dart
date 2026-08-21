@@ -847,23 +847,9 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
         SetOptions(merge: true),
       );
 
-      if (isSupplierRelevant) {
-        batch.set(
-          firestore.collection('supplierProfiles').doc(user.uid),
-          {
-            'region': 'Caraga Region',
-            'province': province,
-            'provinceCode': provinceCode,
-            'cityMunicipality': city,
-            'cityMunicipalityCode': cityCode,
-            'cityMunicipalityType': cityType,
-            'location': location,
-            'marketLocation': location,
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true),
-        );
-      }
+      // This screen manages the user's normal account/market location only.
+      // An approved supplier's verified business location is managed through
+      // Supplier Profile and requires administrator approval for changes.
 
       await batch.commit();
 
@@ -1692,7 +1678,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
                 const SizedBox(height: 4),
                 Text(
                   isSupplierRelevant
-                      ? 'Saving updates Account Center and your supplier profile.'
+                      ? 'Saving updates your account location only. Verified supplier business location is managed in Supplier Profile.'
                       : 'Saving updates the location shown in Account Center.',
                   style: const TextStyle(
                     color: Color(0xFF52677A),
