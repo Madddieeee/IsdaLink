@@ -206,33 +206,101 @@ service cloud.firestore {
       }
 
       function validOwnerSupplierProfileUpdate(supplierId) {
+        let changed = request.resource.data
+          .diff(resource.data)
+          .affectedKeys();
+        let phone = request.resource.data.get('phone', '');
+        let contact = request.resource.data.get('contactNumber', '');
+        let marketArea = request.resource.data.get('primaryMarketArea', '');
+        let serviceArea = request.resource.data.get('serviceArea', '');
+        let description = request.resource.data.get('description', '');
+        let units = request.resource.data.get('supportedUnits', []);
+
         return signedIn()
           && currentUid() == supplierId
+          && resource.data.get('status', '') == 'approved'
           && request.resource.data.get('uid', supplierId)
               == resource.data.get('uid', supplierId)
           && request.resource.data.get('status', '')
               == resource.data.get('status', '')
           && request.resource.data.get('verificationStatus', '')
               == resource.data.get('verificationStatus', '')
+          && request.resource.data.get('ownerName', '')
+              == resource.data.get('ownerName', '')
+          && request.resource.data.get('storeName', '')
+              == resource.data.get('storeName', '')
+          && request.resource.data.get('businessName', '')
+              == resource.data.get('businessName', '')
+          && request.resource.data.get('supplierName', '')
+              == resource.data.get('supplierName', '')
+          && request.resource.data.get('storeProvince', '')
+              == resource.data.get('storeProvince', '')
+          && request.resource.data.get('storeCityMunicipality', '')
+              == resource.data.get('storeCityMunicipality', '')
+          && request.resource.data.get('storeAddress', '')
+              == resource.data.get('storeAddress', '')
+          && request.resource.data.get('storeLatitude', null)
+              == resource.data.get('storeLatitude', null)
+          && request.resource.data.get('storeLongitude', null)
+              == resource.data.get('storeLongitude', null)
+          && request.resource.data.get('storeLocation', '')
+              == resource.data.get('storeLocation', '')
+          && request.resource.data.get('storePhotoUrl', '')
+              == resource.data.get('storePhotoUrl', '')
+          && request.resource.data.get('businessPermitNumber', '')
+              == resource.data.get('businessPermitNumber', '')
+          && request.resource.data.get('businessPermitUrl', '')
+              == resource.data.get('businessPermitUrl', '')
           && request.resource.data.get('rating', 0)
               == resource.data.get('rating', 0)
           && request.resource.data.get('reviews', 0)
               == resource.data.get('reviews', 0)
           && request.resource.data.get('ratingTotal', 0)
               == resource.data.get('ratingTotal', 0)
+          && (
+            !changed.hasAny(['phone', 'contactNumber'])
+            || (
+              phone is string
+              && contact is string
+              && phone == contact
+              && phone.size() >= 7
+              && phone.size() <= 30
+            )
+          )
+          && (
+            !changed.hasAny(['primaryMarketArea', 'serviceArea'])
+            || (
+              marketArea is string
+              && marketArea.size() >= 2
+              && marketArea.size() <= 120
+              && serviceArea == marketArea
+            )
+          )
+          && (
+            !changed.hasAny(['description'])
+            || (
+              description is string
+              && description.size() >= 8
+              && description.size() <= 240
+            )
+          )
+          && (
+            !changed.hasAny(['supportedUnits'])
+            || (
+              units is list
+              && units.size() >= 1
+              && units.size() <= 3
+              && units.hasOnly(['kilo', 'tab', 'icebox'])
+            )
+          )
           && changedOnly([
-            'ownerName',
             'phone',
             'contactNumber',
             'profileImageUrl',
-            'region',
-            'province',
-            'provinceCode',
-            'cityMunicipality',
-            'cityMunicipalityCode',
-            'cityMunicipalityType',
-            'location',
-            'marketLocation',
+            'primaryMarketArea',
+            'serviceArea',
+            'description',
+            'supportedUnits',
             'updatedAt'
           ]);
       }
@@ -343,6 +411,264 @@ service cloud.firestore {
                 == newTotal / newCount
             )
           );
+      }
+    }
+
+    // ---------------------------------------------------------------------
+    // SUPPLIER VERIFIED PROFILE CHANGE REQUESTS
+    //
+    // Approved suppliers may request changes to verified identity/location
+    // information, but cannot write those changes directly into the public
+    // approved supplier profile. The administrator reviews the request first.
+    // ---------------------------------------------------------------------
+
+    match /supplierChangeRequests/{supplierId} {
+      allow read: if isAdmin()
+        || (signedIn() && currentUid() == supplierId);
+
+      allow create: if validPendingSupplierChangeRequest(supplierId);
+
+      allow update: if isAdmin()
+        || validSupplierChangeWithdrawal(supplierId)
+        || (
+          resource.data.get('supplierId', '') == supplierId
+          && resource.data.get('status', '') in [
+            'approved',
+            'rejected',
+            'withdrawn'
+          ]
+          && validPendingSupplierChangeRequest(supplierId)
+        );
+
+      allow delete: if isAdmin();
+
+      function validSupplierChangeWithdrawal(supplierId) {
+        return signedIn()
+          && currentUid() == supplierId
+          && resource.data.get('supplierId', '') == supplierId
+          && resource.data.get('status', '') == 'pending'
+          && request.resource.data.get('status', '') == 'withdrawn'
+          && request.resource.data.get('withdrawnAt', null) is timestamp
+          && request.resource.data.get('updatedAt', null) is timestamp
+          && request.resource.data
+            .diff(resource.data)
+            .affectedKeys()
+            .hasOnly([
+              'status',
+              'withdrawnAt',
+              'updatedAt'
+            ]);
+      }
+
+      function validRequestedBusinessPin(data) {
+        let latitude = data.get('requestedStoreLatitude', null);
+        let longitude = data.get('requestedStoreLongitude', null);
+
+        return latitude is number
+          && longitude is number
+          && latitude >= 7.55
+          && latitude <= 10.75
+          && longitude >= 124.65
+          && longitude <= 126.85;
+      }
+
+      function validRequestedCaragaLocation(province, city) {
+        return (
+            province == 'Agusan del Norte'
+            && city in [
+              'Butuan City',
+              'City of Cabadbaran',
+              'Buenavista',
+              'Carmen',
+              'Jabonga',
+              'Kitcharao',
+              'Las Nieves',
+              'Magallanes',
+              'Nasipit',
+              'Remedios T. Romualdez',
+              'Santiago',
+              'Tubay'
+            ]
+          )
+          || (
+            province == 'Agusan del Sur'
+            && city in [
+              'City of Bayugan',
+              'Bunawan',
+              'Esperanza',
+              'La Paz',
+              'Loreto',
+              'Prosperidad',
+              'Rosario',
+              'San Francisco',
+              'San Luis',
+              'Santa Josefa',
+              'Sibagat',
+              'Talacogon',
+              'Trento',
+              'Veruela'
+            ]
+          )
+          || (
+            province == 'Dinagat Islands'
+            && city in [
+              'Basilisa',
+              'Cagdianao',
+              'Dinagat',
+              'Libjo',
+              'Loreto',
+              'San Jose',
+              'Tubajon'
+            ]
+          )
+          || (
+            province == 'Surigao del Norte'
+            && city in [
+              'City of Surigao',
+              'Alegria',
+              'Bacuag',
+              'Burgos',
+              'Claver',
+              'Dapa',
+              'Del Carmen',
+              'General Luna',
+              'Gigaquit',
+              'Mainit',
+              'Malimono',
+              'Pilar',
+              'Placer',
+              'San Benito',
+              'San Francisco',
+              'San Isidro',
+              'Santa Monica',
+              'Sison',
+              'Socorro',
+              'Tagana-an',
+              'Tubod'
+            ]
+          )
+          || (
+            province == 'Surigao del Sur'
+            && city in [
+              'City of Bislig',
+              'City of Tandag',
+              'Barobo',
+              'Bayabas',
+              'Cagwait',
+              'Cantilan',
+              'Carmen',
+              'Carrascal',
+              'Cortes',
+              'Hinatuan',
+              'Lanuza',
+              'Lianga',
+              'Lingig',
+              'Madrid',
+              'Marihatag',
+              'San Agustin',
+              'San Miguel',
+              'Tagbina',
+              'Tago'
+            ]
+          );
+      }
+
+      function validPendingSupplierChangeRequest(supplierId) {
+        let changedFields = request.resource.data.get('changedFields', []);
+        let supplierName = request.resource.data.get('supplierName', '');
+        let reason = request.resource.data.get('reason', '');
+        let storeName = request.resource.data.get('requestedStoreName', '');
+        let province = request.resource.data.get('requestedStoreProvince', '');
+        let city = request.resource.data.get('requestedStoreCityMunicipality', '');
+        let address = request.resource.data.get('requestedStoreAddress', '');
+        let location = request.resource.data.get('requestedLocation', '');
+        let permitNumber = request.resource.data.get(
+          'requestedBusinessPermitNumber',
+          ''
+        );
+        let permitUrl = request.resource.data.get(
+          'requestedBusinessPermitUrl',
+          ''
+        );
+        let storePhotoUrl = request.resource.data.get(
+          'requestedStorePhotoUrl',
+          ''
+        );
+
+        return signedIn()
+          && currentUid() == supplierId
+          && isApprovedSupplierAccount(supplierId)
+          && exists(supplierPath(supplierId))
+          && get(supplierPath(supplierId)).data.get('status', '') == 'approved'
+          && request.resource.data.keys().hasOnly([
+            'supplierId',
+            'supplierName',
+            'requestType',
+            'status',
+            'reason',
+            'requestedStoreName',
+            'requestedStoreProvince',
+            'requestedStoreCityMunicipality',
+            'requestedStoreAddress',
+            'requestedStoreLatitude',
+            'requestedStoreLongitude',
+            'requestedLocation',
+            'requestedBusinessPermitNumber',
+            'requestedBusinessPermitUrl',
+            'requestedStorePhotoUrl',
+            'changedFields',
+            'submittedAt',
+            'updatedAt'
+          ])
+          && request.resource.data.get('supplierId', '') == supplierId
+          && supplierName is string
+          && supplierName.size() >= 2
+          && supplierName.size() <= 100
+          && supplierName == get(supplierPath(supplierId)).data.get(
+            'storeName',
+            get(supplierPath(supplierId)).data.get('supplierName', '')
+          )
+          && request.resource.data.get('requestType', '')
+              == 'verified_business_change'
+          && request.resource.data.get('status', '') == 'pending'
+          && reason is string
+          && reason.size() >= 8
+          && reason.size() <= 240
+          && storeName is string
+          && storeName.size() >= 2
+          && storeName.size() <= 100
+          && province is string
+          && city is string
+          && validRequestedCaragaLocation(province, city)
+          && address is string
+          && address.size() >= 5
+          && address.size() <= 160
+          && location is string
+          && location == address + ', ' + city + ', ' + province + ', Caraga Region'
+          && location.size() <= 320
+          && permitNumber is string
+          && permitNumber.size() >= 3
+          && permitNumber.size() <= 80
+          && permitUrl is string
+          && permitUrl.size() >= 8
+          && permitUrl.size() <= 1000
+          && permitUrl.matches('https://.*')
+          && storePhotoUrl is string
+          && storePhotoUrl.size() >= 8
+          && storePhotoUrl.size() <= 1000
+          && storePhotoUrl.matches('https://.*')
+          && changedFields is list
+          && changedFields.size() >= 1
+          && changedFields.size() <= 4
+          && changedFields.hasOnly([
+            'Store name',
+            'Business location',
+            'Business permit',
+            'Store photo'
+          ])
+          && request.resource.data.get('submittedAt', null) is timestamp
+          && request.resource.data.get('updatedAt', null) is timestamp
+          && validRequestedBusinessPin(request.resource.data);
       }
     }
 
