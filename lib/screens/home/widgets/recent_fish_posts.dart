@@ -3,15 +3,18 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:isdalink/models/fish_product.dart';
 import 'package:isdalink/models/supplier.dart';
+import 'package:isdalink/screens/home/widgets/home_section_header.dart';
 import 'package:isdalink/screens/home/widgets/recent_fish_card.dart';
 import 'package:isdalink/screens/vendor/place_order_screen.dart';
 import 'package:isdalink/services/home_stock_service.dart';
+import 'package:isdalink/services/supplier_browse_service.dart';
 import 'package:isdalink/utils/order_helpers.dart';
 
 class RecentFishPosts extends StatelessWidget {
   const RecentFishPosts({
     super.key,
     required this.onProductTap,
+    required this.onViewAll,
   });
 
   final void Function(
@@ -20,6 +23,7 @@ class RecentFishPosts extends StatelessWidget {
     String stockId,
     String supplierId,
   ) onProductTap;
+  final VoidCallback onViewAll;
 
   HomeStockService get stockService => const HomeStockService();
 
@@ -167,7 +171,7 @@ class RecentFishPosts extends StatelessWidget {
         crossAxisCount: 2,
         crossAxisSpacing: 11,
         mainAxisSpacing: 12,
-        childAspectRatio: 1.45,
+        childAspectRatio: 1.02,
       ),
       itemBuilder: (context, index) {
         return Container(
@@ -236,6 +240,7 @@ class RecentFishPosts extends StatelessWidget {
     BuildContext context,
     QueryDocumentSnapshot<Map<String, dynamic>> document, {
     bool isWide = false,
+    required Map<String, String> supplierImageUrlsById,
   }) {
     final data = document.data();
 
@@ -255,7 +260,13 @@ class RecentFishPosts extends StatelessWidget {
     return RecentFishCard(
       product: product,
       supplierName: supplier.name,
+      supplierImageUrl: stockService.supplierImageUrlForStock(
+        data,
+        supplierImageUrlsById,
+      ),
       isWide: isWide,
+      badgeLabel: stockService.arrivalBadge(data),
+      activityLabel: stockService.activityLabel(data),
       onTap: () => showFishPreviewSheet(
         context: context,
         supplier: supplier,
@@ -266,48 +277,107 @@ class RecentFishPosts extends StatelessWidget {
     );
   }
 
+  Widget feedForCutoff(
+    BuildContext context,
+    DateTime cutoff,
+  ) {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: const SupplierBrowseService().suppliersStream,
+      builder: (context, supplierSnapshot) {
+        final supplierImageUrlsById = stockService.supplierImageUrlsById(
+          supplierSnapshot.data?.docs ??
+              <QueryDocumentSnapshot<Map<String, dynamic>>>[],
+        );
+
+        return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+          stream: stockService.recentFishPostsStream,
+          builder: (context, snapshot) {
+            final allDocuments = snapshot.data?.docs ??
+                <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+            final unseenCount = stockService.unseenArrivalCount(
+              allDocuments,
+              cutoff,
+            );
+
+            Widget body;
+
+            if (snapshot.hasError) {
+              body = errorList(snapshot.error!);
+            } else if (!snapshot.hasData) {
+              body = loadingGrid();
+            } else {
+              final documents = stockService.availableStocks(
+                allDocuments,
+                limit: 6,
+              );
+
+              if (documents.isEmpty) {
+                body = emptyList();
+              } else {
+                body = GridView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: documents.length,
+                  gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 11,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 1.02,
+                  ),
+                  itemBuilder: (context, index) {
+                    return cardForDocument(
+                      context,
+                      documents[index],
+                      supplierImageUrlsById: supplierImageUrlsById,
+                    );
+                  },
+                );
+              }
+            }
+
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: HomeSectionHeader(
+                    title: 'Latest Fish Stocks',
+                    icon: Icons.set_meal,
+                    badgeLabel:
+                        unseenCount > 0 ? '$unseenCount updates' : null,
+                    actionLabel: 'View all',
+                    onViewAll: onViewAll,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                body,
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(
     BuildContext context,
   ) {
-    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: stockService.recentFishPostsStream,
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+
+    if (userId.isEmpty) {
+      return feedForCutoff(
+        context,
+        stockService.feedCutoff(null),
+      );
+    }
+
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: stockService.vendorFeedStateStream(userId),
       builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return errorList(snapshot.error!);
-        }
-
-        if (!snapshot.hasData) {
-          return loadingGrid();
-        }
-
-        final documents =
-            snapshot.data!.docs.where(stockService.isAvailableStock).toList();
-
-        if (documents.isEmpty) {
-          return emptyList();
-        }
-
-        return GridView.builder(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 14,
-          ),
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: documents.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 11,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1.45,
-          ),
-          itemBuilder: (context, index) {
-            return cardForDocument(
-              context,
-              documents[index],
-            );
-          },
-        );
+        final cutoff = stockService.feedCutoff(snapshot.data?.data());
+        return feedForCutoff(context, cutoff);
       },
     );
   }

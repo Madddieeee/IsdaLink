@@ -549,13 +549,16 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
 
   Future<void> enterSpecificQuantity() async {
     final maximumQuantity = widget.product.availableQuantity.floor();
-    final quantityController = TextEditingController(
-      text: quantity.toString(),
-    );
+    var draftQuantity = quantity.toString();
 
     final enteredValue = await showDialog<String>(
       context: context,
       builder: (dialogContext) {
+        void closeDialog([String? value]) {
+          FocusScope.of(dialogContext).unfocus();
+          Navigator.of(dialogContext).pop(value);
+        }
+
         return AlertDialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(22),
@@ -583,16 +586,19 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                 ),
               ),
               const SizedBox(height: 14),
-              TextField(
-                controller: quantityController,
+              TextFormField(
+                initialValue: draftQuantity,
                 autofocus: true,
                 keyboardType: TextInputType.number,
                 textInputAction: TextInputAction.done,
                 inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly,
                 ],
-                onSubmitted: (value) {
-                  Navigator.pop(dialogContext, value);
+                onChanged: (value) {
+                  draftQuantity = value;
+                },
+                onFieldSubmitted: (value) {
+                  closeDialog(value);
                 },
                 decoration: InputDecoration(
                   labelText: 'Quantity',
@@ -620,16 +626,13 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(dialogContext);
+                closeDialog();
               },
               child: const Text('Cancel'),
             ),
             ElevatedButton(
               onPressed: () {
-                Navigator.pop(
-                  dialogContext,
-                  quantityController.text,
-                );
+                closeDialog(draftQuantity);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF0875D1),
@@ -648,8 +651,6 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
         );
       },
     );
-
-    quantityController.dispose();
 
     if (!mounted || enteredValue == null) {
       return;

@@ -31,6 +31,22 @@ class ManageProductDialogs {
     );
   }
 
+  static Future<double?> showRestockSheet({
+    required BuildContext context,
+    required QueryDocumentSnapshot<Map<String, dynamic>> document,
+  }) {
+    return showModalBottomSheet<double>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withAlpha(165),
+      builder: (context) {
+        return _RestockProductSheet(data: document.data());
+      },
+    );
+  }
+
   static Future<bool> showAvailabilityDialog({
     required BuildContext context,
     required String productName,
@@ -317,6 +333,402 @@ class ManageProductDialogs {
     );
 
     return result ?? false;
+  }
+}
+
+class _RestockProductSheet extends StatefulWidget {
+  const _RestockProductSheet({
+    required this.data,
+  });
+
+  final Map<String, dynamic> data;
+
+  @override
+  State<_RestockProductSheet> createState() =>
+      _RestockProductSheetState();
+}
+
+class _RestockProductSheetState extends State<_RestockProductSheet> {
+  final formKey = GlobalKey<FormState>();
+  final quantityController = TextEditingController();
+
+  String get productName => OrderHelpers.getStringValue(
+        widget.data,
+        'productName',
+        'Fish Product',
+      );
+
+  String get quantityUnit => OrderHelpers.getStringValue(
+        widget.data,
+        'quantityUnit',
+        'kilo',
+      );
+
+  double get currentQuantity => OrderHelpers.getDoubleValue(
+        widget.data,
+        'quantity',
+      ).clamp(0, double.infinity).toDouble();
+
+  double get quantityToAdd =>
+      double.tryParse(quantityController.text.trim()) ?? 0;
+
+  double get newTotal => currentQuantity + quantityToAdd;
+
+  @override
+  void dispose() {
+    quantityController.dispose();
+    super.dispose();
+  }
+
+  String formatNumber(double value) {
+    if (value % 1 == 0) {
+      return value.toStringAsFixed(0);
+    }
+
+    return value.toStringAsFixed(2).replaceFirst(RegExp(r'0+$'), '');
+  }
+
+  void chooseQuickAmount(double value) {
+    quantityController.text = formatNumber(value);
+    quantityController.selection = TextSelection.collapsed(
+      offset: quantityController.text.length,
+    );
+    setState(() {});
+  }
+
+  void submit() {
+    FocusScope.of(context).unfocus();
+
+    if (!(formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+
+    Navigator.pop(context, quantityToAdd);
+  }
+
+  Widget summaryValue({
+    required String label,
+    required double value,
+    required Color color,
+  }) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFF7B8FA3),
+              fontSize: 8.2,
+              letterSpacing: 0.45,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            '${formatNumber(value)} $quantityUnit',
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: color,
+              fontSize: 12.2,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget quickAmount(double value) {
+    final selected = quantityToAdd == value;
+
+    return Material(
+      color: selected
+          ? const Color(0xFF0875D1)
+          : const Color(0xFFF0F7FD),
+      borderRadius: BorderRadius.circular(99),
+      child: InkWell(
+        onTap: () => chooseQuickAmount(value),
+        borderRadius: BorderRadius.circular(99),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(99),
+            border: Border.all(
+              color: selected
+                  ? const Color(0xFF0875D1)
+                  : const Color(0xFFBFD7E8),
+            ),
+          ),
+          child: Text(
+            '+${formatNumber(value)}',
+            style: TextStyle(
+              color: selected ? Colors.white : const Color(0xFF0875D1),
+              fontSize: 10.5,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: SafeArea(
+        top: false,
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(30),
+              topRight: Radius.circular(30),
+            ),
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(18, 10, 18, 18),
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 42,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD7E3EA),
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Color(0xFF0B5FA5),
+                              Color(0xFF13A5D8),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: const Icon(
+                          Icons.add_box_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 11),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Add Stock',
+                              style: TextStyle(
+                                color: Color(0xFF102C44),
+                                fontSize: 17,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              productName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFF657C8E),
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Close',
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          color: Color(0xFF52677A),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xFFEAF6FF),
+                          Color(0xFFECFAF8),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFC9E1EF)),
+                    ),
+                    child: Row(
+                      children: [
+                        summaryValue(
+                          label: 'CURRENT',
+                          value: currentQuantity,
+                          color: const Color(0xFF52677A),
+                        ),
+                        Container(
+                          width: 1,
+                          height: 35,
+                          color: const Color(0xFFD1E6E4),
+                        ),
+                        summaryValue(
+                          label: 'ADDING',
+                          value: quantityToAdd,
+                          color: const Color(0xFF146BFF),
+                        ),
+                        Container(
+                          width: 1,
+                          height: 35,
+                          color: const Color(0xFFD1E6E4),
+                        ),
+                        summaryValue(
+                          label: 'NEW TOTAL',
+                          value: newTotal,
+                          color: const Color(0xFF0875D1),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 15),
+                  TextFormField(
+                    controller: quantityController,
+                    autofocus: true,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    textInputAction: TextInputAction.done,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(
+                        RegExp(r'^\d*\.?\d{0,2}'),
+                      ),
+                    ],
+                    onChanged: (_) => setState(() {}),
+                    onFieldSubmitted: (_) => submit(),
+                    validator: (value) {
+                      final amount = double.tryParse(value?.trim() ?? '');
+
+                      if (amount == null || amount <= 0) {
+                        return 'Enter a restock quantity greater than zero.';
+                      }
+
+                      return null;
+                    },
+                    decoration: InputDecoration(
+                      labelText: 'Quantity to add',
+                      helperText:
+                          'This amount will be added to the current stock.',
+                      suffixText: quantityUnit,
+                      prefixIcon: Container(
+                        margin: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE8F4FF),
+                          borderRadius: BorderRadius.circular(11),
+                        ),
+                        child: const Icon(
+                          Icons.add_rounded,
+                          color: Color(0xFF0875D1),
+                        ),
+                      ),
+                      filled: true,
+                      fillColor: const Color(0xFFF4F9FD),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(18),
+                        borderSide: BorderSide.none,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(18),
+                        borderSide: const BorderSide(
+                          color: Color(0xFFC9DDEA),
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(18),
+                        borderSide: const BorderSide(
+                          color: Color(0xFF0875D1),
+                          width: 1.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 11),
+                  const Text(
+                    'QUICK AMOUNTS',
+                    style: TextStyle(
+                      color: Color(0xFF7B8FA3),
+                      fontSize: 8.5,
+                      letterSpacing: 0.5,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 7),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      quickAmount(5),
+                      quickAmount(10),
+                      quickAmount(20),
+                    ],
+                  ),
+                  const SizedBox(height: 17),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 51,
+                    child: ElevatedButton.icon(
+                      onPressed: submit,
+                      icon: const Icon(Icons.inventory_rounded, size: 20),
+                      label: const Text(
+                        'Confirm Stock Addition',
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0875D1),
+                        foregroundColor: Colors.white,
+                        elevation: 4,
+                        shadowColor: const Color(0x550875D1),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

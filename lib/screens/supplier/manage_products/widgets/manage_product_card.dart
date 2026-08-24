@@ -7,6 +7,7 @@ class ManageProductCard extends StatelessWidget {
   const ManageProductCard({
     super.key,
     required this.document,
+    required this.onRestock,
     required this.onEdit,
     required this.onToggleAvailability,
     required this.onArchive,
@@ -14,6 +15,7 @@ class ManageProductCard extends StatelessWidget {
   });
 
   final QueryDocumentSnapshot<Map<String, dynamic>> document;
+  final VoidCallback onRestock;
   final VoidCallback onEdit;
   final VoidCallback onToggleAvailability;
   final VoidCallback onArchive;
@@ -202,6 +204,7 @@ class ManageProductCard extends StatelessWidget {
       lowStockLevel: lowStockLevel,
     );
     final currentColor = statusColor(currentStatus);
+    final canRestock = !archived && !hidden;
 
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 180),
@@ -357,6 +360,37 @@ class ManageProductCard extends StatelessWidget {
             const SizedBox(height: 12),
             Row(
               children: [
+                if (canRestock) ...[
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: isBusy ? null : onRestock,
+                      icon: const Icon(
+                        Icons.add_box_outlined,
+                        size: 18,
+                      ),
+                      label: const Text(
+                        'Add Stock',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE7F8F1),
+                        foregroundColor: const Color(0xFF147D64),
+                        disabledBackgroundColor:
+                            const Color(0xFFEAF0F4),
+                        disabledForegroundColor:
+                            const Color(0xFF9AABB8),
+                        minimumSize: const Size.fromHeight(44),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 9),
+                ],
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: isBusy ? null : onEdit,
@@ -384,41 +418,6 @@ class ManageProductCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 9),
-                OutlinedButton.icon(
-                  onPressed:
-                      isBusy ? null : onToggleAvailability,
-                  icon: Icon(
-                    hidden
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined,
-                    size: 18,
-                  ),
-                  label: Text(
-                    archived
-                        ? 'Restore'
-                        : hidden
-                            ? 'Show'
-                            : 'Hide',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: hidden
-                        ? const Color(0xFF147D64)
-                        : const Color(0xFF52677A),
-                    side: BorderSide(
-                      color: hidden
-                          ? const Color(0xFF80D6BC)
-                          : const Color(0xFFB9CBD7),
-                    ),
-                    minimumSize: const Size(86, 44),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                ),
                 const SizedBox(width: 5),
                 PopupMenuButton<String>(
                   enabled: !isBusy,
@@ -428,34 +427,67 @@ class ManageProductCard extends StatelessWidget {
                   onSelected: (
                     value,
                   ) {
-                    if (value == 'archive') {
+                    if (value == 'visibility') {
+                      onToggleAvailability();
+                    } else if (value == 'archive') {
                       onArchive();
                     }
                   },
                   itemBuilder: (
                     context,
                   ) {
-                    return const [
+                    return [
                       PopupMenuItem<String>(
-                        value: 'archive',
+                        value: 'visibility',
                         child: Row(
                           children: [
                             Icon(
-                              Icons.archive_outlined,
-                              color: Color(0xFFB86500),
+                              hidden
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                              color: hidden
+                                  ? const Color(0xFF147D64)
+                                  : const Color(0xFF52677A),
                               size: 20,
                             ),
-                            SizedBox(width: 9),
+                            const SizedBox(width: 9),
                             Text(
-                              'Archive Product',
+                              archived
+                                  ? 'Restore Product'
+                                  : hidden
+                                      ? 'Show Product'
+                                      : 'Hide Product',
                               style: TextStyle(
-                                color: Color(0xFFB86500),
+                                color: hidden
+                                    ? const Color(0xFF147D64)
+                                    : const Color(0xFF52677A),
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
                           ],
                         ),
                       ),
+                      if (!archived)
+                        const PopupMenuItem<String>(
+                          value: 'archive',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.archive_outlined,
+                                color: Color(0xFFB86500),
+                                size: 20,
+                              ),
+                              SizedBox(width: 9),
+                              Text(
+                                'Archive Product',
+                                style: TextStyle(
+                                  color: Color(0xFFB86500),
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                     ];
                   },
                   icon: const Icon(

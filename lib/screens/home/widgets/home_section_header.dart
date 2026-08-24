@@ -6,12 +6,14 @@ class HomeSectionHeader extends StatelessWidget {
     required this.title,
     required this.icon,
     this.actionLabel,
+    this.badgeLabel,
     this.onViewAll,
   });
 
   final String title;
   final IconData icon;
   final String? actionLabel;
+  final String? badgeLabel;
   final VoidCallback? onViewAll;
 
   @override
@@ -60,6 +62,30 @@ class HomeSectionHeader extends StatelessWidget {
             ),
           ),
         ),
+        if (badgeLabel?.trim().isNotEmpty == true) ...[
+          Container(
+            margin: const EdgeInsets.only(right: 7),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 8,
+              vertical: 5,
+            ),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE8F8F1),
+              borderRadius: BorderRadius.circular(99),
+              border: Border.all(
+                color: const Color(0xFFC7EEDD),
+              ),
+            ),
+            child: Text(
+              badgeLabel!.trim(),
+              style: const TextStyle(
+                color: Color(0xFF16835F),
+                fontSize: 9.5,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ],
         if (onViewAll != null)
           Material(
             color: const Color(0xFFE8F8FD),

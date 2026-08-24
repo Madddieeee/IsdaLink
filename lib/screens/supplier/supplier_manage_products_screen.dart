@@ -235,6 +235,58 @@ class _SupplierManageProductsScreenState
       );
   }
 
+  Future<void> restockProduct(
+    QueryDocumentSnapshot<Map<String, dynamic>> document,
+  ) async {
+    final data = document.data();
+    final productName = OrderHelpers.getStringValue(
+      data,
+      'productName',
+      'Fish Product',
+    );
+    final quantityUnit = OrderHelpers.getStringValue(
+      data,
+      'quantityUnit',
+      'kilo',
+    );
+    final quantityToAdd = await ManageProductDialogs.showRestockSheet(
+      context: context,
+      document: document,
+    );
+
+    if (!mounted || quantityToAdd == null) {
+      return;
+    }
+
+    setBusy(document.id, true);
+
+    try {
+      final newTotal = await productService.restockProduct(
+        documentId: document.id,
+        quantityToAdd: quantityToAdd,
+      );
+
+      showMessage(
+        '$productName restocked. New total: '
+        '${OrderHelpers.formatNumber(newTotal)} $quantityUnit.',
+      );
+    } on FirebaseException {
+      showMessage(
+        'Unable to restock this product. Please try again.',
+        isError: true,
+      );
+    } catch (_) {
+      showMessage(
+        'Something went wrong while restocking this product.',
+        isError: true,
+      );
+    } finally {
+      if (mounted) {
+        setBusy(document.id, false);
+      }
+    }
+  }
+
   Future<void> editProduct(
     QueryDocumentSnapshot<Map<String, dynamic>>
         document,
@@ -693,6 +745,9 @@ class _SupplierManageProductsScreenState
                         isBusy: busyProductIds.contains(
                           document.id,
                         ),
+                        onRestock: () {
+                          restockProduct(document);
+                        },
                         onEdit: () {
                           editProduct(document);
                         },

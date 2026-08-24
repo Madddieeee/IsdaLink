@@ -183,6 +183,109 @@ class SupplierProductService {
     );
   }
 
+  Future<double> restockProduct({
+    required String documentId,
+    required double quantityToAdd,
+  }) async {
+    if (quantityToAdd <= 0) {
+      throw ArgumentError.value(
+        quantityToAdd,
+        'quantityToAdd',
+        'Restock quantity must be greater than zero.',
+      );
+    }
+
+    final reference = FirebaseFirestore.instance
+        .collection('fishStocks')
+        .doc(documentId);
+
+    return FirebaseFirestore.instance.runTransaction<double>(
+      (transaction) async {
+        final snapshot = await transaction.get(reference);
+
+        if (!snapshot.exists) {
+          throw Exception('This fish listing no longer exists.');
+        }
+
+        final currentData = snapshot.data() ?? <String, dynamic>{};
+
+        if (isHidden(currentData) || currentData['archived'] == true) {
+          throw StateError(
+            'Show or restore this listing before restocking it.',
+          );
+        }
+
+        final currentQuantity = OrderHelpers.getDoubleValue(
+          currentData,
+          'quantity',
+        ).clamp(0, double.infinity).toDouble();
+        final nextQuantity = currentQuantity + quantityToAdd;
+        var lowStockPercentage = OrderHelpers.getDoubleValue(
+          currentData,
+          'lowStockPercentage',
+        );
+
+        if (lowStockPercentage <= 0) {
+          final referenceQuantity = OrderHelpers.getDoubleValue(
+            currentData,
+            'referenceStockQuantity',
+          );
+          final savedLowStockLevel = OrderHelpers.getDoubleValue(
+            currentData,
+            'lowStockLevel',
+          );
+
+          lowStockPercentage = referenceQuantity > 0
+              ? savedLowStockLevel / referenceQuantity * 100
+              : 20;
+        }
+
+        final safePercentage =
+            lowStockPercentage.clamp(1, 100).toDouble();
+        final lowStockLevel = nextQuantity * safePercentage / 100;
+        final stockTransition = stockNotificationService.transitionFor(
+          stockData: currentData,
+          nextQuantity: nextQuantity,
+          lowStockLevelOverride: lowStockLevel,
+          hiddenOverride: false,
+        );
+        final stockStatus = StockState.calculatedStockStatus(
+          currentData,
+          quantityOverride: nextQuantity,
+          lowStockLevelOverride: lowStockLevel,
+          hiddenOverride: false,
+        );
+
+        transaction.update(
+          reference,
+          {
+            'quantity': nextQuantity,
+            'referenceStockQuantity': nextQuantity,
+            'lowStockPercentage': safePercentage,
+            'lowStockLevel': lowStockLevel,
+            'status': 'available',
+            'isActive': true,
+            'stockStatus': stockStatus,
+            'restockedAt': FieldValue.serverTimestamp(),
+            ...stockTransition.markerFields(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          },
+        );
+
+        stockNotificationService.createNotificationInTransaction(
+          transaction: transaction,
+          stockReference: reference,
+          stockData: currentData,
+          nextQuantity: nextQuantity,
+          transition: stockTransition,
+          lowStockLevelOverride: lowStockLevel,
+        );
+
+        return nextQuantity;
+      },
+    );
+  }
+
   Future<void> updateProduct({
     required String documentId,
     required SupplierProductUpdateInput input,
@@ -220,6 +323,11 @@ class SupplierProductService {
           lowStockLevelOverride: lowStockLevel,
           hiddenOverride: hidden,
         );
+        final previousQuantity = OrderHelpers.getDoubleValue(
+          currentData,
+          'quantity',
+        );
+        final wasRestocked = !hidden && input.quantity > previousQuantity;
 
         transaction.update(
           reference,
@@ -242,6 +350,8 @@ class SupplierProductService {
             'status': hidden ? 'unavailable' : 'available',
             'isActive': !hidden,
             'stockStatus': stockStatus,
+            if (wasRestocked)
+              'restockedAt': FieldValue.serverTimestamp(),
             ...stockTransition.markerFields(),
             'updatedAt': FieldValue.serverTimestamp(),
           },

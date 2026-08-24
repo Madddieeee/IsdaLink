@@ -12,6 +12,7 @@ import 'package:isdalink/screens/home/widgets/recommended_supplier_card.dart';
 import 'package:isdalink/screens/home/widgets/top_selling_fish_strip.dart';
 import 'package:isdalink/screens/profile/me_screen.dart';
 import 'package:isdalink/screens/vendor/browse_suppliers_screen.dart';
+import 'package:isdalink/screens/vendor/latest_fish_stocks_screen.dart';
 import 'package:isdalink/screens/vendor/my_orders_screen.dart';
 import 'package:isdalink/screens/vendor/product_details_screen.dart';
 import 'package:isdalink/screens/vendor/supplier_details_screen.dart';
@@ -143,6 +144,17 @@ class HomeScreen
             (
               _,
             ) => const MyOrdersScreen(),
+      ),
+    );
+  }
+
+  void openLatestFishStocks(
+    BuildContext context,
+  ) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const LatestFishStocksScreen(),
       ),
     );
   }
@@ -606,19 +618,10 @@ class HomeScreen
                 const SizedBox(
                   height: 15,
                 ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 14,
-                  ),
-                  child: HomeSectionHeader(
-                    title: 'Fresh Fish Available',
-                    icon: Icons.set_meal,
-                  ),
-                ),
-                const SizedBox(
-                  height: 10,
-                ),
                 RecentFishPosts(
+                  onViewAll: () => openLatestFishStocks(
+                    context,
+                  ),
                   onProductTap:
                       (
                         supplier,
