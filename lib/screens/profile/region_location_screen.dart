@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:isdalink/screens/map/caraga_location_picker_screen.dart';
+import 'package:isdalink/screens/map/vendor_delivery_map_card.dart';
 
 class RegionLocationScreen extends StatefulWidget {
   const RegionLocationScreen({
@@ -15,6 +17,7 @@ class RegionLocationScreen extends StatefulWidget {
 
 class _RegionLocationScreenState extends State<RegionLocationScreen> {
   final formKey = GlobalKey<FormState>();
+  final deliveryAddressController = TextEditingController();
 
   static const provinces = <String>[
     'Agusan del Norte',
@@ -211,26 +214,25 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
   bool isSaving = false;
   bool submitted = false;
 
-  String role = 'vendor';
-  String supplierStatus = 'not_applicable';
-
   String? selectedProvince;
   String? selectedCity;
+  double? deliveryLatitude;
+  double? deliveryLongitude;
 
   String? initialProvince;
   String? initialCity;
+  String initialDeliveryAddress = '';
+  double? initialDeliveryLatitude;
+  double? initialDeliveryLongitude;
 
   User? get currentUser => FirebaseAuth.instance.currentUser;
 
-  bool get isSupplierRelevant {
-    return role == 'supplier' ||
-        supplierStatus == 'approved' ||
-        supplierStatus == 'pending';
-  }
-
   bool get hasChanges {
     return selectedProvince != initialProvince ||
-        selectedCity != initialCity;
+        selectedCity != initialCity ||
+        deliveryAddressController.text.trim() != initialDeliveryAddress ||
+        deliveryLatitude != initialDeliveryLatitude ||
+        deliveryLongitude != initialDeliveryLongitude;
   }
 
   List<String> get availableCities {
@@ -258,11 +260,60 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
     return '$selectedCity, $selectedProvince, Caraga Region';
   }
 
+  String normalizeAddress(String value) {
+    return value
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), ' ')
+        .trim();
+  }
+
+  bool isGeneralLocationOnly(
+    String address, {
+    String legacyLocation = '',
+  }) {
+    final normalizedAddress = normalizeAddress(address);
+
+    if (normalizedAddress.isEmpty) {
+      return true;
+    }
+
+    final province = selectedProvince?.trim() ?? '';
+    final city = selectedCity?.trim() ?? '';
+    final generalLocations = <String>{
+      'Caraga Region',
+      province,
+      city,
+      legacyLocation,
+      if (city.isNotEmpty && province.isNotEmpty) '$city, $province',
+      if (city.isNotEmpty && province.isNotEmpty)
+        '$city, $province, Caraga Region',
+    };
+
+    return generalLocations
+        .where((value) => value.trim().isNotEmpty)
+        .map(normalizeAddress)
+        .contains(normalizedAddress);
+  }
+
   @override
   void initState() {
     super.initState();
-
+    deliveryAddressController.addListener(handleAddressChanged);
     loadLocation();
+  }
+
+  @override
+  void dispose() {
+    deliveryAddressController.removeListener(handleAddressChanged);
+    deliveryAddressController.dispose();
+    super.dispose();
+  }
+
+  void handleAddressChanged() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   String getStringValue(
@@ -274,6 +325,14 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
     final text = value?.toString().trim() ?? '';
 
     return text.isEmpty ? fallback : text;
+  }
+
+  double? coordinateValue(dynamic value) {
+    if (value is num) {
+      return value.toDouble();
+    }
+
+    return double.tryParse(value?.toString() ?? '');
   }
 
   Future<void> loadLocation() async {
@@ -295,18 +354,6 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
           .get();
 
       final data = snapshot.data();
-
-      role = getStringValue(
-        data,
-        'role',
-        'vendor',
-      ).toLowerCase();
-
-      supplierStatus = getStringValue(
-        data,
-        'supplierStatus',
-        'not_applicable',
-      ).toLowerCase();
 
       final storedProvince = getStringValue(
         data,
@@ -352,8 +399,26 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
         selectedCity = null;
       }
 
+      final storedDeliveryAddress = getStringValue(
+        data,
+        'deliveryAddress',
+        '',
+      );
+
+      deliveryAddressController.text = isGeneralLocationOnly(
+        storedDeliveryAddress,
+        legacyLocation: legacyLocation,
+      )
+          ? ''
+          : storedDeliveryAddress;
+      deliveryLatitude = coordinateValue(data?['deliveryLatitude']);
+      deliveryLongitude = coordinateValue(data?['deliveryLongitude']);
+
       initialProvince = selectedProvince;
       initialCity = selectedCity;
+      initialDeliveryAddress = deliveryAddressController.text.trim();
+      initialDeliveryLatitude = deliveryLatitude;
+      initialDeliveryLongitude = deliveryLongitude;
     } catch (_) {
       showMessage(
         'Unable to load your saved location.',
@@ -413,10 +478,8 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
     required IconData icon,
     String? selectedValue,
     bool searchable = false,
-  }) async {
-    final searchController = TextEditingController();
-
-    final result = await showModalBottomSheet<String>(
+  }) {
+    return showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -425,11 +488,17 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
       builder: (
         sheetContext,
       ) {
-        return StatefulBuilder(
+        return _LocationPickerSearchHost(
           builder: (
             context,
-            setSheetState,
+            searchController,
+            searchFocusNode,
           ) {
+            return StatefulBuilder(
+              builder: (
+                context,
+                setSheetState,
+              ) {
             final query =
                 searchController.text.trim().toLowerCase();
 
@@ -529,6 +598,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
                           IconButton(
                             tooltip: 'Close',
                             onPressed: () {
+                              searchFocusNode.unfocus();
                               Navigator.pop(sheetContext);
                             },
                             icon: const Icon(
@@ -549,7 +619,8 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
                         ),
                         child: TextField(
                           controller: searchController,
-                          autofocus: options.length > 12,
+                          focusNode: searchFocusNode,
+                          autofocus: false,
                           textInputAction: TextInputAction.search,
                           onChanged: (_) {
                             setSheetState(() {});
@@ -636,6 +707,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
                             color: Colors.transparent,
                             child: InkWell(
                               onTap: () {
+                                searchFocusNode.unfocus();
                                 Navigator.pop(
                                   sheetContext,
                                   option,
@@ -727,15 +799,13 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
                   ],
                 ),
               ),
+              );
+            },
             );
           },
         );
       },
     );
-
-    searchController.dispose();
-
-    return result;
   }
 
   Future<void> showProvincePicker() async {
@@ -755,9 +825,20 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
       return;
     }
 
+    final provinceChanged = selectedProvince != selected;
+
+    if (provinceChanged) {
+      deliveryAddressController.clear();
+    }
+
     setState(() {
       selectedProvince = selected;
-      selectedCity = null;
+
+      if (provinceChanged) {
+        selectedCity = null;
+        deliveryLatitude = null;
+        deliveryLongitude = null;
+      }
     });
   }
 
@@ -788,9 +869,68 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
       return;
     }
 
+    final cityChanged = selectedCity != selected;
+
+    if (cityChanged) {
+      deliveryAddressController.clear();
+    }
+
     setState(() {
       selectedCity = selected;
       submitted = false;
+
+      if (cityChanged) {
+        deliveryLatitude = null;
+        deliveryLongitude = null;
+      }
+    });
+  }
+
+  Future<void> chooseDeliveryPin() async {
+    if (isSaving) {
+      return;
+    }
+
+    final province = selectedProvince;
+    final city = selectedCity;
+
+    if (province == null || city == null) {
+      setState(() {
+        submitted = true;
+      });
+      showMessage(
+        'Select your province and city or municipality first.',
+        isError: true,
+      );
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+
+    final result = await Navigator.of(context).push<CaragaLocationResult>(
+      MaterialPageRoute(
+        builder: (_) => CaragaLocationPickerScreen(
+          title: 'Delivery Location',
+          subtitle: locationPreview,
+          province: province,
+          locality: city,
+          initialLatitude: deliveryLatitude,
+          initialLongitude: deliveryLongitude,
+          instructionText:
+              'Tap the map at your usual COD delivery location. This saved pin will be reused for future orders until you update it.',
+          markerTitle: 'Saved vendor delivery location',
+          confirmButtonLabel: 'Save Delivery Pin',
+        ),
+      ),
+    );
+
+    if (!mounted || result == null) {
+      return;
+    }
+
+    setState(() {
+      deliveryLatitude = result.latitude;
+      deliveryLongitude = result.longitude;
     });
   }
 
@@ -811,12 +951,21 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
       return;
     }
 
+    if (deliveryLatitude == null || deliveryLongitude == null) {
+      showMessage(
+        'Set your delivery location on the map before saving.',
+        isError: true,
+      );
+      return;
+    }
+
     final city = selectedCity!;
     final province = selectedProvince!;
     final location = '$city, $province, Caraga Region';
     final provinceCode = provinceCodes[province];
     final cityCode = locationCodesByProvince[province]?[city];
     final cityType = localityType(city);
+    final deliveryAddress = deliveryAddressController.text.trim();
 
     setState(() {
       isSaving = true;
@@ -838,6 +987,10 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
         'isHighlyUrbanizedCity': false,
         'location': location,
         'marketLocation': location,
+        'deliveryAddress': deliveryAddress,
+        'deliveryLatitude': deliveryLatitude,
+        'deliveryLongitude': deliveryLongitude,
+        'deliveryReferenceType': 'map_pin',
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
@@ -857,9 +1010,14 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
         return;
       }
 
+      deliveryAddressController.text = deliveryAddress;
+
       setState(() {
         initialProvince = selectedProvince;
         initialCity = selectedCity;
+        initialDeliveryAddress = deliveryAddress;
+        initialDeliveryLatitude = deliveryLatitude;
+        initialDeliveryLongitude = deliveryLongitude;
       });
 
       showMessage(
@@ -1484,84 +1642,60 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
     );
   }
 
-  Widget locationPreviewCard() {
-    final hasLocation = selectedCity != null;
+  Widget deliveryAddressField() {
+    return TextFormField(
+      controller: deliveryAddressController,
+      enabled: !isSaving,
+      keyboardType: TextInputType.streetAddress,
+      textCapitalization: TextCapitalization.words,
+      minLines: 1,
+      maxLines: 3,
+      validator: (value) {
+        if (value == null || isGeneralLocationOnly(value)) {
+          return 'Enter a barangay, street, block, house, or landmark.';
+        }
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(
-        14,
-        13,
-        14,
-        13,
-      ),
-      decoration: BoxDecoration(
-        color: hasLocation
-            ? const Color(0xFFE8F8F2)
-            : const Color(0xFFF4F8FB),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: hasLocation
-              ? const Color(0xFF1DBB8A).withAlpha(82)
-              : const Color(0xFFE2ECF3),
+        return null;
+      },
+      decoration: InputDecoration(
+        labelText: 'Detailed delivery address',
+        hintText: 'Block, street, barangay, house, or landmark',
+        helperText:
+            'Required. Province and city are saved separately from this address.',
+        prefixIcon: const Icon(
+          Icons.home_work_outlined,
+          color: Color(0xFF146BFF),
         ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: hasLocation
-                  ? const Color(0xFFDDF6EC)
-                  : const Color(0xFFE9F1F6),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              hasLocation
-                  ? Icons.check_rounded
-                  : Icons.location_searching_rounded,
-              color: hasLocation
-                  ? const Color(0xFF147D64)
-                  : const Color(0xFF8BA0B1),
-              size: 21,
-            ),
+        filled: true,
+        fillColor: const Color(0xFFF2F7FB),
+        contentPadding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: const BorderSide(
+            color: Color(0xFFB8DFFF),
+            width: 1.25,
           ),
-          const SizedBox(width: 11),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  hasLocation
-                      ? hasChanges
-                          ? 'NEW PROFILE LOCATION'
-                          : 'CURRENT PROFILE LOCATION'
-                      : 'LOCATION PREVIEW',
-                  style: TextStyle(
-                    color: hasLocation
-                        ? const Color(0xFF147D64)
-                        : const Color(0xFF52677A),
-                    fontSize: 8.8,
-                    letterSpacing: 0.55,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  locationPreview,
-                  style: const TextStyle(
-                    color: Color(0xFF102C44),
-                    fontSize: 12.5,
-                    height: 1.35,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
-            ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: const BorderSide(
+            color: Color(0xFF146BFF),
+            width: 1.45,
           ),
-        ],
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: const BorderSide(
+            color: Color(0xFFD32F2F),
+          ),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: const BorderSide(
+            color: Color(0xFFD32F2F),
+            width: 1.45,
+          ),
+        ),
       ),
     );
   }
@@ -1623,74 +1757,18 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
                   : 'Search within $selectedProvince.',
             ),
             const SizedBox(height: 14),
-            locationPreviewCard(),
+            deliveryAddressField(),
+            const SizedBox(height: 14),
+            VendorDeliveryMapCard(
+              latitude: deliveryLatitude,
+              longitude: deliveryLongitude,
+              province: selectedProvince ?? '',
+              locality: selectedCity ?? '',
+              onTap: chooseDeliveryPin,
+              height: 160,
+            ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget infoCard() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(
-        14,
-        13,
-        14,
-        13,
-      ),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEAF7FB),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFF72C6F8).withAlpha(75),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: Colors.white.withAlpha(155),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.sync_rounded,
-              color: Color(0xFF146BFF),
-              size: 21,
-            ),
-          ),
-          const SizedBox(width: 11),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'PROFILE SYNC',
-                  style: TextStyle(
-                    color: Color(0xFF146BFF),
-                    fontSize: 8.8,
-                    letterSpacing: 0.6,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  isSupplierRelevant
-                      ? 'Saving updates your account location only. Verified supplier business location is managed in Supplier Profile.'
-                      : 'Saving updates the location shown in Account Center.',
-                  style: const TextStyle(
-                    color: Color(0xFF52677A),
-                    fontSize: 10.5,
-                    height: 1.38,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -1825,8 +1903,6 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
                 ),
                 children: [
                   locationCard(),
-                  const SizedBox(height: 14),
-                  infoCard(),
                 ],
               ),
             ),
@@ -1834,6 +1910,44 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _LocationPickerSearchHost extends StatefulWidget {
+  const _LocationPickerSearchHost({
+    required this.builder,
+  });
+
+  final Widget Function(
+    BuildContext context,
+    TextEditingController searchController,
+    FocusNode searchFocusNode,
+  ) builder;
+
+  @override
+  State<_LocationPickerSearchHost> createState() =>
+      _LocationPickerSearchHostState();
+}
+
+class _LocationPickerSearchHostState
+    extends State<_LocationPickerSearchHost> {
+  final searchController = TextEditingController();
+  final searchFocusNode = FocusNode();
+
+  @override
+  void dispose() {
+    searchFocusNode.dispose();
+    searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.builder(
+      context,
+      searchController,
+      searchFocusNode,
     );
   }
 }

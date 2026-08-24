@@ -120,7 +120,7 @@ class PlaceOrderService {
 
     if (!validDeliveryPin) {
       throw Exception(
-        'Choose a valid delivery-reference pin inside the Caraga map area.',
+        'Choose a valid delivery location inside the Caraga map area.',
       );
     }
 
@@ -176,6 +176,10 @@ class PlaceOrderService {
 
     final orderReference = FirebaseFirestore.instance
         .collection('orders')
+        .doc();
+
+    final newOrderNotificationReference = FirebaseFirestore.instance
+        .collection('notifications')
         .doc();
 
     double finalRemainingStock = 0;
@@ -306,6 +310,7 @@ class PlaceOrderService {
           'orderStatus': 'Pending',
           'stockDeducted': true,
           'stockRestored': false,
+          'newOrderNotificationId': newOrderNotificationReference.id,
           'reservedQuantity': quantity,
           'remainingStockAfterOrder': remainingStock,
           'region': 'Caraga Region',
@@ -313,6 +318,25 @@ class PlaceOrderService {
           'updatedAt': FieldValue.serverTimestamp(),
         },
       );
+
+      if (realSupplierId.isNotEmpty) {
+        transaction.set(
+          newOrderNotificationReference,
+          <String, dynamic>{
+            'notificationId': newOrderNotificationReference.id,
+            'userId': realSupplierId,
+            'supplierId': realSupplierId,
+            'orderId': orderReference.id,
+            'title': 'New COD Order',
+            'message':
+                '$finalVendorName ordered ${OrderHelpers.formatNumber(quantity.toDouble())} ${product.quantityUnit} of ${product.name}.',
+            'type': 'new_order',
+            'status': 'Pending',
+            'isRead': false,
+            'createdAt': FieldValue.serverTimestamp(),
+          },
+        );
+      }
     });
 
     return PlaceOrderResult(

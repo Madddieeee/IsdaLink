@@ -81,6 +81,17 @@ service cloud.firestore {
       );
     }
 
+    function hasNoServerPushFields(data) {
+      return !data.keys().hasAny([
+        'pushEventId',
+        'pushStatus',
+        'pushStartedAt',
+        'pushedAt',
+        'pushSuccessCount',
+        'pushFailureCount'
+      ]);
+    }
+
     // ---------------------------------------------------------------------
     // USERS
     // ---------------------------------------------------------------------
@@ -156,6 +167,36 @@ service cloud.firestore {
         );
 
       allow delete: if isAdmin();
+    }
+
+    // Each signed-in account may register only its own FCM destinations.
+    // The Cloud Functions Admin SDK reads these records to deliver pushes.
+    match /users/{userId}/pushTokens/{tokenId} {
+      allow read: if isAdmin()
+        || (signedIn() && currentUid() == userId);
+
+      allow create, update: if signedIn()
+        && currentUid() == userId
+        && request.resource.data.keys().hasOnly([
+          'userId',
+          'token',
+          'platform',
+          'enabled',
+          'updatedAt'
+        ])
+        && request.resource.data.get('userId', '') == userId
+        && request.resource.data.get('token', '') is string
+        && request.resource.data.get('token', '').size() >= 20
+        && request.resource.data.get('token', '').size() <= 1000
+        && request.resource.data.get('platform', '') in [
+          'android',
+          'ios',
+          'macos'
+        ]
+        && request.resource.data.get('enabled', false) == true
+        && request.resource.data.get('updatedAt', null) is timestamp;
+
+      allow delete: if signedIn() && currentUid() == userId;
     }
 
     // ---------------------------------------------------------------------
@@ -1206,6 +1247,7 @@ service cloud.firestore {
         || isAdmin();
 
       allow create: if isAdmin()
+        || validNewOrderNotification(notificationId)
         || validOrderStatusNotification()
         || validStockAlertNotification();
 
@@ -1221,11 +1263,35 @@ service cloud.firestore {
 
       allow delete: if isAdmin();
 
+      function validNewOrderNotification(notificationId) {
+        let orderId = request.resource.data.get('orderId', '');
+        let afterOrder = getAfter(orderPath(orderId)).data;
+
+        return signedIn()
+          && hasNoServerPushFields(request.resource.data)
+          && request.resource.data.get('type', '') == 'new_order'
+          && orderId is string
+          && orderId.size() > 0
+          && existsAfter(orderPath(orderId))
+          && afterOrder.get('vendorId', '') == currentUid()
+          && request.resource.data.get('supplierId', '')
+              == afterOrder.get('supplierId', '')
+          && request.resource.data.get('userId', '')
+              == afterOrder.get('supplierId', '')
+          && request.resource.data.get('status', '')
+              == afterOrder.get('orderStatus', '')
+          && request.resource.data.get('notificationId', '')
+              == notificationId
+          && afterOrder.get('newOrderNotificationId', '')
+              == notificationId;
+      }
+
       function validOrderStatusNotification() {
         let orderId = request.resource.data.get('orderId', '');
         let afterOrder = getAfter(orderPath(orderId)).data;
 
         return signedIn()
+          && hasNoServerPushFields(request.resource.data)
           && request.resource.data.get('type', '') == 'order_status'
           && orderId is string
           && orderId.size() > 0
@@ -1245,6 +1311,7 @@ service cloud.firestore {
         let afterStock = getAfter(stockPath(stockId)).data;
 
         return signedIn()
+          && hasNoServerPushFields(request.resource.data)
           && request.resource.data.get('type', '') == 'stock_alert'
           && stockId is string
           && stockId.size() > 0

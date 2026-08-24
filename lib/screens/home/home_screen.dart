@@ -17,6 +17,7 @@ import 'package:isdalink/screens/vendor/product_details_screen.dart';
 import 'package:isdalink/screens/vendor/supplier_details_screen.dart';
 import 'package:isdalink/screens/welcome_screen.dart';
 import 'package:isdalink/services/home_stock_service.dart';
+import 'package:isdalink/services/push_notification_service.dart';
 import 'package:isdalink/services/supplier_browse_service.dart';
 
 class HomeScreen
@@ -37,7 +38,7 @@ class HomeScreen
   logout(
     BuildContext context,
   ) async {
-    await FirebaseAuth.instance.signOut();
+    await PushNotificationService.instance.signOut();
 
     if (!context.mounted) {
       return;

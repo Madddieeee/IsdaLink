@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:isdalink/models/fish_product.dart';
 import 'package:isdalink/models/supplier.dart';
 import 'package:isdalink/screens/map/caraga_location_picker_screen.dart';
@@ -32,59 +33,106 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
   final TextEditingController buyerNameController = TextEditingController();
   final TextEditingController buyerPhoneController = TextEditingController();
   final TextEditingController buyerAddressController = TextEditingController();
+  final ScrollController checkoutScrollController = ScrollController();
 
   int quantity = 1;
   bool isSubmitting = false;
   bool isLoadingBuyer = true;
+  bool isEditingBuyer = false;
+  bool isSavingBuyer = false;
   String buyerLoadError = '';
   String buyerProvince = '';
   String buyerLocality = '';
   double? deliveryLatitude;
   double? deliveryLongitude;
-  String pinnedDeliveryAddress = '';
+  String savedBuyerName = '';
+  String savedBuyerPhone = '';
+  String savedBuyerAddress = '';
+  String supplierStoreImageUrl = '';
 
   double get totalAmount => widget.product.price * quantity;
+  bool get hasDetailedDeliveryAddress =>
+      !isGeneralLocationOnly(buyerAddressController.text);
+  bool get hasSavedDeliveryPin =>
+      deliveryLatitude != null && deliveryLongitude != null;
+
+  String normalizeAddress(String value) {
+    return value
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), ' ')
+        .trim();
+  }
+
+  bool isGeneralLocationOnly(String address) {
+    final normalizedAddress = normalizeAddress(address);
+
+    if (normalizedAddress.isEmpty) {
+      return true;
+    }
+
+    final province = buyerProvince.trim();
+    final locality = buyerLocality.trim();
+    final generalLocations = <String>{
+      'Caraga Region',
+      province,
+      locality,
+      if (locality.isNotEmpty && province.isNotEmpty)
+        '$locality, $province',
+      if (locality.isNotEmpty && province.isNotEmpty)
+        '$locality, $province, Caraga Region',
+    };
+
+    return generalLocations
+        .where((value) => value.trim().isNotEmpty)
+        .map(normalizeAddress)
+        .contains(normalizedAddress);
+  }
+
+  String get fullDeliveryAddress {
+    final detailedAddress = buyerAddressController.text.trim();
+    final addressParts = <String>[];
+
+    if (detailedAddress.isNotEmpty) {
+      addressParts.add(detailedAddress);
+    }
+
+    final normalizedDetails = normalizeAddress(detailedAddress);
+    final locality = buyerLocality.trim();
+    final province = buyerProvince.trim();
+
+    if (locality.isNotEmpty &&
+        !normalizedDetails.contains(normalizeAddress(locality))) {
+      addressParts.add(locality);
+    }
+
+    if (province.isNotEmpty &&
+        !normalizedDetails.contains(normalizeAddress(province))) {
+      addressParts.add(province);
+    }
+
+    if (!normalizedDetails.contains(normalizeAddress('Caraga Region'))) {
+      addressParts.add('Caraga Region');
+    }
+
+    return addressParts.join(', ');
+  }
 
   @override
   void initState() {
     super.initState();
-    buyerAddressController.addListener(
-      handleDeliveryAddressChanged,
-    );
+    supplierStoreImageUrl = widget.supplier.profileImageUrl.trim();
     loadBuyerDetails();
+    loadSupplierStoreImage();
   }
 
   @override
   void dispose() {
-    buyerAddressController.removeListener(
-      handleDeliveryAddressChanged,
-    );
     buyerNameController.dispose();
     buyerPhoneController.dispose();
     buyerAddressController.dispose();
+    checkoutScrollController.dispose();
     super.dispose();
-  }
-
-  void handleDeliveryAddressChanged() {
-    if (deliveryLatitude == null ||
-        deliveryLongitude == null) {
-      return;
-    }
-
-    if (buyerAddressController.text.trim() ==
-        pinnedDeliveryAddress.trim()) {
-      return;
-    }
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      deliveryLatitude = null;
-      deliveryLongitude = null;
-      pinnedDeliveryAddress = '';
-    });
   }
 
   String firstNonEmpty(
@@ -106,6 +154,68 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
       return value.toStringAsFixed(0);
     }
     return value.toStringAsFixed(1);
+  }
+
+  double? coordinateValue(dynamic value) {
+    if (value is num) {
+      return value.toDouble();
+    }
+
+    return double.tryParse(value?.toString() ?? '');
+  }
+
+  Future<void> loadSupplierStoreImage() async {
+    final supplierId = widget.supplierId.trim();
+
+    if (supplierId.isEmpty) {
+      return;
+    }
+
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('supplierProfiles')
+          .doc(supplierId)
+          .get();
+      final data = snapshot.data() ?? <String, dynamic>{};
+      var imageUrl = firstNonEmpty(
+        data,
+        const [
+          'storePhotoUrl',
+          'profileImageUrl',
+          'businessPhotoUrl',
+          'photoUrl',
+          'imageUrl',
+        ],
+        fallback: supplierStoreImageUrl,
+      );
+
+      if (imageUrl.isEmpty) {
+        final application = data['supplierApplication'];
+
+        if (application is Map) {
+          imageUrl = firstNonEmpty(
+            Map<String, dynamic>.from(application),
+            const [
+              'storePhotoUrl',
+              'profileImageUrl',
+              'businessPhotoUrl',
+              'photoUrl',
+              'imageUrl',
+            ],
+          );
+        }
+      }
+
+      if (!mounted || imageUrl.isEmpty) {
+        return;
+      }
+
+      setState(() {
+        supplierStoreImageUrl = imageUrl;
+      });
+    } catch (_) {
+      // Keep the image already carried by the selected supplier card.
+    }
   }
 
   Future<void> loadBuyerDetails() async {
@@ -139,17 +249,6 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
         const ['phone', 'contactNumber', 'mobileNumber'],
       );
 
-      buyerAddressController.text = firstNonEmpty(
-        userData,
-        const [
-          'deliveryAddress',
-          'address',
-          'location',
-          'region',
-        ],
-        fallback: 'Caraga Region',
-      );
-
       buyerProvince = firstNonEmpty(
         userData,
         const ['province'],
@@ -165,31 +264,189 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
         ],
       );
 
+      final storedDeliveryAddress = firstNonEmpty(
+        userData,
+        const ['deliveryAddress'],
+      );
+      buyerAddressController.text =
+          isGeneralLocationOnly(storedDeliveryAddress)
+              ? ''
+              : storedDeliveryAddress;
+
+      deliveryLatitude = coordinateValue(
+        userData['deliveryLatitude'],
+      );
+      deliveryLongitude = coordinateValue(
+        userData['deliveryLongitude'],
+      );
+
+      savedBuyerName = buyerNameController.text.trim();
+      savedBuyerPhone = buyerPhoneController.text.trim();
+      savedBuyerAddress = buyerAddressController.text.trim();
+
       if (!mounted) return;
       setState(() {
         isLoadingBuyer = false;
+        isEditingBuyer = false;
         buyerLoadError = '';
       });
     } catch (error) {
       buyerNameController.text =
           user.displayName ?? user.email ?? 'Vendor';
-      buyerAddressController.text = 'Caraga Region';
+      buyerAddressController.clear();
+      savedBuyerName = buyerNameController.text.trim();
+      savedBuyerPhone = buyerPhoneController.text.trim();
+      savedBuyerAddress = buyerAddressController.text.trim();
 
       if (!mounted) return;
       setState(() {
         isLoadingBuyer = false;
+        isEditingBuyer = false;
         buyerLoadError =
             'Some profile details could not be loaded. You can enter them below.';
       });
     }
   }
 
-  Future<void> chooseDeliveryReferencePin() async {
+  void beginEditingBuyerDetails() {
+    if (isLoadingBuyer || isSavingBuyer) {
+      return;
+    }
+
+    setState(() {
+      isEditingBuyer = true;
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !checkoutScrollController.hasClients) {
+        return;
+      }
+
+      checkoutScrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+      );
+    });
+  }
+
+  void cancelEditingBuyerDetails() {
+    if (isSavingBuyer) {
+      return;
+    }
+
+    buyerNameController.text = savedBuyerName;
+    buyerPhoneController.text = savedBuyerPhone;
+    buyerAddressController.text = savedBuyerAddress;
+
+    setState(() {
+      isEditingBuyer = false;
+      buyerLoadError = '';
+    });
+  }
+
+  Future<bool> saveVendorDeliveryDetails({
+    bool closeEditor = true,
+    bool showFeedback = true,
+  }) async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null || isSavingBuyer) {
+      return false;
+    }
+
+    final name = buyerNameController.text.trim();
+    final phone = buyerPhoneController.text.trim();
     final address = buyerAddressController.text.trim();
 
-    if (address.isEmpty) {
+    if (name.isEmpty || phone.isEmpty) {
       showMessage(
-        'Enter the delivery address before choosing the delivery-reference pin.',
+        'Complete your delivery name and phone number.',
+        isError: true,
+      );
+      return false;
+    }
+
+    if (isGeneralLocationOnly(address)) {
+      showMessage(
+        'Enter a detailed delivery address such as your barangay, street, block, house, or landmark.',
+        isError: true,
+      );
+      return false;
+    }
+
+    FocusScope.of(context).unfocus();
+
+    setState(() {
+      isSavingBuyer = true;
+    });
+
+    try {
+      final updates = <String, dynamic>{
+        'name': name,
+        'phone': phone,
+        'deliveryAddress': address,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+      if (deliveryLatitude != null && deliveryLongitude != null) {
+        updates.addAll({
+          'deliveryLatitude': deliveryLatitude,
+          'deliveryLongitude': deliveryLongitude,
+          'deliveryReferenceType': 'map_pin',
+        });
+      }
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .set(
+            updates,
+            SetOptions(merge: true),
+          );
+
+      if (!mounted) {
+        return false;
+      }
+
+      setState(() {
+        savedBuyerName = name;
+        savedBuyerPhone = phone;
+        savedBuyerAddress = address;
+        buyerLoadError = '';
+        isEditingBuyer = closeEditor ? false : isEditingBuyer;
+      });
+
+      if (showFeedback) {
+        showMessage('Delivery information updated.');
+      }
+
+      return true;
+    } catch (_) {
+      showMessage(
+        'Unable to update your delivery information.',
+        isError: true,
+      );
+      return false;
+    } finally {
+      if (mounted) {
+        setState(() {
+          isSavingBuyer = false;
+        });
+      }
+    }
+  }
+
+  Future<void> chooseDeliveryReferencePin() async {
+    if (isSavingBuyer || isSubmitting) {
+      return;
+    }
+
+    final address = buyerAddressController.text.trim();
+
+    if (isGeneralLocationOnly(address)) {
+      showMessage(
+        'Enter your barangay, street, block, house, or landmark before setting the map location.',
         isError: true,
       );
       return;
@@ -203,8 +460,8 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
       MaterialPageRoute(
         builder: (_) =>
             CaragaLocationPickerScreen(
-          title: 'Delivery Reference Pin',
-          subtitle: address,
+          title: 'Delivery Location',
+          subtitle: fullDeliveryAddress,
           province:
               buyerProvince.trim().isEmpty
                   ? null
@@ -233,12 +490,39 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
     setState(() {
       deliveryLatitude = result.latitude;
       deliveryLongitude = result.longitude;
-      pinnedDeliveryAddress =
-          buyerAddressController.text.trim();
     });
 
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user != null) {
+      try {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .set(
+              {
+                'deliveryLatitude': result.latitude,
+                'deliveryLongitude': result.longitude,
+                'deliveryReferenceType': 'map_pin',
+                'updatedAt': FieldValue.serverTimestamp(),
+              },
+              SetOptions(merge: true),
+            );
+      } catch (_) {
+        if (!mounted) {
+          return;
+        }
+
+        showMessage(
+          'The pin is selected for this order but could not be saved to your account.',
+          isError: true,
+        );
+        return;
+      }
+    }
+
     showMessage(
-      'Delivery reference pin saved.',
+      'Delivery location saved for future orders.',
     );
   }
 
@@ -261,6 +545,137 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
         isError: true,
       );
     }
+  }
+
+  Future<void> enterSpecificQuantity() async {
+    final maximumQuantity = widget.product.availableQuantity.floor();
+    final quantityController = TextEditingController(
+      text: quantity.toString(),
+    );
+
+    final enteredValue = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+          ),
+          title: const Text(
+            'Enter Quantity',
+            style: TextStyle(
+              color: Color(0xFF102C44),
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Enter a whole-number amount from 1 to $maximumQuantity '
+                '${widget.product.quantityUnit}.',
+                style: const TextStyle(
+                  color: Color(0xFF62798B),
+                  fontSize: 11.5,
+                  height: 1.4,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: quantityController,
+                autofocus: true,
+                keyboardType: TextInputType.number,
+                textInputAction: TextInputAction.done,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                ],
+                onSubmitted: (value) {
+                  Navigator.pop(dialogContext, value);
+                },
+                decoration: InputDecoration(
+                  labelText: 'Quantity',
+                  suffixText: widget.product.quantityUnit,
+                  prefixIcon: const Icon(
+                    Icons.inventory_2_outlined,
+                    color: Color(0xFF0875D1),
+                  ),
+                  filled: true,
+                  fillColor: const Color(0xFFF5FAFD),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    borderSide: const BorderSide(
+                      color: Color(0xFF0875D1),
+                      width: 1.4,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(
+                  dialogContext,
+                  quantityController.text,
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0875D1),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                'Apply',
+                style: TextStyle(fontWeight: FontWeight.w900),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    quantityController.dispose();
+
+    if (!mounted || enteredValue == null) {
+      return;
+    }
+
+    final enteredQuantity = int.tryParse(enteredValue.trim());
+
+    if (enteredQuantity == null || enteredQuantity < 1) {
+      showMessage(
+        'Enter a quantity of at least 1.',
+        isError: true,
+      );
+      return;
+    }
+
+    if (enteredQuantity > maximumQuantity) {
+      showMessage(
+        'Only $maximumQuantity ${widget.product.quantityUnit} are available.',
+        isError: true,
+      );
+      return;
+    }
+
+    setState(() {
+      quantity = enteredQuantity;
+    });
   }
 
   void showMessage(
@@ -294,24 +709,18 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
       return false;
     }
 
-    if (buyerAddressController.text.trim().isEmpty) {
-      showMessage('Please enter the delivery address.', isError: true);
+    if (isGeneralLocationOnly(buyerAddressController.text)) {
+      showMessage(
+        'Enter a detailed delivery address such as your barangay, street, block, house, or landmark.',
+        isError: true,
+      );
       return false;
     }
 
     if (deliveryLatitude == null ||
         deliveryLongitude == null) {
       showMessage(
-        'Please choose the delivery-reference pin on the Caraga map.',
-        isError: true,
-      );
-      return false;
-    }
-
-    if (pinnedDeliveryAddress.trim() !=
-        buyerAddressController.text.trim()) {
-      showMessage(
-        'The delivery address changed. Please select the delivery-reference pin again.',
+        'Set your delivery location on the map.',
         isError: true,
       );
       return false;
@@ -554,6 +963,15 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
 
     if (!validateBuyerDetails()) return;
 
+    final profileSaved = await saveVendorDeliveryDetails(
+      closeEditor: true,
+      showFeedback: false,
+    );
+
+    if (!mounted || !profileSaved) {
+      return;
+    }
+
     FocusScope.of(context).unfocus();
 
     final confirmed = await showOrderConfirmationDialog();
@@ -573,7 +991,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
         supplierId: widget.supplierId,
         buyerName: buyerNameController.text.trim(),
         buyerPhone: buyerPhoneController.text.trim(),
-        buyerAddress: buyerAddressController.text.trim(),
+        buyerAddress: fullDeliveryAddress,
         deliveryLatitude: deliveryLatitude!,
         deliveryLongitude: deliveryLongitude!,
       );
@@ -599,6 +1017,29 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
         isError: true,
       );
     }
+  }
+
+  Future<void> handleCheckoutAction() async {
+    if (isEditingBuyer) {
+      await saveVendorDeliveryDetails();
+      return;
+    }
+
+    if (!hasDetailedDeliveryAddress) {
+      beginEditingBuyerDetails();
+      showMessage(
+        'Add and save your detailed delivery address before placing the order.',
+        isError: true,
+      );
+      return;
+    }
+
+    if (!hasSavedDeliveryPin) {
+      await chooseDeliveryReferencePin();
+      return;
+    }
+
+    await confirmOrder();
   }
 
   void showOrderPlacedDialog() {
@@ -761,6 +1202,21 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
   }
 
   Widget checkoutBottomBar() {
+    final actionLabel = isEditingBuyer
+        ? 'Save Delivery Details'
+        : !hasDetailedDeliveryAddress
+            ? 'Add Delivery Address'
+            : !hasSavedDeliveryPin
+                ? 'Set Delivery Pin'
+                : 'Place Order';
+    final actionIcon = isEditingBuyer
+        ? Icons.save_outlined
+        : !hasDetailedDeliveryAddress
+            ? Icons.add_location_alt_outlined
+            : !hasSavedDeliveryPin
+                ? Icons.location_on_outlined
+                : Icons.arrow_forward_rounded;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 11, 18, 10),
       decoration: const BoxDecoration(
@@ -819,13 +1275,13 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
               width: 190,
               height: 50,
               child: ElevatedButton.icon(
-                onPressed: isSubmitting || isLoadingBuyer
+                onPressed: isSubmitting || isLoadingBuyer || isSavingBuyer
                     ? null
-                    : confirmOrder,
+                    : handleCheckoutAction,
                 icon: isSubmitting
                     ? const SizedBox.shrink()
-                    : const Icon(
-                        Icons.arrow_forward_rounded,
+                    : Icon(
+                        actionIcon,
                         size: 18,
                       ),
                 label: isSubmitting
@@ -837,9 +1293,9 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                           color: Colors.white,
                         ),
                       )
-                    : const Text(
-                        'Place Order',
-                        style: TextStyle(
+                    : Text(
+                        actionLabel,
+                        style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w900,
                         ),
@@ -872,6 +1328,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
           const PlaceOrderHeader(),
           Expanded(
             child: ListView(
+              controller: checkoutScrollController,
               keyboardDismissBehavior:
                   ScrollViewKeyboardDismissBehavior.onDrag,
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
@@ -884,15 +1341,28 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                   errorMessage: buyerLoadError,
                   deliveryLatitude: deliveryLatitude,
                   deliveryLongitude: deliveryLongitude,
+                  province: buyerProvince,
+                  locality: buyerLocality,
+                  displayAddress: fullDeliveryAddress,
+                  hasDetailedAddress: hasDetailedDeliveryAddress,
+                  isEditing: isEditingBuyer,
+                  isSaving: isSavingBuyer,
+                  onEdit: beginEditingBuyerDetails,
+                  onCancel: cancelEditingBuyerDetails,
+                  onSave: () {
+                    saveVendorDeliveryDetails();
+                  },
                   onChooseDeliveryPin:
                       chooseDeliveryReferencePin,
                 ),
                 ProductOrderCard(
                   supplier: widget.supplier,
+                  supplierImageUrl: supplierStoreImageUrl,
                   product: widget.product,
                   quantity: quantity,
                   onDecrease: decreaseQuantity,
                   onIncrease: increaseQuantity,
+                  onEnterQuantity: enterSpecificQuantity,
                 ),
                 PaymentDetailsCard(
                   product: widget.product,

@@ -752,7 +752,7 @@ class _MeScreenState
                 height: 13,
               ),
               if (isApprovedSupplier &&
-                  uid.isNotEmpty)
+                  uid.isNotEmpty) ...[
                 _SupplierCenterCard(
                   uid: uid,
                   onOpenDashboard: () => openScreen(
@@ -772,18 +772,11 @@ class _MeScreenState
                       mode: AnalyticsMode.supplier,
                     ),
                   ),
-                )
-              else
-                _SupplierActivationCard(
-                  isPending: isPendingSupplier,
-                  isRejected: isRejectedSupplier,
-                  onTap: () => openScreen(
-                    const SupplierActivationScreen(),
-                  ),
                 ),
-              const SizedBox(
-                height: 13,
-              ),
+                const SizedBox(
+                  height: 13,
+                ),
+              ],
               _AccountSettingsCard(
                 onAccountInformation: () => openScreen(
                   const ManageProfileScreen(),
@@ -1177,6 +1170,10 @@ class _MeDashboardHeader
                                         child: Icon(
                                           isApprovedSupplier
                                               ? Icons.storefront_rounded
+                                              : isPendingSupplier
+                                              ? Icons.hourglass_top_rounded
+                                              : isRejectedSupplier
+                                              ? Icons.info_outline_rounded
                                               : Icons.store_mall_directory,
                                           color: Colors.white,
                                           size: 17,
@@ -1192,6 +1189,10 @@ class _MeDashboardHeader
                                             Text(
                                               isApprovedSupplier
                                                   ? 'Supplier Center'
+                                                  : isPendingSupplier
+                                                  ? 'Application Pending'
+                                                  : isRejectedSupplier
+                                                  ? 'Review Application'
                                                   : 'Become a Supplier',
                                               style: const TextStyle(
                                                 color: Colors.white,
@@ -1205,6 +1206,10 @@ class _MeDashboardHeader
                                             Text(
                                               isApprovedSupplier
                                                   ? 'Manage your supplier tools and sales.'
+                                                  : isPendingSupplier
+                                                  ? 'Your supplier application is under review.'
+                                                  : isRejectedSupplier
+                                                  ? 'Review the application details and submit again.'
                                                   : 'Activate supplier tools in this account.',
                                               style: const TextStyle(
                                                 color: Color(
@@ -1706,152 +1711,6 @@ class _SupplierCenterCard
                   },
             );
           },
-    );
-  }
-}
-
-class _SupplierActivationCard
-    extends
-        StatelessWidget {
-  const _SupplierActivationCard({
-    required this.isPending,
-    required this.isRejected,
-    required this.onTap,
-  });
-
-  final bool isPending;
-  final bool isRejected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(
-    BuildContext context,
-  ) {
-    final title = isPending
-        ? 'Supplier Application Pending'
-        : isRejected
-        ? 'Supplier Application Rejected'
-        : 'Become a Supplier';
-    final subtitle = isPending
-        ? 'Your application is waiting for administrator review.'
-        : isRejected
-        ? 'Review your information before submitting again.'
-        : 'Activate supplier tools in your existing account.';
-    final icon = isPending
-        ? Icons.hourglass_top_rounded
-        : isRejected
-        ? Icons.info_outline_rounded
-        : Icons.storefront_rounded;
-    final color = isPending
-        ? const Color(
-            0xFFFF7A1A,
-          )
-        : isRejected
-        ? const Color(
-            0xFFD32F2F,
-          )
-        : const Color(
-            0xFF0875D1,
-          );
-
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(
-        23,
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(
-          23,
-        ),
-        child: Container(
-          padding: const EdgeInsets.all(
-            15,
-          ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(
-              23,
-            ),
-            border: Border.all(
-              color: color.withAlpha(
-                40,
-              ),
-            ),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(
-                  0x0D00152A,
-                ),
-                blurRadius: 13,
-                offset: Offset(
-                  0,
-                  6,
-                ),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: color.withAlpha(
-                    18,
-                  ),
-                  borderRadius: BorderRadius.circular(
-                    15,
-                  ),
-                ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 23,
-                ),
-              ),
-              const SizedBox(
-                width: 12,
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Color(
-                          0xFF102C44,
-                        ),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(
-                      height: 4,
-                    ),
-                    Text(
-                      subtitle,
-                      style: const TextStyle(
-                        color: Color(
-                          0xFF7B8FA3,
-                        ),
-                        fontSize: 10.4,
-                        height: 1.35,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                color: color,
-                size: 16,
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

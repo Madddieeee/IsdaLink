@@ -1224,47 +1224,58 @@ class SupplierDashboardScreen extends StatelessWidget {
     required int stockAlerts,
     required bool hasOutOfStock,
   }) {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      primary: false,
-      padding: EdgeInsets.zero,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 11,
-      mainAxisSpacing: 11,
-      childAspectRatio: 1.52,
-      children: [
-        _ToolCard(
-          icon: Icons.add_box_outlined,
-          title: 'Post Stock',
-          subtitle: 'Create a new fish listing.',
-          onTap: () => openPostFishStock(context),
-        ),
-        _ToolCard(
-          icon: Icons.inventory_2_outlined,
-          title: 'Products',
-          subtitle: 'Manage stock and alert levels.',
-          badge: stockAlerts,
-          badgeColor: hasOutOfStock
-              ? const Color(0xFFD94135)
-              : const Color(0xFFFF8A24),
-          onTap: () => openManageProducts(context),
-        ),
-        _ToolCard(
-          icon: Icons.receipt_long_outlined,
-          title: 'COD Orders',
-          subtitle: 'Review incoming vendor orders.',
-          badge: activeCod,
-          badgeColor: const Color(0xFFD94135),
-          onTap: () => openOrders(context),
-        ),
-        _ToolCard(
-          icon: Icons.bar_chart_rounded,
-          title: 'Supplier Analytics',
-          subtitle: 'Forecasts and stock insights.',
-          onTap: () => openAnalytics(context),
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const spacing = 11.0;
+        final cardWidth = (constraints.maxWidth - spacing) / 2;
+        final textScale = MediaQuery.textScalerOf(context)
+            .scale(1)
+            .clamp(1.0, 2.0);
+        final cardHeight = 122 + ((textScale - 1) * 44);
+
+        return GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          primary: false,
+          padding: EdgeInsets.zero,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisSpacing: spacing,
+          mainAxisSpacing: spacing,
+          childAspectRatio: cardWidth / cardHeight,
+          children: [
+            _ToolCard(
+              icon: Icons.add_box_outlined,
+              title: 'Post Stock',
+              subtitle: 'Create a new fish listing.',
+              onTap: () => openPostFishStock(context),
+            ),
+            _ToolCard(
+              icon: Icons.inventory_2_outlined,
+              title: 'Products',
+              subtitle: 'Manage stock and alert levels.',
+              badge: stockAlerts,
+              badgeColor: hasOutOfStock
+                  ? const Color(0xFFD94135)
+                  : const Color(0xFFFF8A24),
+              onTap: () => openManageProducts(context),
+            ),
+            _ToolCard(
+              icon: Icons.receipt_long_outlined,
+              title: 'COD Orders',
+              subtitle: 'Review incoming vendor orders.',
+              badge: activeCod,
+              badgeColor: const Color(0xFFD94135),
+              onTap: () => openOrders(context),
+            ),
+            _ToolCard(
+              icon: Icons.bar_chart_rounded,
+              title: 'Supplier Analytics',
+              subtitle: 'Forecasts and stock insights.',
+              onTap: () => openAnalytics(context),
+            ),
+          ],
+        );
+      },
     );
   }
 

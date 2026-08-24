@@ -642,10 +642,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     String? selectedValue,
     bool searchable = false,
     String Function(String option)? optionSubtitleBuilder,
-  }) async {
-    final searchController = TextEditingController();
-
-    final result = await showModalBottomSheet<String>(
+  }) {
+    return showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -654,11 +652,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
       builder: (
         sheetContext,
       ) {
-        return StatefulBuilder(
+        return _LocationPickerSearchHost(
           builder: (
             context,
-            setSheetState,
+            searchController,
+            searchFocusNode,
           ) {
+            return StatefulBuilder(
+              builder: (
+                context,
+                setSheetState,
+              ) {
             final query = searchController.text.trim().toLowerCase();
             final filteredOptions = options.where(
               (option) {
@@ -753,6 +757,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           IconButton(
                             tooltip: 'Close',
                             onPressed: () {
+                              searchFocusNode.unfocus();
                               Navigator.pop(
                                 sheetContext,
                               );
@@ -775,7 +780,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         child: TextField(
                           controller: searchController,
-                          autofocus: options.length > 12,
+                          focusNode: searchFocusNode,
+                          autofocus: false,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 13,
@@ -885,6 +891,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   color: Colors.transparent,
                                   child: InkWell(
                                     onTap: () {
+                                      searchFocusNode.unfocus();
                                       Navigator.pop(
                                         sheetContext,
                                         option,
@@ -968,15 +975,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ],
                 ),
               ),
+              );
+            },
             );
           },
         );
       },
     );
-
-    searchController.dispose();
-
-    return result;
   }
 
   Future<void> showProvincePicker() async {
@@ -3072,6 +3077,44 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _LocationPickerSearchHost extends StatefulWidget {
+  const _LocationPickerSearchHost({
+    required this.builder,
+  });
+
+  final Widget Function(
+    BuildContext context,
+    TextEditingController searchController,
+    FocusNode searchFocusNode,
+  ) builder;
+
+  @override
+  State<_LocationPickerSearchHost> createState() =>
+      _LocationPickerSearchHostState();
+}
+
+class _LocationPickerSearchHostState
+    extends State<_LocationPickerSearchHost> {
+  final searchController = TextEditingController();
+  final searchFocusNode = FocusNode();
+
+  @override
+  void dispose() {
+    searchFocusNode.dispose();
+    searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.builder(
+      context,
+      searchController,
+      searchFocusNode,
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:isdalink/models/fish_product.dart';
 import 'package:isdalink/models/supplier.dart';
+import 'package:isdalink/screens/map/vendor_delivery_map_card.dart';
 
 class CheckoutCard extends StatelessWidget {
   const CheckoutCard({
@@ -43,11 +44,13 @@ class CheckoutSectionTitle extends StatelessWidget {
     super.key,
     required this.icon,
     required this.title,
+    this.leading,
     this.trailing,
   });
 
   final IconData icon;
   final String title;
+  final Widget? leading;
   final Widget? trailing;
 
   @override
@@ -61,11 +64,16 @@ class CheckoutSectionTitle extends StatelessWidget {
             color: const Color(0xFFE8F8FD),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(
-            icon,
-            color: const Color(0xFF0875D1),
-            size: 18,
-          ),
+          child: leading == null
+              ? Icon(
+                  icon,
+                  color: const Color(0xFF0875D1),
+                  size: 18,
+                )
+              : ClipRRect(
+                  borderRadius: BorderRadius.circular(11),
+                  child: leading,
+                ),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -94,6 +102,15 @@ class BuyerDetailsCard extends StatelessWidget {
     required this.errorMessage,
     required this.deliveryLatitude,
     required this.deliveryLongitude,
+    required this.province,
+    required this.locality,
+    required this.displayAddress,
+    required this.hasDetailedAddress,
+    required this.isEditing,
+    required this.isSaving,
+    required this.onEdit,
+    required this.onCancel,
+    required this.onSave,
     required this.onChooseDeliveryPin,
   });
 
@@ -104,14 +121,25 @@ class BuyerDetailsCard extends StatelessWidget {
   final String errorMessage;
   final double? deliveryLatitude;
   final double? deliveryLongitude;
+  final String province;
+  final String locality;
+  final String displayAddress;
+  final bool hasDetailedAddress;
+  final bool isEditing;
+  final bool isSaving;
+  final VoidCallback onEdit;
+  final VoidCallback onCancel;
+  final VoidCallback onSave;
   final VoidCallback onChooseDeliveryPin;
 
   InputDecoration fieldDecoration({
     required String label,
     required IconData icon,
+    String? hintText,
   }) {
     return InputDecoration(
       labelText: label,
+      hintText: hintText,
       labelStyle: const TextStyle(
         color: Color(0xFF7B8FA3),
         fontSize: 10.3,
@@ -155,11 +183,32 @@ class BuyerDetailsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const CheckoutSectionTitle(
-            icon: Icons.person_pin_circle_outlined,
-            title: 'Buyer Details',
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Delivery Information',
+                  style: TextStyle(
+                    color: Color(0xFF102C44),
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              if (isEditing)
+                TextButton(
+                  onPressed: isSaving ? null : onCancel,
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+            ],
           ),
-          const SizedBox(height: 13),
+          const SizedBox(height: 12),
           if (isLoading)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 20),
@@ -171,143 +220,172 @@ class BuyerDetailsCard extends StatelessWidget {
               ),
             )
           else ...[
-            TextField(
-              controller: nameController,
-              textCapitalization: TextCapitalization.words,
-              decoration: fieldDecoration(
-                label: 'Buyer name',
-                icon: Icons.person_outline_rounded,
-              ),
-            ),
-            const SizedBox(height: 9),
-            TextField(
-              controller: phoneController,
-              keyboardType: TextInputType.phone,
-              decoration: fieldDecoration(
-                label: 'Contact number',
-                icon: Icons.phone_outlined,
-              ),
-            ),
-            const SizedBox(height: 9),
-            TextField(
-              controller: addressController,
-              keyboardType: TextInputType.streetAddress,
-              textCapitalization: TextCapitalization.words,
-              minLines: 1,
-              maxLines: 2,
-              decoration: fieldDecoration(
-                label: 'Delivery address',
-                icon: Icons.home_outlined,
-              ),
-            ),
-            const SizedBox(height: 9),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(11),
-              decoration: BoxDecoration(
-                color: deliveryLatitude != null &&
-                        deliveryLongitude != null
-                    ? const Color(0xFFE8F8F2)
-                    : const Color(0xFFF2F7FF),
-                borderRadius:
-                    BorderRadius.circular(15),
-                border: Border.all(
-                  color: deliveryLatitude != null &&
-                          deliveryLongitude != null
-                      ? const Color(0xFF77D7B7)
-                      : const Color(0xFFD4E2FF),
+            if (isEditing) ...[
+              TextField(
+                controller: nameController,
+                enabled: !isSaving,
+                textCapitalization: TextCapitalization.words,
+                decoration: fieldDecoration(
+                  label: 'Recipient name',
+                  icon: Icons.person_outline_rounded,
                 ),
               ),
-              child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        deliveryLatitude != null &&
-                                deliveryLongitude != null
-                            ? Icons.location_on_rounded
-                            : Icons.add_location_alt_outlined,
-                        color:
-                            const Color(0xFF0875D1),
-                        size: 19,
-                      ),
-                      const SizedBox(width: 7),
-                      const Expanded(
-                        child: Text(
-                          'Delivery Reference Pin',
-                          style: TextStyle(
-                            color:
-                                Color(0xFF102C44),
-                            fontSize: 10.8,
-                            fontWeight:
-                                FontWeight.w900,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    deliveryLatitude != null &&
-                            deliveryLongitude != null
-                        ? '${deliveryLatitude!.toStringAsFixed(6)}, '
-                            '${deliveryLongitude!.toStringAsFixed(6)}'
-                        : 'Choose the COD delivery reference point on the Caraga map.',
-                    style: const TextStyle(
-                      color: Color(0xFF657C8E),
-                      fontSize: 8.9,
-                      height: 1.3,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 41,
-                    child: OutlinedButton.icon(
-                      onPressed:
-                          onChooseDeliveryPin,
-                      icon: Icon(
-                        deliveryLatitude != null &&
-                                deliveryLongitude != null
-                            ? Icons.edit_location_alt_outlined
-                            : Icons.map_outlined,
-                        size: 17,
-                      ),
-                      label: Text(
-                        deliveryLatitude != null &&
-                                deliveryLongitude != null
-                            ? 'Update Delivery Pin'
-                            : 'Choose on Caraga Map',
-                        style: const TextStyle(
-                          fontSize: 9.8,
-                          fontWeight:
-                              FontWeight.w900,
-                        ),
-                      ),
-                      style:
-                          OutlinedButton.styleFrom(
-                        foregroundColor:
-                            const Color(0xFF0875D1),
-                        side: const BorderSide(
-                          color:
-                              Color(0xFF0875D1),
-                        ),
-                        shape:
-                            RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(
-                            13,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 9),
+              TextField(
+                controller: phoneController,
+                enabled: !isSaving,
+                keyboardType: TextInputType.phone,
+                decoration: fieldDecoration(
+                  label: 'Contact number',
+                  icon: Icons.phone_outlined,
+                ),
               ),
-            ),
+              const SizedBox(height: 9),
+              TextField(
+                controller: addressController,
+                enabled: !isSaving,
+                keyboardType: TextInputType.streetAddress,
+                textCapitalization: TextCapitalization.words,
+                minLines: 1,
+                maxLines: 3,
+                decoration: fieldDecoration(
+                  label: 'Detailed delivery address *',
+                  icon: Icons.home_work_outlined,
+                  hintText: 'Block, street, barangay, house, or landmark',
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                height: 43,
+                child: ElevatedButton.icon(
+                  onPressed: isSaving ? null : onSave,
+                  icon: isSaving
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.save_outlined,
+                          size: 17,
+                        ),
+                  label: Text(
+                    isSaving ? 'Saving...' : 'Save Delivery Information',
+                    style: const TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0875D1),
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: const Color(0xFF8CA5BA),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                  ),
+                ),
+              ),
+            ] else ...[
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: onEdit,
+                  borderRadius: BorderRadius.circular(15),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 2,
+                      vertical: 4,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.only(top: 1),
+                          child: Icon(
+                            Icons.location_on_outlined,
+                            color: Color(0xFF0875D1),
+                            size: 27,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text.rich(
+                                TextSpan(
+                                  children: [
+                                    TextSpan(
+                                      text: nameController.text.trim(),
+                                      style: const TextStyle(
+                                        color: Color(0xFF102C44),
+                                        fontSize: 13.2,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text: phoneController.text.trim().isEmpty
+                                          ? ''
+                                          : '  ${phoneController.text.trim()}',
+                                      style: const TextStyle(
+                                        color: Color(0xFF7B8FA3),
+                                        fontSize: 11.2,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 5),
+                              Text(
+                                hasDetailedAddress
+                                    ? displayAddress
+                                    : 'Add a barangay, street, block, house, or landmark before placing an order.',
+                                style: TextStyle(
+                                  color: hasDetailedAddress
+                                      ? const Color(0xFF52677A)
+                                      : const Color(0xFFC46A00),
+                                  fontSize: 11.2,
+                                  height: 1.42,
+                                  fontWeight: hasDetailedAddress
+                                      ? FontWeight.w600
+                                      : FontWeight.w800,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        const Padding(
+                          padding: EdgeInsets.only(top: 10),
+                          child: Icon(
+                            Icons.chevron_right_rounded,
+                            color: Color(0xFF9AAEBD),
+                            size: 21,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              if (hasDetailedAddress) ...[
+                const SizedBox(height: 12),
+                VendorDeliveryMapCard(
+                  latitude: deliveryLatitude,
+                  longitude: deliveryLongitude,
+                  province: province,
+                  locality: locality,
+                  onTap: onChooseDeliveryPin,
+                ),
+              ],
+            ],
             if (errorMessage.trim().isNotEmpty) ...[
               const SizedBox(height: 9),
               Container(
@@ -345,22 +423,54 @@ class ProductOrderCard extends StatelessWidget {
   const ProductOrderCard({
     super.key,
     required this.supplier,
+    required this.supplierImageUrl,
     required this.product,
     required this.quantity,
     required this.onDecrease,
     required this.onIncrease,
+    required this.onEnterQuantity,
   });
 
   final Supplier supplier;
+  final String supplierImageUrl;
   final FishProduct product;
   final int quantity;
   final VoidCallback onDecrease;
   final VoidCallback onIncrease;
+  final VoidCallback onEnterQuantity;
 
   bool get hasProductImage {
     final imageUrl = product.imageUrl.trim();
     return imageUrl.startsWith('http://') ||
         imageUrl.startsWith('https://');
+  }
+
+  bool get hasSupplierImage {
+    final imageUrl = supplierImageUrl.trim();
+    return imageUrl.startsWith('http://') ||
+        imageUrl.startsWith('https://');
+  }
+
+  Widget supplierImage() {
+    if (!hasSupplierImage) {
+      return const Icon(
+        Icons.storefront_outlined,
+        color: Color(0xFF0875D1),
+        size: 18,
+      );
+    }
+
+    return Image.network(
+      supplierImageUrl,
+      width: 34,
+      height: 34,
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => const Icon(
+        Icons.storefront_outlined,
+        color: Color(0xFF0875D1),
+        size: 18,
+      ),
+    );
   }
 
   bool get canDecrease => quantity > 1;
@@ -451,6 +561,7 @@ class ProductOrderCard extends StatelessWidget {
           CheckoutSectionTitle(
             icon: Icons.storefront_outlined,
             title: supplier.name,
+            leading: supplierImage(),
             trailing: Container(
               padding: const EdgeInsets.symmetric(
                 horizontal: 8,
@@ -598,15 +709,45 @@ class ProductOrderCard extends StatelessWidget {
                   onTap: onDecrease,
                   enabled: canDecrease,
                 ),
-                SizedBox(
-                  width: 70,
-                  child: Text(
-                    '$quantity ${product.quantityUnit}',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Color(0xFF102C44),
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w900,
+                Material(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  child: InkWell(
+                    onTap: onEnterQuantity,
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      width: 78,
+                      height: 36,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: const Color(0xFFDCE8EF),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              '$quantity ${product.quantityUnit}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFF102C44),
+                                fontSize: 11.2,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 3),
+                          const Icon(
+                            Icons.edit_outlined,
+                            color: Color(0xFF0875D1),
+                            size: 12,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

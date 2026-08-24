@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:isdalink/services/push_notification_service.dart';
 
 class AdminDashboardService {
   const AdminDashboardService();
@@ -29,7 +30,7 @@ class AdminDashboardService {
   }
 
   Future<void> logout() async {
-    await FirebaseAuth.instance.signOut();
+    await PushNotificationService.instance.signOut();
   }
 
   String getStringValue(
@@ -442,6 +443,26 @@ class AdminDashboardService {
       SetOptions(merge: true),
     );
 
+    final notificationRef = FirebaseFirestore.instance
+        .collection('notifications')
+        .doc();
+
+    batch.set(
+      notificationRef,
+      <String, dynamic>{
+        'userId': uid,
+        'supplierId': uid,
+        'title': 'Supplier application approved',
+        'message':
+            'Your supplier application was approved. Supplier tools are now available on your account.',
+        'type': 'supplier_application_status',
+        'status': 'approved',
+        'applicationId': uid,
+        'isRead': false,
+        'createdAt': FieldValue.serverTimestamp(),
+      },
+    );
+
     await batch.commit();
   }
 
@@ -485,6 +506,26 @@ class AdminDashboardService {
         'updatedAt': FieldValue.serverTimestamp(),
       },
       SetOptions(merge: true),
+    );
+
+    final notificationRef = FirebaseFirestore.instance
+        .collection('notifications')
+        .doc();
+
+    batch.set(
+      notificationRef,
+      <String, dynamic>{
+        'userId': uid,
+        'supplierId': uid,
+        'title': 'Supplier application needs revision',
+        'message':
+            'Your supplier application was not approved. Review your business details before submitting again.',
+        'type': 'supplier_application_status',
+        'status': 'rejected',
+        'applicationId': uid,
+        'isRead': false,
+        'createdAt': FieldValue.serverTimestamp(),
+      },
     );
 
     await batch.commit();

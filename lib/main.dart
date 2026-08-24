@@ -1,9 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'core/app_colors.dart';
 import 'firebase_options.dart';
 import 'screens/auth/auth_gate.dart';
+import 'services/push_notification_service.dart';
+
+final GlobalKey<ScaffoldMessengerState> appMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
+
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(
+  RemoteMessage message,
+) async {
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+}
 
 void
 main() async {
@@ -11,6 +25,14 @@ main() async {
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  FirebaseMessaging.onBackgroundMessage(
+    firebaseMessagingBackgroundHandler,
+  );
+
+  await PushNotificationService.instance.initialize(
+    messengerKey: appMessengerKey,
   );
 
   runApp(
@@ -32,6 +54,7 @@ class IsdaLinkApp
     return MaterialApp(
       title: 'IsdaLink',
       debugShowCheckedModeBanner: false,
+      scaffoldMessengerKey: appMessengerKey,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: AppColors.blue,

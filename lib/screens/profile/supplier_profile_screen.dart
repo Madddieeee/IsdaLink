@@ -1619,11 +1619,10 @@ class _ProfileSectionCard extends StatelessWidget {
     required this.subtitle,
     required this.icon,
     required this.children,
-    this.actionLabel,
-    this.onAction,
-    this.actionDisabled = false,
     this.locked = false,
-  });
+  })  : actionLabel = null,
+        onAction = null,
+        actionDisabled = false;
 
   final String title;
   final String subtitle;

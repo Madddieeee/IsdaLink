@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:isdalink/services/push_notification_service.dart';
 
 class UserProfileService {
   const UserProfileService();
@@ -151,7 +152,7 @@ class UserProfileService {
     void
   >
   logout() async {
-    await FirebaseAuth.instance.signOut();
+    await PushNotificationService.instance.signOut();
   }
 
   String getStringValue(

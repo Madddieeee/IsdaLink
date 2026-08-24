@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:isdalink/screens/map/caraga_map_defaults.dart';
 
 class CaragaLocationResult {
   const CaragaLocationResult({
@@ -53,17 +54,6 @@ class _CaragaLocationPickerScreenState
         State<
           CaragaLocationPickerScreen
         > {
-  static final LatLngBounds _caragaCameraBounds = LatLngBounds(
-    southwest: const LatLng(
-      7.55,
-      124.65,
-    ),
-    northeast: const LatLng(
-      10.75,
-      126.85,
-    ),
-  );
-
   LatLng? selectedLocation;
 
   @override
@@ -93,71 +83,23 @@ class _CaragaLocationPickerScreenState
   bool isInsideCaragaMapArea(
     LatLng location,
   ) {
-    return location.latitude >=
-            _caragaCameraBounds.southwest.latitude &&
-        location.latitude <=
-            _caragaCameraBounds.northeast.latitude &&
-        location.longitude >=
-            _caragaCameraBounds.southwest.longitude &&
-        location.longitude <=
-            _caragaCameraBounds.northeast.longitude;
+    return CaragaMapDefaults.contains(location);
   }
 
   LatLng initialTarget() {
-    if (selectedLocation !=
-        null) {
-      return selectedLocation!;
-    }
-
-    if (widget.locality ==
-        'Butuan City') {
-      return const LatLng(
-        8.9475,
-        125.5406,
-      );
-    }
-
-    return switch (widget.province) {
-      'Agusan del Norte' => const LatLng(
-        9.0700,
-        125.5700,
-      ),
-      'Agusan del Sur' => const LatLng(
-        8.5100,
-        125.9700,
-      ),
-      'Surigao del Norte' => const LatLng(
-        9.7900,
-        125.5000,
-      ),
-      'Surigao del Sur' => const LatLng(
-        8.7500,
-        126.1200,
-      ),
-      'Dinagat Islands' => const LatLng(
-        10.1300,
-        125.6100,
-      ),
-      _ => const LatLng(
-        8.9475,
-        125.5406,
-      ),
-    };
+    return CaragaMapDefaults.targetFor(
+      latitude: selectedLocation?.latitude,
+      longitude: selectedLocation?.longitude,
+      province: widget.province,
+      locality: widget.locality,
+    );
   }
 
   double initialZoom() {
-    if (selectedLocation !=
-        null) {
-      return 16;
-    }
-
-    if (widget.locality !=
-            null &&
-        widget.locality!.trim().isNotEmpty) {
-      return 11.5;
-    }
-
-    return 8.4;
+    return CaragaMapDefaults.zoomFor(
+      hasSavedPin: selectedLocation != null,
+      locality: widget.locality,
+    );
   }
 
   void selectLocation(
@@ -332,7 +274,7 @@ class _CaragaLocationPickerScreenState
                       zoom: initialZoom(),
                     ),
                     cameraTargetBounds: CameraTargetBounds(
-                      _caragaCameraBounds,
+                      CaragaMapDefaults.bounds,
                     ),
                     minMaxZoomPreference: const MinMaxZoomPreference(
                       7.6,

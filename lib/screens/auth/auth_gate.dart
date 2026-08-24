@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:isdalink/screens/admin/admin_dashboard_screen.dart';
 import 'package:isdalink/screens/home/home_screen.dart';
 import 'package:isdalink/screens/welcome_screen.dart';
+import 'package:isdalink/services/push_notification_service.dart';
 
 class AuthGate extends StatelessWidget {
   const AuthGate({
@@ -94,7 +95,7 @@ class _SignedInDestinationState
   }
 
   Future<void> logout() async {
-    await FirebaseAuth.instance.signOut();
+    await PushNotificationService.instance.signOut();
   }
 
   @override
