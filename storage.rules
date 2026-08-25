@@ -1,0 +1,42 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userPath(uid) {
+      return /databases/(default)/documents/users/$(uid);
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && firestore.exists(userPath(request.auth.uid))
+        && firestore.get(userPath(request.auth.uid)).data.get('role', '')
+            == 'admin';
+    }
+
+    function validPermitUpload() {
+      return request.resource != null
+        && request.resource.size <= 8 * 1024 * 1024
+        && request.resource.contentType.matches(
+          'image/(jpeg|png|webp|heic|heif)'
+        );
+    }
+
+    // Business permits are private verification evidence. Only the supplier
+    // who owns the application and administrators may read them.
+    match /supplier_verification/{userId}/permits/{permitId} {
+      allow read: if signedIn()
+        && (request.auth.uid == userId || isAdmin());
+
+      allow create, update: if signedIn()
+        && request.auth.uid == userId
+        && validPermitUpload();
+
+      allow delete: if signedIn()
+        && (request.auth.uid == userId || isAdmin());
+    }
+  }
+}

@@ -4,6 +4,8 @@ import 'package:isdalink/screens/map/caraga_location_picker_screen.dart';
 import 'package:isdalink/screens/supplier/activation/supplier_caraga_locations.dart';
 import 'package:isdalink/services/cloudinary_upload_service.dart';
 import 'package:isdalink/services/supplier_profile_service.dart';
+import 'package:isdalink/services/supplier_verification_storage_service.dart';
+import 'package:isdalink/widgets/verification_evidence_image.dart';
 
 enum _VerifiedChangeType {
   storeName,
@@ -39,6 +41,8 @@ class _SupplierVerifiedChangeRequestScreenState
   final imagePicker = ImagePicker();
   final uploadService = const CloudinaryUploadService();
   final profileService = const SupplierProfileService();
+  final verificationStorageService =
+      const SupplierVerificationStorageService();
 
   final selectedChanges = <_VerifiedChangeType>{};
 
@@ -55,9 +59,11 @@ class _SupplierVerifiedChangeRequestScreenState
 
   String currentPermitNumber = '';
   String currentPermitUrl = '';
+  String currentPermitStoragePath = '';
   String currentStorePhotoUrl = '';
   String requestedStorePhotoUrl = '';
   String requestedPermitPhotoUrl = '';
+  String requestedPermitStoragePath = '';
 
   String stringValue(
     Map<String, dynamic>? data,
@@ -220,6 +226,10 @@ class _SupplierVerifiedChangeRequestScreenState
       previous,
       'requestedBusinessPermitUrl',
     );
+    requestedPermitStoragePath = stringValue(
+      previous,
+      'requestedBusinessPermitStoragePath',
+    );
     reasonController.text = stringValue(
       previous,
       'reason',
@@ -253,6 +263,10 @@ class _SupplierVerifiedChangeRequestScreenState
       currentPermitUrl = stringValue(
         application,
         'businessPermitUrl',
+      );
+      currentPermitStoragePath = stringValue(
+        application,
+        'businessPermitStoragePath',
       );
 
       final previousPermit = stringValue(
@@ -410,14 +424,16 @@ class _SupplierVerifiedChangeRequestScreenState
         }
       });
 
-      final folder = permit
-          ? 'isdalink/supplier_verification/${widget.uid}/change_requests/permits'
-          : 'isdalink/supplier_verification/${widget.uid}/change_requests/stores';
-
-      final url = await uploadService.uploadImage(
-        image,
-        folder: folder,
-      );
+      final uploadedValue = permit
+          ? await verificationStorageService.uploadBusinessPermit(
+              uid: widget.uid,
+              image: image,
+            )
+          : await uploadService.uploadImage(
+              image,
+              folder:
+                  'isdalink/supplier_verification/${widget.uid}/change_requests/stores',
+            );
 
       if (!mounted) {
         return;
@@ -425,9 +441,10 @@ class _SupplierVerifiedChangeRequestScreenState
 
       setState(() {
         if (permit) {
-          requestedPermitPhotoUrl = url;
+          requestedPermitPhotoUrl = '';
+          requestedPermitStoragePath = uploadedValue;
         } else {
-          requestedStorePhotoUrl = url;
+          requestedStorePhotoUrl = uploadedValue;
         }
       });
 
@@ -436,6 +453,8 @@ class _SupplierVerifiedChangeRequestScreenState
             ? 'Permit evidence uploaded.'
             : 'Current store photo uploaded.',
       );
+    } on StateError catch (error) {
+      showMessage(error.message.toString(), isError: true);
     } catch (_) {
       showMessage(
         'The verification photo could not be uploaded. Check your connection and try again.',
@@ -554,6 +573,8 @@ class _SupplierVerifiedChangeRequestScreenState
 
     final permitChanged =
         permitNumberController.text.trim() != currentPermitNumber ||
+            (requestedPermitStoragePath.isNotEmpty &&
+                requestedPermitStoragePath != currentPermitStoragePath) ||
             (requestedPermitPhotoUrl.isNotEmpty &&
                 requestedPermitPhotoUrl != currentPermitUrl);
 
@@ -679,7 +700,8 @@ class _SupplierVerifiedChangeRequestScreenState
         return false;
       }
 
-      if (requestedPermitPhotoUrl.isEmpty) {
+      if (requestedPermitStoragePath.isEmpty &&
+          requestedPermitPhotoUrl.isEmpty) {
         showMessage(
           selectedChanges.contains(
             _VerifiedChangeType.storeName,
@@ -695,6 +717,7 @@ class _SupplierVerifiedChangeRequestScreenState
             _VerifiedChangeType.businessPermit,
           ) &&
           permitNumber == currentPermitNumber &&
+          requestedPermitStoragePath == currentPermitStoragePath &&
           requestedPermitPhotoUrl == currentPermitUrl) {
         showMessage(
           'Change the permit information or upload updated permit evidence.',
@@ -786,17 +809,20 @@ class _SupplierVerifiedChangeRequestScreenState
       _VerifiedChangeType.businessPermit,
     );
 
-    final permitUrl = changesPermit &&
-            requestedPermitPhotoUrl.isNotEmpty
+    final permitUrl = changesPermit
         ? requestedPermitPhotoUrl
         : currentPermitUrl;
+    final permitStoragePath = changesPermit
+        ? requestedPermitStoragePath
+        : currentPermitStoragePath;
 
     final storePhotoUrl = changesStorePhoto &&
             requestedStorePhotoUrl.isNotEmpty
         ? requestedStorePhotoUrl
         : currentStorePhotoUrl;
 
-    if (permitUrl.isEmpty || storePhotoUrl.isEmpty) {
+    if ((permitStoragePath.isEmpty && permitUrl.isEmpty) ||
+        storePhotoUrl.isEmpty) {
       showMessage(
         'Verification evidence is incomplete.',
         isError: true,
@@ -833,6 +859,7 @@ class _SupplierVerifiedChangeRequestScreenState
             ? permitNumberController.text.trim()
             : currentPermitNumber,
         requestedBusinessPermitUrl: permitUrl,
+        requestedBusinessPermitStoragePath: permitStoragePath,
         requestedStorePhotoUrl: storePhotoUrl,
         changedFields: fields,
         reason: reasonController.text.trim(),
@@ -1160,6 +1187,7 @@ class _SupplierVerifiedChangeRequestScreenState
                         ? 'Upload the new image that should replace the approved store photo.'
                         : 'New store photo ready for Admin review.',
                     imageUrl: requestedStorePhotoUrl,
+                    storagePath: '',
                     busy: uploadingStorePhoto,
                     requiredBadge: true,
                     onTap: submitting
@@ -1184,10 +1212,12 @@ class _SupplierVerifiedChangeRequestScreenState
                   _UploadEvidenceCard(
                     title: 'Business Permit Evidence',
                     subtitle:
-                        requestedPermitPhotoUrl.isEmpty
+                        requestedPermitStoragePath.isEmpty &&
+                                requestedPermitPhotoUrl.isEmpty
                             ? 'Upload the document matching the updated permit details.'
                             : 'Updated permit evidence ready for Admin review.',
                     imageUrl: requestedPermitPhotoUrl,
+                    storagePath: requestedPermitStoragePath,
                     busy: uploadingPermitPhoto,
                     requiredBadge: true,
                     onTap: submitting
@@ -2162,6 +2192,7 @@ class _UploadEvidenceCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.imageUrl,
+    required this.storagePath,
     required this.busy,
     required this.requiredBadge,
     required this.onTap,
@@ -2170,13 +2201,14 @@ class _UploadEvidenceCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final String imageUrl;
+  final String storagePath;
   final bool busy;
   final bool requiredBadge;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final ready = imageUrl.isNotEmpty;
+    final ready = storagePath.isNotEmpty || imageUrl.isNotEmpty;
 
     return Material(
       color: const Color(0xFFF8FBFD),
@@ -2213,20 +2245,10 @@ class _UploadEvidenceCard extends StatelessWidget {
                           ),
                         )
                       : ready
-                          ? Image.network(
-                              imageUrl,
+                          ? VerificationEvidenceImage(
+                              storagePath: storagePath,
+                              legacyUrl: imageUrl,
                               fit: BoxFit.cover,
-                              errorBuilder: (
-                                context,
-                                error,
-                                stackTrace,
-                              ) {
-                                return const Icon(
-                                  Icons.image_outlined,
-                                  color:
-                                      Color(0xFF146BFF),
-                                );
-                              },
                             )
                           : const Icon(
                               Icons.add_a_photo_outlined,

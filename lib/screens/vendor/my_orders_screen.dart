@@ -12,7 +12,10 @@ import 'package:isdalink/utils/order_helpers.dart';
 class MyOrdersScreen extends StatefulWidget {
   const MyOrdersScreen({
     super.key,
+    this.initialOrderId = '',
   });
+
+  final String initialOrderId;
 
   @override
   State<MyOrdersScreen> createState() => _MyOrdersScreenState();
@@ -82,30 +85,46 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
   ) {
     final filter = selectedFilter.toLowerCase();
+    late final List<QueryDocumentSnapshot<Map<String, dynamic>>> result;
 
     if (filter == 'all') {
-      return documents;
+      result = [...documents];
+    } else {
+      result = documents.where(
+        (document) {
+          final status = statusOf(document);
+
+          if (filter == 'active') {
+            return isActiveStatus(status);
+          }
+
+          if (filter == 'completed') {
+            return isCompletedStatus(status);
+          }
+
+          if (filter == 'cancelled') {
+            return isCancelledStatus(status);
+          }
+
+          return status.toLowerCase() == filter;
+        },
+      ).toList();
     }
 
-    return documents.where(
-      (document) {
-        final status = statusOf(document);
+    final initialOrderId = widget.initialOrderId.trim();
 
-        if (filter == 'active') {
-          return isActiveStatus(status);
-        }
+    if (initialOrderId.isNotEmpty) {
+      final targetIndex = result.indexWhere(
+        (document) => document.id == initialOrderId,
+      );
 
-        if (filter == 'completed') {
-          return isCompletedStatus(status);
-        }
+      if (targetIndex > 0) {
+        final target = result.removeAt(targetIndex);
+        result.insert(0, target);
+      }
+    }
 
-        if (filter == 'cancelled') {
-          return isCancelledStatus(status);
-        }
-
-        return status.toLowerCase() == filter;
-      },
-    ).toList();
+    return result;
   }
 
   String filterDescription() {
@@ -1362,6 +1381,10 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                       children: [
                         VendorOrderCard(
                           document: document,
+                          initiallyExpanded: document.id ==
+                              widget.initialOrderId.trim(),
+                          highlighted: document.id ==
+                              widget.initialOrderId.trim(),
                           onCancelPendingOrder: () => cancelPendingOrder(
                             document,
                           ),

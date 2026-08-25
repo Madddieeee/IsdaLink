@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:isdalink/widgets/verification_evidence_image.dart';
 
 class SupplierReviewSection extends StatelessWidget {
   const SupplierReviewSection({
@@ -132,11 +133,13 @@ class SupplierReviewImage extends StatelessWidget {
     required this.title,
     required this.localImage,
     required this.imageUrl,
+    required this.storagePath,
   });
 
   final String title;
   final XFile? localImage;
   final String imageUrl;
+  final String storagePath;
 
   @override
   Widget build(BuildContext context) {
@@ -144,17 +147,11 @@ class SupplierReviewImage extends StatelessWidget {
 
     if (localImage != null) {
       preview = Image.file(File(localImage!.path), fit: BoxFit.cover);
-    } else if (imageUrl.trim().isNotEmpty) {
-      preview = Image.network(
-        imageUrl,
+    } else if (storagePath.trim().isNotEmpty || imageUrl.trim().isNotEmpty) {
+      preview = VerificationEvidenceImage(
+        storagePath: storagePath,
+        legacyUrl: imageUrl,
         fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => const ColoredBox(
-          color: Color(0xFFEAF7FB),
-          child: Icon(
-            Icons.image_not_supported_outlined,
-            color: Color(0xFF8BA0B1),
-          ),
-        ),
       );
     } else {
       preview = const ColoredBox(

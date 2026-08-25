@@ -18,6 +18,7 @@ class SupplierApplicationInput {
     required this.supportedUnits,
     required this.businessPermitNumber,
     required this.businessPermitUrl,
+    required this.businessPermitStoragePath,
     required this.storePhotoUrl,
   });
 
@@ -36,6 +37,7 @@ class SupplierApplicationInput {
   final List<String> supportedUnits;
   final String businessPermitNumber;
   final String businessPermitUrl;
+  final String businessPermitStoragePath;
   final String storePhotoUrl;
 
   String get storeLocation {
@@ -130,6 +132,7 @@ class SupplierActivationService {
       'supportedUnits': input.supportedUnits,
       'businessPermitNumber': input.businessPermitNumber,
       'businessPermitUrl': input.businessPermitUrl,
+      'businessPermitStoragePath': input.businessPermitStoragePath,
       'storePhotoUrl': input.storePhotoUrl,
       'coverImageUrl': input.storePhotoUrl,
       // Preserved for the current supplier cards and profile model.
@@ -138,7 +141,7 @@ class SupplierActivationService {
       'hasStorePhoto': true,
       'verificationStatus': 'pending',
       'paymentMethod': 'COD',
-      'applicationVersion': 3,
+      'applicationVersion': 4,
       'accountCreatedAt': ?accountCreatedAt,
       'submittedAt': FieldValue.serverTimestamp(),
     };

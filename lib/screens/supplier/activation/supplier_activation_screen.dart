@@ -11,6 +11,7 @@ import 'package:isdalink/screens/supplier/activation/widgets/supplier_activation
 import 'package:isdalink/screens/supplier/activation/widgets/supplier_verification_photo_card.dart';
 import 'package:isdalink/services/cloudinary_upload_service.dart';
 import 'package:isdalink/services/supplier_activation_service.dart';
+import 'package:isdalink/services/supplier_verification_storage_service.dart';
 
 class SupplierActivationScreen extends StatefulWidget {
   const SupplierActivationScreen({super.key});
@@ -41,6 +42,8 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
 
   final activationService = const SupplierActivationService();
   final uploadService = const CloudinaryUploadService();
+  final verificationStorageService =
+      const SupplierVerificationStorageService();
   final imagePicker = ImagePicker();
   final scrollController = ScrollController();
 
@@ -63,6 +66,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
   XFile? permitImage;
   XFile? storeImage;
   String permitImageUrl = '';
+  String permitStoragePath = '';
   String storeImageUrl = '';
   String baselineFingerprint = '';
 
@@ -114,7 +118,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
 
   bool get verificationComplete =>
       isValidPermitNumber(businessPermitNumberController.text) &&
-      permitImageUrl.isNotEmpty &&
+      (permitStoragePath.isNotEmpty || permitImageUrl.isNotEmpty) &&
       storeImageUrl.isNotEmpty &&
       !uploadsInProgress;
 
@@ -159,6 +163,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
         tabUnit.toString(),
         iceboxUnit.toString(),
         permitImageUrl,
+        permitStoragePath,
         storeImageUrl,
         confirmedAccuracy.toString(),
       ].join('|');
@@ -270,6 +275,11 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
       );
       permitImageUrl =
           activationService.getStringValue(data, 'businessPermitUrl', '');
+      permitStoragePath = activationService.getStringValue(
+        data,
+        'businessPermitStoragePath',
+        '',
+      );
       storeImageUrl =
           activationService.getStringValue(data, 'storePhotoUrl', '');
 
@@ -770,6 +780,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
         if (permit) {
           permitImage = image;
           permitImageUrl = '';
+          permitStoragePath = '';
           isUploadingPermit = true;
         } else {
           storeImage = image;
@@ -778,11 +789,16 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
         }
       });
 
-      final folder = permit
-          ? 'isdalink/supplier_verification/${user.uid}/permits'
-          : 'isdalink/supplier_verification/${user.uid}/stores';
-
-      final url = await uploadService.uploadImage(image, folder: folder);
+      final uploadedValue = permit
+          ? await verificationStorageService.uploadBusinessPermit(
+              uid: user.uid,
+              image: image,
+            )
+          : await uploadService.uploadImage(
+              image,
+              folder:
+                  'isdalink/supplier_verification/${user.uid}/stores',
+            );
 
       if (!mounted) {
         return;
@@ -790,9 +806,9 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
 
       setState(() {
         if (permit) {
-          permitImageUrl = url;
+          permitStoragePath = uploadedValue;
         } else {
-          storeImageUrl = url;
+          storeImageUrl = uploadedValue;
         }
       });
 
@@ -801,6 +817,8 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
             ? 'Business permit photo uploaded.'
             : 'Store photo uploaded.',
       );
+    } on StateError catch (error) {
+      showMessage(error.message.toString(), isError: true);
     } catch (_) {
       showMessage(
         'The verification photo could not be uploaded. Check your connection and try again.',
@@ -824,6 +842,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
       if (permit) {
         permitImage = null;
         permitImageUrl = '';
+        permitStoragePath = '';
       } else {
         storeImage = null;
         storeImageUrl = '';
@@ -864,6 +883,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
           businessPermitNumber:
               businessPermitNumberController.text.trim(),
           businessPermitUrl: permitImageUrl,
+          businessPermitStoragePath: permitStoragePath,
           storePhotoUrl: storeImageUrl,
         ),
       );
@@ -1412,6 +1432,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
               permit: true,
               localImage: permitImage,
               imageUrl: permitImageUrl,
+              storagePath: permitStoragePath,
               uploading: isUploadingPermit,
               onUpload: () => pickAndUploadPhoto(permit: true),
               onRemove: () => removePhoto(permit: true),
@@ -1424,6 +1445,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
               permit: false,
               localImage: storeImage,
               imageUrl: storeImageUrl,
+              storagePath: '',
               uploading: isUploadingStorePhoto,
               onUpload: () => pickAndUploadPhoto(permit: false),
               onRemove: () => removePhoto(permit: false),
@@ -1559,11 +1581,13 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
               title: 'Permit Photo',
               localImage: permitImage,
               imageUrl: permitImageUrl,
+              storagePath: permitStoragePath,
             ),
             SupplierReviewImage(
               title: 'Store Photo',
               localImage: storeImage,
               imageUrl: storeImageUrl,
+              storagePath: '',
             ),
           ],
         ),

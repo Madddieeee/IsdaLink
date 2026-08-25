@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:isdalink/widgets/verification_evidence_image.dart';
 
 class SupplierVerificationPhotoCard extends StatelessWidget {
   const SupplierVerificationPhotoCard({
@@ -11,6 +12,7 @@ class SupplierVerificationPhotoCard extends StatelessWidget {
     required this.permit,
     required this.localImage,
     required this.imageUrl,
+    required this.storagePath,
     required this.uploading,
     required this.onUpload,
     required this.onRemove,
@@ -21,11 +23,14 @@ class SupplierVerificationPhotoCard extends StatelessWidget {
   final bool permit;
   final XFile? localImage;
   final String imageUrl;
+  final String storagePath;
   final bool uploading;
   final VoidCallback onUpload;
   final VoidCallback onRemove;
 
-  bool get ready => imageUrl.trim().isNotEmpty && !uploading;
+  bool get ready =>
+      (storagePath.trim().isNotEmpty || imageUrl.trim().isNotEmpty) &&
+      !uploading;
 
   @override
   Widget build(BuildContext context) {
@@ -33,11 +38,11 @@ class SupplierVerificationPhotoCard extends StatelessWidget {
 
     if (localImage != null) {
       preview = Image.file(File(localImage!.path), fit: BoxFit.cover);
-    } else if (imageUrl.trim().isNotEmpty) {
-      preview = Image.network(
-        imageUrl,
+    } else if (storagePath.trim().isNotEmpty || imageUrl.trim().isNotEmpty) {
+      preview = VerificationEvidenceImage(
+        storagePath: storagePath,
+        legacyUrl: imageUrl,
         fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => _Placeholder(permit: permit),
       );
     } else {
       preview = _Placeholder(permit: permit);
@@ -171,7 +176,9 @@ class SupplierVerificationPhotoCard extends StatelessWidget {
                   ),
                 ),
               ),
-              if (localImage != null || imageUrl.trim().isNotEmpty) ...[
+              if (localImage != null ||
+                  storagePath.trim().isNotEmpty ||
+                  imageUrl.trim().isNotEmpty) ...[
                 const SizedBox(width: 9),
                 OutlinedButton(
                   onPressed: uploading ? null : onRemove,

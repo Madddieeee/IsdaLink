@@ -58,7 +58,7 @@ function timestampChanged(beforeValue, afterValue) {
   return String(beforeValue) !== String(afterValue);
 }
 
-function pushData(notificationId, data) {
+function pushData(notificationId, data, extraData = {}) {
   const output = {
     notificationId,
   };
@@ -71,6 +71,8 @@ function pushData(notificationId, data) {
     "requestId",
     "applicationId",
     "subjectId",
+    "stockStatus",
+    "severity",
   ];
 
   for (const field of supportedFields) {
@@ -81,7 +83,122 @@ function pushData(notificationId, data) {
     }
   }
 
+  for (const [field, value] of Object.entries(extraData)) {
+    const text = textValue(value);
+
+    if (text.length > 0) {
+      output[field] = text;
+    }
+  }
+
   return output;
+}
+
+function notificationRoute(type) {
+  switch (type) {
+    case "new_order":
+      return "supplier_orders";
+    case "order_status":
+      return "vendor_orders";
+    case "stock_alert":
+      return "supplier_stock";
+    case "admin_supplier_application":
+      return "admin_supplier_applications";
+    case "admin_supplier_change_request":
+      return "admin_supplier_change_requests";
+    case "supplier_profile_change":
+      return "supplier_profile";
+    case "supplier_application_status":
+      return "supplier_application";
+    default:
+      return "home";
+  }
+}
+
+function notificationGroup(type, data) {
+  switch (type) {
+    case "new_order":
+      return "new_orders";
+    case "order_status":
+      return "order_updates";
+    case "stock_alert":
+      return "stock_alerts";
+    case "admin_supplier_application":
+      return "supplier_applications";
+    case "admin_supplier_change_request":
+      return "supplier_change_requests";
+    case "supplier_profile_change":
+    case "supplier_application_status":
+      return "account_updates";
+    default:
+      return safeDocumentPart(
+          textValue(data.subjectId, textValue(data.orderId, type)),
+      );
+  }
+}
+
+function groupedTitle(type, countLabel, fallback) {
+  switch (type) {
+    case "new_order":
+      return `${countLabel} New COD Orders`;
+    case "order_status":
+      return `${countLabel} Order Updates`;
+    case "stock_alert":
+      return `${countLabel} Stock Alerts`;
+    case "admin_supplier_application":
+      return `${countLabel} Supplier Applications`;
+    case "admin_supplier_change_request":
+      return `${countLabel} Supplier Change Requests`;
+    case "supplier_profile_change":
+    case "supplier_application_status":
+      return `${countLabel} Account Updates`;
+    default:
+      return fallback;
+  }
+}
+
+async function notificationPresentation({
+  recipientId,
+  data,
+}) {
+  const type = textValue(data.type, "general").toLowerCase();
+  const originalTitle = textValue(data.title, "IsdaLink");
+  const originalBody = textValue(
+      data.message,
+      "You have a new IsdaLink notification.",
+  );
+  const recipientNotifications = await firestore
+      .collection("notifications")
+      .where("userId", "==", recipientId)
+      .get();
+  const unreadCount = recipientNotifications.docs.reduce((count, document) => {
+    const notification = document.data();
+    const notificationType = textValue(notification.type).toLowerCase();
+
+    return notification.isRead !== true && notificationType === type
+      ? count + 1
+      : count;
+  }, 0);
+  const safeUnreadCount = Math.max(1, unreadCount);
+  const grouped = safeUnreadCount > 1;
+  const countLabel = safeUnreadCount > 9 ? "9+" : String(safeUnreadCount);
+  const group = notificationGroup(type, data);
+  const tag = safeDocumentPart(`isdalink_${recipientId}_${group}`);
+
+  return {
+    title: grouped
+      ? groupedTitle(type, countLabel, originalTitle)
+      : originalTitle,
+    body: grouped
+      ? `Latest: ${originalBody} Tap to review all.`
+      : originalBody,
+    route: notificationRoute(type),
+    group,
+    tag,
+    collapseKey: tag.slice(0, 64),
+    unreadCount: safeUnreadCount,
+    grouped,
+  };
 }
 
 async function markPushResult(reference, fields) {
@@ -171,11 +288,10 @@ exports.sendPushNotification = onDocumentCreated(
         return;
       }
 
-      const title = textValue(data.title, "IsdaLink");
-      const body = textValue(
-          data.message,
-          "You have a new IsdaLink notification.",
-      );
+      const presentation = await notificationPresentation({
+        recipientId,
+        data,
+      });
       let successCount = 0;
       let failureCount = 0;
       const invalidReferences = [];
@@ -187,16 +303,30 @@ exports.sendPushNotification = onDocumentCreated(
           const response = await messaging.sendEachForMulticast({
             tokens: tokenBatch,
             notification: {
-              title,
-              body,
+              title: presentation.title,
+              body: presentation.body,
             },
-            data: pushData(notificationId, data),
+            data: pushData(notificationId, data, {
+              recipientId,
+              route: presentation.route,
+              group: presentation.group,
+              unreadCount: presentation.unreadCount,
+              grouped: presentation.grouped,
+            }),
             android: {
               priority: "high",
+              collapseKey: presentation.collapseKey,
               notification: {
                 sound: "default",
                 clickAction: "FLUTTER_NOTIFICATION_CLICK",
                 channelId: "isdalink_alerts",
+                icon: "ic_stat_isdalink",
+                color: "#0875D1",
+                tag: presentation.tag,
+                notificationCount: Math.min(
+                    presentation.unreadCount,
+                    99,
+                ),
               },
             },
           });

@@ -9,6 +9,8 @@ import 'services/push_notification_service.dart';
 
 final GlobalKey<ScaffoldMessengerState> appMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
+final GlobalKey<NavigatorState> appNavigatorKey =
+    GlobalKey<NavigatorState>();
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(
@@ -33,6 +35,7 @@ main() async {
 
   await PushNotificationService.instance.initialize(
     messengerKey: appMessengerKey,
+    navigatorKey: appNavigatorKey,
   );
 
   runApp(
@@ -55,6 +58,7 @@ class IsdaLinkApp
       title: 'IsdaLink',
       debugShowCheckedModeBanner: false,
       scaffoldMessengerKey: appMessengerKey,
+      navigatorKey: appNavigatorKey,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: AppColors.blue,

@@ -203,6 +203,11 @@ class AdminDashboardService {
       'requestedBusinessPermitUrl',
       '',
     );
+    final requestedPermitStoragePath = getStringValue(
+      requestData,
+      'requestedBusinessPermitStoragePath',
+      '',
+    );
     final requestedStorePhotoUrl = getStringValue(
       requestData,
       'requestedStorePhotoUrl',
@@ -242,6 +247,7 @@ class AdminDashboardService {
       if (changesPermit) ...<String, dynamic>{
         'businessPermitNumber': requestedPermitNumber,
         'businessPermitUrl': requestedPermitUrl,
+        'businessPermitStoragePath': requestedPermitStoragePath,
         'hasBusinessPermit': true,
       },
       if (changesStorePhoto) ...<String, dynamic>{
@@ -314,7 +320,7 @@ class AdminDashboardService {
       <String, dynamic>{
         'userId': supplierId,
         'supplierId': supplierId,
-        'title': 'Supplier profile change approved',
+        'title': 'Profile Change Approved',
         'message':
             'Your verified supplier business change request was approved and is now visible to vendors.',
         'type': 'supplier_profile_change',
@@ -371,8 +377,9 @@ class AdminDashboardService {
       <String, dynamic>{
         'userId': supplierId,
         'supplierId': supplierId,
-        'title': 'Supplier profile change needs revision',
-        'message': 'Admin note: $note',
+        'title': 'Profile Change Needs Revision',
+        'message':
+            'Your verified supplier profile change request needs revision. Admin note: $note',
         'type': 'supplier_profile_change',
         'status': 'rejected',
         'requestId': supplierId,
@@ -437,6 +444,7 @@ class AdminDashboardService {
         'email': FieldValue.delete(),
         'businessPermitNumber': FieldValue.delete(),
         'businessPermitUrl': FieldValue.delete(),
+        'businessPermitStoragePath': FieldValue.delete(),
 
         'updatedAt': FieldValue.serverTimestamp(),
       },
@@ -452,7 +460,7 @@ class AdminDashboardService {
       <String, dynamic>{
         'userId': uid,
         'supplierId': uid,
-        'title': 'Supplier application approved',
+        'title': 'Supplier Application Approved',
         'message':
             'Your supplier application was approved. Supplier tools are now available on your account.',
         'type': 'supplier_application_status',
@@ -517,7 +525,7 @@ class AdminDashboardService {
       <String, dynamic>{
         'userId': uid,
         'supplierId': uid,
-        'title': 'Supplier application needs revision',
+        'title': 'Supplier Application Needs Revision',
         'message':
             'Your supplier application was not approved. Review your business details before submitting again.',
         'type': 'supplier_application_status',

@@ -19,7 +19,10 @@ enum SupplierOrderFilter {
 class SupplierCodOrdersScreen extends StatefulWidget {
   const SupplierCodOrdersScreen({
     super.key,
+    this.initialOrderId = '',
   });
+
+  final String initialOrderId;
 
   @override
   State<SupplierCodOrdersScreen> createState() =>
@@ -45,6 +48,12 @@ class _SupplierCodOrdersScreenState
   void initState() {
     super.initState();
     searchController.addListener(refreshSearch);
+
+    final initialOrderId = widget.initialOrderId.trim();
+
+    if (initialOrderId.isNotEmpty) {
+      expandedOrderIds.add(initialOrderId);
+    }
   }
 
   @override
@@ -1119,6 +1128,18 @@ class _SupplierCodOrdersScreenState
     final visibleDocuments = filteredDocuments(
       documents,
     );
+    final initialOrderId = widget.initialOrderId.trim();
+
+    if (initialOrderId.isNotEmpty) {
+      final targetIndex = visibleDocuments.indexWhere(
+        (document) => document.id == initialOrderId,
+      );
+
+      if (targetIndex > 0) {
+        final target = visibleDocuments.removeAt(targetIndex);
+        visibleDocuments.insert(0, target);
+      }
+    }
 
     return CustomScrollView(
       key: ValueKey(
@@ -1167,6 +1188,8 @@ class _SupplierCodOrdersScreenState
                     ) {
                       return SupplierOrderCard(
                         document: document,
+                        highlighted:
+                            document.id == initialOrderId,
                         expanded:
                             expandedOrderIds.contains(
                           document.id,

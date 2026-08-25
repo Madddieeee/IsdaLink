@@ -34,6 +34,7 @@ class SupplierOrderService {
   }
 
   String notificationMessage({
+    required String orderId,
     required String status,
     required String productName,
     required String supplierName,
@@ -41,25 +42,30 @@ class SupplierOrderService {
     double fulfilledQuantity = 0,
     String quantityUnit = '',
   }) {
+    final orderCode = orderId.length > 8
+        ? orderId.substring(0, 8).toUpperCase()
+        : orderId.toUpperCase();
+    final reference = 'Order #$orderCode';
+
     switch (status.toLowerCase()) {
       case 'accepted':
         if (requestedQuantity > 0 &&
             fulfilledQuantity > 0 &&
             fulfilledQuantity < requestedQuantity) {
-          return '$supplierName accepted ${OrderHelpers.formatNumber(fulfilledQuantity)} '
+          return '$reference: $supplierName accepted ${OrderHelpers.formatNumber(fulfilledQuantity)} '
               'of ${OrderHelpers.formatNumber(requestedQuantity)} '
               '$quantityUnit for your $productName COD order. '
               'The unfulfilled quantity was returned to stock.';
         }
 
-        return 'Your COD order for $productName was accepted by $supplierName.';
+        return '$reference: Your $productName COD order was accepted by $supplierName.';
       case 'delivered':
       case 'completed':
-        return 'Your COD order for $productName was delivered and its COD payment was recorded by $supplierName.';
+        return '$reference: Your $productName order was delivered and its COD payment was recorded by $supplierName.';
       case 'cancelled':
-        return 'Your COD order for $productName was cancelled by $supplierName. Any reserved stock was returned.';
+        return '$reference: Your $productName order was cancelled by $supplierName. Any reserved stock was returned.';
       default:
-        return 'Your COD order for $productName was updated by $supplierName.';
+        return '$reference: Your $productName order was updated by $supplierName.';
     }
   }
 
@@ -116,6 +122,7 @@ class SupplierOrderService {
         'orderId': orderId,
         'title': notificationTitle(newStatus),
         'message': notificationMessage(
+          orderId: orderId,
           status: newStatus,
           productName: productName,
           supplierName: supplierName,

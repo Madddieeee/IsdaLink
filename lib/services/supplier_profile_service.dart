@@ -86,6 +86,7 @@ class SupplierProfileService {
     required double requestedStoreLongitude,
     required String requestedBusinessPermitNumber,
     required String requestedBusinessPermitUrl,
+    required String requestedBusinessPermitStoragePath,
     required String requestedStorePhotoUrl,
     required List<String> changedFields,
     required String reason,
@@ -115,6 +116,8 @@ class SupplierProfileService {
         'requestedBusinessPermitNumber':
             requestedBusinessPermitNumber.trim(),
         'requestedBusinessPermitUrl': requestedBusinessPermitUrl.trim(),
+        'requestedBusinessPermitStoragePath':
+            requestedBusinessPermitStoragePath.trim(),
         'requestedStorePhotoUrl': requestedStorePhotoUrl.trim(),
         'changedFields': changedFields,
         'submittedAt': FieldValue.serverTimestamp(),

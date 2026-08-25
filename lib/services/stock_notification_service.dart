@@ -162,8 +162,8 @@ class StockNotificationService {
         'stockId': stockReference.id,
         'productName': productName,
         'title': outOfStock
-            ? 'Out of Stock'
-            : 'Low Stock Alert',
+            ? '$productName Out of Stock'
+            : 'Low Stock: $productName',
         'message': outOfStock
             ? '$productName is out of stock. Restock this listing to keep it available to vendors.'
             : '$productName has ${formatNumber(nextQuantity)} $quantityUnit remaining, reaching the ${formatNumber(threshold)} $quantityUnit alert level.',

@@ -181,6 +181,9 @@ class PlaceOrderService {
     final newOrderNotificationReference = FirebaseFirestore.instance
         .collection('notifications')
         .doc();
+    final orderCode = orderReference.id.length > 8
+        ? orderReference.id.substring(0, 8).toUpperCase()
+        : orderReference.id.toUpperCase();
 
     double finalRemainingStock = 0;
 
@@ -329,7 +332,7 @@ class PlaceOrderService {
             'orderId': orderReference.id,
             'title': 'New COD Order',
             'message':
-                '$finalVendorName ordered ${OrderHelpers.formatNumber(quantity.toDouble())} ${product.quantityUnit} of ${product.name}.',
+                'Order #$orderCode: $finalVendorName ordered ${OrderHelpers.formatNumber(quantity.toDouble())} ${product.quantityUnit} of ${product.name}.',
             'type': 'new_order',
             'status': 'Pending',
             'isRead': false,

@@ -465,9 +465,17 @@ class SupplierChangeRequestReviewScreen extends StatelessWidget {
                     application,
                     'businessPermitUrl',
                   );
+                  final currentPermitStoragePath = stringValue(
+                    application,
+                    'businessPermitStoragePath',
+                  );
                   final requestedPermitUrl = stringValue(
                     request,
                     'requestedBusinessPermitUrl',
+                  );
+                  final requestedPermitStoragePath = stringValue(
+                    request,
+                    'requestedBusinessPermitStoragePath',
                   );
                   final currentStorePhoto = stringValue(
                     profile,
@@ -618,6 +626,7 @@ class SupplierChangeRequestReviewScreen extends StatelessWidget {
                               label: 'Current Permit',
                               icon: Icons.description_outlined,
                               url: currentPermitUrl,
+                              storagePath: currentPermitStoragePath,
                             ),
                         ],
                         requestedChildren: [
@@ -633,6 +642,7 @@ class SupplierChangeRequestReviewScreen extends StatelessWidget {
                               label: 'Requested Permit',
                               icon: Icons.description_outlined,
                               url: requestedPermitUrl,
+                              storagePath: requestedPermitStoragePath,
                             ),
                         ],
                       ),

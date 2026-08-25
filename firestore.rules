@@ -292,6 +292,8 @@ service cloud.firestore {
               == resource.data.get('businessPermitNumber', '')
           && request.resource.data.get('businessPermitUrl', '')
               == resource.data.get('businessPermitUrl', '')
+          && request.resource.data.get('businessPermitStoragePath', '')
+              == resource.data.get('businessPermitStoragePath', '')
           && request.resource.data.get('rating', 0)
               == resource.data.get('rating', 0)
           && request.resource.data.get('reviews', 0)
@@ -386,6 +388,7 @@ service cloud.firestore {
             'supportedUnits',
             'businessPermitNumber',
             'businessPermitUrl',
+            'businessPermitStoragePath',
             'storePhotoUrl',
             'coverImageUrl',
             'profileImageUrl',
@@ -627,15 +630,6 @@ service cloud.firestore {
           'requestedBusinessPermitNumber',
           ''
         );
-        let permitUrl = request.resource.data.get(
-          'requestedBusinessPermitUrl',
-          ''
-        );
-        let storePhotoUrl = request.resource.data.get(
-          'requestedStorePhotoUrl',
-          ''
-        );
-
         return signedIn()
           && currentUid() == supplierId
           && isApprovedSupplierAccount(supplierId)
@@ -656,6 +650,7 @@ service cloud.firestore {
             'requestedLocation',
             'requestedBusinessPermitNumber',
             'requestedBusinessPermitUrl',
+            'requestedBusinessPermitStoragePath',
             'requestedStorePhotoUrl',
             'changedFields',
             'submittedAt',
@@ -690,14 +685,49 @@ service cloud.firestore {
           && permitNumber is string
           && permitNumber.size() >= 3
           && permitNumber.size() <= 80
-          && permitUrl is string
-          && permitUrl.size() >= 8
-          && permitUrl.size() <= 1000
-          && permitUrl.matches('https://.*')
-          && storePhotoUrl is string
-          && storePhotoUrl.size() >= 8
-          && storePhotoUrl.size() <= 1000
-          && storePhotoUrl.matches('https://.*')
+          && request.resource.data.get('requestedBusinessPermitUrl', '')
+              is string
+          && request.resource.data.get('requestedBusinessPermitUrl', '')
+              .size() <= 1000
+          && request.resource.data.get(
+            'requestedBusinessPermitStoragePath',
+            ''
+          ) is string
+          && request.resource.data.get(
+            'requestedBusinessPermitStoragePath',
+            ''
+          ).size() <= 500
+          && (
+            (
+              request.resource.data.get(
+                'requestedBusinessPermitStoragePath',
+                ''
+              ).size() >= 20
+              && request.resource.data.get(
+                'requestedBusinessPermitStoragePath',
+                ''
+              ).matches(
+                'supplier_verification/'
+                + supplierId
+                + '/permits/[^/]+'
+              )
+            )
+            || (
+              request.resource.data.get('requestedBusinessPermitUrl', '')
+                  .size() >= 8
+              && request.resource.data.get(
+                'requestedBusinessPermitUrl',
+                ''
+              ).matches('https://.*')
+            )
+          )
+          && request.resource.data.get('requestedStorePhotoUrl', '') is string
+          && request.resource.data.get('requestedStorePhotoUrl', '').size()
+              >= 8
+          && request.resource.data.get('requestedStorePhotoUrl', '').size()
+              <= 1000
+          && request.resource.data.get('requestedStorePhotoUrl', '')
+              .matches('https://.*')
           && changedFields is list
           && changedFields.size() >= 1
           && changedFields.size() <= 4

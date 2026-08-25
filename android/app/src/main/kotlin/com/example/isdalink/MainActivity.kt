@@ -13,10 +13,10 @@ class MainActivity : FlutterActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 "isdalink_alerts",
-                "IsdaLink alerts",
+                "IsdaLink Notifications",
                 NotificationManager.IMPORTANCE_HIGH,
             ).apply {
-                description = "COD orders, stock alerts, and account updates"
+                description = "COD orders, stock alerts, supplier reviews, and account updates"
                 enableVibration(true)
             }
 

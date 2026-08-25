@@ -13,6 +13,7 @@ class SupplierOrderCard extends StatelessWidget {
     required this.onAccept,
     required this.onCancel,
     required this.onMarkDelivered,
+    this.highlighted = false,
   });
 
   final QueryDocumentSnapshot<Map<String, dynamic>> document;
@@ -22,6 +23,7 @@ class SupplierOrderCard extends StatelessWidget {
   final VoidCallback onAccept;
   final VoidCallback onCancel;
   final VoidCallback onMarkDelivered;
+  final bool highlighted;
 
   String firstString(
     Map<String, dynamic> data,
@@ -641,15 +643,26 @@ class SupplierOrderCard extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: const Color(0xFFE1EBF2),
+            color: highlighted
+                ? const Color(0xFF146BFF)
+                : const Color(0xFFE1EBF2),
+            width: highlighted ? 1.5 : 1,
           ),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x0F00152A),
-              blurRadius: 18,
-              offset: Offset(0, 9),
-            ),
-          ],
+          boxShadow: highlighted
+              ? const [
+                  BoxShadow(
+                    color: Color(0x2B146BFF),
+                    blurRadius: 20,
+                    offset: Offset(0, 8),
+                  ),
+                ]
+              : const [
+                  BoxShadow(
+                    color: Color(0x0F00152A),
+                    blurRadius: 18,
+                    offset: Offset(0, 9),
+                  ),
+                ],
         ),
         child: Column(
           children: [

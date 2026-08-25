@@ -8,18 +8,41 @@ class VendorOrderCard extends StatefulWidget {
     required this.document,
     required this.onCancelPendingOrder,
     required this.onReviewOrder,
+    this.initiallyExpanded = false,
+    this.highlighted = false,
   });
 
   final QueryDocumentSnapshot<Map<String, dynamic>> document;
   final VoidCallback onCancelPendingOrder;
   final VoidCallback onReviewOrder;
+  final bool initiallyExpanded;
+  final bool highlighted;
 
   @override
   State<VendorOrderCard> createState() => _VendorOrderCardState();
 }
 
 class _VendorOrderCardState extends State<VendorOrderCard> {
-  bool isExpanded = false;
+  late bool isExpanded;
+
+  @override
+  void initState() {
+    super.initState();
+    isExpanded = widget.initiallyExpanded;
+  }
+
+  @override
+  void didUpdateWidget(
+    covariant VendorOrderCard oldWidget,
+  ) {
+    super.didUpdateWidget(oldWidget);
+
+    if (widget.initiallyExpanded &&
+        (!oldWidget.initiallyExpanded ||
+            oldWidget.document.id != widget.document.id)) {
+      isExpanded = true;
+    }
+  }
 
   String getString(
     Map<String, dynamic> data,
@@ -883,15 +906,26 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: const Color(0xFFE1ECF2),
+          color: widget.highlighted
+              ? const Color(0xFF146BFF)
+              : const Color(0xFFE1ECF2),
+          width: widget.highlighted ? 1.5 : 1,
         ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0D00152A),
-            blurRadius: 13,
-            offset: Offset(0, 6),
-          ),
-        ],
+        boxShadow: widget.highlighted
+            ? const [
+                BoxShadow(
+                  color: Color(0x2B146BFF),
+                  blurRadius: 20,
+                  offset: Offset(0, 8),
+                ),
+              ]
+            : const [
+                BoxShadow(
+                  color: Color(0x0D00152A),
+                  blurRadius: 13,
+                  offset: Offset(0, 6),
+                ),
+              ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(21),

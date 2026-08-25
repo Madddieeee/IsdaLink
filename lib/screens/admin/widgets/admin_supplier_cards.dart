@@ -1,8 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:isdalink/screens/admin/widgets/admin_status_chip.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:isdalink/widgets/verification_evidence_image.dart';
 
 class PendingSupplierCard extends StatelessWidget {
   const PendingSupplierCard({
@@ -109,6 +108,11 @@ class PendingSupplierCard extends StatelessWidget {
     final businessPermitUrl = getStringValue(
       data,
       'businessPermitUrl',
+      '',
+    );
+    final businessPermitStoragePath = getStringValue(
+      data,
+      'businessPermitStoragePath',
       '',
     );
 
@@ -241,6 +245,7 @@ class PendingSupplierCard extends StatelessWidget {
                   label: 'Permit',
                   icon: Icons.description,
                   url: businessPermitUrl,
+                  storagePath: businessPermitStoragePath,
                 ),
               ),
               const SizedBox(width: 10),
@@ -426,77 +431,27 @@ class VerificationLinkButton extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.url,
+    this.storagePath = '',
   });
 
   final String label;
   final IconData icon;
   final String url;
+  final String storagePath;
 
-  bool get hasUrl {
-    return url.trim().isNotEmpty;
-  }
+  bool get hasEvidence =>
+      storagePath.trim().isNotEmpty || url.trim().isNotEmpty;
 
-  Future<void> openUrl(
+  Future<void> openEvidence(
     BuildContext context,
   ) async {
-    final uri = Uri.tryParse(url.trim());
-
-    if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invalid verification link.'),
-          backgroundColor: Color(0xFFD32F2F),
-        ),
-      );
-      return;
-    }
-
-    try {
-      final openedInWebView = await launchUrl(
-        uri,
-        mode: LaunchMode.inAppWebView,
-        webViewConfiguration: const WebViewConfiguration(
-          enableJavaScript: true,
-          enableDomStorage: true,
-        ),
-      );
-
-      if (openedInWebView) {
-        return;
-      }
-
-      await Clipboard.setData(
-        ClipboardData(
-          text: url.trim(),
-        ),
-      );
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not open link. Link copied instead.'),
-            backgroundColor: Color(0xFFFF7A1A),
-          ),
-        );
-      }
-    } catch (_) {
-      await Clipboard.setData(
-        ClipboardData(
-          text: url.trim(),
-        ),
-      );
-
-      if (!context.mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not open link. Link copied instead.'),
-          backgroundColor: Color(0xFFFF7A1A),
-        ),
-      );
-    }
+    await showVerificationEvidenceViewer(
+      context,
+      title: label,
+      icon: icon,
+      storagePath: storagePath,
+      legacyUrl: url,
+    );
   }
 
   @override
@@ -504,7 +459,7 @@ class VerificationLinkButton extends StatelessWidget {
     BuildContext context,
   ) {
     return OutlinedButton.icon(
-      onPressed: hasUrl ? () => openUrl(context) : null,
+      onPressed: hasEvidence ? () => openEvidence(context) : null,
       icon: Icon(icon),
       label: Text(label),
       style: OutlinedButton.styleFrom(
