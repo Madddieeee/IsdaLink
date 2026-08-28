@@ -819,6 +819,39 @@ service cloud.firestore {
     }
 
     // ---------------------------------------------------------------------
+    // FAVORITE SUPPLIERS
+    //
+    // Favorites are private convenience records owned by the signed-in user.
+    // Supplier profile data is never duplicated here; the supplier document ID
+    // is used so marketplace details always come from the approved profile.
+    // ---------------------------------------------------------------------
+
+    match /users/{userId}/favoriteSuppliers/{supplierId} {
+      allow read: if signedIn() && currentUid() == userId;
+
+      allow create: if signedIn()
+        && currentUid() == userId
+        && supplierId != userId
+        && request.resource.data.keys().hasOnly([
+          'vendorId',
+          'supplierId',
+          'createdAt'
+        ])
+        && request.resource.data.get('vendorId', '') == userId
+        && request.resource.data.get('supplierId', '') == supplierId
+        && request.resource.data.get('createdAt', null) is timestamp
+        && exists(supplierPath(supplierId))
+        && get(supplierPath(supplierId)).data.get('status', '') == 'approved';
+
+      allow update: if false;
+
+      allow delete: if signedIn()
+        && currentUid() == userId
+        && resource.data.get('vendorId', '') == userId
+        && resource.data.get('supplierId', '') == supplierId;
+    }
+
+    // ---------------------------------------------------------------------
     // SUPPLIER PROFILES
     //
     // Pending/rejected verification evidence is private to the applicant and

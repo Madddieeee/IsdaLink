@@ -7,12 +7,20 @@ class SupplierProfileCard extends StatelessWidget {
     required this.supplier,
     required this.paymentMethod,
     required this.status,
+    required this.isFavorite,
+    required this.favoriteBusy,
+    required this.showFavoriteAction,
+    required this.onFavoriteToggle,
     required this.onTap,
   });
 
   final Supplier supplier;
   final String paymentMethod;
   final String status;
+  final bool isFavorite;
+  final bool favoriteBusy;
+  final bool showFavoriteAction;
+  final VoidCallback onFavoriteToggle;
   final VoidCallback onTap;
 
   bool get hasNetworkImage {
@@ -247,6 +255,47 @@ class SupplierProfileCard extends StatelessWidget {
     );
   }
 
+
+  Widget favoriteButton() {
+    return Tooltip(
+      message: isFavorite ? 'Remove from Favorites' : 'Add to Favorites',
+      child: Material(
+        color: isFavorite
+            ? const Color(0xFFFFEEF2)
+            : const Color(0xFFF2F7FA),
+        borderRadius: BorderRadius.circular(11),
+        child: InkWell(
+          onTap: favoriteBusy ? null : onFavoriteToggle,
+          borderRadius: BorderRadius.circular(11),
+          child: SizedBox(
+            width: 32,
+            height: 32,
+            child: Center(
+              child: favoriteBusy
+                  ? const SizedBox(
+                      width: 15,
+                      height: 15,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 1.8,
+                        color: Color(0xFF087AC0),
+                      ),
+                    )
+                  : Icon(
+                      isFavorite
+                          ? Icons.favorite_rounded
+                          : Icons.favorite_border_rounded,
+                      color: isFavorite
+                          ? const Color(0xFFE94C72)
+                          : const Color(0xFF6F8799),
+                      size: 18,
+                    ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(
     BuildContext context,
@@ -306,6 +355,10 @@ class SupplierProfileCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 6),
                           verifiedChip(),
+                          if (showFavoriteAction) ...[
+                            const SizedBox(width: 6),
+                            favoriteButton(),
+                          ],
                         ],
                       ),
                       const SizedBox(height: 5),

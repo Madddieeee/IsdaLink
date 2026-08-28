@@ -33,6 +33,18 @@ const requiredPatterns = [
     'review supplier aggregate coupling',
     /afterSupplier\.get\('lastReviewOrderId', ''\) == orderId/,
   ],
+  [
+    'private favorite supplier path',
+    /match\s+\/users\/\{userId\}\/favoriteSuppliers\/\{supplierId\}/,
+  ],
+  [
+    'favorite owner read guard',
+    /match\s+\/users\/\{userId\}\/favoriteSuppliers\/\{supplierId\}[\s\S]*?allow\s+read:\s*if\s+signedIn\(\)\s*&&\s*currentUid\(\)\s*==\s*userId/,
+  ],
+  [
+    'favorite approved supplier guard',
+    /favoriteSuppliers[\s\S]*?exists\(supplierPath\(supplierId\)\)[\s\S]*?get\(supplierPath\(supplierId\)\)\.data\.get\('status', ''\) == 'approved'/,
+  ],
 ];
 
 const forbiddenPatterns = [

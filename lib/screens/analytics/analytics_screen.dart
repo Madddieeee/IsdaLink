@@ -1488,13 +1488,92 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return '₱${value.toStringAsFixed(0)}';
   }
 
+  int get simpleRequiredPeriods =>
+      selectedPeriod == AnalyticsPeriod.weekly ? 4 : 3;
+
+  int get seasonalRequiredPeriods =>
+      selectedPeriod == AnalyticsPeriod.weekly ? 12 : 24;
+
+  String get periodNoun =>
+      selectedPeriod == AnalyticsPeriod.weekly ? 'week' : 'month';
+
+  double averageQuantity(
+    List<PeriodPoint> points,
+  ) {
+    if (points.isEmpty) {
+      return 0;
+    }
+
+    final total = points.fold<double>(
+      0,
+      (sum, point) => sum + point.quantity,
+    );
+
+    return total / points.length;
+  }
+
+  Widget snapshotMetric({
+    required IconData icon,
+    required String label,
+    required String value,
+    Color accent = const Color(0xFF146BFF),
+  }) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 9,
+          vertical: 10,
+        ),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF6F9FC),
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(
+            color: const Color(0xFFE7EEF4),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: accent,
+            ),
+            const SizedBox(height: 7),
+            Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Color(0xFF102C44),
+                fontSize: 12.2,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Color(0xFF7B8FA3),
+                fontSize: 8.6,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget analyticsHeader(
     AnalyticsData data,
   ) {
     return SliverAppBar(
       pinned: true,
-      expandedHeight: 300,
-      toolbarHeight: 62,
+      expandedHeight: 236,
+      toolbarHeight: 60,
       elevation: 0,
       scrolledUnderElevation: 0,
       surfaceTintColor: Colors.transparent,
@@ -1506,9 +1585,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         statusBarBrightness: Brightness.dark,
       ),
       leading: Padding(
-        padding: const EdgeInsets.only(
-          left: 12,
-        ),
+        padding: const EdgeInsets.only(left: 12),
         child: _HeaderButton(
           icon: Icons.arrow_back_rounded,
           onTap: () {
@@ -1521,8 +1598,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         title,
         style: const TextStyle(
           color: Colors.white,
-          fontSize: 20,
+          fontSize: 18.5,
           fontWeight: FontWeight.w900,
+          letterSpacing: -0.2,
         ),
       ),
       flexibleSpace: FlexibleSpaceBar(
@@ -1534,14 +1612,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               end: Alignment.bottomRight,
               colors: [
                 Color(0xFF063B66),
-                Color(0xFF075FAE),
-                Color(0xFF146BFF),
+                Color(0xFF0769B7),
+                Color(0xFF176BFF),
               ],
-              stops: [
-                0.0,
-                0.56,
-                1.0,
-              ],
+              stops: [0.0, 0.58, 1.0],
             ),
           ),
           child: Stack(
@@ -1556,81 +1630,137 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               Padding(
                 padding: EdgeInsets.fromLTRB(
                   18,
-                  MediaQuery.paddingOf(context).top + 66,
+                  MediaQuery.paddingOf(context).top + 64,
                   18,
-                  14,
+                  13,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 9,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(25),
-                        borderRadius: BorderRadius.circular(99),
-                        border: Border.all(
-                          color: Colors.white.withAlpha(35),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            isSupplier
-                                ? Icons.storefront_rounded
-                                : Icons.shopping_bag_rounded,
-                            color: Colors.white,
-                            size: 13,
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 5,
                           ),
-                          const SizedBox(width: 5),
-                          Text(
-                            roleLabel,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 8.7,
-                              letterSpacing: 0.75,
-                              fontWeight: FontWeight.w900,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withAlpha(24),
+                            borderRadius: BorderRadius.circular(99),
+                            border: Border.all(
+                              color: Colors.white.withAlpha(32),
                             ),
                           ),
-                        ],
-                      ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isSupplier
+                                    ? Icons.storefront_rounded
+                                    : Icons.shopping_bag_rounded,
+                                color: Colors.white,
+                                size: 12,
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                roleLabel,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8.2,
+                                  letterSpacing: 0.7,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF8BE3FF).withAlpha(28),
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.verified_rounded,
+                                color: Color(0xFFBFEFFF),
+                                size: 12,
+                              ),
+                              SizedBox(width: 4),
+                              Text(
+                                'COMPLETED DATA',
+                                style: TextStyle(
+                                  color: Color(0xFFEAF8FF),
+                                  fontSize: 7.6,
+                                  letterSpacing: 0.45,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 9),
+                    const SizedBox(height: 8),
                     Text(
                       subtitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Color(0xFFDDEFFA),
-                        fontSize: 11,
+                        fontSize: 10.3,
                         height: 1.35,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     const Spacer(),
-                    Row(
-                      children: [
-                        _HeaderMetric(
-                          icon: Icons.receipt_long_outlined,
-                          value: '${data.completedOrders}',
-                          label: 'Completed',
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(22),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: Colors.white.withAlpha(28),
                         ),
-                        const SizedBox(width: 9),
-                        _HeaderMetric(
-                          icon: Icons.category_outlined,
-                          value: '${data.products.length}',
-                          label: 'Series',
-                        ),
-                        const SizedBox(width: 9),
-                        _HeaderMetric(
-                          icon: Icons.payments_outlined,
-                          value: formatCurrency(data.totalAmount),
-                          label: amountLabel,
-                        ),
-                      ],
+                      ),
+                      child: Row(
+                        children: [
+                          _HeaderMetric(
+                            icon: Icons.receipt_long_outlined,
+                            value: '${data.completedOrders}',
+                            label: 'Completed',
+                          ),
+                          Container(
+                            width: 1,
+                            height: 34,
+                            color: Colors.white.withAlpha(28),
+                          ),
+                          _HeaderMetric(
+                            icon: Icons.category_outlined,
+                            value: '${data.products.length}',
+                            label: 'Series',
+                          ),
+                          Container(
+                            width: 1,
+                            height: 34,
+                            color: Colors.white.withAlpha(28),
+                          ),
+                          _HeaderMetric(
+                            icon: Icons.payments_outlined,
+                            value: formatCurrency(data.totalAmount),
+                            label: amountLabel,
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -1641,7 +1771,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       ),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
-          bottom: Radius.circular(29),
+          bottom: Radius.circular(24),
         ),
       ),
     );
@@ -1655,21 +1785,19 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     Color iconColor = const Color(0xFF146BFF),
   }) {
     return Container(
-      margin: const EdgeInsets.only(
-        bottom: 14,
-      ),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: const Color(0xFFE1EBF2),
+          color: const Color(0xFFE3ECF2),
         ),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x0F00152A),
-            blurRadius: 16,
-            offset: Offset(0, 8),
+            color: Color(0x0B00152A),
+            blurRadius: 18,
+            offset: Offset(0, 7),
           ),
         ],
       ),
@@ -1680,19 +1808,19 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 41,
-                height: 41,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
-                  color: iconColor.withAlpha(18),
-                  borderRadius: BorderRadius.circular(14),
+                  color: iconColor.withAlpha(16),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   icon,
                   color: iconColor,
-                  size: 21,
+                  size: 19,
                 ),
               ),
-              const SizedBox(width: 11),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1701,26 +1829,29 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       title,
                       style: const TextStyle(
                         color: Color(0xFF102C44),
-                        fontSize: 15.2,
+                        fontSize: 14.4,
                         fontWeight: FontWeight.w900,
+                        letterSpacing: -0.15,
                       ),
                     ),
-                    const SizedBox(height: 3),
-                    Text(
-                      subtitle,
-                      style: const TextStyle(
-                        color: Color(0xFF7B8FA3),
-                        fontSize: 10.8,
-                        height: 1.35,
-                        fontWeight: FontWeight.w600,
+                    if (subtitle.trim().isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                          color: Color(0xFF7890A1),
+                          fontSize: 9.9,
+                          height: 1.34,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 13),
           child,
         ],
       ),
@@ -1729,10 +1860,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   Widget periodSelector() {
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: const Color(0xFFEAF3FA),
-        borderRadius: BorderRadius.circular(16),
+        color: const Color(0xFFEDF4F9),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: const Color(0xFFE2ECF3),
+        ),
       ),
       child: Row(
         children: [
@@ -1776,72 +1910,72 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             : () {
                 showSeriesPicker(data);
               },
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         child: Ink(
-          padding: const EdgeInsets.fromLTRB(
-            13,
-            12,
-            12,
-            12,
-          ),
+          padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
           decoration: BoxDecoration(
-            color: const Color(0xFFF2F7FB),
-            borderRadius: BorderRadius.circular(18),
+            color: const Color(0xFFF7FAFD),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: const Color(0xFFB8DFFF),
+              color: const Color(0xFFD9EAF6),
             ),
           ),
           child: Row(
             children: [
               Container(
-                width: 43,
-                height: 43,
+                width: 40,
+                height: 40,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE4F4FD),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xFFE9F7FF),
+                      Color(0xFFE8F3FF),
+                    ],
+                  ),
                   borderRadius: BorderRadius.circular(13),
                 ),
                 child: Text(
                   selected?.emoji ?? '🐟',
-                  style: const TextStyle(
-                    fontSize: 23,
-                  ),
+                  style: const TextStyle(fontSize: 21),
                 ),
               ),
-              const SizedBox(width: 11),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'FISH AND UNIT SERIES',
+                      'ANALYZED SERIES',
                       style: TextStyle(
                         color: Color(0xFF7B8FA3),
-                        fontSize: 8.8,
-                        letterSpacing: 0.55,
+                        fontSize: 7.9,
+                        letterSpacing: 0.5,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       selected == null
-                          ? 'No series available'
+                          ? 'No fish series available'
                           : '${selected.productName} · ${selected.quantityUnit}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Color(0xFF102C44),
-                        fontSize: 12,
+                        fontSize: 11.7,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
                     if (selected != null) ...[
-                      const SizedBox(height: 3),
+                      const SizedBox(height: 2),
                       Text(
                         '${selected.transactionCount} completed transaction${selected.transactionCount == 1 ? '' : 's'}',
                         style: const TextStyle(
-                          color: Color(0xFF7B8FA3),
-                          fontSize: 9.5,
+                          color: Color(0xFF8093A3),
+                          fontSize: 8.9,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -1849,10 +1983,21 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   ],
                 ),
               ),
-              const Icon(
-                Icons.keyboard_arrow_down_rounded,
-                color: Color(0xFF52677A),
-                size: 23,
+              Container(
+                width: 31,
+                height: 31,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: const Color(0xFFE1EBF2),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.unfold_more_rounded,
+                  color: Color(0xFF527187),
+                  size: 18,
+                ),
               ),
             ],
           ),
@@ -2202,15 +2347,71 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   Widget analyticsFilters(
     AnalyticsData data,
   ) {
-    return sectionCard(
-      title: 'Analytics Filters',
-      subtitle:
-          'Choose a period and one fish-and-unit series for accurate analysis.',
-      icon: Icons.tune_rounded,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: const Color(0xFFE3ECF2),
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A00152A),
+            blurRadius: 18,
+            offset: Offset(0, 7),
+          ),
+        ],
+      ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEAF3FF),
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: const Icon(
+                  Icons.tune_rounded,
+                  color: Color(0xFF146BFF),
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Analysis View',
+                      style: TextStyle(
+                        color: Color(0xFF102C44),
+                        fontSize: 13.7,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Choose the time window and fish series.',
+                      style: TextStyle(
+                        color: Color(0xFF8093A3),
+                        fontSize: 9.4,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
           periodSelector(),
-          const SizedBox(height: 11),
+          const SizedBox(height: 9),
           seriesSelector(data),
         ],
       ),
@@ -2218,8 +2419,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   Widget trendChart(
-    List<PeriodPoint> points,
-  ) {
+    List<PeriodPoint> points, {
+    required String unit,
+  }) {
     if (points.isEmpty) {
       return const _CompactEmptyState(
         icon: Icons.show_chart_rounded,
@@ -2228,38 +2430,132 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       );
     }
 
+    if (points.length == 1) {
+      final point = points.first;
+
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 13),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFF2F8FF),
+              Color(0xFFF7FBFE),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: const Color(0xFFDCEAF4),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: const Color(0xFF146BFF).withAlpha(15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.timeline_rounded,
+                color: Color(0xFF146BFF),
+                size: 27,
+              ),
+            ),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${formatNumber(point.quantity)} $unit',
+                    style: const TextStyle(
+                      color: Color(0xFF102C44),
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.4,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    periodLabel(point.date),
+                    style: const TextStyle(
+                      color: Color(0xFF146BFF),
+                      fontSize: 9.6,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'One completed period is available. A trend line will appear after another completed period is recorded.',
+                    style: TextStyle(
+                      color: Color(0xFF71889A),
+                      fontSize: 9.4,
+                      height: 1.3,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     final visible = points.length > 8
-        ? points.sublist(
-            points.length - 8,
-          )
+        ? points.sublist(points.length - 8)
         : points;
+    final values = visible.map((point) => point.quantity).toList();
+    final low = values.reduce(math.min);
+    final high = values.reduce(math.max);
 
     return Column(
       children: [
+        Row(
+          children: [
+            Expanded(
+              child: _ChartStat(
+                label: 'LOW',
+                value: '${formatNumber(low)} $unit',
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _ChartStat(
+                label: 'HIGH',
+                value: '${formatNumber(high)} $unit',
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _ChartStat(
+                label: 'PERIODS',
+                value: '${visible.length}',
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
         Container(
-          height: 172,
+          height: 174,
           width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(
-            10,
-            12,
-            10,
-            7,
-          ),
+          padding: const EdgeInsets.fromLTRB(10, 12, 10, 8),
           decoration: BoxDecoration(
-            color: const Color(0xFFF4F8FB),
+            color: const Color(0xFFF6F9FC),
             borderRadius: BorderRadius.circular(18),
-          ),
-          child: CustomPaint(
-            painter: _TrendChartPainter(
-              values: visible
-                  .map(
-                    (point) => point.quantity,
-                  )
-                  .toList(),
+            border: Border.all(
+              color: const Color(0xFFE7EEF4),
             ),
           ),
+          child: CustomPaint(
+            painter: _TrendChartPainter(values: values),
+          ),
         ),
-        const SizedBox(height: 9),
+        const SizedBox(height: 8),
         Row(
           children: visible.map(
             (point) {
@@ -2270,8 +2566,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    color: Color(0xFF8BA0B0),
-                    fontSize: 7.4,
+                    color: Color(0xFF879BAB),
+                    fontSize: 7.2,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -2292,86 +2588,149 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       return const SizedBox.shrink();
     }
 
+    final points = data.selectedPoints;
+    final double latest = points.isEmpty ? 0.0 : points.last.quantity;
+    final average = averageQuantity(points);
+    final hasForecast = data.selectedMethod.hasSelection;
+
     return Container(
-      margin: const EdgeInsets.only(
-        bottom: 14,
-      ),
-      padding: const EdgeInsets.fromLTRB(
-        14,
-        13,
-        14,
-        13,
-      ),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFFE9F7FF),
-            Color(0xFFEAFBF5),
+            Color(0xFFF0F9FF),
+            Color(0xFFF2FBF8),
           ],
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: const Color(0xFF39C9A0).withAlpha(80),
+          color: const Color(0xFFCBE8E6),
         ),
       ),
-      child: Row(
+      child: Column(
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Text(
-              product.emoji,
-              style: const TextStyle(
-                fontSize: 23,
+          Row(
+            children: [
+              Container(
+                width: 43,
+                height: 43,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x0A00152A),
+                      blurRadius: 8,
+                      offset: Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  product.emoji,
+                  style: const TextStyle(fontSize: 22),
+                ),
               ),
-            ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'SERIES SNAPSHOT',
+                      style: TextStyle(
+                        color: Color(0xFF147D64),
+                        fontSize: 8,
+                        letterSpacing: 0.55,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '${product.productName} · ${product.quantityUnit}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF102C44),
+                        fontSize: 12.8,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${points.length} completed ${selectedPeriod == AnalyticsPeriod.weekly ? 'weekly' : 'monthly'} period${points.length == 1 ? '' : 's'}',
+                      style: const TextStyle(
+                        color: Color(0xFF607A8D),
+                        fontSize: 9.1,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1DBB8A).withAlpha(18),
+                  borderRadius: BorderRadius.circular(99),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.verified_rounded,
+                      color: Color(0xFF159C74),
+                      size: 13,
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      'VALIDATED',
+                      style: TextStyle(
+                        color: Color(0xFF147D64),
+                        fontSize: 7.3,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 11),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'SELECTED SERIES',
-                  style: TextStyle(
-                    color: Color(0xFF147D64),
-                    fontSize: 8.8,
-                    letterSpacing: 0.6,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${product.productName} · ${product.quantityUnit}',
-                  style: const TextStyle(
-                    color: Color(0xFF102C44),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  '${data.selectedPoints.length} completed ${selectedPeriod == AnalyticsPeriod.weekly ? 'weekly' : 'monthly'} period${data.selectedPoints.length == 1 ? '' : 's'}',
-                  style: const TextStyle(
-                    color: Color(0xFF52677A),
-                    fontSize: 9.8,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Icon(
-            Icons.verified_rounded,
-            color: Color(0xFF1DBB8A),
-            size: 22,
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              snapshotMetric(
+                icon: Icons.history_rounded,
+                label: 'Latest $periodNoun',
+                value: points.isEmpty
+                    ? '--'
+                    : '${formatNumber(latest)} ${product.quantityUnit}',
+              ),
+              const SizedBox(width: 7),
+              snapshotMetric(
+                icon: Icons.stacked_line_chart_rounded,
+                label: 'Avg / $periodNoun',
+                value: points.isEmpty
+                    ? '--'
+                    : '${formatNumber(average)} ${product.quantityUnit}',
+                accent: const Color(0xFF087AC0),
+              ),
+              const SizedBox(width: 7),
+              snapshotMetric(
+                icon: Icons.auto_graph_rounded,
+                label: 'Next forecast',
+                value: hasForecast
+                    ? '${formatNumber(data.selectedMethod.forecast)} ${product.quantityUnit}'
+                    : 'Pending',
+                accent: const Color(0xFF159C74),
+              ),
+            ],
           ),
         ],
       ),
@@ -2384,136 +2743,198 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     required ForecastResult result,
     required String unit,
     required IconData icon,
+    required int availablePeriods,
+    required int requiredPeriods,
     bool selected = false,
   }) {
     final available = result.hasValue;
+    final readiness = requiredPeriods <= 0
+        ? 0.0
+        : (availablePeriods / requiredPeriods).clamp(0.0, 1.0).toDouble();
+    final remaining = math.max(0, requiredPeriods - availablePeriods);
 
     return Container(
-      margin: const EdgeInsets.only(
-        bottom: 10,
-      ),
-      padding: const EdgeInsets.all(13),
+      margin: const EdgeInsets.only(bottom: 9),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: available
-            ? const Color(0xFFF2F8FD)
-            : const Color(0xFFF6F8FA),
-        borderRadius: BorderRadius.circular(18),
+        color: selected
+            ? const Color(0xFFF1FAF7)
+            : available
+                ? const Color(0xFFF4F9FD)
+                : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(17),
         border: Border.all(
-          color: available
-              ? const Color(0xFFCFE5F5)
-              : const Color(0xFFE3E9EE),
+          color: selected
+              ? const Color(0xFFBDE7D8)
+              : available
+                  ? const Color(0xFFD6E8F5)
+                  : const Color(0xFFE5EBF0),
         ),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
         children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              gradient: available
-                  ? const LinearGradient(
-                      colors: [
-                        Color(0xFF0875D1),
-                        Color(0xFF176BFF),
-                      ],
-                    )
-                  : null,
-              color: available
-                  ? null
-                  : const Color(0xFFE4EBF0),
-              borderRadius: BorderRadius.circular(13),
-            ),
-            child: Icon(
-              icon,
-              color: available
-                  ? Colors.white
-                  : const Color(0xFF8BA0B1),
-              size: 21,
-            ),
-          ),
-          const SizedBox(width: 11),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 39,
+                height: 39,
+                decoration: BoxDecoration(
+                  gradient: available
+                      ? const LinearGradient(
+                          colors: [
+                            Color(0xFF0875D1),
+                            Color(0xFF176BFF),
+                          ],
+                        )
+                      : null,
+                  color: available ? null : const Color(0xFFE8EEF3),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  icon,
+                  color: available
+                      ? Colors.white
+                      : const Color(0xFF8195A5),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: const TextStyle(
-                          color: Color(0xFF102C44),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
-                    if (selected)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 7,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE4F6EE),
-                          borderRadius: BorderRadius.circular(99),
-                        ),
-                        child: const Text(
-                          'SELECTED',
-                          style: TextStyle(
-                            color: Color(0xFF147D64),
-                            fontSize: 7.2,
-                            letterSpacing: 0.4,
-                            fontWeight: FontWeight.w900,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            title,
+                            style: const TextStyle(
+                              color: Color(0xFF102C44),
+                              fontSize: 12.2,
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
                         ),
+                        if (selected)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE0F5EC),
+                              borderRadius: BorderRadius.circular(99),
+                            ),
+                            child: const Text(
+                              'BEST FIT',
+                              style: TextStyle(
+                                color: Color(0xFF147D64),
+                                fontSize: 6.9,
+                                letterSpacing: 0.35,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      description,
+                      style: const TextStyle(
+                        color: Color(0xFF71889A),
+                        fontSize: 9.3,
+                        height: 1.28,
+                        fontWeight: FontWeight.w600,
                       ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  description,
-                  style: const TextStyle(
-                    color: Color(0xFF6D8293),
-                    fontSize: 10.2,
-                    height: 1.3,
-                    fontWeight: FontWeight.w600,
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          if (available)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 11,
+                vertical: 10,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.white.withAlpha(185),
+                borderRadius: BorderRadius.circular(13),
+              ),
+              child: Row(
+                children: [
+                  const Text(
+                    'NEXT PERIOD',
+                    style: TextStyle(
+                      color: Color(0xFF7B8FA3),
+                      fontSize: 7.7,
+                      letterSpacing: 0.45,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                if (available)
+                  const Spacer(),
                   Text(
-                    'Forecast: ${formatNumber(result.value)} $unit',
+                    '${formatNumber(result.value)} $unit',
                     style: const TextStyle(
                       color: Color(0xFF0875D1),
-                      fontSize: 11,
+                      fontSize: 13.4,
                       fontWeight: FontWeight.w900,
-                    ),
-                  )
-                else ...[
-                  const Text(
-                    'Not enough data',
-                    style: TextStyle(
-                      color: Color(0xFF52677A),
-                      fontSize: 10.8,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 1),
-                  Text(
-                    result.reason,
-                    style: const TextStyle(
-                      color: Color(0xFF8BA0B1),
-                      fontSize: 9.4,
-                      height: 1.25,
-                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
+              ),
+            )
+          else ...[
+            Row(
+              children: [
+                Text(
+                  '$availablePeriods / $requiredPeriods periods',
+                  style: const TextStyle(
+                    color: Color(0xFF52677A),
+                    fontSize: 8.8,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  remaining == 0
+                      ? 'Calculating'
+                      : '$remaining more needed',
+                  style: const TextStyle(
+                    color: Color(0xFF7B8FA3),
+                    fontSize: 8.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ],
             ),
-          ),
+            const SizedBox(height: 6),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(99),
+              child: LinearProgressIndicator(
+                value: readiness,
+                minHeight: 6,
+                backgroundColor: const Color(0xFFE6EDF2),
+                valueColor: const AlwaysStoppedAnimation<Color>(
+                  Color(0xFF146BFF),
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              result.reason,
+              style: const TextStyle(
+                color: Color(0xFF8A9EAD),
+                fontSize: 8.8,
+                height: 1.25,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -2528,42 +2949,47 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(
-          horizontal: 10,
-          vertical: 14,
+          horizontal: 9,
+          vertical: 9,
         ),
         decoration: BoxDecoration(
-          color: color.withAlpha(13),
-          borderRadius: BorderRadius.circular(18),
+          color: color.withAlpha(10),
+          borderRadius: BorderRadius.circular(13),
           border: Border.all(
-            color: color.withAlpha(55),
+            color: color.withAlpha(38),
           ),
         ),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              value,
+              label,
               style: TextStyle(
                 color: color,
-                fontSize: 19,
+                fontSize: 7.5,
+                letterSpacing: 0.45,
                 fontWeight: FontWeight.w900,
               ),
             ),
             const SizedBox(height: 4),
             Text(
-              label,
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 color: Color(0xFF102C44),
-                fontSize: 11.5,
+                fontSize: 12.2,
                 fontWeight: FontWeight.w900,
               ),
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: 2),
             Text(
               subtitle,
-              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 color: Color(0xFF7B8FA3),
-                fontSize: 9.1,
+                fontSize: 7.8,
                 height: 1.2,
                 fontWeight: FontWeight.w600,
               ),
@@ -2581,19 +3007,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     required bool selected,
   }) {
     return Container(
-      margin: const EdgeInsets.only(
-        bottom: 10,
-      ),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(11),
       decoration: BoxDecoration(
         color: selected
-            ? const Color(0xFFF0FAF6)
-            : const Color(0xFFF7FAFC),
-        borderRadius: BorderRadius.circular(18),
+            ? const Color(0xFFF2FAF7)
+            : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: selected
-              ? const Color(0xFFBEE7D8)
-              : const Color(0xFFE0EAF0),
+              ? const Color(0xFFC0E7D9)
+              : const Color(0xFFE4EBF0),
         ),
       ),
       child: Column(
@@ -2606,29 +3030,66 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   title,
                   style: const TextStyle(
                     color: Color(0xFF102C44),
-                    fontSize: 12.2,
+                    fontSize: 11.4,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
               ),
               if (selected)
-                const Icon(
-                  Icons.check_circle_rounded,
-                  color: Color(0xFF147D64),
-                  size: 18,
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE0F5EC),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.check_circle_rounded,
+                        color: Color(0xFF147D64),
+                        size: 11,
+                      ),
+                      SizedBox(width: 3),
+                      Text(
+                        'SELECTED',
+                        style: TextStyle(
+                          color: Color(0xFF147D64),
+                          fontSize: 6.8,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
             ],
           ),
-          const SizedBox(height: 9),
+          const SizedBox(height: 8),
           if (!evaluation.hasMae)
-            Text(
-              evaluation.reason,
-              style: const TextStyle(
-                color: Color(0xFF7B8FA3),
-                fontSize: 9.5,
-                height: 1.35,
-                fontWeight: FontWeight.w600,
-              ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.hourglass_bottom_rounded,
+                  size: 16,
+                  color: Color(0xFF8BA0B1),
+                ),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Text(
+                    evaluation.reason,
+                    style: const TextStyle(
+                      color: Color(0xFF7B8FA3),
+                      fontSize: 8.9,
+                      height: 1.3,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
             )
           else ...[
             Row(
@@ -2639,29 +3100,28 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       ? '${evaluation.mape.toStringAsFixed(2)}%'
                       : 'N/A',
                   subtitle: evaluation.hasMape
-                      ? '${evaluation.mapePairCount} valid percentage-error pair${evaluation.mapePairCount == 1 ? '' : 's'}'
-                      : 'Zero actuals cannot enter MAPE',
+                      ? '${evaluation.mapePairCount} valid pair${evaluation.mapePairCount == 1 ? '' : 's'}'
+                      : 'Zero actuals excluded',
                   color: const Color(0xFF176BFF),
                 ),
-                const SizedBox(width: 9),
+                const SizedBox(width: 7),
                 evaluationTile(
                   label: 'MAE',
-                  value:
-                      '${formatNumber(evaluation.mae)} $unit',
+                  value: '${formatNumber(evaluation.mae)} $unit',
                   subtitle:
-                      '${evaluation.maePairCount} valid absolute-error pair${evaluation.maePairCount == 1 ? '' : 's'}',
+                      '${evaluation.maePairCount} valid pair${evaluation.maePairCount == 1 ? '' : 's'}',
                   color: const Color(0xFFFF7A1A),
                 ),
               ],
             ),
             if (evaluation.zeroActualMapeExclusions > 0) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: 7),
               Text(
-                '${evaluation.zeroActualMapeExclusions} valid pair${evaluation.zeroActualMapeExclusions == 1 ? '' : 's'} with actual quantity 0 ${evaluation.zeroActualMapeExclusions == 1 ? 'was' : 'were'} excluded from MAPE but retained in MAE.',
+                '${evaluation.zeroActualMapeExclusions} zero-actual pair${evaluation.zeroActualMapeExclusions == 1 ? '' : 's'} excluded from MAPE and retained in MAE.',
                 style: const TextStyle(
                   color: Color(0xFF7B8FA3),
-                  fontSize: 8.9,
-                  height: 1.3,
+                  fontSize: 8.2,
+                  height: 1.25,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -2687,32 +3147,50 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       children: [
         Container(
           width: double.infinity,
-          margin: const EdgeInsets.only(
-            bottom: 11,
-          ),
-          padding: const EdgeInsets.all(12),
+          margin: const EdgeInsets.only(bottom: 9),
+          padding: const EdgeInsets.all(11),
           decoration: BoxDecoration(
+            gradient: selection.hasSelection
+                ? const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xFFEAF8F3),
+                      Color(0xFFEEF8FC),
+                    ],
+                  )
+                : null,
             color: selection.hasSelection
-                ? const Color(0xFFEAF7FB)
-                : const Color(0xFFF6F8FA),
-            borderRadius: BorderRadius.circular(17),
+                ? null
+                : const Color(0xFFF7F9FB),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: selection.hasSelection
-                  ? const Color(0xFFCBE6F1)
-                  : const Color(0xFFE0E7EC),
+                  ? const Color(0xFFC4E7DD)
+                  : const Color(0xFFE2E9EE),
             ),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                selection.hasSelection
-                    ? Icons.workspace_premium_rounded
-                    : Icons.hourglass_top_rounded,
-                color: selection.hasSelection
-                    ? const Color(0xFF087AC0)
-                    : const Color(0xFF7B8FA3),
-                size: 21,
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: selection.hasSelection
+                      ? const Color(0xFF159C74).withAlpha(18)
+                      : const Color(0xFFE8EDF1),
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: Icon(
+                  selection.hasSelection
+                      ? Icons.workspace_premium_rounded
+                      : Icons.hourglass_top_rounded,
+                  color: selection.hasSelection
+                      ? const Color(0xFF159C74)
+                      : const Color(0xFF7B8FA3),
+                  size: 19,
+                ),
               ),
               const SizedBox(width: 9),
               Expanded(
@@ -2721,38 +3199,38 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   children: [
                     Text(
                       selection.hasSelection
-                          ? 'Selected Method: ${forecastingMethodLabel(selection.method!)}'
-                          : 'Method Selection Pending',
+                          ? forecastingMethodLabel(selection.method!)
+                          : 'Method selection pending',
                       style: const TextStyle(
                         color: Color(0xFF102C44),
-                        fontSize: 11.8,
+                        fontSize: 11.5,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 2),
                     Text(
                       selection.reason,
                       style: const TextStyle(
-                        color: Color(0xFF657C8E),
-                        fontSize: 9.3,
+                        color: Color(0xFF6E8495),
+                        fontSize: 8.8,
                         height: 1.3,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    if (selection.hasSelection) ...[
-                      const SizedBox(height: 5),
-                      Text(
-                        'Next-period forecast: ${formatNumber(selection.forecast, decimals: 2)} ${product.quantityUnit}',
-                        style: const TextStyle(
-                          color: Color(0xFF087AC0),
-                          fontSize: 9.8,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),
+              if (selection.hasSelection)
+                Text(
+                  '${formatNumber(selection.forecast, decimals: 2)}\n${product.quantityUnit}',
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(
+                    color: Color(0xFF087AC0),
+                    fontSize: 11.2,
+                    height: 1.2,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
             ],
           ),
         ),
@@ -2760,15 +3238,47 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           title: 'Simple Moving Average',
           evaluation: data.simpleEvaluation,
           unit: product.quantityUnit,
-          selected: selection.method ==
-              ForecastingMethod.simpleMovingAverage,
+          selected:
+              selection.method == ForecastingMethod.simpleMovingAverage,
         ),
         methodEvaluationCard(
           title: 'Seasonal Moving Average',
           evaluation: data.seasonalEvaluation,
           unit: product.quantityUnit,
-          selected: selection.method ==
-              ForecastingMethod.seasonalMovingAverage,
+          selected:
+              selection.method == ForecastingMethod.seasonalMovingAverage,
+        ),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 8,
+          ),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF4F8FB),
+            borderRadius: BorderRadius.circular(13),
+          ),
+          child: const Row(
+            children: [
+              Icon(
+                Icons.info_outline_rounded,
+                color: Color(0xFF5D7890),
+                size: 15,
+              ),
+              SizedBox(width: 7),
+              Expanded(
+                child: Text(
+                  'Lower MAPE is preferred. MAE is used to break a MAPE tie.',
+                  style: TextStyle(
+                    color: Color(0xFF627B8E),
+                    fontSize: 8.5,
+                    height: 1.25,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -3150,58 +3660,56 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     AnalyticsData data,
   ) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(
-        14,
-        13,
-        14,
-        13,
+      padding: const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 11,
       ),
       decoration: BoxDecoration(
-        color: const Color(0xFFEAF7FB),
-        borderRadius: BorderRadius.circular(20),
+        color: const Color(0xFFEDF7FC),
+        borderRadius: BorderRadius.circular(17),
         border: Border.all(
-          color: const Color(0xFF72C6F8).withAlpha(75),
+          color: const Color(0xFFD5EAF6),
         ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 38,
-            height: 38,
+            width: 34,
+            height: 34,
             decoration: BoxDecoration(
-              color: Colors.white.withAlpha(170),
-              borderRadius: BorderRadius.circular(12),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(11),
             ),
             child: const Icon(
               Icons.cloud_done_rounded,
               color: Color(0xFF146BFF),
-              size: 21,
+              size: 18,
             ),
           ),
-          const SizedBox(width: 11),
+          const SizedBox(width: 9),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'ROLE-SPECIFIC DATA',
+                  'DATA USED',
                   style: TextStyle(
                     color: Color(0xFF146BFF),
-                    fontSize: 8.8,
-                    letterSpacing: 0.6,
+                    fontSize: 7.6,
+                    letterSpacing: 0.5,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Text(
                   isSupplier
-                      ? 'This screen combines ${data.historicalTransactions} linked validated historical sale${data.historicalTransactions == 1 ? '' : 's'} with ${data.liveCompletedOrders} completed live COD sale${data.liveCompletedOrders == 1 ? '' : 's'} for this supplier account. Current inventory is used only for stock alerts.'
-                      : 'This screen combines ${data.historicalTransactions} linked validated historical purchase${data.historicalTransactions == 1 ? '' : 's'} with ${data.liveCompletedOrders} completed live COD purchase${data.liveCompletedOrders == 1 ? '' : 's'} for this vendor account. Supplier sales are excluded.',
+                      ? '${data.historicalTransactions} validated historical sale${data.historicalTransactions == 1 ? '' : 's'} + ${data.liveCompletedOrders} completed live COD sale${data.liveCompletedOrders == 1 ? '' : 's'}. Inventory is used only for stock alerts.'
+                      : '${data.historicalTransactions} validated historical purchase${data.historicalTransactions == 1 ? '' : 's'} + ${data.liveCompletedOrders} completed live COD purchase${data.liveCompletedOrders == 1 ? '' : 's'}. Supplier-side sales are excluded.',
                   style: const TextStyle(
-                    color: Color(0xFF52677A),
-                    fontSize: 10.5,
-                    height: 1.38,
+                    color: Color(0xFF587286),
+                    fontSize: 9.3,
+                    height: 1.32,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -3395,17 +3903,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     }
 
     final selectedProduct = data.selectedProduct;
+    final unit = selectedProduct?.quantityUnit ?? 'unit';
 
     return CustomScrollView(
+      physics: const BouncingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      ),
       slivers: [
         analyticsHeader(data),
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(
-            16,
-            16,
-            16,
-            30,
-          ),
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 30),
           sliver: SliverList(
             delegate: SliverChildListDelegate(
               [
@@ -3414,14 +3921,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 sectionCard(
                   title: trendTitle,
                   subtitle:
-                      '$trendDescription Showing the most recent ${data.selectedPoints.length > 8 ? '8' : data.selectedPoints.length} period${data.selectedPoints.length == 1 ? '' : 's'}.',
+                      '${selectedPeriod == AnalyticsPeriod.weekly ? 'Weekly' : 'Monthly'} completed quantity for ${selectedProduct?.productName ?? 'the selected series'}.',
                   icon: Icons.auto_graph_rounded,
-                  child: trendChart(data.selectedPoints),
+                  child: trendChart(
+                    data.selectedPoints,
+                    unit: unit,
+                  ),
                 ),
                 sectionCard(
-                  title: 'Forecast Summary',
+                  title: 'Next-Period Forecast',
                   subtitle:
-                      'Forecasts are calculated only for ${selectedProduct?.productName ?? 'the selected fish'} in ${selectedProduct?.quantityUnit ?? 'its recorded unit'}.',
+                      'Compare both forecasting methods for ${selectedProduct?.productName ?? 'the selected fish'} · $unit.',
                   icon: Icons.trending_up_rounded,
                   child: Column(
                     children: [
@@ -3431,19 +3941,23 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             ? 'Uses the 4 immediately preceding weekly observations.'
                             : 'Uses the 3 immediately preceding monthly observations.',
                         result: data.simpleForecast,
-                        unit: selectedProduct?.quantityUnit ?? 'unit',
+                        unit: unit,
                         icon: Icons.show_chart_rounded,
+                        availablePeriods: data.selectedPoints.length,
+                        requiredPeriods: simpleRequiredPeriods,
                         selected: data.selectedMethod.method ==
                             ForecastingMethod.simpleMovingAverage,
                       ),
                       forecastMethodCard(
                         title: 'Seasonal Moving Average',
                         description: selectedPeriod == AnalyticsPeriod.weekly
-                            ? 'Averages 3 comparable weekly observations spaced 4 weeks apart; requires at least 12 preceding weeks.'
-                            : 'Averages 2 comparable monthly observations spaced 12 months apart; requires at least 24 preceding months.',
+                            ? 'Uses comparable weekly observations across the 4-week seasonal cycle.'
+                            : 'Uses comparable monthly observations across annual seasonal cycles.',
                         result: data.seasonalForecast,
-                        unit: selectedProduct?.quantityUnit ?? 'unit',
+                        unit: unit,
                         icon: Icons.calendar_month_rounded,
+                        availablePeriods: data.selectedPoints.length,
+                        requiredPeriods: seasonalRequiredPeriods,
                         selected: data.selectedMethod.method ==
                             ForecastingMethod.seasonalMovingAverage,
                       ),
@@ -3451,9 +3965,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   ),
                 ),
                 sectionCard(
-                  title: 'Forecast Evaluation',
+                  title: 'Forecast Accuracy',
                   subtitle:
-                      'SMA and Seasonal Moving Average are evaluated separately using one-period-ahead forecasts. Lower MAPE selects the method; lower MAE breaks a MAPE tie.',
+                      'MAPE is the primary accuracy measure; MAE provides supporting error magnitude.',
                   icon: Icons.fact_check_outlined,
                   child: forecastEvaluation(data),
                 ),
@@ -3461,15 +3975,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   sectionCard(
                     title: 'Sales Variability',
                     subtitle:
-                        'Shows how much the selected sales series changes across completed periods.',
+                        'How much the selected completed-sales series changes between periods.',
                     icon: Icons.multiline_chart_rounded,
                     child: variabilityPanel(data.variability),
                   ),
                 sectionCard(
-                  title: 'Restocking Suggestions',
+                  title: 'Restocking Guidance',
                   subtitle: isSupplier
-                      ? 'Forecast-based guidance supports stock preparation and never changes inventory automatically.'
-                      : 'Forecast-based guidance supports purchasing decisions and never places orders automatically.',
+                      ? 'Forecast-based guidance for stock preparation. Inventory is never changed automatically.'
+                      : 'Forecast-based guidance for purchasing decisions. Orders are never placed automatically.',
                   icon: Icons.notifications_active_outlined,
                   child: suggestions(data.suggestions),
                 ),
@@ -3477,15 +3991,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   sectionCard(
                     title: 'Stock Alerts',
                     subtitle:
-                        'Current low-stock and out-of-stock listings owned by this supplier account.',
+                        'Current low-stock and out-of-stock listings that may need attention.',
                     icon: Icons.inventory_2_outlined,
                     iconColor: const Color(0xFFFF7A1A),
                     child: stockAlerts(data.stockAlerts),
                   ),
                 sectionCard(
                   title: isSupplier
-                      ? 'Top-Selling Fish Insights'
-                      : 'Top Purchased Fish Insights',
+                      ? 'Top-Selling Fish'
+                      : 'Top Purchased Fish',
                   subtitle: data.rankingBasis,
                   icon: Icons.emoji_events_outlined,
                   child: topProducts(data.products),
@@ -3983,47 +4497,44 @@ class _HeaderMetric extends StatelessWidget {
     BuildContext context,
   ) {
     return Expanded(
-      child: Container(
-        constraints: const BoxConstraints(
-          minHeight: 66,
-        ),
-        padding: const EdgeInsets.symmetric(
-          horizontal: 7,
-          vertical: 8,
-        ),
-        decoration: BoxDecoration(
-          color: Colors.white.withAlpha(27),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Colors.white.withAlpha(32),
-          ),
-        ),
-        child: Column(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 5),
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               icon,
-              color: Colors.white,
-              size: 16,
+              color: const Color(0xFFE9F7FF),
+              size: 14,
             ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12.5,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Color(0xFFDCEFFA),
-                fontSize: 8,
-                fontWeight: FontWeight.w800,
+            const SizedBox(width: 6),
+            Flexible(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11.4,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFFD8ECF8),
+                      fontSize: 7.4,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -4052,21 +4563,22 @@ class _PeriodButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(13),
+        borderRadius: BorderRadius.circular(11),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(
-            vertical: 11,
-          ),
+          padding: const EdgeInsets.symmetric(vertical: 9),
           decoration: BoxDecoration(
-            color: selected
-                ? Colors.white
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(13),
+            color: selected ? Colors.white : Colors.transparent,
+            borderRadius: BorderRadius.circular(11),
+            border: selected
+                ? Border.all(
+                    color: const Color(0xFFD9E9F5),
+                  )
+                : null,
             boxShadow: selected
                 ? const [
                     BoxShadow(
-                      color: Color(0x14000000),
+                      color: Color(0x1000152A),
                       blurRadius: 8,
                       offset: Offset(0, 3),
                     ),
@@ -4079,8 +4591,8 @@ class _PeriodButton extends StatelessWidget {
             style: TextStyle(
               color: selected
                   ? const Color(0xFF146BFF)
-                  : const Color(0xFF6F8798),
-              fontSize: 11.2,
+                  : const Color(0xFF71889A),
+              fontSize: 10.5,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -4107,42 +4619,108 @@ class _CompactEmptyState extends StatelessWidget {
   ) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(
-        14,
-        17,
-        14,
-        17,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF6F9FC),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFE7EEF4),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEAF1F6),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: const Color(0xFF8198A9),
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Color(0xFF52677A),
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: Color(0xFF8498A8),
+                    fontSize: 8.9,
+                    height: 1.32,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChartStat extends StatelessWidget {
+  const _ChartStat({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 9,
+        vertical: 8,
       ),
       decoration: BoxDecoration(
-        color: const Color(0xFFF4F8FB),
-        borderRadius: BorderRadius.circular(18),
+        color: const Color(0xFFF7FAFC),
+        borderRadius: BorderRadius.circular(13),
+        border: Border.all(
+          color: const Color(0xFFE7EEF4),
+        ),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            icon,
-            color: const Color(0xFF93ADBF),
-            size: 28,
-          ),
-          const SizedBox(height: 8),
           Text(
-            title,
-            textAlign: TextAlign.center,
+            label,
             style: const TextStyle(
-              color: Color(0xFF52677A),
-              fontSize: 11,
+              color: Color(0xFF8A9DAC),
+              fontSize: 7.1,
+              letterSpacing: 0.45,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           Text(
-            subtitle,
-            textAlign: TextAlign.center,
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              color: Color(0xFF8BA0B1),
-              fontSize: 9.5,
-              height: 1.35,
-              fontWeight: FontWeight.w600,
+              color: Color(0xFF102C44),
+              fontSize: 10.2,
+              fontWeight: FontWeight.w900,
             ),
           ),
         ],

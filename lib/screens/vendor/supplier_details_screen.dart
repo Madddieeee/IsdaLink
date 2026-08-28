@@ -9,7 +9,9 @@ import 'package:isdalink/screens/vendor/supplier_details/widgets/supplier_detail
 import 'package:isdalink/screens/vendor/supplier_details/widgets/supplier_details_status_cards.dart';
 import 'package:isdalink/screens/vendor/supplier_details/widgets/supplier_product_card.dart';
 import 'package:isdalink/screens/vendor/supplier_details/widgets/supplier_reviews_section.dart';
+import 'package:isdalink/services/favorite_supplier_service.dart';
 import 'package:isdalink/services/supplier_details_service.dart';
+import 'package:isdalink/utils/app_error_message.dart';
 
 
 class _SupplierBusinessMapViewer
@@ -331,6 +333,7 @@ class SupplierDetailsScreen extends StatefulWidget {
 class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
   final SupplierDetailsService detailsService =
       const SupplierDetailsService();
+  final FavoriteSupplierService favoriteService = FavoriteSupplierService();
 
   final TextEditingController searchController =
       TextEditingController();
@@ -339,6 +342,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
   String selectedUnit = 'all';
   String sortMode = 'latest';
   int selectedTab = 0;
+  bool favoriteBusy = false;
 
   Supplier get supplier => widget.supplier;
   String? get supplierId => widget.supplierId;
@@ -354,6 +358,107 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
     return currentUid != null &&
         storeUid.isNotEmpty &&
         currentUid == storeUid;
+  }
+
+  Future<void> toggleFavorite({
+    required bool currentlyFavorite,
+  }) async {
+    final storeUid = supplierId?.trim() ?? '';
+
+    if (favoriteBusy || storeUid.isEmpty || ownerMode) {
+      return;
+    }
+
+    setState(() {
+      favoriteBusy = true;
+    });
+
+    try {
+      await favoriteService.toggleFavorite(
+        supplierId: storeUid,
+        currentlyFavorite: currentlyFavorite,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            content: Text(
+              currentlyFavorite
+                  ? 'Supplier removed from Favorites.'
+                  : 'Supplier added to Favorites.',
+            ),
+          ),
+        );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            content: Text(
+              AppErrorMessage.from(
+                error,
+                fallback: 'Favorite could not be updated. Please try again.',
+                allowBusinessMessage: true,
+              ),
+            ),
+          ),
+        );
+    } finally {
+      if (mounted) {
+        setState(() {
+          favoriteBusy = false;
+        });
+      }
+    }
+  }
+
+  Widget supplierHeader(
+    SupplierDetailsStats stats,
+  ) {
+    final storeUid = supplierId?.trim() ?? '';
+    final signedIn = FirebaseAuth.instance.currentUser != null;
+    final canFavorite = signedIn && !ownerMode && storeUid.isNotEmpty;
+
+    if (!canFavorite) {
+      return SupplierDetailsHeader(
+        supplier: supplier,
+        stats: stats,
+        onBack: () => Navigator.pop(context),
+        businessLocationPreview: supplierBusinessLocationPreview(),
+      );
+    }
+
+    return StreamBuilder<bool>(
+      stream: favoriteService.isFavoriteStream(storeUid),
+      initialData: false,
+      builder: (context, snapshot) {
+        final isFavorite = snapshot.data ?? false;
+
+        return SupplierDetailsHeader(
+          supplier: supplier,
+          stats: stats,
+          onBack: () => Navigator.pop(context),
+          businessLocationPreview: supplierBusinessLocationPreview(),
+          showFavoriteAction: true,
+          isFavorite: isFavorite,
+          favoriteBusy: favoriteBusy,
+          onFavoriteToggle: () => toggleFavorite(
+            currentlyFavorite: isFavorite,
+          ),
+        );
+      },
+    );
   }
 
   double? mapCoordinate(
@@ -1287,13 +1392,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: EdgeInsets.zero,
       children: [
-        SupplierDetailsHeader(
-          supplier: supplier,
-          stats: stats,
-          onBack: () => Navigator.pop(context),
-          businessLocationPreview:
-              supplierBusinessLocationPreview(),
-        ),
+        supplierHeader(stats),
         if (ownerMode)
           ownerPreviewBanner(),
         storeTabs(),
@@ -1334,13 +1433,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
     return ListView(
       padding: EdgeInsets.zero,
       children: [
-        SupplierDetailsHeader(
-          supplier: supplier,
-          stats: stats,
-          onBack: () => Navigator.pop(context),
-          businessLocationPreview:
-              supplierBusinessLocationPreview(),
-        ),
+        supplierHeader(stats),
         if (ownerMode)
           ownerPreviewBanner(),
         storeTabs(),
@@ -1360,13 +1453,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
     return ListView(
       padding: EdgeInsets.zero,
       children: [
-        SupplierDetailsHeader(
-          supplier: supplier,
-          stats: stats,
-          onBack: () => Navigator.pop(context),
-          businessLocationPreview:
-              supplierBusinessLocationPreview(),
-        ),
+        supplierHeader(stats),
         if (ownerMode)
           ownerPreviewBanner(),
         storeTabs(),

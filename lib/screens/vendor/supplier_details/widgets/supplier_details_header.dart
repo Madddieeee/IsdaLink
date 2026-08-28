@@ -10,12 +10,20 @@ class SupplierDetailsHeader extends StatelessWidget {
     required this.stats,
     required this.onBack,
     this.businessLocationPreview,
+    this.showFavoriteAction = false,
+    this.isFavorite = false,
+    this.favoriteBusy = false,
+    this.onFavoriteToggle,
   });
 
   final Supplier supplier;
   final SupplierDetailsStats stats;
   final VoidCallback onBack;
   final Widget? businessLocationPreview;
+  final bool showFavoriteAction;
+  final bool isFavorite;
+  final bool favoriteBusy;
+  final VoidCallback? onFavoriteToggle;
 
   bool get hasNetworkImage {
     final imageUrl = supplier.profileImageUrl.trim();
@@ -289,6 +297,49 @@ class SupplierDetailsHeader extends StatelessWidget {
     );
   }
 
+
+  Widget favoriteActionButton() {
+    return Tooltip(
+      message: isFavorite ? 'Remove from Favorites' : 'Add to Favorites',
+      child: Material(
+        color: isFavorite
+            ? const Color(0xFFFFF0F3)
+            : Colors.white.withAlpha(34),
+        shape: const CircleBorder(),
+        child: InkWell(
+          onTap: favoriteBusy ? null : onFavoriteToggle,
+          customBorder: const CircleBorder(),
+          child: SizedBox(
+            width: 38,
+            height: 38,
+            child: Center(
+              child: favoriteBusy
+                  ? SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 1.8,
+                        color: isFavorite
+                            ? const Color(0xFFE94C72)
+                            : Colors.white,
+                      ),
+                    )
+                  : Icon(
+                      isFavorite
+                          ? Icons.favorite_rounded
+                          : Icons.favorite_border_rounded,
+                      color: isFavorite
+                          ? const Color(0xFFE94C72)
+                          : Colors.white,
+                      size: 20,
+                    ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget brandBadge() {
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -422,6 +473,10 @@ class SupplierDetailsHeader extends StatelessWidget {
                                 icon: Icons.verified_rounded,
                                 text: 'Verified',
                               ),
+                              if (showFavoriteAction) ...[
+                                const SizedBox(width: 8),
+                                favoriteActionButton(),
+                              ],
                             ],
                           ),
                           const SizedBox(height: 14),
