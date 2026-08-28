@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:isdalink/utils/app_error_message.dart';
 
 class ManageProfileScreen extends StatefulWidget {
   const ManageProfileScreen({
@@ -390,14 +391,21 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
       showMessage(
         'Account information updated successfully.',
       );
-    } on FirebaseException {
+    } on FirebaseException catch (error) {
       showMessage(
-        'Unable to save your account information. Please try again.',
+        AppErrorMessage.from(
+          error,
+          fallback: 'Unable to save your account information. Please try again.',
+        ),
         isError: true,
       );
-    } catch (_) {
+    } catch (error) {
       showMessage(
-        'Something went wrong while saving your profile.',
+        AppErrorMessage.from(
+          error,
+          fallback: 'Something went wrong while saving your profile. Please try again.',
+          allowBusinessMessage: true,
+        ),
         isError: true,
       );
     } finally {

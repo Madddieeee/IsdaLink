@@ -83,7 +83,11 @@ class _CaragaLocationPickerScreenState
   bool isInsideCaragaMapArea(
     LatLng location,
   ) {
-    return CaragaMapDefaults.contains(location);
+    return CaragaMapDefaults.containsForSelection(
+      location,
+      province: widget.province,
+      locality: widget.locality,
+    );
   }
 
   LatLng initialTarget() {
@@ -98,8 +102,44 @@ class _CaragaLocationPickerScreenState
   double initialZoom() {
     return CaragaMapDefaults.zoomFor(
       hasSavedPin: selectedLocation != null,
+      province: widget.province,
       locality: widget.locality,
     );
+  }
+
+  String invalidLocationMessage() {
+    final province = widget.province?.trim() ?? '';
+    final locality = widget.locality?.trim() ?? '';
+
+    if (province.isNotEmpty && locality.isNotEmpty) {
+      return 'Choose a reference point within $locality, $province.';
+    }
+
+    if (province.isNotEmpty) {
+      return 'Choose a reference point within $province.';
+    }
+
+    return 'Choose a reference point inside the Caraga map area.';
+  }
+
+  void showInvalidLocationMessage() {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: const Color(0xFFD94A45),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          content: Text(
+            invalidLocationMessage(),
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      );
   }
 
   void selectLocation(
@@ -112,29 +152,7 @@ class _CaragaLocationPickerScreenState
     if (!isInsideCaragaMapArea(
       location,
     )) {
-      ScaffoldMessenger.of(
-          context,
-        )
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: const Color(
-              0xFFD94A45,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(
-                15,
-              ),
-            ),
-            content: const Text(
-              'Choose a reference point inside the Caraga map area.',
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        );
+      showInvalidLocationMessage();
       return;
     }
 
@@ -157,6 +175,14 @@ class _CaragaLocationPickerScreenState
 
     if (location ==
         null) {
+      return;
+    }
+
+    if (!isInsideCaragaMapArea(location)) {
+      setState(() {
+        selectedLocation = null;
+      });
+      showInvalidLocationMessage();
       return;
     }
 
@@ -274,7 +300,10 @@ class _CaragaLocationPickerScreenState
                       zoom: initialZoom(),
                     ),
                     cameraTargetBounds: CameraTargetBounds(
-                      CaragaMapDefaults.bounds,
+                      CaragaMapDefaults.boundsFor(
+                        province: widget.province,
+                        locality: widget.locality,
+                      ),
                     ),
                     minMaxZoomPreference: const MinMaxZoomPreference(
                       7.6,

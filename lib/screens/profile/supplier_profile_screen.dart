@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:isdalink/screens/profile/supplier_verified_change_request_screen.dart';
 import 'package:isdalink/services/supplier_notification_service.dart';
 import 'package:isdalink/services/supplier_profile_service.dart';
+import 'package:isdalink/utils/app_error_message.dart';
 
 class SupplierProfileScreen extends StatefulWidget {
   const SupplierProfileScreen({
@@ -663,7 +664,7 @@ class _PublicStoreInformationEditSheetState
       }
 
       Navigator.of(context).pop(true);
-    } catch (_) {
+    } catch (error) {
       if (!mounted) {
         return;
       }
@@ -673,7 +674,11 @@ class _PublicStoreInformationEditSheetState
       });
 
       showError(
-        'Could not update the supplier profile. Check your connection and try again.',
+        AppErrorMessage.from(
+          error,
+          fallback: 'Could not update the supplier profile. Please try again.',
+          allowBusinessMessage: true,
+        ),
       );
     }
   }

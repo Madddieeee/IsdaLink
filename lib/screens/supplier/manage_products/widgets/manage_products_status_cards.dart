@@ -262,7 +262,7 @@ class ManageProductsErrorCard extends StatelessWidget {
           ),
           const SizedBox(height: 5),
           const Text(
-            'Check your connection and try loading the supplier inventory again.',
+            'Unable to load the supplier inventory right now. Refresh and try again.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Color(0xFF7B8FA3),

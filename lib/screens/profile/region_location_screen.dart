@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:isdalink/screens/map/caraga_location_picker_screen.dart';
+import 'package:isdalink/screens/map/caraga_map_defaults.dart';
+import 'package:isdalink/utils/app_error_message.dart';
 import 'package:isdalink/screens/map/vendor_delivery_map_card.dart';
 
 class RegionLocationScreen extends StatefulWidget {
@@ -413,6 +415,20 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
           : storedDeliveryAddress;
       deliveryLatitude = coordinateValue(data?['deliveryLatitude']);
       deliveryLongitude = coordinateValue(data?['deliveryLongitude']);
+
+      final latitude = deliveryLatitude;
+      final longitude = deliveryLongitude;
+      if (latitude != null &&
+          longitude != null &&
+          !CaragaMapDefaults.containsCoordinates(
+            latitude: latitude,
+            longitude: longitude,
+            province: selectedProvince,
+            locality: selectedCity,
+          )) {
+        deliveryLatitude = null;
+        deliveryLongitude = null;
+      }
 
       initialProvince = selectedProvince;
       initialCity = selectedCity;
@@ -961,6 +977,20 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
 
     final city = selectedCity!;
     final province = selectedProvince!;
+
+    if (!CaragaMapDefaults.containsCoordinates(
+      latitude: deliveryLatitude!,
+      longitude: deliveryLongitude!,
+      province: province,
+      locality: city,
+    )) {
+      showMessage(
+        'Choose a delivery pin within $city, $province.',
+        isError: true,
+      );
+      return;
+    }
+
     final location = '$city, $province, Caraga Region';
     final provinceCode = provinceCodes[province];
     final cityCode = locationCodesByProvince[province]?[city];
@@ -1023,14 +1053,21 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
       showMessage(
         'Region and location updated successfully.',
       );
-    } on FirebaseException {
+    } on FirebaseException catch (error) {
       showMessage(
-        'Unable to save your location. Please try again.',
+        AppErrorMessage.from(
+          error,
+          fallback: 'Unable to save your location. Please try again.',
+        ),
         isError: true,
       );
-    } catch (_) {
+    } catch (error) {
       showMessage(
-        'Something went wrong while saving your location.',
+        AppErrorMessage.from(
+          error,
+          fallback: 'Something went wrong while saving your location. Please try again.',
+          allowBusinessMessage: true,
+        ),
         isError: true,
       );
     } finally {

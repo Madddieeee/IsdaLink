@@ -3458,7 +3458,7 @@ class HomeSearchErrorState
                 height: 5,
               ),
               Text(
-                'Check your connection and try again in a moment.',
+                'Home data could not be loaded right now. Refresh and try again.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Color(

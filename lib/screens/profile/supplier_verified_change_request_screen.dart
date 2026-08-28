@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:isdalink/screens/map/caraga_location_picker_screen.dart';
+import 'package:isdalink/screens/map/caraga_map_defaults.dart';
 import 'package:isdalink/screens/supplier/activation/supplier_caraga_locations.dart';
 import 'package:isdalink/services/cloudinary_upload_service.dart';
 import 'package:isdalink/services/supplier_profile_service.dart';
 import 'package:isdalink/services/supplier_verification_storage_service.dart';
 import 'package:isdalink/widgets/verification_evidence_image.dart';
+import 'package:isdalink/utils/app_error_message.dart';
 
 enum _VerifiedChangeType {
   storeName,
@@ -455,9 +457,13 @@ class _SupplierVerifiedChangeRequestScreenState
       );
     } on StateError catch (error) {
       showMessage(error.message.toString(), isError: true);
-    } catch (_) {
+    } catch (error) {
       showMessage(
-        'The verification photo could not be uploaded. Check your connection and try again.',
+        AppErrorMessage.from(
+          error,
+          fallback: 'The verification photo could not be uploaded. Please try again.',
+          allowBusinessMessage: true,
+        ),
         isError: true,
       );
     } finally {
@@ -653,6 +659,19 @@ class _SupplierVerifiedChangeRequestScreenState
           selectedLongitude == null) {
         showMessage(
           'Choose the requested business map pin.',
+          isError: true,
+        );
+        return false;
+      }
+
+      if (!CaragaMapDefaults.containsCoordinates(
+        latitude: selectedLatitude!,
+        longitude: selectedLongitude!,
+        province: selectedProvince,
+        locality: selectedLocality,
+      )) {
+        showMessage(
+          'Choose a map pin within the selected city or municipality.',
           isError: true,
         );
         return false;
@@ -873,9 +892,18 @@ class _SupplierVerifiedChangeRequestScreenState
         'Verified change request submitted for Admin review.',
       );
       Navigator.pop(context);
-    } catch (_) {
+    } on StateError catch (error) {
       showMessage(
-        'Could not submit the request. Check your connection and try again.',
+        error.message.toString(),
+        isError: true,
+      );
+    } catch (error) {
+      showMessage(
+        AppErrorMessage.from(
+          error,
+          fallback: 'Could not submit the request. Please try again.',
+          allowBusinessMessage: true,
+        ),
         isError: true,
       );
     } finally {

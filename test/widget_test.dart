@@ -1,17 +1,29 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:isdalink/main.dart';
+import 'package:isdalink/screens/welcome_screen.dart';
 
-void
-main() {
+void main() {
   testWidgets(
-    'IsdaLink app starts',
+    'Welcome screen renders without Firebase services',
     (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        const IsdaLinkApp(),
+        const MaterialApp(
+          home: WelcomeScreen(),
+        ),
       );
+
       await tester.pump();
+
+      expect(
+        find.text('IsdaLink'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Tap anywhere to continue'),
+        findsOneWidget,
+      );
     },
   );
 }

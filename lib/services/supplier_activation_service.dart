@@ -1,5 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:isdalink/screens/map/caraga_map_defaults.dart';
+
+class SupplierRejectionNotice {
+  const SupplierRejectionNotice({
+    required this.notificationId,
+    required this.reason,
+    required this.createdAtMillis,
+  });
+
+  final String notificationId;
+  final String reason;
+  final int createdAtMillis;
+}
 
 class SupplierApplicationInput {
   const SupplierApplicationInput({
@@ -82,10 +95,174 @@ class SupplierActivationService {
     };
   }
 
+  Future<SupplierRejectionNotice?> loadUnseenRejectionNotice({
+    required User user,
+    String notificationId = '',
+  }) async {
+    final firestore = FirebaseFirestore.instance;
+    final supplierDocument =
+        await firestore.collection('supplierProfiles').doc(user.uid).get();
+    final supplierData = supplierDocument.data();
+
+    if (!supplierDocument.exists ||
+        supplierData == null ||
+        getStringValue(supplierData, 'status', '').toLowerCase() != 'rejected') {
+      return null;
+    }
+
+    final activeReason = getStringValue(supplierData, 'rejectionReason', '');
+    final rejectedAt = supplierData['rejectedAt'];
+    final rejectedAtMillis = rejectedAt is Timestamp
+        ? rejectedAt.millisecondsSinceEpoch
+        : 0;
+
+    if (activeReason.isEmpty) {
+      return null;
+    }
+
+    final requestedNotificationId = notificationId.trim();
+
+    if (requestedNotificationId.isNotEmpty) {
+      final requestedDocument = await firestore
+          .collection('notifications')
+          .doc(requestedNotificationId)
+          .get();
+      final requestedNotice = _rejectionNoticeFromDocument(
+        user: user,
+        document: requestedDocument,
+        activeReason: activeReason,
+        rejectedAtMillis: rejectedAtMillis,
+      );
+
+      if (requestedNotice != null) {
+        return requestedNotice;
+      }
+    }
+
+    // Manual navigation to the Supplier Application screen does not carry a
+    // notification id. Load the user's Firestore notifications and find the
+    // newest unseen supplier-application rejection locally so this works from
+    // both the in-app Review Application entry point and a push notification.
+    final notificationSnapshot = await firestore
+        .collection('notifications')
+        .where('userId', isEqualTo: user.uid)
+        .get();
+
+    final unseenRejections = notificationSnapshot.docs
+        .map(
+          (document) => _rejectionNoticeFromDocument(
+            user: user,
+            document: document,
+            activeReason: activeReason,
+            rejectedAtMillis: rejectedAtMillis,
+          ),
+        )
+        .whereType<SupplierRejectionNotice>()
+        .toList()
+      ..sort(
+        (a, b) => b.createdAtMillis.compareTo(a.createdAtMillis),
+      );
+
+    return unseenRejections.isEmpty ? null : unseenRejections.first;
+  }
+
+  SupplierRejectionNotice? _rejectionNoticeFromDocument({
+    required User user,
+    required DocumentSnapshot<Map<String, dynamic>> document,
+    required String activeReason,
+    required int rejectedAtMillis,
+  }) {
+    final data = document.data();
+
+    if (!document.exists || data == null) {
+      return null;
+    }
+
+    final ownerId = getStringValue(data, 'userId', '');
+    final type = getStringValue(data, 'type', '').toLowerCase();
+    final status = getStringValue(data, 'status', '').toLowerCase();
+    final applicationId = getStringValue(data, 'applicationId', user.uid);
+    final reason = getStringValue(data, 'rejectionReason', '');
+    final createdAt = data['createdAt'];
+    final createdAtMillis = createdAt is Timestamp
+        ? createdAt.millisecondsSinceEpoch
+        : 0;
+    final belongsToActiveRejection = activeReason == reason &&
+        (rejectedAtMillis == 0 ||
+            createdAtMillis == 0 ||
+            (createdAtMillis - rejectedAtMillis).abs() <= 300000);
+
+    if (ownerId != user.uid ||
+        applicationId != user.uid ||
+        type != 'supplier_application_status' ||
+        status != 'rejected' ||
+        data['rejectionReasonViewedAt'] != null ||
+        reason.isEmpty ||
+        !belongsToActiveRejection) {
+      return null;
+    }
+
+    return SupplierRejectionNotice(
+      notificationId: document.id,
+      reason: reason,
+      createdAtMillis: createdAtMillis,
+    );
+  }
+
+  Future<void> markRejectionReasonViewed({
+    required User user,
+    required String notificationId,
+  }) async {
+    final id = notificationId.trim();
+
+    if (id.isEmpty) {
+      return;
+    }
+
+    final notificationReference = FirebaseFirestore.instance
+        .collection('notifications')
+        .doc(id);
+    final snapshot = await notificationReference.get();
+    final data = snapshot.data();
+
+    if (!snapshot.exists || data == null) {
+      return;
+    }
+
+    final ownerId = getStringValue(data, 'userId', '');
+    final type = getStringValue(data, 'type', '').toLowerCase();
+    final status = getStringValue(data, 'status', '').toLowerCase();
+
+    if (ownerId != user.uid ||
+        type != 'supplier_application_status' ||
+        status != 'rejected') {
+      return;
+    }
+
+    await notificationReference.update(
+      <String, dynamic>{
+        'isRead': true,
+        'readAt': FieldValue.serverTimestamp(),
+        'rejectionReasonViewedAt': FieldValue.serverTimestamp(),
+      },
+    );
+  }
+
   Future<void> submitSupplierApplication({
     required User user,
     required SupplierApplicationInput input,
   }) async {
+    if (!CaragaMapDefaults.containsCoordinates(
+      latitude: input.storeLatitude,
+      longitude: input.storeLongitude,
+      province: input.storeProvince,
+      locality: input.storeCityMunicipality,
+    )) {
+      throw StateError(
+        'Choose a business location pin within the selected city or municipality.',
+      );
+    }
+
     final firestore = FirebaseFirestore.instance;
     final userReference = firestore.collection('users').doc(user.uid);
     final supplierReference =
@@ -153,6 +330,11 @@ class SupplierActivationService {
           'uid': user.uid,
           ...applicationData,
           'status': 'pending',
+          if (currentStatus == 'rejected') ...<String, dynamic>{
+            'rejectionReason': FieldValue.delete(),
+            'rejectedBy': FieldValue.delete(),
+            'rejectedAt': FieldValue.delete(),
+          },
           'createdAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
         },

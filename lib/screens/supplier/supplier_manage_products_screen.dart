@@ -9,6 +9,7 @@ import 'package:isdalink/screens/supplier/manage_products/widgets/manage_product
 import 'package:isdalink/screens/supplier/post_fish_stock_screen.dart';
 import 'package:isdalink/services/supplier_product_service.dart';
 import 'package:isdalink/utils/order_helpers.dart';
+import 'package:isdalink/utils/app_error_message.dart';
 import 'package:isdalink/utils/stock_state.dart';
 
 enum ManageProductFilter {
@@ -270,14 +271,21 @@ class _SupplierManageProductsScreenState
         '$productName restocked. New total: '
         '${OrderHelpers.formatNumber(newTotal)} $quantityUnit.',
       );
-    } on FirebaseException {
+    } on FirebaseException catch (error) {
       showMessage(
-        'Unable to restock this product. Please try again.',
+        AppErrorMessage.from(
+          error,
+          fallback: 'Unable to restock this product. Please try again.',
+        ),
         isError: true,
       );
-    } catch (_) {
+    } catch (error) {
       showMessage(
-        'Something went wrong while restocking this product.',
+        AppErrorMessage.from(
+          error,
+          fallback: 'Something went wrong while restocking this product. Please try again.',
+          allowBusinessMessage: true,
+        ),
         isError: true,
       );
     } finally {
@@ -315,14 +323,21 @@ class _SupplierManageProductsScreenState
       showMessage(
         'Product changes saved successfully.',
       );
-    } on FirebaseException {
+    } on FirebaseException catch (error) {
       showMessage(
-        'Unable to save the product changes. Please try again.',
+        AppErrorMessage.from(
+          error,
+          fallback: 'Unable to save the product changes. Please try again.',
+        ),
         isError: true,
       );
-    } catch (_) {
+    } catch (error) {
       showMessage(
-        'Something went wrong while updating this product.',
+        AppErrorMessage.from(
+          error,
+          fallback: 'Something went wrong while updating this product. Please try again.',
+          allowBusinessMessage: true,
+        ),
         isError: true,
       );
     } finally {
@@ -374,14 +389,21 @@ class _SupplierManageProductsScreenState
             ? '$productName is visible to vendors again.'
             : '$productName is now hidden from vendors.',
       );
-    } on FirebaseException {
+    } on FirebaseException catch (error) {
       showMessage(
-        'Unable to change product visibility. Please try again.',
+        AppErrorMessage.from(
+          error,
+          fallback: 'Unable to change product visibility. Please try again.',
+        ),
         isError: true,
       );
-    } catch (_) {
+    } catch (error) {
       showMessage(
-        'Something went wrong while changing visibility.',
+        AppErrorMessage.from(
+          error,
+          fallback: 'Something went wrong while changing product visibility. Please try again.',
+          allowBusinessMessage: true,
+        ),
         isError: true,
       );
     } finally {
@@ -427,14 +449,21 @@ class _SupplierManageProductsScreenState
       showMessage(
         '$productName was archived and hidden from vendors.',
       );
-    } on FirebaseException {
+    } on FirebaseException catch (error) {
       showMessage(
-        'Unable to archive this product. Please try again.',
+        AppErrorMessage.from(
+          error,
+          fallback: 'Unable to archive this product. Please try again.',
+        ),
         isError: true,
       );
-    } catch (_) {
+    } catch (error) {
       showMessage(
-        'Something went wrong while archiving this product.',
+        AppErrorMessage.from(
+          error,
+          fallback: 'Something went wrong while archiving this product. Please try again.',
+          allowBusinessMessage: true,
+        ),
         isError: true,
       );
     } finally {

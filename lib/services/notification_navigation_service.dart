@@ -24,6 +24,7 @@ class NotificationNavigationService {
     final status = _value(data, 'status').toLowerCase();
     final orderId = _value(data, 'orderId');
     final subjectId = _value(data, 'subjectId');
+    final notificationId = _value(data, 'notificationId');
     final unreadCount = int.tryParse(_value(data, 'unreadCount')) ?? 1;
     final grouped = _value(data, 'grouped').toLowerCase() == 'true' ||
         unreadCount > 1;
@@ -60,7 +61,9 @@ class NotificationNavigationService {
       case 'supplier_application_status':
         destination = status == 'approved'
             ? const SupplierProfileScreen()
-            : const SupplierActivationScreen();
+            : SupplierActivationScreen(
+                rejectionNotificationId: notificationId,
+              );
         break;
     }
 

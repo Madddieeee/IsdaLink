@@ -3535,7 +3535,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 icon: Icons.error_outline_rounded,
                 title: 'Unable to load analytics',
                 subtitle:
-                    'Please check your connection and try opening Analytics again.',
+                    'Analytics could not be loaded right now. Refresh and try again.',
               ),
             ),
           ),

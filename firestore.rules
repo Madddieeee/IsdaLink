@@ -35,6 +35,10 @@ service cloud.firestore {
       return /databases/$(database)/documents/reviews/$(orderId);
     }
 
+    function changeRequestPath(supplierId) {
+      return /databases/$(database)/documents/supplierChangeRequests/$(supplierId);
+    }
+
     function currentUserData() {
       return get(userPath(currentUid())).data;
     }
@@ -49,10 +53,8 @@ service cloud.firestore {
       return signedIn()
         && currentUid() == uid
         && exists(userPath(uid))
-        && (
-          get(userPath(uid)).data.get('role', '') == 'supplier'
-          || get(userPath(uid)).data.get('supplierStatus', '') == 'approved'
-        );
+        && get(userPath(uid)).data.get('role', '') == 'supplier'
+        && get(userPath(uid)).data.get('supplierStatus', '') == 'approved';
     }
 
     function changedOnly(fields) {
@@ -92,6 +94,545 @@ service cloud.firestore {
       ]);
     }
 
+    function locationInBounds(
+      latitude,
+      longitude,
+      south,
+      west,
+      north,
+      east
+    ) {
+      return latitude >= south
+        && latitude <= north
+        && longitude >= west
+        && longitude <= east;
+    }
+
+    function validAgusanDelNortePin(latitude, longitude, city) {
+      return (city == 'Buenavista'
+          && locationInBounds(
+            latitude, longitude, 8.751580, 125.230037, 8.991506, 125.509430
+          )
+        )
+        || (city == 'Butuan City'
+          && locationInBounds(
+            latitude, longitude, 8.740690, 125.455216, 9.056310, 125.743619
+          )
+        )
+        || (city == 'Carmen'
+          && locationInBounds(
+            latitude, longitude, 8.854489, 125.213400, 9.028491, 125.312384
+          )
+        )
+        || (city == 'City of Cabadbaran'
+          && locationInBounds(
+            latitude, longitude, 9.057913, 125.512221, 9.230395, 125.775509
+          )
+        )
+        || (city == 'Jabonga'
+          && locationInBounds(
+            latitude, longitude, 9.285986, 125.445348, 9.462061, 125.753410
+          )
+        )
+        || (city == 'Kitcharao'
+          && locationInBounds(
+            latitude, longitude, 9.369201, 125.547441, 9.470886, 125.752423
+          )
+        )
+        || (city == 'Las Nieves'
+          && locationInBounds(
+            latitude, longitude, 8.690628, 125.230037, 8.768590, 125.677411
+          )
+        )
+        || (city == 'Magallanes'
+          && locationInBounds(
+            latitude, longitude, 9.026259, 125.525767, 9.073992, 125.579208
+          )
+        )
+        || (city == 'Nasipit'
+          && locationInBounds(
+            latitude, longitude, 8.854489, 125.275885, 8.999486, 125.398590
+          )
+        )
+        || (city == 'Remedios T. Romualdez'
+          && locationInBounds(
+            latitude, longitude, 9.026259, 125.551145, 9.094860, 125.757086
+          )
+        )
+        || (city == 'Santiago'
+          && locationInBounds(
+            latitude, longitude, 9.208370, 125.516002, 9.315524, 125.766331
+          )
+        )
+        || (city == 'Tubay'
+          && locationInBounds(
+            latitude, longitude, 9.131576, 125.488375, 9.320970, 125.634949
+          )
+        );
+    }
+
+    function validAgusanDelSurPin(latitude, longitude, city) {
+      return (city == 'Bunawan'
+          && locationInBounds(
+            latitude, longitude, 8.101518, 125.886409, 8.275236, 126.189982
+          )
+        )
+        || (city == 'City of Bayugan'
+          && locationInBounds(
+            latitude, longitude, 8.600227, 125.657239, 8.895713, 125.940096
+          )
+        )
+        || (city == 'Esperanza'
+          && locationInBounds(
+            latitude, longitude, 8.470070, 125.239561, 8.748743, 125.804581
+          )
+        )
+        || (city == 'La Paz'
+          && locationInBounds(
+            latitude, longitude, 8.156342, 125.300693, 8.362269, 125.902409
+          )
+        )
+        || (city == 'Loreto'
+          && locationInBounds(
+            latitude, longitude, 7.943381, 125.371389, 8.275236, 125.913692
+          )
+        )
+        || (city == 'Prosperidad'
+          && locationInBounds(
+            latitude, longitude, 8.495595, 125.787541, 8.841130, 126.008246
+          )
+        )
+        || (city == 'Rosario'
+          && locationInBounds(
+            latitude, longitude, 8.255369, 125.880722, 8.455829, 126.177178
+          )
+        )
+        || (city == 'San Francisco'
+          && locationInBounds(
+            latitude, longitude, 8.330962, 125.845837, 8.607765, 126.063090
+          )
+        )
+        || (city == 'San Luis'
+          && locationInBounds(
+            latitude, longitude, 8.303562, 125.239561, 8.623169, 125.819575
+          )
+        )
+        || (city == 'Santa Josefa'
+          && locationInBounds(
+            latitude, longitude, 7.944304, 125.955055, 8.117518, 126.073375
+          )
+        )
+        || (city == 'Sibagat'
+          && locationInBounds(
+            latitude, longitude, 8.744793, 125.657239, 9.171620, 125.903900
+          )
+        )
+        || (city == 'Talacogon'
+          && locationInBounds(
+            latitude, longitude, 8.312260, 125.536585, 8.546719, 125.915613
+          )
+        )
+        || (city == 'Trento'
+          && locationInBounds(
+            latitude, longitude, 7.944304, 125.976416, 8.196573, 126.265053
+          )
+        )
+        || (city == 'Veruela'
+          && locationInBounds(
+            latitude, longitude, 7.943381, 125.769268, 8.131063, 125.992416
+          )
+        );
+    }
+
+    function validDinagatIslandsPin(latitude, longitude, city) {
+      return (city == 'Basilisa'
+          && locationInBounds(
+            latitude, longitude, 9.981560, 125.468710, 10.165739, 125.627455
+          )
+        )
+        || (city == 'Cagdianao'
+          && locationInBounds(
+            latitude, longitude, 9.844500, 125.603437, 10.194983, 125.714772
+          )
+        )
+        || (city == 'Dinagat'
+          && locationInBounds(
+            latitude, longitude, 9.931606, 125.526712, 10.005629, 125.646196
+          )
+        )
+        || (city == 'Libjo'
+          && locationInBounds(
+            latitude, longitude, 10.112733, 125.482835, 10.285352, 125.669892
+          )
+        )
+        || (city == 'Loreto'
+          && locationInBounds(
+            latitude, longitude, 10.238929, 125.455340, 10.479595, 125.689633
+          )
+        )
+        || (city == 'San Jose'
+          && locationInBounds(
+            latitude, longitude, 9.988351, 125.560625, 10.058334, 125.645513
+          )
+        )
+        || (city == 'Tubajon'
+          && locationInBounds(
+            latitude, longitude, 10.200037, 125.505872, 10.356805, 125.664870
+          )
+        );
+    }
+
+    function validSurigaoDelNortePin(latitude, longitude, city) {
+      return (city == 'Alegria'
+          && locationInBounds(
+            latitude, longitude, 9.421680, 125.543009, 9.548939, 125.708172
+          )
+        )
+        || (city == 'Bacuag'
+          && locationInBounds(
+            latitude, longitude, 9.497800, 125.581172, 9.628302, 125.693173
+          )
+        )
+        || (city == 'Burgos'
+          && locationInBounds(
+            latitude, longitude, 9.961719, 126.049294, 10.048595, 126.105061
+          )
+        )
+        || (city == 'City of Surigao'
+          && locationInBounds(
+            latitude, longitude, 9.657185, 125.418133, 9.925173, 125.740596
+          )
+        )
+        || (city == 'Claver'
+          && locationInBounds(
+            latitude, longitude, 9.318040, 125.690865, 9.593277, 125.891799
+          )
+        )
+        || (city == 'Dapa'
+          && locationInBounds(
+            latitude, longitude, 9.679377, 125.957999, 9.808324, 126.125450
+          )
+        )
+        || (city == 'Del Carmen'
+          && locationInBounds(
+            latitude, longitude, 9.772423, 125.884029, 9.926761, 126.060770
+          )
+        )
+        || (city == 'General Luna'
+          && locationInBounds(
+            latitude, longitude, 9.749418, 126.084340, 9.852773, 126.174928
+          )
+        )
+        || (city == 'Gigaquit'
+          && locationInBounds(
+            latitude, longitude, 9.397130, 125.626789, 9.609682, 125.740698
+          )
+        )
+        || (city == 'Mainit'
+          && locationInBounds(
+            latitude, longitude, 9.439851, 125.442027, 9.625960, 125.614401
+          )
+        )
+        || (city == 'Malimono'
+          && locationInBounds(
+            latitude, longitude, 9.431441, 125.383695, 9.666498, 125.480637
+          )
+        )
+        || (city == 'Pilar'
+          && locationInBounds(
+            latitude, longitude, 9.791856, 126.041906, 9.928616, 126.128616
+          )
+        )
+        || (city == 'Placer'
+          && locationInBounds(
+            latitude, longitude, 9.585080, 125.525795, 9.714639, 125.668473
+          )
+        )
+        || (city == 'San Benito'
+          && locationInBounds(
+            latitude, longitude, 9.899551, 125.930375, 9.992812, 126.056001
+          )
+        )
+        || (city == 'San Francisco'
+          && locationInBounds(
+            latitude, longitude, 9.649145, 125.383695, 9.793454, 125.445936
+          )
+        )
+        || (city == 'San Isidro'
+          && locationInBounds(
+            latitude, longitude, 9.882530, 126.021775, 9.979439, 126.122232
+          )
+        )
+        || (city == 'Santa Monica'
+          && locationInBounds(
+            latitude, longitude, 9.962424, 126.017228, 10.070544, 126.079460
+          )
+        )
+        || (city == 'Sison'
+          && locationInBounds(
+            latitude, longitude, 9.605250, 125.428050, 9.705444, 125.548527
+          )
+        )
+        || (city == 'Socorro'
+          && locationInBounds(
+            latitude, longitude, 9.552243, 125.888850, 9.768417, 125.998319
+          )
+        )
+        || (city == 'Tagana-an'
+          && locationInBounds(
+            latitude, longitude, 9.641405, 125.525369, 9.773575, 125.713209
+          )
+        )
+        || (city == 'Tubod'
+          && locationInBounds(
+            latitude, longitude, 9.532918, 125.527047, 9.614970, 125.612500
+          )
+        );
+    }
+
+    function validSurigaoDelSurPin(latitude, longitude, city) {
+      return (city == 'Barobo'
+          && locationInBounds(
+            latitude, longitude, 8.436658, 125.992117, 8.607765, 126.362020
+          )
+        )
+        || (city == 'Bayabas'
+          && locationInBounds(
+            latitude, longitude, 8.888563, 126.208085, 9.023458, 126.316829
+          )
+        )
+        || (city == 'Cagwait'
+          && locationInBounds(
+            latitude, longitude, 8.839071, 126.208864, 8.957070, 126.336770
+          )
+        )
+        || (city == 'Cantilan'
+          && locationInBounds(
+            latitude, longitude, 9.230570, 125.735439, 9.407343, 126.014754
+          )
+        )
+        || (city == 'Carmen'
+          && locationInBounds(
+            latitude, longitude, 9.085480, 125.767498, 9.254041, 126.032011
+          )
+        )
+        || (city == 'Carrascal'
+          && locationInBounds(
+            latitude, longitude, 9.297530, 125.735439, 9.504016, 125.996708
+          )
+        )
+        || (city == 'City of Bislig'
+          && locationInBounds(
+            latitude, longitude, 8.050979, 126.146967, 8.309547, 126.457228
+          )
+        )
+        || (city == 'City of Tandag'
+          && locationInBounds(
+            latitude, longitude, 8.982375, 126.046569, 9.154480, 126.227614
+          )
+        )
+        || (city == 'Cortes'
+          && locationInBounds(
+            latitude, longitude, 9.132936, 126.064749, 9.317303, 126.211016
+          )
+        )
+        || (city == 'Hinatuan'
+          && locationInBounds(
+            latitude, longitude, 8.236580, 126.157051, 8.555111, 126.396251
+          )
+        )
+        || (city == 'Lanuza'
+          && locationInBounds(
+            latitude, longitude, 9.073232, 125.858155, 9.291991, 126.166348
+          )
+        )
+        || (city == 'Lianga'
+          && locationInBounds(
+            latitude, longitude, 8.555767, 125.962289, 8.801478, 126.188722
+          )
+        )
+        || (city == 'Lingig'
+          && locationInBounds(
+            latitude, longitude, 7.925008, 126.219791, 8.250712, 126.459292
+          )
+        )
+        || (city == 'Madrid'
+          && locationInBounds(
+            latitude, longitude, 9.181577, 125.747234, 9.294737, 126.029396
+          )
+        )
+        || (city == 'Marihatag'
+          && locationInBounds(
+            latitude, longitude, 8.759944, 126.080150, 8.876779, 126.342148
+          )
+        )
+        || (city == 'San Agustin'
+          && locationInBounds(
+            latitude, longitude, 8.683465, 126.133132, 8.810095, 126.258442
+          )
+        )
+        || (city == 'San Miguel'
+          && locationInBounds(
+            latitude, longitude, 8.731795, 125.863041, 9.093403, 126.099700
+          )
+        )
+        || (city == 'Tagbina'
+          && locationInBounds(
+            latitude, longitude, 8.280009, 126.055895, 8.518690, 126.294822
+          )
+        )
+        || (city == 'Tago'
+          && locationInBounds(
+            latitude, longitude, 8.846151, 126.031491, 9.093730, 126.250260
+          )
+        );
+    }
+
+    function validCaragaLocationSelection(province, city) {
+      return (province == 'Agusan del Norte'
+          && city in [
+            'Buenavista',
+            'Butuan City',
+            'Carmen',
+            'City of Cabadbaran',
+            'Jabonga',
+            'Kitcharao',
+            'Las Nieves',
+            'Magallanes',
+            'Nasipit',
+            'Remedios T. Romualdez',
+            'Santiago',
+            'Tubay'
+          ]
+        )
+        || (province == 'Agusan del Sur'
+          && city in [
+            'Bunawan',
+            'City of Bayugan',
+            'Esperanza',
+            'La Paz',
+            'Loreto',
+            'Prosperidad',
+            'Rosario',
+            'San Francisco',
+            'San Luis',
+            'Santa Josefa',
+            'Sibagat',
+            'Talacogon',
+            'Trento',
+            'Veruela'
+          ]
+        )
+        || (province == 'Dinagat Islands'
+          && city in [
+            'Basilisa',
+            'Cagdianao',
+            'Dinagat',
+            'Libjo',
+            'Loreto',
+            'San Jose',
+            'Tubajon'
+          ]
+        )
+        || (province == 'Surigao del Norte'
+          && city in [
+            'Alegria',
+            'Bacuag',
+            'Burgos',
+            'City of Surigao',
+            'Claver',
+            'Dapa',
+            'Del Carmen',
+            'General Luna',
+            'Gigaquit',
+            'Mainit',
+            'Malimono',
+            'Pilar',
+            'Placer',
+            'San Benito',
+            'San Francisco',
+            'San Isidro',
+            'Santa Monica',
+            'Sison',
+            'Socorro',
+            'Tagana-an',
+            'Tubod'
+          ]
+        )
+        || (province == 'Surigao del Sur'
+          && city in [
+            'Barobo',
+            'Bayabas',
+            'Cagwait',
+            'Cantilan',
+            'Carmen',
+            'Carrascal',
+            'City of Bislig',
+            'City of Tandag',
+            'Cortes',
+            'Hinatuan',
+            'Lanuza',
+            'Lianga',
+            'Lingig',
+            'Madrid',
+            'Marihatag',
+            'San Agustin',
+            'San Miguel',
+            'Tagbina',
+            'Tago'
+          ]
+        );
+    }
+
+    function validCaragaLocationPin(latitude, longitude, province, city) {
+      return latitude is number
+        && longitude is number
+        && province is string
+        && city is string
+        && validCaragaLocationSelection(province, city)
+        && ((province == 'Agusan del Norte'
+            && validAgusanDelNortePin(latitude, longitude, city)
+          )
+          || (province == 'Agusan del Sur'
+            && validAgusanDelSurPin(latitude, longitude, city)
+          )
+          || (province == 'Dinagat Islands'
+            && validDinagatIslandsPin(latitude, longitude, city)
+          )
+          || (province == 'Surigao del Norte'
+            && validSurigaoDelNortePin(latitude, longitude, city)
+          )
+          || (province == 'Surigao del Sur'
+            && validSurigaoDelSurPin(latitude, longitude, city)
+          )
+        );
+    }
+
+    function validUserLocationUpdate() {
+      let changed = request.resource.data
+        .diff(resource.data)
+        .affectedKeys();
+
+      return !changed.hasAny([
+          'province',
+          'cityMunicipality',
+          'deliveryLatitude',
+          'deliveryLongitude',
+          'deliveryReferenceType'
+        ])
+        || (
+          request.resource.data.get('region', '') == 'Caraga Region'
+          && validCaragaLocationPin(
+            request.resource.data.get('deliveryLatitude', null),
+            request.resource.data.get('deliveryLongitude', null),
+            request.resource.data.get('province', ''),
+            request.resource.data.get('cityMunicipality', '')
+          )
+          && request.resource.data.get('deliveryReferenceType', '')
+            == 'map_pin'
+        );
+    }
+
     // ---------------------------------------------------------------------
     // USERS
     // ---------------------------------------------------------------------
@@ -107,7 +648,7 @@ service cloud.firestore {
         && request.resource.data.get('accountType', '') == 'vendor'
         && request.resource.data.get('supplierStatus', '') == 'not_applicable';
 
-      allow update: if isAdmin()
+      allow update: if validAdminUserUpdate(userId)
         || (
           signedIn()
           && currentUid() == userId
@@ -164,9 +705,87 @@ service cloud.firestore {
                 == 'pending'
             )
           )
+          && validUserLocationUpdate()
         );
 
-      allow delete: if isAdmin();
+      allow delete: if false;
+
+      function validAdminUserUpdate(userId) {
+        let changed = request.resource.data
+          .diff(resource.data)
+          .affectedKeys();
+        let currentRole = resource.data.get('role', 'vendor');
+        let nextRole = request.resource.data.get('role', 'vendor');
+        let currentStatus = resource.data.get(
+          'supplierStatus',
+          'not_applicable'
+        );
+        let nextStatus = request.resource.data.get(
+          'supplierStatus',
+          'not_applicable'
+        );
+
+        return isAdmin()
+          && userId != currentUid()
+          && request.resource.data.get('uid', userId)
+              == resource.data.get('uid', userId)
+          && request.resource.data.get('updatedAt', null) is timestamp
+          && (
+            (
+              currentStatus == 'pending'
+              && currentRole == 'vendor'
+              && changed.hasOnly([
+                'role',
+                'supplierStatus',
+                'updatedAt'
+              ])
+              && (
+                (
+                  nextRole == 'supplier'
+                  && nextStatus == 'approved'
+                  && existsAfter(supplierPath(userId))
+                  && getAfter(supplierPath(userId)).data.get('status', '')
+                    == 'approved'
+                )
+                || (
+                  currentRole == 'vendor'
+                  && nextRole == 'vendor'
+                  && nextStatus == 'rejected'
+                  && existsAfter(supplierPath(userId))
+                  && getAfter(supplierPath(userId)).data.get('status', '')
+                    == 'rejected'
+                )
+              )
+            )
+            || (
+              currentRole == 'supplier'
+              && nextRole == currentRole
+              && currentStatus == 'approved'
+              && nextStatus == currentStatus
+              && changed.hasAll([
+                'supplierApplication',
+                'updatedAt'
+              ])
+              && changed.hasOnly([
+                'supplierLocation',
+                'supplierApplication',
+                'profileImageUrl',
+                'photoUrl',
+                'updatedAt'
+              ])
+              && exists(changeRequestPath(userId))
+              && existsAfter(changeRequestPath(userId))
+              && get(changeRequestPath(userId)).data.get('status', '')
+                == 'pending'
+              && getAfter(changeRequestPath(userId)).data.get('status', '')
+                == 'approved'
+              && getAfter(changeRequestPath(userId)).data.get(
+                'reviewedBy',
+                ''
+              ) == currentUid()
+            )
+          );
+      }
     }
 
     // Each signed-in account may register only its own FCM destinations.
@@ -225,25 +844,236 @@ service cloud.firestore {
           'approvedAt'
         ]);
 
-      allow update: if isAdmin()
+      allow update: if validAdminSupplierProfileUpdate(supplierId)
         || validOwnerSupplierProfileUpdate(supplierId)
         || validSupplierReapplication(supplierId)
         || validReviewAggregateUpdate(supplierId);
 
-      allow delete: if isAdmin();
+      allow delete: if false;
 
       function validStoreLocationPin(data) {
-        let latitude = data.get('storeLatitude', null);
-        let longitude = data.get('storeLongitude', null);
+        return validCaragaLocationPin(
+          data.get('storeLatitude', null),
+          data.get('storeLongitude', null),
+          data.get('storeProvince', ''),
+          data.get('storeCityMunicipality', '')
+        );
+      }
 
-        // Rectangular Caraga map-area guard. The structured province/locality
-        // remains the authoritative administrative location selection.
-        return latitude is number
-          && longitude is number
-          && latitude >= 7.55
-          && latitude <= 10.75
-          && longitude >= 124.65
-          && longitude <= 126.85;
+      function validAdminSupplierProfileUpdate(supplierId) {
+        return validAdminSupplierApplicationReview(supplierId)
+          || (
+            exists(changeRequestPath(supplierId))
+            && validAdminVerifiedProfileChange(supplierId)
+          );
+      }
+
+      function validAdminSupplierApplicationReview(supplierId) {
+        let nextStatus = request.resource.data.get('status', '');
+
+        return isAdmin()
+          && supplierId != currentUid()
+          && request.resource.data.get('uid', supplierId)
+              == resource.data.get('uid', supplierId)
+          && resource.data.get('status', '') == 'pending'
+          && request.resource.data.get('updatedAt', null) is timestamp
+          && (
+            (
+              nextStatus == 'approved'
+              && request.resource.data.get('verificationStatus', '')
+                == 'approved'
+              && request.resource.data.get('approvedAt', null) is timestamp
+              && (
+                !request.resource.data.keys().hasAny(['accountCreatedAt'])
+                || request.resource.data.get('accountCreatedAt', null)
+                  is timestamp
+              )
+              && request.resource.data
+                .diff(resource.data)
+                .affectedKeys()
+                .hasOnly([
+                  'status',
+                  'verificationStatus',
+                  'approvedAt',
+                  'accountCreatedAt',
+                  'ownerAddress',
+                  'email',
+                  'businessPermitNumber',
+                  'businessPermitUrl',
+                  'businessPermitStoragePath',
+                  'updatedAt'
+                ])
+              && !request.resource.data.keys().hasAny([
+                'ownerAddress',
+                'email',
+                'businessPermitNumber',
+                'businessPermitUrl',
+                'businessPermitStoragePath'
+              ])
+              && existsAfter(userPath(supplierId))
+              && getAfter(userPath(supplierId)).data.get('role', '')
+                == 'supplier'
+              && getAfter(userPath(supplierId)).data.get(
+                'supplierStatus',
+                ''
+              ) == 'approved'
+            )
+            || (
+              nextStatus == 'rejected'
+              && request.resource.data.get('verificationStatus', '')
+                == 'rejected'
+              && request.resource.data.get('rejectionReason', '') is string
+              && request.resource.data.get('rejectionReason', '').size() >= 5
+              && request.resource.data.get('rejectionReason', '').size() <= 500
+              && request.resource.data.get('rejectedBy', '') == currentUid()
+              && request.resource.data.get('rejectedAt', null) is timestamp
+              && request.resource.data
+                .diff(resource.data)
+                .affectedKeys()
+                .hasOnly([
+                  'status',
+                  'verificationStatus',
+                  'rejectionReason',
+                  'rejectedBy',
+                  'rejectedAt',
+                  'updatedAt'
+                ])
+              && existsAfter(userPath(supplierId))
+              && getAfter(userPath(supplierId)).data.get('role', '')
+                == 'vendor'
+              && getAfter(userPath(supplierId)).data.get(
+                'supplierStatus',
+                ''
+              ) == 'rejected'
+            )
+          );
+      }
+
+      function validAdminVerifiedProfileChange(supplierId) {
+        let requestedChange = get(changeRequestPath(supplierId)).data;
+        let changedFields = requestedChange.get('changedFields', []);
+
+        return isAdmin()
+          && supplierId != currentUid()
+          && request.resource.data.get('uid', supplierId)
+              == resource.data.get('uid', supplierId)
+          && resource.data.get('status', '') == 'approved'
+          && request.resource.data.get('status', '') == 'approved'
+          && request.resource.data.get('verificationStatus', '')
+            == resource.data.get('verificationStatus', '')
+          && requestedChange.get('status', '') == 'pending'
+          && existsAfter(changeRequestPath(supplierId))
+          && getAfter(changeRequestPath(supplierId)).data.get('status', '')
+            == 'approved'
+          && getAfter(changeRequestPath(supplierId)).data.get(
+            'reviewedBy',
+            ''
+          ) == currentUid()
+          && request.resource.data.get('updatedAt', null) is timestamp
+          && request.resource.data
+            .diff(resource.data)
+            .affectedKeys()
+            .hasOnly([
+              'storeName',
+              'supplierName',
+              'businessName',
+              'storeProvince',
+              'storeCityMunicipality',
+              'storeAddress',
+              'storeLatitude',
+              'storeLongitude',
+              'location',
+              'storeLocation',
+              'storePhotoUrl',
+              'coverImageUrl',
+              'profileImageUrl',
+              'photoUrl',
+              'updatedAt'
+            ])
+          && (
+            (
+              changedFields.hasAny(['Store name'])
+              && request.resource.data.get('storeName', '')
+                == requestedChange.get('requestedStoreName', '')
+              && request.resource.data.get('supplierName', '')
+                == requestedChange.get('requestedStoreName', '')
+              && request.resource.data.get('businessName', '')
+                == requestedChange.get('requestedStoreName', '')
+            )
+            || (
+              !changedFields.hasAny(['Store name'])
+              && request.resource.data.get('storeName', '')
+                == resource.data.get('storeName', '')
+              && request.resource.data.get('supplierName', '')
+                == resource.data.get('supplierName', '')
+              && request.resource.data.get('businessName', '')
+                == resource.data.get('businessName', '')
+            )
+          )
+          && (
+            (
+              changedFields.hasAny(['Business location'])
+              && request.resource.data.get('storeProvince', '')
+                == requestedChange.get('requestedStoreProvince', '')
+              && request.resource.data.get('storeCityMunicipality', '')
+                == requestedChange.get(
+                  'requestedStoreCityMunicipality',
+                  ''
+                )
+              && request.resource.data.get('storeAddress', '')
+                == requestedChange.get('requestedStoreAddress', '')
+              && request.resource.data.get('storeLatitude', null)
+                == requestedChange.get('requestedStoreLatitude', null)
+              && request.resource.data.get('storeLongitude', null)
+                == requestedChange.get('requestedStoreLongitude', null)
+              && request.resource.data.get('location', '')
+                == requestedChange.get('requestedLocation', '')
+              && request.resource.data.get('storeLocation', '')
+                == requestedChange.get('requestedLocation', '')
+              && validStoreLocationPin(request.resource.data)
+            )
+            || (
+              !changedFields.hasAny(['Business location'])
+              && request.resource.data.get('storeProvince', '')
+                == resource.data.get('storeProvince', '')
+              && request.resource.data.get('storeCityMunicipality', '')
+                == resource.data.get('storeCityMunicipality', '')
+              && request.resource.data.get('storeAddress', '')
+                == resource.data.get('storeAddress', '')
+              && request.resource.data.get('storeLatitude', null)
+                == resource.data.get('storeLatitude', null)
+              && request.resource.data.get('storeLongitude', null)
+                == resource.data.get('storeLongitude', null)
+              && request.resource.data.get('location', '')
+                == resource.data.get('location', '')
+              && request.resource.data.get('storeLocation', '')
+                == resource.data.get('storeLocation', '')
+            )
+          )
+          && (
+            (
+              changedFields.hasAny(['Store photo'])
+              && request.resource.data.get('storePhotoUrl', '')
+                == requestedChange.get('requestedStorePhotoUrl', '')
+              && request.resource.data.get('coverImageUrl', '')
+                == requestedChange.get('requestedStorePhotoUrl', '')
+              && request.resource.data.get('profileImageUrl', '')
+                == requestedChange.get('requestedStorePhotoUrl', '')
+              && request.resource.data.get('photoUrl', '')
+                == requestedChange.get('requestedStorePhotoUrl', '')
+            )
+            || (
+              !changedFields.hasAny(['Store photo'])
+              && request.resource.data.get('storePhotoUrl', '')
+                == resource.data.get('storePhotoUrl', '')
+              && request.resource.data.get('coverImageUrl', '')
+                == resource.data.get('coverImageUrl', '')
+              && request.resource.data.get('profileImageUrl', '')
+                == resource.data.get('profileImageUrl', '')
+              && request.resource.data.get('photoUrl', '')
+                == resource.data.get('photoUrl', '')
+            )
+          );
       }
 
       function validOwnerSupplierProfileUpdate(supplierId) {
@@ -400,6 +1230,9 @@ service cloud.firestore {
             'accountCreatedAt',
             'submittedAt',
             'status',
+            'rejectionReason',
+            'rejectedBy',
+            'rejectedAt',
             'createdAt',
             'updatedAt'
           ]);
@@ -472,7 +1305,7 @@ service cloud.firestore {
 
       allow create: if validPendingSupplierChangeRequest(supplierId);
 
-      allow update: if isAdmin()
+      allow update: if validAdminSupplierChangeReview(supplierId)
         || validSupplierChangeWithdrawal(supplierId)
         || (
           resource.data.get('supplierId', '') == supplierId
@@ -484,7 +1317,38 @@ service cloud.firestore {
           && validPendingSupplierChangeRequest(supplierId)
         );
 
-      allow delete: if isAdmin();
+      allow delete: if false;
+
+      function validAdminSupplierChangeReview(supplierId) {
+        return isAdmin()
+          && supplierId != currentUid()
+          && resource.data.get('supplierId', '') == supplierId
+          && request.resource.data.get('supplierId', '') == supplierId
+          && resource.data.get('status', '') == 'pending'
+          && request.resource.data.get('status', '') in [
+            'approved',
+            'rejected'
+          ]
+          && request.resource.data.get('reviewedBy', '') == currentUid()
+          && request.resource.data.get('adminNote', '') is string
+          && request.resource.data.get('adminNote', '').size() <= 500
+          && (
+            request.resource.data.get('status', '') == 'approved'
+            || request.resource.data.get('adminNote', '').size() >= 3
+          )
+          && request.resource.data.get('reviewedAt', null) is timestamp
+          && request.resource.data.get('updatedAt', null) is timestamp
+          && request.resource.data
+            .diff(resource.data)
+            .affectedKeys()
+            .hasOnly([
+              'status',
+              'adminNote',
+              'reviewedAt',
+              'reviewedBy',
+              'updatedAt'
+            ]);
+      }
 
       function validSupplierChangeWithdrawal(supplierId) {
         return signedIn()
@@ -505,116 +1369,16 @@ service cloud.firestore {
       }
 
       function validRequestedBusinessPin(data) {
-        let latitude = data.get('requestedStoreLatitude', null);
-        let longitude = data.get('requestedStoreLongitude', null);
-
-        return latitude is number
-          && longitude is number
-          && latitude >= 7.55
-          && latitude <= 10.75
-          && longitude >= 124.65
-          && longitude <= 126.85;
+        return validCaragaLocationPin(
+          data.get('requestedStoreLatitude', null),
+          data.get('requestedStoreLongitude', null),
+          data.get('requestedStoreProvince', ''),
+          data.get('requestedStoreCityMunicipality', '')
+        );
       }
 
       function validRequestedCaragaLocation(province, city) {
-        return (
-            province == 'Agusan del Norte'
-            && city in [
-              'Butuan City',
-              'City of Cabadbaran',
-              'Buenavista',
-              'Carmen',
-              'Jabonga',
-              'Kitcharao',
-              'Las Nieves',
-              'Magallanes',
-              'Nasipit',
-              'Remedios T. Romualdez',
-              'Santiago',
-              'Tubay'
-            ]
-          )
-          || (
-            province == 'Agusan del Sur'
-            && city in [
-              'City of Bayugan',
-              'Bunawan',
-              'Esperanza',
-              'La Paz',
-              'Loreto',
-              'Prosperidad',
-              'Rosario',
-              'San Francisco',
-              'San Luis',
-              'Santa Josefa',
-              'Sibagat',
-              'Talacogon',
-              'Trento',
-              'Veruela'
-            ]
-          )
-          || (
-            province == 'Dinagat Islands'
-            && city in [
-              'Basilisa',
-              'Cagdianao',
-              'Dinagat',
-              'Libjo',
-              'Loreto',
-              'San Jose',
-              'Tubajon'
-            ]
-          )
-          || (
-            province == 'Surigao del Norte'
-            && city in [
-              'City of Surigao',
-              'Alegria',
-              'Bacuag',
-              'Burgos',
-              'Claver',
-              'Dapa',
-              'Del Carmen',
-              'General Luna',
-              'Gigaquit',
-              'Mainit',
-              'Malimono',
-              'Pilar',
-              'Placer',
-              'San Benito',
-              'San Francisco',
-              'San Isidro',
-              'Santa Monica',
-              'Sison',
-              'Socorro',
-              'Tagana-an',
-              'Tubod'
-            ]
-          )
-          || (
-            province == 'Surigao del Sur'
-            && city in [
-              'City of Bislig',
-              'City of Tandag',
-              'Barobo',
-              'Bayabas',
-              'Cagwait',
-              'Cantilan',
-              'Carmen',
-              'Carrascal',
-              'Cortes',
-              'Hinatuan',
-              'Lanuza',
-              'Lianga',
-              'Lingig',
-              'Madrid',
-              'Marihatag',
-              'San Agustin',
-              'San Miguel',
-              'Tagbina',
-              'Tago'
-            ]
-          );
+        return validCaragaLocationSelection(province, city);
       }
 
       function validPendingSupplierChangeRequest(supplierId) {
@@ -755,30 +1519,225 @@ service cloud.firestore {
     match /fishStocks/{stockId} {
       allow read: if signedIn();
 
-      allow create: if signedIn()
-        && request.resource.data.get('supplierId', '') == currentUid()
-        && isApprovedSupplierAccount(currentUid())
-        && request.resource.data.get('paymentMethod', '') == 'COD'
-        && request.resource.data.get('quantity', -1) is number
-        && request.resource.data.get('quantity', -1) >= 0
-        && request.resource.data.get('status', '') == 'available'
-        && request.resource.data.get('isActive', false) == true;
+      allow create: if validSupplierStockCreate();
 
-      allow update: if isAdmin()
-        || validSupplierStockUpdate()
+      allow update: if validSupplierStockUpdate()
         || validVendorPurchaseStockUpdate(stockId)
         || validVendorCancellationStockRestore(stockId);
 
       // Preserve listing/order history. Suppliers archive listings instead
       // of hard-deleting fishStocks documents.
-      allow delete: if isAdmin();
+      allow delete: if false;
+
+      function validSupplierStockCreate() {
+        return signedIn()
+          && request.resource.data.get('supplierId', '') == currentUid()
+          && isApprovedSupplierAccount(currentUid())
+          && request.resource.data.keys().hasOnly([
+            'productName',
+            'category',
+            'description',
+            'emoji',
+            'imageUrl',
+            'productImageUrl',
+            'price',
+            'priceUnit',
+            'quantity',
+            'quantityUnit',
+            'referenceStockQuantity',
+            'lowStockPercentage',
+            'lowStockLevel',
+            'lowStockAlertEnabled',
+            'lowStockNotificationEnabled',
+            'lastLowStockNotificationAt',
+            'lastLowStockNotificationStatus',
+            'stockStatus',
+            'paymentMethod',
+            'supplierId',
+            'supplierName',
+            'supplierLocation',
+            'supplierContactNumber',
+            'region',
+            'status',
+            'isActive',
+            'createdAt',
+            'updatedAt'
+          ])
+          && request.resource.data.get('quantity', 0) > 0
+          && request.resource.data.get('status', '') == 'available'
+          && request.resource.data.get('isActive', false) == true
+          && validSupplierStockIdentity(
+            request.resource.data,
+            currentUid()
+          )
+          && validStockCoreData(request.resource.data);
+      }
 
       function validSupplierStockUpdate() {
         return signedIn()
           && resource.data.get('supplierId', '') == currentUid()
           && isApprovedSupplierAccount(currentUid())
           && request.resource.data.get('supplierId', '') == currentUid()
-          && request.resource.data.get('paymentMethod', 'COD') == 'COD';
+          && request.resource.data.get('supplierName', '')
+            == resource.data.get('supplierName', '')
+          && request.resource.data.get('supplierLocation', '')
+            == resource.data.get('supplierLocation', '')
+          && request.resource.data.get('supplierContactNumber', '')
+            == resource.data.get('supplierContactNumber', '')
+          && request.resource.data.get('region', '')
+            == resource.data.get('region', '')
+          && request.resource.data.get('createdAt', null)
+            == resource.data.get('createdAt', null)
+          && changedOnly([
+            'productName',
+            'description',
+            'category',
+            'imageUrl',
+            'productImageUrl',
+            'price',
+            'priceUnit',
+            'quantity',
+            'quantityUnit',
+            'referenceStockQuantity',
+            'lowStockPercentage',
+            'lowStockLevel',
+            'lowStockAlertEnabled',
+            'lowStockNotificationEnabled',
+            'lastLowStockNotificationAt',
+            'lastLowStockNotificationStatus',
+            'stockStatus',
+            'status',
+            'isActive',
+            'restockedAt',
+            'updatedAt',
+            'archived',
+            'archivedAt',
+            'restoredFromArchiveAt',
+            'lastPartialFulfillmentOrderId',
+            'lastStockRestoreOrderId'
+          ])
+          && validStockCoreData(request.resource.data);
+      }
+
+      function validSupplierStockIdentity(data, supplierId) {
+        let profile = get(supplierPath(supplierId)).data;
+
+        return exists(supplierPath(supplierId))
+          && profile.get('status', '') == 'approved'
+          && data.get('supplierName', '')
+            == profile.get('supplierName', '')
+          && data.get('supplierLocation', '')
+            == profile.get('location', '')
+          && data.get('supplierContactNumber', '')
+            == profile.get(
+              'phone',
+              profile.get('contactNumber', '')
+            );
+      }
+
+      function validStockCoreData(data) {
+        let quantity = data.get('quantity', -1);
+        let referenceQuantity = data.get('referenceStockQuantity', -1);
+        let lowStockPercentage = data.get('lowStockPercentage', -1);
+        let lowStockLevel = data.get('lowStockLevel', -1);
+        let imageUrl = data.get('imageUrl', '');
+        let unit = data.get('quantityUnit', '');
+
+        return data.get('productName', '') is string
+          && data.get('productName', '').size() >= 2
+          && data.get('productName', '').size() <= 100
+          && data.get('description', '') is string
+          && data.get('description', '').size() >= 8
+          && data.get('description', '').size() <= 1000
+          && data.get('category', '') in [
+            'Fresh Fish',
+            'Marine Fish',
+            'Aquaculture Fish',
+            'Bulk Fish Supply'
+          ]
+          && data.get('emoji', '') is string
+          && data.get('emoji', '').size() <= 16
+          && imageUrl is string
+          && imageUrl.size() >= 8
+          && imageUrl.size() <= 1000
+          && imageUrl.matches('https://.*')
+          && data.get('productImageUrl', '') == imageUrl
+          && data.get('price', 0) is number
+          && data.get('price', 0) > 0
+          && data.get('price', 0) <= 1000000
+          && unit in ['kilo', 'tab', 'icebox']
+          && (
+            (unit == 'kilo' && data.get('priceUnit', '') == 'per kilo')
+            || (unit == 'tab' && data.get('priceUnit', '') == 'per tab')
+            || (
+              unit == 'icebox'
+              && data.get('priceUnit', '') == 'per icebox'
+            )
+          )
+          && quantity is number
+          && quantity >= 0
+          && quantity <= 1000000
+          && referenceQuantity is number
+          && referenceQuantity >= 0
+          && referenceQuantity <= 1000000
+          && lowStockPercentage is number
+          && lowStockPercentage >= 1
+          && lowStockPercentage <= 100
+          && lowStockLevel is number
+          && lowStockLevel >= 0
+          && lowStockLevel <= referenceQuantity
+          && data.get('lowStockAlertEnabled', false) == true
+          && data.get('lowStockNotificationEnabled', false) == true
+          && (
+            data.get('lastLowStockNotificationAt', null) == null
+            || data.get('lastLowStockNotificationAt', null) is timestamp
+          )
+          && (
+            data.get('lastLowStockNotificationStatus', null) == null
+            || data.get('lastLowStockNotificationStatus', '') in [
+              'lowStock',
+              'outOfStock'
+            ]
+          )
+          && data.get('paymentMethod', '') == 'COD'
+          && data.get('region', '') == 'Caraga Region'
+          && data.get('createdAt', null) is timestamp
+          && data.get('updatedAt', null) is timestamp
+          && data.get('archived', false) is bool
+          && validStockVisibilityState(data);
+      }
+
+      function validStockVisibilityState(data) {
+        let quantity = data.get('quantity', -1);
+        let threshold = data.get('lowStockLevel', -1);
+        let active = data.get('isActive', false);
+        let status = data.get('status', '');
+        let stockStatus = data.get('stockStatus', '');
+
+        return (
+            active == false
+            && status == 'unavailable'
+            && stockStatus == 'hidden'
+          )
+          || (
+            active == true
+            && status == 'available'
+            && data.get('archived', false) == false
+            && (
+              (quantity <= 0 && stockStatus == 'outOfStock')
+              || (
+                quantity > 0
+                && threshold > 0
+                && quantity <= threshold
+                && stockStatus == 'lowStock'
+              )
+              || (
+                quantity > 0
+                && (threshold <= 0 || quantity > threshold)
+                && stockStatus == 'available'
+              )
+            )
+          );
       }
 
       function validVendorPurchaseStockUpdate(stockId) {
@@ -807,6 +1766,7 @@ service cloud.firestore {
               == resource.data.get('isActive', true)
           && request.resource.data.get('quantity', 0)
               < resource.data.get('quantity', 0)
+          && validStockCoreData(request.resource.data)
           && afterOrder.get('vendorId', '') == currentUid()
           && afterOrder.get('supplierId', '')
               == resource.data.get('supplierId', '')
@@ -849,6 +1809,7 @@ service cloud.firestore {
               == resource.data.get('isActive', true)
           && request.resource.data.get('quantity', 0)
               > resource.data.get('quantity', 0)
+          && validStockCoreData(request.resource.data)
           && afterOrder.get('vendorId', '') == currentUid()
           && afterOrder.get('stockId', '') == stockId
           && afterOrder.get('orderStatus', '') == 'Cancelled'
@@ -876,8 +1837,7 @@ service cloud.firestore {
 
       allow create: if validCodOrderCreate(orderId);
 
-      allow update: if isAdmin()
-        || validVendorCancellation(orderId)
+      allow update: if validVendorCancellation(orderId)
         || validSupplierOrderTransition(orderId)
         || validNewReviewOrderUpdate(orderId)
         || validEditedReviewOrderUpdate(orderId);
@@ -928,15 +1888,12 @@ service cloud.firestore {
       }
 
       function validDeliveryReferencePin(data) {
-        let latitude = data.get('deliveryLatitude', null);
-        let longitude = data.get('deliveryLongitude', null);
-
-        return latitude is number
-          && longitude is number
-          && latitude >= 7.55
-          && latitude <= 10.75
-          && longitude >= 124.65
-          && longitude <= 126.85
+        return validCaragaLocationPin(
+          data.get('deliveryLatitude', null),
+          data.get('deliveryLongitude', null),
+          data.get('deliveryProvince', ''),
+          data.get('deliveryCityMunicipality', '')
+        )
           && data.get('deliveryReferenceType', '') == 'map_pin';
       }
 
@@ -1148,6 +2105,8 @@ service cloud.firestore {
               == afterReview.get('rating', 0)
           && request.resource.data.get('reviewComment', '')
               == afterReview.get('comment', '')
+          && request.resource.data.get('reviewedAt', null) is timestamp
+          && request.resource.data.get('updatedAt', null) is timestamp
           && changedOnly([
             'reviewSubmitted',
             'reviewRating',
@@ -1176,6 +2135,8 @@ service cloud.firestore {
               == afterReview.get('rating', 0)
           && request.resource.data.get('reviewComment', '')
               == afterReview.get('comment', '')
+          && request.resource.data.get('reviewUpdatedAt', null) is timestamp
+          && request.resource.data.get('updatedAt', null) is timestamp
           && changedOnly([
             'reviewSubmitted',
             'reviewRating',
@@ -1226,45 +2187,115 @@ service cloud.firestore {
 
       function validReviewCreate(orderId) {
         let order = get(orderPath(orderId)).data;
+        let afterOrder = getAfter(orderPath(orderId)).data;
+        let supplierId = order.get('supplierId', '');
+        let beforeSupplier = get(supplierPath(supplierId)).data;
+        let afterSupplier = getAfter(supplierPath(supplierId)).data;
+        let oldCount = beforeSupplier.get('reviews', 0);
+        let oldTotal = beforeSupplier.get(
+          'ratingTotal',
+          beforeSupplier.get('rating', 0) * oldCount
+        );
+        let newCount = afterSupplier.get('reviews', 0);
+        let newTotal = afterSupplier.get('ratingTotal', 0);
+        let rating = request.resource.data.get('rating', 0);
 
         return signedIn()
           && exists(orderPath(orderId))
+          && existsAfter(orderPath(orderId))
           && isCompletedOrder(order)
           && order.get('vendorId', '') == currentUid()
+          && order.get('reviewSubmitted', false) != true
+          && supplierId is string
+          && supplierId.size() > 0
+          && exists(supplierPath(supplierId))
+          && existsAfter(supplierPath(supplierId))
+          && request.resource.data.keys().hasOnly([
+            'orderId',
+            'vendorId',
+            'vendorName',
+            'supplierId',
+            'supplierName',
+            'productName',
+            'rating',
+            'comment',
+            'createdAt'
+          ])
           && request.resource.data.get('orderId', '') == orderId
           && request.resource.data.get('vendorId', '') == currentUid()
-          && request.resource.data.get('supplierId', '')
-              == order.get('supplierId', '')
-          && request.resource.data.get('rating', 0) is int
-          && request.resource.data.get('rating', 0) >= 1
-          && request.resource.data.get('rating', 0) <= 5
+          && request.resource.data.get('vendorName', '')
+            == order.get('vendorName', '')
+          && request.resource.data.get('supplierId', '') == supplierId
+          && request.resource.data.get('supplierName', '')
+            == order.get('supplierName', '')
+          && request.resource.data.get('productName', '')
+            == order.get('productName', '')
+          && rating is int
+          && rating >= 1
+          && rating <= 5
           && request.resource.data.get('comment', '') is string
-          && request.resource.data.get('comment', '').size() <= 300;
+          && request.resource.data.get('comment', '').size() <= 300
+          && request.resource.data.get('createdAt', null) is timestamp
+          && afterOrder.get('reviewSubmitted', false) == true
+          && afterOrder.get('reviewRating', 0) == rating
+          && afterOrder.get('reviewComment', '')
+            == request.resource.data.get('comment', '')
+          && newCount == oldCount + 1
+          && newTotal == oldTotal + rating
+          && afterSupplier.get('rating', 0) == newTotal / newCount
+          && afterSupplier.get('lastReviewOrderId', '') == orderId;
       }
 
       function validReviewEdit(orderId) {
         let order = get(orderPath(orderId)).data;
+        let afterOrder = getAfter(orderPath(orderId)).data;
+        let supplierId = order.get('supplierId', '');
+        let beforeSupplier = get(supplierPath(supplierId)).data;
+        let afterSupplier = getAfter(supplierPath(supplierId)).data;
+        let reviewCount = beforeSupplier.get('reviews', 0);
+        let oldTotal = beforeSupplier.get(
+          'ratingTotal',
+          beforeSupplier.get('rating', 0) * reviewCount
+        );
+        let newTotal = afterSupplier.get('ratingTotal', 0);
+        let rating = request.resource.data.get('rating', 0);
 
         return signedIn()
           && exists(orderPath(orderId))
+          && existsAfter(orderPath(orderId))
           && isCompletedOrder(order)
           && resource.data.get('vendorId', '') == currentUid()
           && order.get('vendorId', '') == currentUid()
+          && supplierId is string
+          && supplierId.size() > 0
+          && exists(supplierPath(supplierId))
+          && existsAfter(supplierPath(supplierId))
           && request.resource.data.get('orderId', '') == orderId
           && request.resource.data.get('vendorId', '') == currentUid()
-          && request.resource.data.get('supplierId', '')
-              == resource.data.get('supplierId', '')
-          && request.resource.data.get('rating', 0) is int
-          && request.resource.data.get('rating', 0) >= 1
-          && request.resource.data.get('rating', 0) <= 5
+          && request.resource.data.get('supplierId', '') == supplierId
+          && rating is int
+          && rating >= 1
+          && rating <= 5
           && request.resource.data.get('comment', '') is string
           && request.resource.data.get('comment', '').size() <= 300
+          && request.resource.data.get('edited', false) == true
+          && request.resource.data.get('updatedAt', null) is timestamp
           && changedOnly([
             'rating',
             'comment',
             'edited',
             'updatedAt'
-          ]);
+          ])
+          && afterOrder.get('reviewSubmitted', false) == true
+          && afterOrder.get('reviewRating', 0) == rating
+          && afterOrder.get('reviewComment', '')
+            == request.resource.data.get('comment', '')
+          && afterSupplier.get('reviews', 0) == reviewCount
+          && reviewCount > 0
+          && newTotal
+            == oldTotal - resource.data.get('rating', 0) + rating
+          && afterSupplier.get('rating', 0) == newTotal / reviewCount
+          && afterSupplier.get('lastReviewOrderId', '') == orderId;
       }
     }
 
@@ -1276,22 +2307,158 @@ service cloud.firestore {
       allow read: if notificationOwnedByCurrentUser(resource.data)
         || isAdmin();
 
-      allow create: if isAdmin()
+      allow create: if validAdminDecisionNotification()
         || validNewOrderNotification(notificationId)
         || validOrderStatusNotification()
         || validStockAlertNotification();
 
-      allow update: if isAdmin()
-        || (
-          notificationOwnedByCurrentUser(resource.data)
+      allow update: if notificationOwnedByCurrentUser(resource.data)
           && request.resource.data.get('isRead', false) == true
-          && changedOnly([
-            'isRead',
-            'readAt'
-          ])
-        );
+          && request.resource.data.get('readAt', null) is timestamp
+          && (
+            changedOnly([
+              'isRead',
+              'readAt'
+            ])
+            || (
+              resource.data.get('type', '') == 'supplier_application_status'
+              && resource.data.get('status', '') == 'rejected'
+              && request.resource.data.get(
+                'rejectionReasonViewedAt',
+                null
+              ) is timestamp
+              && changedOnly([
+                'isRead',
+                'readAt',
+                'rejectionReasonViewedAt'
+              ])
+            )
+          );
 
-      allow delete: if isAdmin();
+      allow delete: if false;
+
+      function validAdminDecisionNotification() {
+        let supplierId = request.resource.data.get('supplierId', '');
+        let status = request.resource.data.get('status', '');
+        let type = request.resource.data.get('type', '');
+
+        return isAdmin()
+          && supplierId is string
+          && supplierId.size() > 0
+          && supplierId != currentUid()
+          && request.resource.data.get('userId', '') == supplierId
+          && status in ['approved', 'rejected']
+          && request.resource.data.get('isRead', true) == false
+          && request.resource.data.get('createdAt', null) is timestamp
+          && hasNoServerPushFields(request.resource.data)
+          && request.resource.data.get('title', '') is string
+          && request.resource.data.get('title', '').size() >= 3
+          && request.resource.data.get('title', '').size() <= 100
+          && request.resource.data.get('message', '') is string
+          && request.resource.data.get('message', '').size() >= 3
+          && request.resource.data.get('message', '').size() <= 1000
+          && (
+            (
+              type == 'supplier_application_status'
+              && request.resource.data.keys().hasOnly([
+                'userId',
+                'supplierId',
+                'title',
+                'message',
+                'type',
+                'status',
+                'applicationId',
+                'rejectionReason',
+                'isRead',
+                'createdAt'
+              ])
+              && request.resource.data.get('applicationId', '')
+                == supplierId
+              && existsAfter(userPath(supplierId))
+              && existsAfter(supplierPath(supplierId))
+              && getAfter(userPath(supplierId)).data.get(
+                'supplierStatus',
+                ''
+              ) == status
+              && getAfter(supplierPath(supplierId)).data.get('status', '')
+                == status
+              && (
+                (
+                  status == 'approved'
+                  && request.resource.data.get('title', '')
+                    == 'Supplier Application Approved'
+                  && request.resource.data.get('message', '')
+                    == 'Your supplier application was approved. Supplier tools are now available on your account.'
+                )
+                || (
+                  status == 'rejected'
+                  && request.resource.data.get('title', '')
+                    == 'Supplier Application Declined'
+                  && request.resource.data.get('message', '')
+                    == 'Your supplier application was declined. Tap to view the reason.'
+                  && request.resource.data.get('rejectionReason', '') is string
+                  && request.resource.data.get('rejectionReason', '').size() >= 5
+                  && request.resource.data.get('rejectionReason', '').size() <= 500
+                  && request.resource.data.get('rejectionReason', '')
+                    == getAfter(supplierPath(supplierId)).data.get(
+                      'rejectionReason',
+                      ''
+                    )
+                )
+              )
+            )
+            || (
+              type == 'supplier_profile_change'
+              && request.resource.data.keys().hasOnly([
+                'userId',
+                'supplierId',
+                'title',
+                'message',
+                'type',
+                'status',
+                'requestId',
+                'changedFields',
+                'isRead',
+                'createdAt'
+              ])
+              && request.resource.data.get('requestId', '') == supplierId
+              && existsAfter(changeRequestPath(supplierId))
+              && getAfter(changeRequestPath(supplierId)).data.get(
+                'status',
+                ''
+              ) == status
+              && getAfter(changeRequestPath(supplierId)).data.get(
+                'reviewedBy',
+                ''
+              ) == currentUid()
+              && request.resource.data.get('changedFields', [])
+                == getAfter(changeRequestPath(supplierId)).data.get(
+                  'changedFields',
+                  []
+                )
+              && (
+                (
+                  status == 'approved'
+                  && request.resource.data.get('title', '')
+                    == 'Profile Change Approved'
+                  && request.resource.data.get('message', '')
+                    == 'Your verified supplier business change request was approved and is now visible to vendors.'
+                )
+                || (
+                  status == 'rejected'
+                  && request.resource.data.get('title', '')
+                    == 'Profile Change Needs Revision'
+                  && request.resource.data.get('message', '')
+                    == 'Your verified supplier profile change request needs revision. Admin note: '
+                      + getAfter(changeRequestPath(supplierId)).data.get(
+                        'adminNote',
+                        ''
+                      )
+                )
+              )
+            )
+          );
+      }
 
       function validNewOrderNotification(notificationId) {
         let orderId = request.resource.data.get('orderId', '');

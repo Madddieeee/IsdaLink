@@ -8,6 +8,7 @@ import 'package:isdalink/screens/vendor/my_orders/widgets/vendor_order_card.dart
 import 'package:isdalink/services/review_service.dart';
 import 'package:isdalink/services/vendor_order_service.dart';
 import 'package:isdalink/utils/order_helpers.dart';
+import 'package:isdalink/utils/app_error_message.dart';
 
 class MyOrdersScreen extends StatefulWidget {
   const MyOrdersScreen({
@@ -305,7 +306,11 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
       }
 
       showMessage(
-        'Failed to cancel order: $error',
+        AppErrorMessage.from(
+          error,
+          fallback: 'The order could not be cancelled. Please try again.',
+          allowBusinessMessage: true,
+        ),
         isError: true,
       );
     }
@@ -431,9 +436,13 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
       }
 
       showMessage(
-        isEditing
-            ? 'Failed to update review: $error'
-            : 'Failed to submit review: $error',
+        AppErrorMessage.from(
+          error,
+          fallback: isEditing
+              ? 'The review could not be updated. Please try again.'
+              : 'The review could not be submitted. Please try again.',
+          allowBusinessMessage: true,
+        ),
         isError: true,
       );
     }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:isdalink/screens/admin/widgets/admin_supplier_cards.dart';
 import 'package:isdalink/screens/map/caraga_location_picker_screen.dart';
 import 'package:isdalink/services/admin_dashboard_service.dart';
+import 'package:isdalink/utils/app_error_message.dart';
 
 class SupplierChangeRequestReviewScreen extends StatelessWidget {
   const SupplierChangeRequestReviewScreen({
@@ -213,7 +214,13 @@ class SupplierChangeRequestReviewScreen extends StatelessWidget {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Could not approve request: $error'),
+          content: Text(
+            AppErrorMessage.from(
+              error,
+              fallback: 'The supplier change request could not be approved. Please try again.',
+              allowBusinessMessage: true,
+            ),
+          ),
           backgroundColor: const Color(0xFFD32F2F),
         ),
       );
@@ -256,7 +263,13 @@ class SupplierChangeRequestReviewScreen extends StatelessWidget {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Could not reject request: $error'),
+          content: Text(
+            AppErrorMessage.from(
+              error,
+              fallback: 'The supplier change request could not be rejected. Please try again.',
+              allowBusinessMessage: true,
+            ),
+          ),
           backgroundColor: const Color(0xFFD32F2F),
         ),
       );

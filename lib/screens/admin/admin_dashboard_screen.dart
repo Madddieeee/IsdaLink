@@ -9,6 +9,7 @@ import 'package:isdalink/screens/admin/widgets/admin_status_cards.dart';
 import 'package:isdalink/screens/admin/widgets/admin_supplier_cards.dart';
 import 'package:isdalink/screens/welcome_screen.dart';
 import 'package:isdalink/services/admin_dashboard_service.dart';
+import 'package:isdalink/utils/app_error_message.dart';
 
 class AdminDashboardScreen
     extends
@@ -103,7 +104,11 @@ class AdminDashboardScreen
 
       showMessage(
         context,
-        'Failed to approve supplier: $error',
+        AppErrorMessage.from(
+          error,
+          fallback: 'The supplier application could not be approved. Please try again.',
+          allowBusinessMessage: true,
+        ),
         isError: true,
       );
     }
@@ -122,77 +127,105 @@ class AdminDashboardScreen
     >
     supplierDocument,
   }) async {
-    final shouldReject =
-        await showDialog<
-          bool
-        >(
-          context: context,
-          builder:
-              (
-                dialogContext,
-              ) {
-                return AlertDialog(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      22,
-                    ),
-                  ),
-                  title: const Text(
-                    'Reject Supplier?',
-                    style: TextStyle(
-                      color: Color(
-                        0xFF102C44,
-                      ),
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  content: const Text(
-                    'This will mark the supplier application as rejected. The user will remain a vendor account.',
-                    style: TextStyle(
-                      color: Color(
-                        0xFF52677A,
-                      ),
-                      height: 1.4,
-                    ),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(
-                        dialogContext,
-                        false,
-                      ),
-                      child: const Text(
-                        'Cancel',
+    var draftReason = '';
+
+    final rejectionReason = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            final reason = draftReason.trim();
+            final canReject = reason.length >= 5 && reason.length <= 500;
+
+            void closeDialog([String? result]) {
+              FocusScope.of(dialogContext).unfocus();
+              Navigator.of(dialogContext).pop(result);
+            }
+
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(22),
+              ),
+              title: const Text(
+                'Reject Supplier Application',
+                style: TextStyle(
+                  color: Color(0xFF102C44),
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Tell the applicant why the supplier request was declined. This reason will be shown to the applicant so they know what to correct before applying again.',
+                      style: TextStyle(
+                        color: Color(0xFF52677A),
+                        height: 1.4,
                       ),
                     ),
-                    ElevatedButton(
-                      onPressed: () => Navigator.pop(
-                        dialogContext,
-                        true,
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(
-                          0xFFD32F2F,
+                    const SizedBox(height: 16),
+                    TextField(
+                      minLines: 3,
+                      maxLines: 5,
+                      maxLength: 500,
+                      autofocus: true,
+                      textCapitalization: TextCapitalization.sentences,
+                      onChanged: (value) {
+                        setDialogState(() {
+                          draftReason = value;
+                        });
+                      },
+                      decoration: InputDecoration(
+                        labelText: 'Reason for rejection',
+                        hintText:
+                            'Example: The business permit photo is unclear. Please upload a readable copy.',
+                        helperText: 'Required. Minimum 5 characters.',
+                        alignLabelWithHint: true,
+                        filled: true,
+                        fillColor: const Color(0xFFF6FAFD),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(15),
                         ),
-                        foregroundColor: Colors.white,
-                      ),
-                      child: const Text(
-                        'Reject',
                       ),
                     ),
                   ],
-                );
-              },
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => closeDialog(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: canReject
+                      ? () => closeDialog(reason)
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD32F2F),
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: const Color(0xFFE6EDF3),
+                    disabledForegroundColor: const Color(0xFF91A2B1),
+                  ),
+                  child: const Text('Confirm Rejection'),
+                ),
+              ],
+            );
+          },
         );
+      },
+    );
 
-    if (shouldReject !=
-        true) {
+    if (rejectionReason == null || rejectionReason.trim().isEmpty) {
       return;
     }
 
     try {
       await adminService.rejectSupplier(
         supplierDocument,
+        rejectionReason: rejectionReason,
       );
 
       if (!context.mounted) {
@@ -201,7 +234,7 @@ class AdminDashboardScreen
 
       showMessage(
         context,
-        'Supplier application rejected.',
+        'Supplier application rejected. The applicant was notified with the reason.',
       );
     } catch (
       error
@@ -212,7 +245,11 @@ class AdminDashboardScreen
 
       showMessage(
         context,
-        'Failed to reject supplier: $error',
+        AppErrorMessage.from(
+          error,
+          fallback: 'The supplier application could not be rejected. Please try again.',
+          allowBusinessMessage: true,
+        ),
         isError: true,
       );
     }

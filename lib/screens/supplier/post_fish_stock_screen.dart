@@ -11,6 +11,7 @@ import 'package:isdalink/screens/supplier/post_stock/widgets/fish_stock_submit_b
 import 'package:isdalink/screens/supplier/post_stock/widgets/post_stock_header.dart';
 import 'package:isdalink/services/cloudinary_upload_service.dart';
 import 'package:isdalink/services/fish_stock_service.dart';
+import 'package:isdalink/utils/app_error_message.dart';
 
 class PostFishStockScreen extends StatefulWidget {
   const PostFishStockScreen({
@@ -596,9 +597,13 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
       });
 
       return imageUrl;
-    } catch (_) {
+    } catch (error) {
       showMessage(
-        'The product photo could not be uploaded. Check your connection and try again.',
+        AppErrorMessage.from(
+          error,
+          fallback: 'The product photo could not be uploaded. Please try again.',
+          allowBusinessMessage: true,
+        ),
         isError: true,
       );
       return null;
@@ -669,9 +674,12 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
       }
 
       await showStockPostedDialog(input);
-    } on FirebaseException {
+    } on FirebaseException catch (error) {
       showMessage(
-        'The stock listing could not be published. Please check your connection and try again.',
+        AppErrorMessage.from(
+          error,
+          fallback: 'The stock listing could not be published. Please try again.',
+        ),
         isError: true,
       );
     } on StateError catch (error) {
@@ -679,9 +687,13 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
         error.message,
         isError: true,
       );
-    } catch (_) {
+    } catch (error) {
       showMessage(
-        'Something went wrong while publishing the stock listing.',
+        AppErrorMessage.from(
+          error,
+          fallback: 'Something went wrong while publishing the stock listing. Please try again.',
+          allowBusinessMessage: true,
+        ),
         isError: true,
       );
     } finally {

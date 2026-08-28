@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:isdalink/services/cloudinary_upload_service.dart';
 import 'package:isdalink/services/supplier_product_service.dart';
 import 'package:isdalink/utils/order_helpers.dart';
+import 'package:isdalink/utils/app_error_message.dart';
 
 class ManageProductDialogs {
   const ManageProductDialogs._();
@@ -1119,9 +1120,13 @@ class _EditProductSheetState extends State<_EditProductSheet> {
           ),
         ),
       );
-    } catch (_) {
+    } catch (error) {
       showMessage(
-        'Unable to upload the product photo. Please try again.',
+        AppErrorMessage.from(
+          error,
+          fallback: 'Unable to upload the product photo. Please try again.',
+          allowBusinessMessage: true,
+        ),
         isError: true,
       );
     } finally {

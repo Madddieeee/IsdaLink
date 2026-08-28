@@ -5,10 +5,12 @@ import 'package:flutter/services.dart';
 import 'package:isdalink/models/fish_product.dart';
 import 'package:isdalink/models/supplier.dart';
 import 'package:isdalink/screens/map/caraga_location_picker_screen.dart';
+import 'package:isdalink/screens/map/caraga_map_defaults.dart';
 import 'package:isdalink/screens/vendor/my_orders_screen.dart';
 import 'package:isdalink/screens/vendor/place_order/widgets/place_order_cards.dart';
 import 'package:isdalink/screens/vendor/place_order/widgets/place_order_header.dart';
 import 'package:isdalink/services/place_order_service.dart';
+import 'package:isdalink/utils/app_error_message.dart';
 
 class PlaceOrderScreen extends StatefulWidget {
   const PlaceOrderScreen({
@@ -280,6 +282,20 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
         userData['deliveryLongitude'],
       );
 
+      final latitude = deliveryLatitude;
+      final longitude = deliveryLongitude;
+      if (latitude != null &&
+          longitude != null &&
+          !CaragaMapDefaults.containsCoordinates(
+            latitude: latitude,
+            longitude: longitude,
+            province: buyerProvince,
+            locality: buyerLocality,
+          )) {
+        deliveryLatitude = null;
+        deliveryLongitude = null;
+      }
+
       savedBuyerName = buyerNameController.text.trim();
       savedBuyerPhone = buyerPhoneController.text.trim();
       savedBuyerAddress = buyerAddressController.text.trim();
@@ -447,6 +463,14 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
     if (isGeneralLocationOnly(address)) {
       showMessage(
         'Enter your barangay, street, block, house, or landmark before setting the map location.',
+        isError: true,
+      );
+      return;
+    }
+
+    if (buyerProvince.trim().isEmpty || buyerLocality.trim().isEmpty) {
+      showMessage(
+        'Set your province and city or municipality in Region and Location first.',
         isError: true,
       );
       return;
@@ -718,10 +742,31 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
       return false;
     }
 
+    if (buyerProvince.trim().isEmpty || buyerLocality.trim().isEmpty) {
+      showMessage(
+        'Set your province and city or municipality in Region and Location.',
+        isError: true,
+      );
+      return false;
+    }
+
     if (deliveryLatitude == null ||
         deliveryLongitude == null) {
       showMessage(
         'Set your delivery location on the map.',
+        isError: true,
+      );
+      return false;
+    }
+
+    if (!CaragaMapDefaults.containsCoordinates(
+      latitude: deliveryLatitude!,
+      longitude: deliveryLongitude!,
+      province: buyerProvince,
+      locality: buyerLocality,
+    )) {
+      showMessage(
+        'Choose a delivery pin within $buyerLocality, $buyerProvince.',
         isError: true,
       );
       return false;
@@ -930,13 +975,11 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
   String readableOrderError(
     Object error,
   ) {
-    final text = error.toString().trim();
-
-    if (text.startsWith('Exception: ')) {
-      return text.substring('Exception: '.length);
-    }
-
-    return text;
+    return AppErrorMessage.from(
+      error,
+      fallback: 'The order could not be placed. Please try again.',
+      allowBusinessMessage: true,
+    );
   }
 
   Future<void> confirmOrder() async {
@@ -995,6 +1038,8 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
         buyerAddress: fullDeliveryAddress,
         deliveryLatitude: deliveryLatitude!,
         deliveryLongitude: deliveryLongitude!,
+        deliveryProvince: buyerProvince,
+        deliveryCityMunicipality: buyerLocality,
       );
 
       if (!mounted) return;

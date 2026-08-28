@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:isdalink/screens/map/caraga_location_picker_screen.dart';
+import 'package:isdalink/screens/map/caraga_map_defaults.dart';
 import 'package:isdalink/screens/supplier/activation/supplier_caraga_locations.dart';
 import 'package:isdalink/screens/supplier/activation/widgets/supplier_activation_common.dart';
 import 'package:isdalink/screens/supplier/activation/widgets/supplier_activation_header.dart';
@@ -12,9 +13,15 @@ import 'package:isdalink/screens/supplier/activation/widgets/supplier_verificati
 import 'package:isdalink/services/cloudinary_upload_service.dart';
 import 'package:isdalink/services/supplier_activation_service.dart';
 import 'package:isdalink/services/supplier_verification_storage_service.dart';
+import 'package:isdalink/utils/app_error_message.dart';
 
 class SupplierActivationScreen extends StatefulWidget {
-  const SupplierActivationScreen({super.key});
+  const SupplierActivationScreen({
+    super.key,
+    this.rejectionNotificationId = '',
+  });
+
+  final String rejectionNotificationId;
 
   @override
   State<SupplierActivationScreen> createState() =>
@@ -58,6 +65,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
   bool isUploadingStorePhoto = false;
   bool applicationSubmitted = false;
   bool allowPop = false;
+  bool rejectionReasonHandled = false;
 
   String? selectedProvince;
   String? selectedLocality;
@@ -102,6 +110,22 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
       isValidEmail(emailController.text) &&
       isValidMobile(contactNumberController.text);
 
+  bool get hasValidStorePin {
+    final latitude = storeLatitude;
+    final longitude = storeLongitude;
+
+    if (latitude == null || longitude == null) {
+      return false;
+    }
+
+    return CaragaMapDefaults.containsCoordinates(
+      latitude: latitude,
+      longitude: longitude,
+      province: selectedProvince,
+      locality: selectedLocality,
+    );
+  }
+
   bool get storeComplete =>
       businessNameController.text.trim().length >= 2 &&
       SupplierCaragaLocations.isValidSelection(
@@ -109,8 +133,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
         locality: selectedLocality,
       ) &&
       storeAddressController.text.trim().length >= 5 &&
-      storeLatitude != null &&
-      storeLongitude != null &&
+      hasValidStorePin &&
       primaryMarketAreaController.text.trim().length >= 2 &&
       storeDescriptionController.text.trim().length >= 8;
 
@@ -320,6 +343,11 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
         selectedLocality = savedLocality;
       }
 
+      if (!hasValidStorePin) {
+        storeLatitude = null;
+        storeLongitude = null;
+      }
+
       final unitValues = data['supportedUnits'];
       final units = unitValues is Iterable
           ? unitValues.map((value) => value.toString().toLowerCase()).toSet()
@@ -340,6 +368,240 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
           baselineFingerprint = fingerprint;
         });
       }
+    }
+
+    await showRejectionReasonIfNeeded(user);
+  }
+
+  Future<void> showRejectionReasonIfNeeded(User user) async {
+    if (rejectionReasonHandled || !mounted) {
+      return;
+    }
+
+    rejectionReasonHandled = true;
+
+    try {
+      final notice = await activationService.loadUnseenRejectionNotice(
+        user: user,
+        notificationId: widget.rejectionNotificationId,
+      );
+
+      if (notice == null || notice.reason.trim().isEmpty || !mounted) {
+        return;
+      }
+
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        barrierColor: const Color(0xB3001322),
+        builder: (dialogContext) {
+          return Dialog(
+            elevation: 0,
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 24,
+              vertical: 24,
+            ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(28),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x33001322),
+                      blurRadius: 30,
+                      offset: Offset(0, 14),
+                    ),
+                  ],
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.fromLTRB(24, 24, 24, 22),
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Color(0xFF073B5C),
+                              Color(0xFF0A6FA4),
+                            ],
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            Container(
+                              width: 58,
+                              height: 58,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withAlpha(245),
+                                shape: BoxShape.circle,
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Color(0x26001322),
+                                    blurRadius: 14,
+                                    offset: Offset(0, 6),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.assignment_late_rounded,
+                                color: Color(0xFFE25C4B),
+                                size: 29,
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            const Text(
+                              'Supplier Application Declined',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 21,
+                                height: 1.18,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.25,
+                              ),
+                            ),
+                            const SizedBox(height: 7),
+                            const Text(
+                              'Your application needs an update before it can be reviewed again.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Color(0xFFD9EEF7),
+                                fontSize: 12.5,
+                                height: 1.4,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(
+                                  Icons.admin_panel_settings_outlined,
+                                  color: Color(0xFF315B73),
+                                  size: 18,
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Admin feedback',
+                                  style: TextStyle(
+                                    color: Color(0xFF183C52),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.fromLTRB(16, 15, 16, 15),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFF7F5),
+                                borderRadius: BorderRadius.circular(17),
+                                border: Border.all(
+                                  color: const Color(0xFFF3C4BC),
+                                ),
+                              ),
+                              child: Text(
+                                notice.reason,
+                                style: const TextStyle(
+                                  color: Color(0xFF713B34),
+                                  fontSize: 14,
+                                  height: 1.45,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF3F8FB),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: const Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Icon(
+                                    Icons.refresh_rounded,
+                                    color: Color(0xFF0A6FA4),
+                                    size: 20,
+                                  ),
+                                  SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      'Update the details or verification documents mentioned above, then resubmit your application for admin review.',
+                                      style: TextStyle(
+                                        color: Color(0xFF526D7D),
+                                        fontSize: 12.5,
+                                        height: 1.45,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 52,
+                              child: ElevatedButton.icon(
+                                onPressed: () => Navigator.pop(dialogContext),
+                                style: ElevatedButton.styleFrom(
+                                  elevation: 0,
+                                  backgroundColor: const Color(0xFF0B78C8),
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
+                                icon: const Icon(
+                                  Icons.edit_rounded,
+                                  size: 19,
+                                ),
+                                label: const Text(
+                                  'Update Application',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      );
+
+      await activationService.markRejectionReasonViewed(
+        user: user,
+        notificationId: notice.notificationId,
+      );
+    } catch (error) {
+      debugPrint('Could not show rejection reason: $error');
     }
   }
 
@@ -819,9 +1081,13 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
       );
     } on StateError catch (error) {
       showMessage(error.message.toString(), isError: true);
-    } catch (_) {
+    } catch (error) {
       showMessage(
-        'The verification photo could not be uploaded. Check your connection and try again.',
+        AppErrorMessage.from(
+          error,
+          fallback: 'The verification photo could not be uploaded. Please try again.',
+          allowBusinessMessage: true,
+        ),
         isError: true,
       );
     } finally {
@@ -899,9 +1165,13 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
       scrollToTop();
     } on StateError catch (error) {
       showMessage(error.message.toString(), isError: true);
-    } catch (_) {
+    } catch (error) {
       showMessage(
-        'The supplier application could not be submitted. Check your connection and try again.',
+        AppErrorMessage.from(
+          error,
+          fallback: 'The supplier application could not be submitted. Please try again.',
+          allowBusinessMessage: true,
+        ),
         isError: true,
       );
     } finally {

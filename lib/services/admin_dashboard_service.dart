@@ -475,8 +475,23 @@ class AdminDashboardService {
   }
 
   Future<void> rejectSupplier(
-    QueryDocumentSnapshot<Map<String, dynamic>> supplierDocument,
-  ) async {
+    QueryDocumentSnapshot<Map<String, dynamic>> supplierDocument, {
+    required String rejectionReason,
+  }) async {
+    final reason = rejectionReason.trim();
+
+    if (reason.length < 5 || reason.length > 500) {
+      throw StateError(
+        'Enter a rejection reason between 5 and 500 characters.',
+      );
+    }
+
+    final adminUid = FirebaseAuth.instance.currentUser?.uid.trim() ?? '';
+
+    if (adminUid.isEmpty) {
+      throw StateError('An administrator account is required.');
+    }
+
     final data = supplierDocument.data();
 
     final uid = getStringValue(
@@ -510,6 +525,8 @@ class AdminDashboardService {
       {
         'status': 'rejected',
         'verificationStatus': 'rejected',
+        'rejectionReason': reason,
+        'rejectedBy': adminUid,
         'rejectedAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       },
@@ -525,12 +542,13 @@ class AdminDashboardService {
       <String, dynamic>{
         'userId': uid,
         'supplierId': uid,
-        'title': 'Supplier Application Needs Revision',
+        'title': 'Supplier Application Declined',
         'message':
-            'Your supplier application was not approved. Review your business details before submitting again.',
+            'Your supplier application was declined. Tap to view the reason.',
         'type': 'supplier_application_status',
         'status': 'rejected',
         'applicationId': uid,
+        'rejectionReason': reason,
         'isRead': false,
         'createdAt': FieldValue.serverTimestamp(),
       },

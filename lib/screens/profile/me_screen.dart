@@ -15,6 +15,7 @@ import 'package:isdalink/screens/vendor/my_orders_screen.dart';
 import 'package:isdalink/screens/welcome_screen.dart';
 import 'package:isdalink/services/cloudinary_upload_service.dart';
 import 'package:isdalink/services/user_profile_service.dart';
+import 'package:isdalink/utils/app_error_message.dart';
 
 class MeScreen
     extends
@@ -148,7 +149,11 @@ class _MeScreenState
       error
     ) {
       showMessage(
-        'Failed to update profile photo: $error',
+        AppErrorMessage.from(
+          error,
+          fallback: 'The profile photo could not be updated. Please try again.',
+          allowBusinessMessage: true,
+        ),
         isError: true,
       );
     } finally {
@@ -186,7 +191,10 @@ class _MeScreenState
       error
     ) {
       showMessage(
-        'Failed to remove profile photo: $error',
+        AppErrorMessage.from(
+          error,
+          fallback: 'The profile photo could not be removed. Please try again.',
+        ),
         isError: true,
       );
     } finally {

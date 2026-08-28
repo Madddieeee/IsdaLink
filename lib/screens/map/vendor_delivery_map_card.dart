@@ -28,8 +28,10 @@ class VendorDeliveryMapCard extends StatelessWidget {
       return false;
     }
 
-    return CaragaMapDefaults.contains(
+    return CaragaMapDefaults.containsForSelection(
       LatLng(latitudeValue, longitudeValue),
+      province: province,
+      locality: locality,
     );
   }
 
@@ -78,6 +80,7 @@ class VendorDeliveryMapCard extends StatelessWidget {
                         target: position,
                         zoom: CaragaMapDefaults.zoomFor(
                           hasSavedPin: hasPin,
+                          province: province,
                           locality: locality,
                         ),
                       ),

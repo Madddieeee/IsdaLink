@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:isdalink/screens/map/caraga_map_defaults.dart';
 
 class SupplierProfileService {
   const SupplierProfileService();
@@ -91,6 +92,17 @@ class SupplierProfileService {
     required List<String> changedFields,
     required String reason,
   }) async {
+    if (!CaragaMapDefaults.containsCoordinates(
+      latitude: requestedStoreLatitude,
+      longitude: requestedStoreLongitude,
+      province: requestedStoreProvince,
+      locality: requestedStoreCityMunicipality,
+    )) {
+      throw StateError(
+        'Choose a business location pin within the selected city or municipality.',
+      );
+    }
+
     final location = <String>[
       requestedStoreAddress.trim(),
       requestedStoreCityMunicipality.trim(),

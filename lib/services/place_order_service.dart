@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:isdalink/screens/map/caraga_map_defaults.dart';
 import 'package:isdalink/models/fish_product.dart';
 import 'package:isdalink/models/supplier.dart';
 import 'package:isdalink/services/stock_notification_service.dart';
@@ -109,18 +110,21 @@ class PlaceOrderService {
     String buyerAddress = '',
     required double deliveryLatitude,
     required double deliveryLongitude,
+    required String deliveryProvince,
+    required String deliveryCityMunicipality,
   }) async {
     final requestedSupplierId = supplierId.trim();
 
-    final validDeliveryPin =
-        deliveryLatitude >= 7.55 &&
-        deliveryLatitude <= 10.75 &&
-        deliveryLongitude >= 124.65 &&
-        deliveryLongitude <= 126.85;
+    final validDeliveryPin = CaragaMapDefaults.containsCoordinates(
+      latitude: deliveryLatitude,
+      longitude: deliveryLongitude,
+      province: deliveryProvince,
+      locality: deliveryCityMunicipality,
+    );
 
     if (!validDeliveryPin) {
       throw Exception(
-        'Choose a valid delivery location inside the Caraga map area.',
+        'Choose a delivery location within the selected city or municipality.',
       );
     }
 
@@ -302,6 +306,8 @@ class PlaceOrderService {
           'deliveryAddress': finalVendorAddress,
           'deliveryLatitude': deliveryLatitude,
           'deliveryLongitude': deliveryLongitude,
+          'deliveryProvince': deliveryProvince.trim(),
+          'deliveryCityMunicipality': deliveryCityMunicipality.trim(),
           'deliveryReferenceType': 'map_pin',
           'quantity': quantity,
           'quantityUnit': product.quantityUnit,

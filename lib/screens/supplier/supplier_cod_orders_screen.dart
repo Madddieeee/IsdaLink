@@ -7,6 +7,7 @@ import 'package:isdalink/screens/supplier/cod_orders/widgets/supplier_orders_hea
 import 'package:isdalink/screens/supplier/cod_orders/widgets/supplier_orders_status_cards.dart';
 import 'package:isdalink/services/supplier_order_service.dart';
 import 'package:isdalink/utils/order_helpers.dart';
+import 'package:isdalink/utils/app_error_message.dart';
 
 enum SupplierOrderFilter {
   all,
@@ -888,9 +889,12 @@ class _SupplierCodOrdersScreenState
                       : 'Order accepted in full. The vendor was notified.';
 
       showMessage(successMessage);
-    } on FirebaseException {
+    } on FirebaseException catch (error) {
       showMessage(
-        'Unable to update this COD order. Check your connection and try again.',
+        AppErrorMessage.from(
+          error,
+          fallback: 'Unable to update this COD order. Please try again.',
+        ),
         isError: true,
       );
     } on StateError catch (error) {
@@ -898,9 +902,13 @@ class _SupplierCodOrdersScreenState
         error.message,
         isError: true,
       );
-    } catch (_) {
+    } catch (error) {
       showMessage(
-        'Something went wrong while updating this COD order.',
+        AppErrorMessage.from(
+          error,
+          fallback: 'Something went wrong while updating this COD order. Please try again.',
+          allowBusinessMessage: true,
+        ),
         isError: true,
       );
     } finally {
