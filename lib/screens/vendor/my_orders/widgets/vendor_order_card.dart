@@ -196,6 +196,22 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
         value.startsWith('https://');
   }
 
+  String formatMoney(
+    double value,
+  ) {
+    final fixed = value.toStringAsFixed(0);
+    final buffer = StringBuffer();
+
+    for (var index = 0; index < fixed.length; index++) {
+      if (index > 0 && (fixed.length - index) % 3 == 0) {
+        buffer.write(',');
+      }
+      buffer.write(fixed[index]);
+    }
+
+    return buffer.toString();
+  }
+
   String formattedOrderDate(
     Map<String, dynamic> data,
   ) {
@@ -432,15 +448,6 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
-                isExpanded ? 'Hide' : 'Details',
-                style: TextStyle(
-                  color: color,
-                  fontSize: 9.1,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(width: 3),
               AnimatedRotation(
                 duration: const Duration(
                   milliseconds: 190,
@@ -710,6 +717,69 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
     );
   }
 
+  Widget stoppedDetails(
+    String orderStatus,
+  ) {
+    final color = statusColor(orderStatus);
+    final stateLabel = displayStatus(orderStatus);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(11, 10, 11, 10),
+      decoration: BoxDecoration(
+        color: color.withAlpha(8),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(
+          color: color.withAlpha(28),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 31,
+            height: 31,
+            decoration: BoxDecoration(
+              color: color.withAlpha(17),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              statusIcon(orderStatus),
+              color: color,
+              size: 16,
+            ),
+          ),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  stateLabel,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 10.7,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                const Text(
+                  'This order is closed. No Cash on Delivery payment was collected.',
+                  style: TextStyle(
+                    color: Color(0xFF657C8E),
+                    fontSize: 9,
+                    height: 1.3,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget actionArea(
     String orderStatus,
     bool reviewSubmitted,
@@ -749,36 +819,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
 
     if (isCompletedStatus(orderStatus)) {
       if (reviewSubmitted) {
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(
-            horizontal: 11,
-            vertical: 10,
-          ),
-          decoration: BoxDecoration(
-            color: const Color(0xFF2E7D32).withAlpha(18),
-            borderRadius: BorderRadius.circular(13),
-          ),
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.rate_review_outlined,
-                color: Color(0xFF2E7D32),
-                size: 16,
-              ),
-              SizedBox(width: 7),
-              Text(
-                'Review Submitted',
-                style: TextStyle(
-                  color: Color(0xFF2E7D32),
-                  fontSize: 10.8,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ],
-          ),
-        );
+        return const SizedBox.shrink();
       }
 
       return SizedBox(
@@ -818,9 +859,10 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
   ) {
     final data = widget.document.data();
 
-    final orderId = widget.document.id.length > 8
-        ? 'ORD-${widget.document.id.substring(0, 8).toUpperCase()}'
-        : 'ORD-${widget.document.id.toUpperCase()}';
+    final shortOrderId = widget.document.id.length > 8
+        ? widget.document.id.substring(0, 8).toUpperCase()
+        : widget.document.id.toUpperCase();
+    final orderId = 'Order #$shortOrderId';
 
     final productName = getString(
       data,
@@ -1056,7 +1098,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
                           compactValue(
                             label: 'Total',
                             value:
-                                '₱${totalAmount.toStringAsFixed(0)}',
+                                '₱${formatMoney(totalAmount)}',
                             valueColor: const Color(0xFF0875D1),
                           ),
                         ],
@@ -1101,20 +1143,29 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
                         ? Column(
                             children: [
                               const SizedBox(height: 10),
-                              paymentRow(
-                                paymentStatus: paymentStatus,
-                                orderStatus: orderStatus,
-                              ),
-                              const SizedBox(height: 9),
-                              compactProgress(orderStatus),
-                              if (orderStatus.toLowerCase() ==
-                                      'pending' ||
-                                  isCompletedStatus(orderStatus)) ...[
-                                const SizedBox(height: 9),
-                                actionArea(
-                                  orderStatus,
-                                  reviewSubmitted,
+                              if (isStoppedStatus(orderStatus))
+                                stoppedDetails(orderStatus)
+                              else ...[
+                                paymentRow(
+                                  paymentStatus: paymentStatus,
+                                  orderStatus: orderStatus,
                                 ),
+                                const SizedBox(height: 9),
+                                compactProgress(orderStatus),
+                                if (orderStatus.toLowerCase() == 'pending') ...[
+                                  const SizedBox(height: 9),
+                                  actionArea(
+                                    orderStatus,
+                                    reviewSubmitted,
+                                  ),
+                                ] else if (isCompletedStatus(orderStatus) &&
+                                    !reviewSubmitted) ...[
+                                  const SizedBox(height: 9),
+                                  actionArea(
+                                    orderStatus,
+                                    reviewSubmitted,
+                                  ),
+                                ],
                               ],
                             ],
                           )

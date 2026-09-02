@@ -124,12 +124,18 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
   void initState() {
     super.initState();
     supplierStoreImageUrl = widget.supplier.profileImageUrl.trim();
+    buyerNameController.addListener(handleBuyerFieldChanged);
+    buyerPhoneController.addListener(handleBuyerFieldChanged);
+    buyerAddressController.addListener(handleBuyerFieldChanged);
     loadBuyerDetails();
     loadSupplierStoreImage();
   }
 
   @override
   void dispose() {
+    buyerNameController.removeListener(handleBuyerFieldChanged);
+    buyerPhoneController.removeListener(handleBuyerFieldChanged);
+    buyerAddressController.removeListener(handleBuyerFieldChanged);
     buyerNameController.dispose();
     buyerPhoneController.dispose();
     buyerAddressController.dispose();
@@ -156,6 +162,39 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
       return value.toStringAsFixed(0);
     }
     return value.toStringAsFixed(1);
+  }
+
+  String formatPrice(double value) {
+    final raw = value % 1 == 0
+        ? value.toStringAsFixed(0)
+        : value.toStringAsFixed(2).replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
+    final parts = raw.split('.');
+    final whole = parts.first;
+    final grouped = StringBuffer();
+    for (var index = 0; index < whole.length; index++) {
+      if (index > 0 && (whole.length - index) % 3 == 0) {
+        grouped.write(',');
+      }
+      grouped.write(whole[index]);
+    }
+    return parts.length > 1 ? '${grouped.toString()}.${parts[1]}' : grouped.toString();
+  }
+
+  bool get hasBuyerChanges =>
+      buyerNameController.text.trim() != savedBuyerName ||
+      buyerPhoneController.text.trim() != savedBuyerPhone ||
+      buyerAddressController.text.trim() != savedBuyerAddress;
+
+  void handleBuyerFieldChanged() {
+    if (!mounted || !isEditingBuyer) {
+      return;
+    }
+    setState(() {});
+  }
+
+  bool isValidPhoneNumber(String value) {
+    final digits = value.replaceAll(RegExp(r'[^0-9]'), '');
+    return digits.length >= 10 && digits.length <= 13;
   }
 
   double? coordinateValue(dynamic value) {
@@ -378,6 +417,14 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
     if (name.isEmpty || phone.isEmpty) {
       showMessage(
         'Complete your delivery name and phone number.',
+        isError: true,
+      );
+      return false;
+    }
+
+    if (!isValidPhoneNumber(phone)) {
+      showMessage(
+        'Enter a valid contact number before saving.',
         isError: true,
       );
       return false;
@@ -734,6 +781,14 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
       return false;
     }
 
+    if (!isValidPhoneNumber(buyerPhoneController.text)) {
+      showMessage(
+        'Enter a valid buyer contact number.',
+        isError: true,
+      );
+      return false;
+    }
+
     if (isGeneralLocationOnly(buyerAddressController.text)) {
       showMessage(
         'Enter a detailed delivery address such as your barangay, street, block, house, or landmark.',
@@ -784,15 +839,18 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
           insetPadding: const EdgeInsets.symmetric(horizontal: 22),
           backgroundColor: Colors.transparent,
           child: Container(
-            padding: const EdgeInsets.fromLTRB(19, 19, 19, 18),
+            padding: const EdgeInsets.fromLTRB(19, 18, 19, 18),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(27),
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: const Color(0xFFE3EDF3),
+              ),
               boxShadow: const [
                 BoxShadow(
-                  color: Color(0x26000000),
-                  blurRadius: 24,
-                  offset: Offset(0, 12),
+                  color: Color(0x2A00152A),
+                  blurRadius: 28,
+                  offset: Offset(0, 14),
                 ),
               ],
             ),
@@ -800,55 +858,93 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 56,
-                  height: 56,
+                  width: 54,
+                  height: 54,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                       colors: [
                         Color(0xFF0875D1),
                         Color(0xFF12B6D6),
                       ],
                     ),
-                    borderRadius: BorderRadius.circular(19),
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x2E0875D1),
+                        blurRadius: 15,
+                        offset: Offset(0, 7),
+                      ),
+                    ],
                   ),
                   child: const Icon(
                     Icons.receipt_long_rounded,
                     color: Colors.white,
-                    size: 28,
+                    size: 27,
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 13),
                 const Text(
-                  'Place this COD order?',
+                  'Confirm your order',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Color(0xFF102C44),
-                    fontSize: 19,
+                    fontSize: 20,
+                    height: 1.1,
                     fontWeight: FontWeight.w900,
+                    letterSpacing: -0.2,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 5),
                 const Text(
-                  'Review the order before confirming.',
+                  'Check the details before placing this Cash on Delivery order.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Color(0xFF7B8FA3),
-                    fontSize: 11,
+                    color: Color(0xFF738899),
+                    fontSize: 10.6,
+                    height: 1.35,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 15),
+                const SizedBox(height: 14),
                 Container(
-                  padding: const EdgeInsets.all(14),
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF4F9FC),
+                    color: const Color(0xFFF6FAFD),
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
                       color: const Color(0xFFE0EBF2),
                     ),
                   ),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      const Row(
+                        children: [
+                          Icon(
+                            Icons.shopping_bag_outlined,
+                            color: Color(0xFF0875D1),
+                            size: 15,
+                          ),
+                          SizedBox(width: 6),
+                          Text(
+                            'ORDER SUMMARY',
+                            style: TextStyle(
+                              color: Color(0xFF718797),
+                              fontSize: 8.5,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      _ConfirmationRow(
+                        label: 'Supplier',
+                        value: widget.supplier.name,
+                      ),
                       _ConfirmationRow(
                         label: 'Product',
                         value: widget.product.name,
@@ -861,46 +957,52 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                         label: 'Payment',
                         value: 'Cash on Delivery',
                       ),
-                      const _ConfirmationRow(
-                        label: 'Delivery Pin',
-                        value: 'Selected',
+                      _DeliveryConfirmationRow(
+                        address: fullDeliveryAddress,
                       ),
                       const Divider(
                         height: 20,
                         color: Color(0xFFDDE8EF),
                       ),
                       _ConfirmationRow(
-                        label: 'Total',
-                        value: '₱${formatNumber(totalAmount)}',
+                        label: 'Total payment',
+                        value: '₱${formatPrice(totalAmount)}',
                         strong: true,
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 11),
+                const SizedBox(height: 10),
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEFF8FD),
+                    gradient: const LinearGradient(
+                      colors: [
+                        Color(0xFFEFF8FD),
+                        Color(0xFFF4FBFF),
+                      ],
+                    ),
                     borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: const Color(0xFFDDEEF7),
+                    ),
                   ),
                   child: const Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Icon(
-                        Icons.info_outline_rounded,
+                        Icons.verified_user_outlined,
                         color: Color(0xFF0875D1),
                         size: 17,
                       ),
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'The selected quantity will be deducted from '
-                          'available stock after the order is placed.',
+                          'Available stock is checked again when you place the order, then the selected quantity is reserved.',
                           style: TextStyle(
                             color: Color(0xFF52677A),
-                            fontSize: 9.6,
+                            fontSize: 9.4,
                             height: 1.35,
                             fontWeight: FontWeight.w600,
                           ),
@@ -909,7 +1011,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 15),
                 Row(
                   children: [
                     Expanded(
@@ -924,9 +1026,9 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                           side: const BorderSide(
                             color: Color(0xFFD6E2EA),
                           ),
-                          minimumSize: const Size.fromHeight(46),
+                          minimumSize: const Size.fromHeight(47),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(15),
                           ),
                         ),
                         label: const Text(
@@ -940,22 +1042,26 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                     ),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: ElevatedButton(
+                      child: ElevatedButton.icon(
                         onPressed: () => Navigator.pop(dialogContext, true),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF0875D1),
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          minimumSize: const Size.fromHeight(46),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
+                        icon: const Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 16,
                         ),
-                        child: const Text(
+                        label: const Text(
                           'Place Order',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0875D1),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          minimumSize: const Size.fromHeight(47),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
                           ),
                         ),
                       ),
@@ -1026,7 +1132,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
     });
 
     try {
-      await orderService.createCodOrder(
+      final result = await orderService.createCodOrder(
         user: user,
         supplier: widget.supplier,
         product: widget.product,
@@ -1048,7 +1154,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
         isSubmitting = false;
       });
 
-      showOrderPlacedDialog();
+      showOrderPlacedDialog(result);
     } catch (error) {
       if (!mounted) return;
 
@@ -1088,7 +1194,11 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
     await confirmOrder();
   }
 
-  void showOrderPlacedDialog() {
+  void showOrderPlacedDialog(PlaceOrderResult result) {
+    final reference = result.orderId.length > 8
+        ? result.orderId.substring(0, 8).toUpperCase()
+        : result.orderId.toUpperCase();
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -1101,11 +1211,14 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: const Color(0xFFE2ECEF),
+              ),
               boxShadow: const [
                 BoxShadow(
-                  color: Color(0x26000000),
-                  blurRadius: 22,
-                  offset: Offset(0, 11),
+                  color: Color(0x2A00152A),
+                  blurRadius: 28,
+                  offset: Offset(0, 14),
                 ),
               ],
             ),
@@ -1113,45 +1226,115 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 68,
-                  height: 68,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF2E9A62),
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE9F8F0),
                     shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFFC7EAD6),
+                      width: 2,
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.check_rounded,
-                    color: Colors.white,
-                    size: 37,
+                  alignment: Alignment.center,
+                  child: Container(
+                    width: 54,
+                    height: 54,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF2E9A62),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.check_rounded,
+                      color: Colors.white,
+                      size: 32,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 15),
+                const SizedBox(height: 14),
                 const Text(
-                  'Order Placed',
+                  'Order placed successfully',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Color(0xFF102C44),
-                    fontSize: 21,
+                    fontSize: 20,
+                    height: 1.1,
                     fontWeight: FontWeight.w900,
+                    letterSpacing: -0.2,
                   ),
                 ),
                 const SizedBox(height: 7),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 7,
+                  runSpacing: 7,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEAF7FD),
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                      child: Text(
+                        'Order #$reference',
+                        style: const TextStyle(
+                          color: Color(0xFF0875D1),
+                          fontSize: 9.4,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF4DC),
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.schedule_rounded,
+                            color: Color(0xFFB77A00),
+                            size: 13,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'Awaiting confirmation',
+                            style: TextStyle(
+                              color: Color(0xFF9B6800),
+                              fontSize: 9.2,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 9),
                 Text(
-                  '${widget.product.name} was sent to '
-                  '${widget.supplier.name} for confirmation.',
+                  '${widget.product.name} was sent to ${widget.supplier.name}. You can follow the supplier response in My Orders.',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: Color(0xFF52677A),
-                    fontSize: 11.7,
+                    fontSize: 10.8,
                     height: 1.4,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 15),
+                const SizedBox(height: 14),
                 Container(
-                  padding: const EdgeInsets.all(14),
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF4F9FC),
+                    color: const Color(0xFFF6FAFD),
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
                       color: const Color(0xFFE0EBF2),
@@ -1159,6 +1342,10 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                   ),
                   child: Column(
                     children: [
+                      _ConfirmationRow(
+                        label: 'Product',
+                        value: widget.product.name,
+                      ),
                       _ConfirmationRow(
                         label: 'Quantity',
                         value: '$quantity ${widget.product.quantityUnit}',
@@ -1172,14 +1359,46 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                         color: Color(0xFFDDE8EF),
                       ),
                       _ConfirmationRow(
-                        label: 'Total',
-                        value: '₱${formatNumber(totalAmount)}',
+                        label: 'Total payment',
+                        value: '₱${formatPrice(totalAmount)}',
                         strong: true,
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 17),
+                const SizedBox(height: 10),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 11,
+                    vertical: 9,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF8FD),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(
+                        Icons.notifications_none_rounded,
+                        color: Color(0xFF0875D1),
+                        size: 16,
+                      ),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Track status updates anytime from My Orders.',
+                          style: TextStyle(
+                            color: Color(0xFF52677A),
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
                 Row(
                   children: [
                     Expanded(
@@ -1191,17 +1410,17 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                         style: OutlinedButton.styleFrom(
                           foregroundColor: const Color(0xFF0875D1),
                           side: const BorderSide(
-                            color: Color(0xFF0875D1),
+                            color: Color(0xFFB8D8EA),
                           ),
-                          minimumSize: const Size.fromHeight(46),
+                          minimumSize: const Size.fromHeight(47),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(15),
                           ),
                         ),
                         child: const Text(
-                          'Continue',
+                          'Back to product',
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: 10.8,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
@@ -1209,7 +1428,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                     ),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: ElevatedButton(
+                      child: ElevatedButton.icon(
                         onPressed: () {
                           Navigator.pop(dialogContext);
                           Navigator.pushReplacement(
@@ -1219,20 +1438,24 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                             ),
                           );
                         },
+                        icon: const Icon(
+                          Icons.receipt_long_outlined,
+                          size: 16,
+                        ),
+                        label: const Text(
+                          'My Orders',
+                          style: TextStyle(
+                            fontSize: 10.8,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF0875D1),
                           foregroundColor: Colors.white,
                           elevation: 0,
-                          minimumSize: const Size.fromHeight(46),
+                          minimumSize: const Size.fromHeight(47),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: const Text(
-                          'My Orders',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w900,
+                            borderRadius: BorderRadius.circular(15),
                           ),
                         ),
                       ),
@@ -1297,7 +1520,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '₱${formatNumber(totalAmount)}',
+                    '₱${formatPrice(totalAmount)}',
                     style: const TextStyle(
                       color: Color(0xFF0875D1),
                       fontSize: 21,
@@ -1306,9 +1529,11 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                     ),
                   ),
                   const SizedBox(height: 3),
-                  const Text(
-                    'Cash on Delivery',
-                    style: TextStyle(
+                  Text(
+                    '$quantity ${widget.product.quantityUnit} · Cash on Delivery',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
                       color: Color(0xFF7B8FA3),
                       fontSize: 8.4,
                       fontWeight: FontWeight.w700,
@@ -1331,13 +1556,26 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                         size: 18,
                       ),
                 label: isSubmitting
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.2,
-                          color: Colors.white,
-                        ),
+                    ? const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Placing order...',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
                       )
                     : Text(
                         actionLabel,
@@ -1377,6 +1615,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
               controller: checkoutScrollController,
               keyboardDismissBehavior:
                   ScrollViewKeyboardDismissBehavior.onDrag,
+              physics: const ClampingScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
               children: [
                 BuyerDetailsCard(
@@ -1400,6 +1639,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                   },
                   onChooseDeliveryPin:
                       chooseDeliveryReferencePin,
+                  canSave: hasBuyerChanges,
                 ),
                 ProductOrderCard(
                   supplier: widget.supplier,
@@ -1421,6 +1661,69 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
         ],
       ),
       bottomNavigationBar: checkoutBottomBar(),
+    );
+  }
+}
+
+
+class _DeliveryConfirmationRow extends StatelessWidget {
+  const _DeliveryConfirmationRow({
+    required this.address,
+  });
+
+  final String address;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 6, 0, 5),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Deliver to',
+            style: TextStyle(
+              color: Color(0xFF52677A),
+              fontSize: 10.7,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEAF5FF),
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: const Icon(
+                  Icons.location_on_outlined,
+                  color: Color(0xFF0875D1),
+                  size: 15,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  address,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.left,
+                  style: const TextStyle(
+                    color: Color(0xFF102C44),
+                    fontSize: 10.8,
+                    height: 1.35,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

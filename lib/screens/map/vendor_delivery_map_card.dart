@@ -10,7 +10,7 @@ class VendorDeliveryMapCard extends StatelessWidget {
     required this.province,
     required this.locality,
     required this.onTap,
-    this.height = 142,
+    this.height = 124,
   });
 
   final double? latitude;
@@ -140,7 +140,7 @@ class VendorDeliveryMapCard extends StatelessWidget {
                             ),
                             const SizedBox(width: 5),
                             Text(
-                              hasPin ? 'Update' : 'Set pin',
+                              hasPin ? 'Edit pin' : 'Set pin',
                               style: const TextStyle(
                                 color: Color(0xFF102C44),
                                 fontSize: 9.5,
@@ -181,7 +181,7 @@ class VendorDeliveryMapCard extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 hasPin
-                                    ? 'Saved delivery location'
+                                    ? 'Saved delivery pin'
                                     : 'Tap to place your delivery pin',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,

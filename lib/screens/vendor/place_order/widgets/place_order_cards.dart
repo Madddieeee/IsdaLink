@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:isdalink/models/fish_product.dart';
 import 'package:isdalink/models/supplier.dart';
 import 'package:isdalink/screens/map/vendor_delivery_map_card.dart';
@@ -112,6 +113,7 @@ class BuyerDetailsCard extends StatelessWidget {
     required this.onCancel,
     required this.onSave,
     required this.onChooseDeliveryPin,
+    required this.canSave,
   });
 
   final TextEditingController nameController;
@@ -131,6 +133,7 @@ class BuyerDetailsCard extends StatelessWidget {
   final VoidCallback onCancel;
   final VoidCallback onSave;
   final VoidCallback onChooseDeliveryPin;
+  final bool canSave;
 
   InputDecoration fieldDecoration({
     required String label,
@@ -225,6 +228,7 @@ class BuyerDetailsCard extends StatelessWidget {
                 controller: nameController,
                 enabled: !isSaving,
                 textCapitalization: TextCapitalization.words,
+                textInputAction: TextInputAction.next,
                 decoration: fieldDecoration(
                   label: 'Recipient name',
                   icon: Icons.person_outline_rounded,
@@ -235,6 +239,11 @@ class BuyerDetailsCard extends StatelessWidget {
                 controller: phoneController,
                 enabled: !isSaving,
                 keyboardType: TextInputType.phone,
+                textInputAction: TextInputAction.next,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9+]')),
+                  LengthLimitingTextInputFormatter(16),
+                ],
                 decoration: fieldDecoration(
                   label: 'Contact number',
                   icon: Icons.phone_outlined,
@@ -259,7 +268,7 @@ class BuyerDetailsCard extends StatelessWidget {
                 width: double.infinity,
                 height: 43,
                 child: ElevatedButton.icon(
-                  onPressed: isSaving ? null : onSave,
+                  onPressed: isSaving || !canSave ? null : onSave,
                   icon: isSaving
                       ? const SizedBox(
                           width: 16,
@@ -283,7 +292,8 @@ class BuyerDetailsCard extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF0875D1),
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor: const Color(0xFF8CA5BA),
+                    disabledBackgroundColor: const Color(0xFFD7E4EC),
+                    disabledForegroundColor: const Color(0xFF8CA1B0),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(13),
@@ -361,13 +371,27 @@ class BuyerDetailsCard extends StatelessWidget {
                             ],
                           ),
                         ),
-                        const SizedBox(width: 5),
+                        const SizedBox(width: 8),
                         const Padding(
-                          padding: EdgeInsets.only(top: 10),
-                          child: Icon(
-                            Icons.chevron_right_rounded,
-                            color: Color(0xFF9AAEBD),
-                            size: 21,
+                          padding: EdgeInsets.only(top: 7),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Edit',
+                                style: TextStyle(
+                                  color: Color(0xFF0875D1),
+                                  fontSize: 9.6,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              SizedBox(width: 2),
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                color: Color(0xFF78A9C9),
+                                size: 19,
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -383,6 +407,7 @@ class BuyerDetailsCard extends StatelessWidget {
                   province: province,
                   locality: locality,
                   onTap: onChooseDeliveryPin,
+                  height: 124,
                 ),
               ],
             ],
@@ -483,6 +508,22 @@ class ProductOrderCard extends StatelessWidget {
     return value.toStringAsFixed(1);
   }
 
+  String formatPrice(double value) {
+    final raw = value % 1 == 0
+        ? value.toStringAsFixed(0)
+        : value.toStringAsFixed(2).replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
+    final parts = raw.split('.');
+    final whole = parts.first;
+    final grouped = StringBuffer();
+    for (var index = 0; index < whole.length; index++) {
+      if (index > 0 && (whole.length - index) % 3 == 0) {
+        grouped.write(',');
+      }
+      grouped.write(whole[index]);
+    }
+    return parts.length > 1 ? '${grouped.toString()}.${parts[1]}' : grouped.toString();
+  }
+
   String get cleanPriceUnit {
     final value = product.priceUnit.trim();
     if (value.isEmpty) {
@@ -558,35 +599,55 @@ class ProductOrderCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CheckoutSectionTitle(
-            icon: Icons.storefront_outlined,
-            title: supplier.name,
-            leading: supplierImage(),
-            trailing: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 5,
-              ),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE8F8FD),
-                borderRadius: BorderRadius.circular(99),
-              ),
-              child: const Text(
-                'Order item',
-                style: TextStyle(
-                  color: Color(0xFF0875D1),
-                  fontSize: 8.8,
-                  fontWeight: FontWeight.w900,
+          const Text(
+            'ORDER FROM',
+            style: TextStyle(
+              color: Color(0xFF8AA0B0),
+              fontSize: 8.2,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.8,
+            ),
+          ),
+          const SizedBox(height: 7),
+          Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F8FD),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFFD8EAF3),
+                  ),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(11),
+                  child: supplierImage(),
                 ),
               ),
-            ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  supplier.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFF102C44),
+                    fontSize: 14.4,
+                    height: 1.12,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 13),
           Row(
             children: [
               Container(
-                width: 78,
-                height: 78,
+                width: 82,
+                height: 82,
                 decoration: BoxDecoration(
                   color: const Color(0xFFF3F7FA),
                   borderRadius: BorderRadius.circular(18),
@@ -627,7 +688,7 @@ class ProductOrderCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 7),
                     Text(
-                      '₱${formatNumber(product.price)} / $cleanPriceUnit',
+                      '₱${formatPrice(product.price)} / $cleanPriceUnit',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -680,11 +741,11 @@ class ProductOrderCard extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      const Text(
                         'Quantity',
                         style: TextStyle(
                           color: Color(0xFF102C44),
@@ -692,13 +753,19 @@ class ProductOrderCard extends StatelessWidget {
                           fontWeight: FontWeight.w900,
                         ),
                       ),
-                      SizedBox(height: 2),
+                      const SizedBox(height: 2),
                       Text(
-                        'Choose the amount to reserve.',
+                        quantity >= product.availableQuantity.floor()
+                            ? 'Maximum available selected.'
+                            : 'Choose the amount to reserve.',
                         style: TextStyle(
-                          color: Color(0xFF7B8FA3),
+                          color: quantity >= product.availableQuantity.floor()
+                              ? const Color(0xFF16845E)
+                              : const Color(0xFF7B8FA3),
                           fontSize: 8.8,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: quantity >= product.availableQuantity.floor()
+                              ? FontWeight.w800
+                              : FontWeight.w600,
                         ),
                       ),
                     ],
@@ -784,6 +851,22 @@ class PaymentDetailsCard extends StatelessWidget {
     return value.toStringAsFixed(1);
   }
 
+  String formatPrice(double value) {
+    final raw = value % 1 == 0
+        ? value.toStringAsFixed(0)
+        : value.toStringAsFixed(2).replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
+    final parts = raw.split('.');
+    final whole = parts.first;
+    final grouped = StringBuffer();
+    for (var index = 0; index < whole.length; index++) {
+      if (index > 0 && (whole.length - index) % 3 == 0) {
+        grouped.write(',');
+      }
+      grouped.write(whole[index]);
+    }
+    return parts.length > 1 ? '${grouped.toString()}.${parts[1]}' : grouped.toString();
+  }
+
   String get cleanPriceUnit {
     final value = product.priceUnit.trim();
     if (value.isEmpty) {
@@ -848,7 +931,7 @@ class PaymentDetailsCard extends StatelessWidget {
           const SizedBox(height: 10),
           summaryRow(
             label: 'Unit price',
-            value: '₱${formatNumber(product.price)} / $cleanPriceUnit',
+            value: '₱${formatPrice(product.price)} / $cleanPriceUnit',
           ),
           summaryRow(
             label: 'Quantity',
@@ -856,7 +939,7 @@ class PaymentDetailsCard extends StatelessWidget {
           ),
           summaryRow(
             label: 'Merchandise subtotal',
-            value: '₱${formatNumber(totalAmount)}',
+            value: '₱${formatPrice(totalAmount)}',
           ),
           summaryRow(
             label: 'Payment method',
@@ -868,7 +951,7 @@ class PaymentDetailsCard extends StatelessWidget {
           ),
           summaryRow(
             label: 'Total payment',
-            value: '₱${formatNumber(totalAmount)}',
+            value: '₱${formatPrice(totalAmount)}',
             strong: true,
           ),
           const SizedBox(height: 8),
@@ -906,7 +989,7 @@ class PaymentDetailsCard extends StatelessWidget {
                       SizedBox(height: 3),
                       Text(
                         'Pay the supplier when the order is received. '
-                        'Stock is reserved after order placement.',
+                        'Your selected stock is reserved after placement.',
                         style: TextStyle(
                           color: Color(0xFF62798B),
                           fontSize: 9.3,

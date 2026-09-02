@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:isdalink/models/supplier.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:isdalink/screens/vendor/product_details_screen.dart';
@@ -343,6 +344,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
   String sortMode = 'latest';
   int selectedTab = 0;
   bool favoriteBusy = false;
+  bool compactStoreHeader = false;
 
   Supplier get supplier => widget.supplier;
   String? get supplierId => widget.supplierId;
@@ -426,16 +428,261 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
   Widget supplierHeader(
     SupplierDetailsStats stats,
   ) {
-    final storeUid = supplierId?.trim() ?? '';
-    final signedIn = FirebaseAuth.instance.currentUser != null;
-    final canFavorite = signedIn && !ownerMode && storeUid.isNotEmpty;
+    return SupplierDetailsHeader(
+      supplier: supplier,
+      stats: stats,
+      onBack: () => Navigator.pop(context),
+      businessLocationPreview: supplierBusinessLocationPreview(),
+      includeSystemTopPadding: false,
+      showNavigationHeader: false,
+    );
+  }
+
+  Widget compactStoreAvatar() {
+    final imageUrl = supplier.profileImageUrl.trim();
+    final hasImage = imageUrl.startsWith('http://') || imageUrl.startsWith('https://');
+    final name = supplier.name.trim();
+    final initial = name.isEmpty ? 'S' : name.substring(0, 1).toUpperCase();
+
+    return Container(
+      width: 34,
+      height: 34,
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(24),
+        borderRadius: BorderRadius.circular(11),
+        border: Border.all(color: Colors.white.withAlpha(44)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: hasImage
+          ? Image.network(
+              imageUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => Center(
+                child: Text(
+                  initial,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            )
+          : Center(
+              child: Text(
+                initial,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+    );
+  }
+
+  Widget storeTopAction({
+    required bool canFavorite,
+    required bool isFavorite,
+  }) {
+    if (ownerMode) {
+      return Tooltip(
+        message: 'Manage products',
+        child: Material(
+          color: Colors.white.withAlpha(24),
+          shape: const CircleBorder(),
+          child: InkWell(
+            onTap: openManageProducts,
+            customBorder: const CircleBorder(),
+            child: const SizedBox(
+              width: 38,
+              height: 38,
+              child: Icon(
+                Icons.inventory_2_outlined,
+                color: Colors.white,
+                size: 19,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     if (!canFavorite) {
-      return SupplierDetailsHeader(
-        supplier: supplier,
-        stats: stats,
-        onBack: () => Navigator.pop(context),
-        businessLocationPreview: supplierBusinessLocationPreview(),
+      return const SizedBox.shrink();
+    }
+
+    return Tooltip(
+      message: isFavorite ? 'Remove from Favorites' : 'Add to Favorites',
+      child: Material(
+        color: isFavorite
+            ? const Color(0xFFFFF0F3)
+            : Colors.white.withAlpha(24),
+        shape: const CircleBorder(),
+        child: InkWell(
+          onTap: favoriteBusy
+              ? null
+              : () => toggleFavorite(currentlyFavorite: isFavorite),
+          customBorder: const CircleBorder(),
+          child: SizedBox(
+            width: 38,
+            height: 38,
+            child: Center(
+              child: favoriteBusy
+                  ? SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 1.8,
+                        color: isFavorite
+                            ? const Color(0xFFE94C72)
+                            : Colors.white,
+                      ),
+                    )
+                  : Icon(
+                      isFavorite
+                          ? Icons.favorite_rounded
+                          : Icons.favorite_border_rounded,
+                      color: isFavorite
+                          ? const Color(0xFFE94C72)
+                          : Colors.white,
+                      size: 20,
+                    ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget storeTopBarContent({
+    required double statusBarHeight,
+    required bool canFavorite,
+    required bool isFavorite,
+  }) {
+    final storeName = supplier.name.trim().isEmpty ? 'Supplier' : supplier.name.trim();
+
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF06355F),
+            Color(0xFF075FAE),
+          ],
+        ),
+      ),
+      padding: EdgeInsets.only(top: statusBarHeight),
+      child: SizedBox(
+        height: 56,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: Row(
+            children: [
+              Material(
+                color: Colors.white.withAlpha(25),
+                shape: const CircleBorder(),
+                child: InkWell(
+                  onTap: () => Navigator.pop(context),
+                  customBorder: const CircleBorder(),
+                  child: const SizedBox(
+                    width: 38,
+                    height: 38,
+                    child: Icon(
+                      Icons.arrow_back_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              if (compactStoreHeader) ...[
+                compactStoreAvatar(),
+                const SizedBox(width: 9),
+              ],
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 180),
+                  child: Column(
+                    key: ValueKey<bool>(compactStoreHeader),
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        compactStoreHeader ? storeName : 'Supplier Store',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 17.5,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.15,
+                        ),
+                      ),
+                      if (!compactStoreHeader)
+                        const Text(
+                          'Verified IsdaLink supplier',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Color(0xFFCFE9F8),
+                            fontSize: 8.6,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(22),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: Colors.white.withAlpha(28)),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.verified_rounded, color: Colors.white, size: 12),
+                    SizedBox(width: 4),
+                    Text(
+                      'Verified',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 8.7,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 7),
+              storeTopAction(
+                canFavorite: canFavorite,
+                isFavorite: isFavorite,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget storeTopBar(double statusBarHeight) {
+    final storeUid = supplierId?.trim() ?? '';
+    final canFavorite = FirebaseAuth.instance.currentUser != null &&
+        !ownerMode &&
+        storeUid.isNotEmpty;
+
+    if (!canFavorite) {
+      return storeTopBarContent(
+        statusBarHeight: statusBarHeight,
+        canFavorite: false,
+        isFavorite: false,
       );
     }
 
@@ -443,22 +690,28 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
       stream: favoriteService.isFavoriteStream(storeUid),
       initialData: false,
       builder: (context, snapshot) {
-        final isFavorite = snapshot.data ?? false;
-
-        return SupplierDetailsHeader(
-          supplier: supplier,
-          stats: stats,
-          onBack: () => Navigator.pop(context),
-          businessLocationPreview: supplierBusinessLocationPreview(),
-          showFavoriteAction: true,
-          isFavorite: isFavorite,
-          favoriteBusy: favoriteBusy,
-          onFavoriteToggle: () => toggleFavorite(
-            currentlyFavorite: isFavorite,
-          ),
+        return storeTopBarContent(
+          statusBarHeight: statusBarHeight,
+          canFavorite: true,
+          isFavorite: snapshot.data ?? false,
         );
       },
     );
+  }
+
+  bool handleStoreScroll(ScrollNotification notification) {
+    if (notification.metrics.axis != Axis.vertical) {
+      return false;
+    }
+
+    final shouldCompact = notification.metrics.pixels > 92;
+    if (shouldCompact != compactStoreHeader && mounted) {
+      setState(() {
+        compactStoreHeader = shouldCompact;
+      });
+    }
+
+    return false;
   }
 
   double? mapCoordinate(
@@ -484,41 +737,22 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
       return const SizedBox.shrink();
     }
 
-    return StreamBuilder<
-      DocumentSnapshot<
-        Map<
-          String,
-          dynamic
-        >
-      >
-    >(
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance
-          .collection(
-            'supplierProfiles',
-          )
-          .doc(
-            storeUid,
-          )
+          .collection('supplierProfiles')
+          .doc(storeUid)
           .snapshots(),
-      builder: (
-        context,
-        snapshot,
-      ) {
+      builder: (context, snapshot) {
         final data = snapshot.data?.data();
 
         if (data == null) {
           return const SizedBox.shrink();
         }
 
-        final latitude = mapCoordinate(
-          data['storeLatitude'],
-        );
-        final longitude = mapCoordinate(
-          data['storeLongitude'],
-        );
+        final latitude = mapCoordinate(data['storeLatitude']);
+        final longitude = mapCoordinate(data['storeLongitude']);
 
-        if (latitude == null ||
-            longitude == null) {
+        if (latitude == null || longitude == null) {
           return const SizedBox.shrink();
         }
 
@@ -534,10 +768,8 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
         );
 
         final locationParts = <String>[
-          if (locality.trim().isNotEmpty)
-            locality.trim(),
-          if (province.trim().isNotEmpty)
-            province.trim(),
+          if (locality.trim().isNotEmpty) locality.trim(),
+          if (province.trim().isNotEmpty) province.trim(),
         ];
 
         final locationLabel = locationParts.isEmpty
@@ -548,17 +780,13 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
             ? 'Supplier'
             : supplier.name.trim();
 
-        final position = LatLng(
-          latitude,
-          longitude,
-        );
+        final position = LatLng(latitude, longitude);
 
         void openFullMap() {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) =>
-                  _SupplierBusinessMapViewer(
+              builder: (_) => _SupplierBusinessMapViewer(
                 storeName: storeName,
                 locationLabel: locationLabel,
                 position: position,
@@ -567,147 +795,45 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
           );
         }
 
-        return GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: openFullMap,
-          child: Container(
-            width: 86,
-            height: 58,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(15),
-              border: Border.all(
-                color: Colors.white.withValues(
-                  alpha: 0.32,
-                ),
-                width: 1.2,
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: openFullMap,
+            borderRadius: BorderRadius.circular(999),
+            child: Ink(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 7,
               ),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x2400152A),
-                  blurRadius: 10,
-                  offset: Offset(0, 5),
+              decoration: BoxDecoration(
+                color: Colors.white.withAlpha(24),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: Colors.white.withAlpha(34),
                 ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: Stack(
-                fit: StackFit.expand,
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  IgnorePointer(
-                    child: GoogleMap(
-                      initialCameraPosition:
-                          CameraPosition(
-                        target: position,
-                        zoom: 15.2,
-                      ),
-                      markers: {
-                        Marker(
-                          markerId: MarkerId(
-                            'supplier_header_business_$storeUid',
-                          ),
-                          position: position,
-                        ),
-                      },
-                      myLocationEnabled: false,
-                      myLocationButtonEnabled: false,
-                      zoomControlsEnabled: false,
-                      compassEnabled: false,
-                      mapToolbarEnabled: false,
-                      rotateGesturesEnabled: false,
-                      scrollGesturesEnabled: false,
-                      zoomGesturesEnabled: false,
-                      tiltGesturesEnabled: false,
-                      trafficEnabled: false,
-                      indoorViewEnabled: false,
-                      buildingsEnabled: true,
+                  Icon(
+                    Icons.location_on_outlined,
+                    color: Colors.white,
+                    size: 13,
+                  ),
+                  SizedBox(width: 5),
+                  Text(
+                    'View location',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 9.4,
+                      fontWeight: FontWeight.w900,
                     ),
                   ),
-                  const Positioned(
-                    right: 4,
-                    top: 4,
-                    child: IgnorePointer(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: Color(0xEFFFFFFF),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Padding(
-                          padding: EdgeInsets.all(3),
-                          child: Icon(
-                            Icons.open_in_full_rounded,
-                            color: Color(0xFF31536D),
-                            size: 9,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    left: 5,
-                    right: 5,
-                    bottom: 4,
-                    child: IgnorePointer(
-                      child: Container(
-                        height: 18,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(
-                            alpha: 0.94,
-                          ),
-                          borderRadius: BorderRadius.circular(
-                            8,
-                          ),
-                          border: Border.all(
-                            color: const Color(
-                              0xFFDCEAF2,
-                            ),
-                            width: 0.7,
-                          ),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(
-                                0x1600152A,
-                              ),
-                              blurRadius: 5,
-                              offset: Offset(
-                                0,
-                                2,
-                              ),
-                            ),
-                          ],
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment:
-                              MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.map_outlined,
-                              color: Color(
-                                0xFF146BFF,
-                              ),
-                              size: 10,
-                            ),
-                            SizedBox(
-                              width: 2,
-                            ),
-                            Text(
-                              'View map',
-                              style: TextStyle(
-                                color: Color(
-                                  0xFF146BFF,
-                                ),
-                                fontSize: 7.4,
-                                fontWeight:
-                                    FontWeight.w900,
-                                height: 1,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                  SizedBox(width: 3),
+                  Icon(
+                    Icons.arrow_forward_rounded,
+                    color: Colors.white,
+                    size: 12,
                   ),
                 ],
               ),
@@ -737,15 +863,15 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
     return Container(
       margin: const EdgeInsets.fromLTRB(
         18,
-        10,
+        8,
         18,
         0,
       ),
       padding: const EdgeInsets.fromLTRB(
-        13,
-        12,
         11,
-        12,
+        9,
+        9,
+        9,
       ),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -764,8 +890,8 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
       child: Row(
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: 34,
+            height: 34,
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(13),
@@ -773,7 +899,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
             child: const Icon(
               Icons.visibility_outlined,
               color: Color(0xFF0875D1),
-              size: 20,
+              size: 18,
             ),
           ),
           const SizedBox(width: 10),
@@ -787,7 +913,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
                       'Your Store',
                       style: TextStyle(
                         color: Color(0xFF102C44),
-                        fontSize: 12.4,
+                        fontSize: 11.9,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -795,13 +921,13 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
                     _OwnerPreviewBadge(),
                   ],
                 ),
-                SizedBox(height: 3),
+                SizedBox(height: 2),
                 Text(
-                  'Vendor-facing preview. Ordering is disabled for your own store.',
+                  'Vendor preview · Ordering disabled for your own store.',
                   style: TextStyle(
                     color: Color(0xFF657C8E),
-                    fontSize: 9.2,
-                    height: 1.3,
+                    fontSize: 8.8,
+                    height: 1.22,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -861,22 +987,6 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
     );
   }
 
-  String sortLabel(
-    String value,
-  ) {
-    switch (value) {
-      case 'price_low':
-        return 'Price: low to high';
-      case 'price_high':
-        return 'Price: high to low';
-      case 'name':
-        return 'Fish name';
-      case 'latest':
-      default:
-        return 'Latest posts';
-    }
-  }
-
   Widget storeTabs() {
     return Container(
       color: Colors.white,
@@ -922,11 +1032,9 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
       borderRadius: BorderRadius.circular(13),
       child: InkWell(
         onTap: () {
-          setState(
-            () {
-              selectedTab = index;
-            },
-          );
+          setState(() {
+            selectedTab = index;
+          });
         },
         borderRadius: BorderRadius.circular(13),
         child: Container(
@@ -971,6 +1079,179 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
     );
   }
 
+  Future<void> showSortSheet() async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withAlpha(150),
+      builder: (sheetContext) {
+        const options = <(String, String, String, IconData)>[
+          (
+            'latest',
+            'Latest activity',
+            'Newest posts and recently restocked fish first.',
+            Icons.schedule_rounded,
+          ),
+          (
+            'price_low',
+            'Price: low to high',
+            'Show the lowest-priced listings first.',
+            Icons.south_rounded,
+          ),
+          (
+            'price_high',
+            'Price: high to low',
+            'Show the highest-priced listings first.',
+            Icons.north_rounded,
+          ),
+          (
+            'stock_high',
+            'Most stock available',
+            'Prioritize listings with more available quantity.',
+            Icons.inventory_2_outlined,
+          ),
+          (
+            'name',
+            'Fish name',
+            'Sort alphabetically by fish name.',
+            Icons.sort_by_alpha_rounded,
+          ),
+        ];
+
+        return SafeArea(
+          top: false,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF7FAFC),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFBED0DC),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+                const SizedBox(height: 15),
+                const Row(
+                  children: [
+                    Icon(
+                      Icons.swap_vert_rounded,
+                      color: Color(0xFF087AC0),
+                      size: 21,
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      'Sort fish listings',
+                      style: TextStyle(
+                        color: Color(0xFF102C44),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                ...options.map((option) {
+                  final selectedOption = sortMode == option.$1;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 7),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => Navigator.pop(sheetContext, option.$1),
+                        borderRadius: BorderRadius.circular(16),
+                        child: Ink(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: selectedOption
+                                ? const Color(0xFFEAF7FD)
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: selectedOption
+                                  ? const Color(0xFF9DDCF3)
+                                  : const Color(0xFFE3ECF2),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 38,
+                                height: 38,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF0F7FB),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  option.$4,
+                                  color: const Color(0xFF087AC0),
+                                  size: 19,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      option.$2,
+                                      style: const TextStyle(
+                                        color: Color(0xFF102C44),
+                                        fontSize: 11.6,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      option.$3,
+                                      style: const TextStyle(
+                                        color: Color(0xFF7B8FA3),
+                                        fontSize: 9.1,
+                                        height: 1.25,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(
+                                selectedOption
+                                    ? Icons.check_circle_rounded
+                                    : Icons.chevron_right_rounded,
+                                color: selectedOption
+                                    ? const Color(0xFF159C74)
+                                    : const Color(0xFF9DB0BE),
+                                size: 20,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (selected == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      sortMode = selected;
+    });
+  }
+
   Widget searchAndFilterCard(
     List<String> units,
   ) {
@@ -979,12 +1260,12 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
       ...units,
     ];
 
-    if (!unitOptions.contains(selectedUnit)) {
-      selectedUnit = 'all';
-    }
+    final effectiveSelectedUnit = unitOptions.contains(selectedUnit)
+        ? selectedUnit
+        : 'all';
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
+      padding: const EdgeInsets.fromLTRB(9, 8, 9, 8),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -1003,6 +1284,16 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
         children: [
           TextField(
             controller: searchController,
+            maxLines: 1,
+            textAlignVertical: TextAlignVertical.center,
+            cursorColor: const Color(0xFF087AC0),
+            cursorHeight: 18,
+            style: const TextStyle(
+              color: Color(0xFF102C44),
+              fontSize: 12,
+              height: 1.15,
+              fontWeight: FontWeight.w700,
+            ),
             onChanged: (value) {
               setState(
                 () {
@@ -1079,7 +1370,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
                         const SizedBox(width: 7),
                     itemBuilder: (context, index) {
                       final unit = unitOptions[index];
-                      final selected = selectedUnit == unit;
+                      final selected = effectiveSelectedUnit == unit;
 
                       return ChoiceChip(
                         selected: selected,
@@ -1121,66 +1412,40 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              PopupMenuButton<String>(
-                initialValue: sortMode,
-                onSelected: (value) {
-                  setState(
-                    () {
-                      sortMode = value;
-                    },
-                  );
-                },
-                tooltip: 'Sort fish listings',
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                itemBuilder: (context) {
-                  return const [
-                    PopupMenuItem(
-                      value: 'latest',
-                      child: Text('Latest posts'),
-                    ),
-                    PopupMenuItem(
-                      value: 'price_low',
-                      child: Text('Price: low to high'),
-                    ),
-                    PopupMenuItem(
-                      value: 'price_high',
-                      child: Text('Price: high to low'),
-                    ),
-                    PopupMenuItem(
-                      value: 'name',
-                      child: Text('Fish name'),
-                    ),
-                  ];
-                },
-                child: Container(
-                  height: 32,
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE8F8FD),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: const Color(0xFFD5EEF7),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.swap_vert_rounded,
-                        color: Color(0xFF087AC0),
-                        size: 17,
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: showSortSheet,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Ink(
+                    height: 32,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8F8FD),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFFD5EEF7),
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Sort',
-                        style: const TextStyle(
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.swap_vert_rounded,
                           color: Color(0xFF087AC0),
-                          fontSize: 10.3,
-                          fontWeight: FontWeight.w900,
+                          size: 17,
                         ),
-                      ),
-                    ],
+                        SizedBox(width: 4),
+                        Text(
+                          'Sort',
+                          style: TextStyle(
+                            color: Color(0xFF087AC0),
+                            fontSize: 10.3,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -1191,116 +1456,75 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
     );
   }
 
-  Widget productGrid(
-    List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
+  Widget productCardForDocument(
+    QueryDocumentSnapshot<Map<String, dynamic>> document,
   ) {
-    final width = MediaQuery.sizeOf(context).width;
-    final columns = width < 360 ? 1 : 2;
+    final data = document.data();
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: documents.length,
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: columns,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        mainAxisExtent: columns == 1 ? 238 : 262,
-      ),
-      itemBuilder: (context, index) {
-        final document = documents[index];
-        final data = document.data();
+    final productName = detailsService.getStringValue(
+      data,
+      'productName',
+      'Fish Product',
+    );
+    final category = detailsService.getStringValue(
+      data,
+      'category',
+      'Fresh Fish',
+    );
+    final emoji = detailsService.getStringValue(
+      data,
+      'emoji',
+      '🐟',
+    );
+    final imageUrl = detailsService.productImageUrl(data);
+    final price = detailsService.getDoubleValue(data, 'price');
+    final priceUnit = detailsService.getStringValue(
+      data,
+      'priceUnit',
+      'per kilo',
+    );
+    final quantity = detailsService.getDoubleValue(data, 'quantity');
+    final quantityUnit = detailsService.getStringValue(
+      data,
+      'quantityUnit',
+      'kilo',
+    );
+    final lowStockLevel = detailsService.getDoubleValue(
+      data,
+      'lowStockLevel',
+    );
+    final stockColor = detailsService.getStockColor(
+      quantity: quantity,
+      lowStockLevel: lowStockLevel,
+    );
+    final stockStatus = detailsService.getStockStatus(
+      quantity: quantity,
+      lowStockLevel: lowStockLevel,
+    );
 
-        final productName = detailsService.getStringValue(
-          data,
-          'productName',
-          'Fish Product',
-        );
-
-        final category = detailsService.getStringValue(
-          data,
-          'category',
-          'Fresh Fish',
-        );
-
-        final emoji = detailsService.getStringValue(
-          data,
-          'emoji',
-          '🐟',
-        );
-
-        final imageUrl = detailsService.productImageUrl(data);
-        final price = detailsService.getDoubleValue(data, 'price');
-
-        final priceUnit = detailsService.getStringValue(
-          data,
-          'priceUnit',
-          'per kilo',
-        );
-
-        final quantity = detailsService.getDoubleValue(
-          data,
-          'quantity',
-        );
-
-        final quantityUnit = detailsService.getStringValue(
-          data,
-          'quantityUnit',
-          'kilo',
-        );
-
-        final lowStockLevel = detailsService.getDoubleValue(
-          data,
-          'lowStockLevel',
-        );
-
-        final stockColor = detailsService.getStockColor(
-          quantity: quantity,
-          lowStockLevel: lowStockLevel,
-        );
-
-        final stockStatus = detailsService.getStockStatus(
-          quantity: quantity,
-          lowStockLevel: lowStockLevel,
-        );
-
-        return SupplierProductCard(
-          productName: productName,
-          category: category,
-          emoji: emoji,
-          imageUrl: imageUrl,
-          price: price,
-          priceUnit: priceUnit,
-          quantity: quantity,
-          quantityUnit: quantityUnit,
-          stockColor: stockColor,
-          stockStatus: stockStatus,
-          onTap: () => openProduct(document),
-        );
-      },
+    return SupplierProductCard(
+      productName: productName,
+      category: category,
+      emoji: emoji,
+      imageUrl: imageUrl,
+      price: price,
+      priceUnit: priceUnit,
+      quantity: quantity,
+      quantityUnit: quantityUnit,
+      stockColor: stockColor,
+      stockStatus: stockStatus,
+      onTap: () => openProduct(document),
     );
   }
 
-  Widget productsBody({
-    required List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
-  }) {
-    final orderable = detailsService.orderableStocks(documents);
-    final units = detailsService.availableUnits(orderable);
-
-    final visibleProducts = detailsService.filterAndSortProducts(
-      documents: orderable,
-      query: searchQuery,
-      selectedUnit: selectedUnit,
-      sortMode: sortMode,
-    );
-
+  Widget productsHeading(
+    int count,
+  ) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 7, 18, 24),
+      padding: const EdgeInsets.fromLTRB(18, 10, 18, 10),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          searchAndFilterCard(units),
-          const SizedBox(height: 12),
           Row(
             children: [
               const Expanded(
@@ -1308,26 +1532,25 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
                   'Available Fish',
                   style: TextStyle(
                     color: Color(0xFF102C44),
-                    fontSize: 18,
+                    fontSize: 17.5,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
+                  horizontal: 9,
+                  vertical: 5,
                 ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFE8F8FD),
                   borderRadius: BorderRadius.circular(99),
                 ),
                 child: Text(
-                  '${visibleProducts.length} listing'
-                  '${visibleProducts.length == 1 ? '' : 's'}',
+                  '$count listing${count == 1 ? '' : 's'}',
                   style: const TextStyle(
                     color: Color(0xFF087AC0),
-                    fontSize: 10,
+                    fontSize: 9.7,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -1337,31 +1560,17 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
           const SizedBox(height: 4),
           Text(
             ownerMode
-                ? 'These are the active listings currently visible to vendors.'
-                : 'Current COD stock posted by ${supplier.name}.',
+                ? 'Active listings currently visible to vendors.'
+                : 'Fresh stock currently available from ${supplier.name}.',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: Color(0xFF7B8FA3),
-              fontSize: 11.3,
+              fontSize: 10.6,
+              height: 1.3,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 14),
-          if (orderable.isEmpty)
-            SupplierDetailsEmptyCard(
-              title: 'No fish available right now',
-              subtitle: ownerMode
-                  ? 'You currently have no active listings visible to vendors.'
-                  : 'This supplier has no active fish stock for ordering at the moment.',
-            )
-          else if (visibleProducts.isEmpty)
-            const SupplierDetailsEmptyCard(
-              title: 'No matching fish found',
-              subtitle:
-                  'Try another fish name or change the selected unit filter.',
-              icon: Icons.search_off_rounded,
-            )
-          else
-            productGrid(visibleProducts),
         ],
       ),
     );
@@ -1385,42 +1594,96 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
       supplier: supplier,
       supplierId: supplierId,
     );
-
     final stats = detailsService.calculateStats(documents);
+    final orderable = detailsService.orderableStocks(documents);
+    final units = detailsService.availableUnits(orderable);
+    final effectiveSelectedUnit = units.contains(selectedUnit)
+        ? selectedUnit
+        : 'all';
+    final visibleProducts = detailsService.filterAndSortProducts(
+      documents: orderable,
+      query: searchQuery,
+      selectedUnit: effectiveSelectedUnit,
+      sortMode: sortMode,
+    );
+    final width = MediaQuery.sizeOf(context).width;
+    final columns = width < 330 ? 1 : 2;
 
-    return ListView(
+    return CustomScrollView(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: EdgeInsets.zero,
-      children: [
-        supplierHeader(stats),
-        if (ownerMode)
-          ownerPreviewBanner(),
-        storeTabs(),
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 220),
-          switchInCurve: Curves.easeOut,
-          switchOutCurve: Curves.easeIn,
-          layoutBuilder: (currentChild, previousChildren) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                ...previousChildren,
-                ?currentChild,
-              ],
-            );
-          },
-          child: selectedTab == 0
-              ? KeyedSubtree(
-                  key: const ValueKey('products'),
-                  child: productsBody(
-                    documents: documents,
-                  ),
-                )
-              : KeyedSubtree(
-                  key: const ValueKey('reviews'),
-                  child: reviewsBody(),
-                ),
+      physics: const BouncingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      ),
+      slivers: [
+        SliverToBoxAdapter(
+          child: supplierHeader(stats),
         ),
+        if (ownerMode)
+          SliverToBoxAdapter(
+            child: ownerPreviewBanner(),
+          ),
+        SliverPersistentHeader(
+          pinned: true,
+          delegate: _StoreTabsHeaderDelegate(
+            child: storeTabs(),
+          ),
+        ),
+        if (selectedTab == 0) ...[
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(18, 8, 18, 0),
+            sliver: SliverToBoxAdapter(
+              child: searchAndFilterCard(units),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: productsHeading(visibleProducts.length),
+          ),
+          if (orderable.isEmpty)
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(18, 0, 18, 24),
+              sliver: SliverToBoxAdapter(
+                child: SupplierDetailsEmptyCard(
+                  title: 'No fish available right now',
+                  subtitle: ownerMode
+                      ? 'You currently have no active listings visible to vendors.'
+                      : 'This supplier has no active fish stock for ordering at the moment.',
+                ),
+              ),
+            )
+          else if (visibleProducts.isEmpty)
+            const SliverPadding(
+              padding: EdgeInsets.fromLTRB(18, 0, 18, 24),
+              sliver: SliverToBoxAdapter(
+                child: SupplierDetailsEmptyCard(
+                  title: 'No matching fish found',
+                  subtitle:
+                      'Try another fish name, spelling, or unit filter.',
+                  icon: Icons.search_off_rounded,
+                ),
+              ),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(18, 0, 18, 28),
+              sliver: SliverGrid(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) => productCardForDocument(
+                    visibleProducts[index],
+                  ),
+                  childCount: visibleProducts.length,
+                ),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: columns,
+                  crossAxisSpacing: 11,
+                  mainAxisSpacing: 11,
+                  mainAxisExtent: columns == 1 ? 226 : 250,
+                ),
+              ),
+            ),
+        ] else
+          SliverToBoxAdapter(
+            child: reviewsBody(),
+          ),
       ],
     );
   }
@@ -1445,9 +1708,16 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
     );
   }
 
-  Widget errorBody() {
+  Widget errorBody(
+    Object error,
+  ) {
     final stats = detailsService.calculateStats(
       const [],
+    );
+    final message = AppErrorMessage.from(
+      error,
+      fallback: 'The supplier store could not be loaded right now. Please try again.',
+      allowBusinessMessage: true,
     );
 
     return ListView(
@@ -1457,9 +1727,11 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
         if (ownerMode)
           ownerPreviewBanner(),
         storeTabs(),
-        const Padding(
-          padding: EdgeInsets.fromLTRB(18, 16, 18, 24),
-          child: SupplierDetailsErrorCard(),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
+          child: SupplierDetailsErrorCard(
+            message: message,
+          ),
         ),
       ],
     );
@@ -1469,26 +1741,89 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
   Widget build(
     BuildContext context,
   ) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F8FB),
-      resizeToAvoidBottomInset: true,
-      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream: detailsService.fishStocksStream,
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return errorBody();
-          }
+    final statusBarHeight = MediaQuery.paddingOf(context).top;
 
-          if (!snapshot.hasData) {
-            return loadingBody();
-          }
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF4F8FB),
+        resizeToAvoidBottomInset: true,
+        body: Column(
+          children: [
+            // This fixed marine bar paints behind the edge-to-edge Android
+            // status area and becomes the compact store identity on scroll.
+            storeTopBar(statusBarHeight),
+            Expanded(
+              child: NotificationListener<ScrollNotification>(
+                onNotification: handleStoreScroll,
+                child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                  stream: detailsService.fishStocksStream,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return errorBody(snapshot.error!);
+                    }
 
-          return loadedBody(
-            snapshot.data!.docs,
-          );
-        },
+                    if (!snapshot.hasData) {
+                      return loadingBody();
+                    }
+
+                    return loadedBody(
+                      snapshot.data!.docs,
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
+  }
+}
+
+class _StoreTabsHeaderDelegate extends SliverPersistentHeaderDelegate {
+  const _StoreTabsHeaderDelegate({
+    required this.child,
+  });
+
+  final Widget child;
+
+  @override
+  double get minExtent => 56;
+
+  @override
+  double get maxExtent => 56;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: overlapsContent
+            ? const [
+                BoxShadow(
+                  color: Color(0x1200152A),
+                  blurRadius: 10,
+                  offset: Offset(0, 4),
+                ),
+              ]
+            : null,
+      ),
+      child: child,
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _StoreTabsHeaderDelegate oldDelegate) {
+    return oldDelegate.child != child;
   }
 }
 

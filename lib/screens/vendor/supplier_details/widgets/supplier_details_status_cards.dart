@@ -130,7 +130,10 @@ class SupplierDetailsEmptyCard extends StatelessWidget {
 class SupplierDetailsErrorCard extends StatelessWidget {
   const SupplierDetailsErrorCard({
     super.key,
+    required this.message,
   });
+
+  final String message;
 
   @override
   Widget build(
@@ -145,19 +148,19 @@ class SupplierDetailsErrorCard extends StatelessWidget {
           color: const Color(0xFFFFD7D7),
         ),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(
-            Icons.wifi_off_rounded,
+          const Icon(
+            Icons.error_outline_rounded,
             color: Color(0xFFD32F2F),
             size: 30,
           ),
-          SizedBox(width: 13),
+          const SizedBox(width: 13),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Unable to load this store',
                   style: TextStyle(
                     color: Color(0xFF102C44),
@@ -165,10 +168,10 @@ class SupplierDetailsErrorCard extends StatelessWidget {
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                SizedBox(height: 3),
+                const SizedBox(height: 3),
                 Text(
-                  'Check the connection and open the supplier store again.',
-                  style: TextStyle(
+                  message,
+                  style: const TextStyle(
                     color: Color(0xFF7B8FA3),
                     fontSize: 10.5,
                     height: 1.35,

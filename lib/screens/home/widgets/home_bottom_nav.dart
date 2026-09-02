@@ -27,14 +27,15 @@ class HomeBottomNav extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
+          duration: const Duration(milliseconds: 180),
+          margin: const EdgeInsets.symmetric(horizontal: 3),
           padding: const EdgeInsets.symmetric(
-            vertical: 8,
+            vertical: 7,
             horizontal: 4,
           ),
           decoration: BoxDecoration(
-            color: active ? const Color(0xFFE6F9FF) : Colors.transparent,
-            borderRadius: BorderRadius.circular(18),
+            color: active ? const Color(0xFFEDF9FD) : Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -107,9 +108,15 @@ class HomeBottomNav extends StatelessWidget {
     BuildContext context,
   ) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
+      padding: const EdgeInsets.fromLTRB(9, 7, 9, 7),
       decoration: const BoxDecoration(
         color: Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: Color(0xFFE7F0F5),
+            width: 0.8,
+          ),
+        ),
         boxShadow: [
           BoxShadow(
             color: Color(0x14000000),

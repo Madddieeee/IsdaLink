@@ -227,9 +227,9 @@ class HomeHeader extends StatelessWidget {
                     Padding(
                       padding: EdgeInsets.fromLTRB(
                         16,
-                        topPadding + 7,
+                        topPadding + 6,
                         12,
-                        34,
+                        29,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -239,16 +239,16 @@ class HomeHeader extends StatelessWidget {
                             onProfileTap: onProfileTap,
                             onLogout: onLogout,
                           ),
-                          const SizedBox(height: 18),
+                          const SizedBox(height: 14),
                           _PremiumGreeting(
                             userName: userName,
                           ),
-                          const SizedBox(height: 15),
+                          const SizedBox(height: 12),
                           _PremiumSearchBar(
                             onTap: onSearchTap,
                             isDarkMode: isDarkMode,
                           ),
-                          const SizedBox(height: 13),
+                          const SizedBox(height: 10),
                           _PremiumNetworkPanel(
                             supplierCount: supplierCount,
                             fishStockCount: fishStockCount,
@@ -653,106 +653,111 @@ class _PremiumSearchBar extends StatelessWidget {
   Widget build(
     BuildContext context,
   ) {
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(19),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(19),
-        child: Ink(
-          height: 53,
-          padding: const EdgeInsets.fromLTRB(
-            8,
-            6,
-            7,
-            6,
-          ),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(19),
-            border: Border.all(
+    return Semantics(
+      button: true,
+      label: 'Search IsdaLink marketplace',
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(18),
+          child: Ink(
+            height: 50,
+            padding: const EdgeInsets.fromLTRB(8, 5, 7, 5),
+            decoration: BoxDecoration(
               color: Colors.white,
-              width: 1.4,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: Colors.white,
+                width: 1.3,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(
+                    isDarkMode ? 32 : 25,
+                  ),
+                  blurRadius: 20,
+                  offset: const Offset(0, 9),
+                ),
+              ],
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(
-                  isDarkMode ? 34 : 29,
-                ),
-                blurRadius: 22,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 39,
-                height: 39,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEAF7FC),
-                  borderRadius: BorderRadius.circular(13),
-                ),
-                child: const Icon(
-                  Icons.search_rounded,
-                  color: Color(0xFF53788F),
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 10),
-              const Expanded(
-                child: Text(
-                  'Search fish or suppliers',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Color(0xFF8EA3B2),
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
+            child: Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEAF7FC),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.search_rounded,
+                    color: Color(0xFF47728A),
+                    size: 20,
                   ),
                 ),
-              ),
-              Container(
-                height: 39,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 13,
-                ),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFF0875D1),
-                      Color(0xFF10ACC9),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Search IsdaLink Market',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Color(0xFF163C55),
+                          fontSize: 11.1,
+                          height: 1,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Fish, suppliers, or locations',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Color(0xFF8AA0AF),
+                          fontSize: 8.4,
+                          height: 1,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ],
                   ),
-                  borderRadius: BorderRadius.circular(13),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x330875D1),
-                      blurRadius: 10,
-                      offset: Offset(0, 5),
-                    ),
-                  ],
                 ),
-                child: const Row(
-                  children: [
-                    Text(
-                      'Search',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 9.8,
-                        fontWeight: FontWeight.w900,
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF0875D1),
+                        Color(0xFF10ACC9),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x2B0875D1),
+                        blurRadius: 9,
+                        offset: Offset(0, 4),
                       ),
-                    ),
-                    SizedBox(width: 5),
-                    Icon(
-                      Icons.arrow_forward_rounded,
-                      color: Colors.white,
-                      size: 14,
-                    ),
-                  ],
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.arrow_outward_rounded,
+                    color: Colors.white,
+                    size: 17,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -981,7 +986,7 @@ class _PremiumMetricItem extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 15,
+                          fontSize: 17,
                           height: 1,
                           fontWeight: FontWeight.w900,
                         ),

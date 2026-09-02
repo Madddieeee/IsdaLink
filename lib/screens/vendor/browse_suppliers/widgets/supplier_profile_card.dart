@@ -5,8 +5,7 @@ class SupplierProfileCard extends StatelessWidget {
   const SupplierProfileCard({
     super.key,
     required this.supplier,
-    required this.paymentMethod,
-    required this.status,
+    required this.availableListingCount,
     required this.isFavorite,
     required this.favoriteBusy,
     required this.showFavoriteAction,
@@ -15,8 +14,7 @@ class SupplierProfileCard extends StatelessWidget {
   });
 
   final Supplier supplier;
-  final String paymentMethod;
-  final String status;
+  final int availableListingCount;
   final bool isFavorite;
   final bool favoriteBusy;
   final bool showFavoriteAction;
@@ -25,95 +23,81 @@ class SupplierProfileCard extends StatelessWidget {
 
   bool get hasNetworkImage {
     final imageUrl = supplier.profileImageUrl.trim();
-
-    return imageUrl.startsWith('http://') ||
-        imageUrl.startsWith('https://');
+    return imageUrl.startsWith('http://') || imageUrl.startsWith('https://');
   }
 
   String get storeInitial {
     final name = supplier.name.trim();
-
-    if (name.isEmpty) {
-      return 'S';
-    }
-
-    return name.substring(0, 1).toUpperCase();
+    return name.isEmpty ? 'S' : name.substring(0, 1).toUpperCase();
   }
 
-  String get ratingLabel {
+  String get compactLocation {
+    final raw = supplier.location.trim();
+    if (raw.isEmpty) return 'Caraga Region';
+
+    final parts = raw
+        .split(',')
+        .map((part) => part.trim())
+        .where((part) => part.isNotEmpty)
+        .where((part) => part.toLowerCase() != 'caraga region')
+        .toList();
+
+    if (parts.length >= 2) {
+      return '${parts[parts.length - 2]}, ${parts.last}';
+    }
+    return parts.isEmpty ? raw : parts.last;
+  }
+
+  String get reviewLabel {
     if (supplier.reviews <= 0 || supplier.rating <= 0) {
       return 'No reviews yet';
     }
-
-    final reviewWord = supplier.reviews == 1 ? 'review' : 'reviews';
-
-    return '${supplier.rating.toStringAsFixed(1)} • '
-        '${supplier.reviews} $reviewWord';
+    final word = supplier.reviews == 1 ? 'review' : 'reviews';
+    return '${supplier.rating.toStringAsFixed(1)} · ${supplier.reviews} $word';
   }
 
-  String get paymentLabel {
-    return 'COD only';
-  }
-
-  Widget storePhoto() {
+  Widget _storePhoto() {
     return Container(
-      width: 70,
-      height: 70,
+      width: 76,
+      height: 76,
       decoration: BoxDecoration(
         color: const Color(0xFFEAF8FC),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: const Color(0xFFD8EDF6),
-        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFD5EAF3)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x10002A47),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(21),
+        borderRadius: BorderRadius.circular(19),
         child: hasNetworkImage
             ? Image.network(
                 supplier.profileImageUrl,
                 fit: BoxFit.cover,
-                loadingBuilder: (
-                  context,
-                  child,
-                  loadingProgress,
-                ) {
-                  if (loadingProgress == null) {
-                    return child;
-                  }
-
+                loadingBuilder: (context, child, progress) {
+                  if (progress == null) return child;
                   return const Center(
                     child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                      ),
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
                     ),
                   );
                 },
-                errorBuilder: (
-                  context,
-                  error,
-                  stackTrace,
-                ) {
-                  return SupplierInitial(
-                    initial: storeInitial,
-                  );
-                },
+                errorBuilder: (_, _, _) => SupplierInitial(initial: storeInitial),
               )
-            : SupplierInitial(
-                initial: storeInitial,
-              ),
+            : SupplierInitial(initial: storeInitial),
       ),
     );
   }
 
-  Widget verifiedChip() {
+  Widget _verifiedBadge() {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 7,
-        vertical: 4,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       decoration: BoxDecoration(
         color: const Color(0xFFE8F8F3),
         borderRadius: BorderRadius.circular(99),
@@ -121,17 +105,13 @@ class SupplierProfileCard extends StatelessWidget {
       child: const Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.verified,
-            color: Color(0xFF11A87A),
-            size: 11,
-          ),
+          Icon(Icons.verified_rounded, color: Color(0xFF11A87A), size: 11),
           SizedBox(width: 3),
           Text(
             'Verified',
             style: TextStyle(
               color: Color(0xFF0B8D68),
-              fontSize: 8.6,
+              fontSize: 7.8,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -140,45 +120,24 @@ class SupplierProfileCard extends StatelessWidget {
     );
   }
 
-  Widget newSupplierChip() {
+  Widget _newBadge() {
     final remaining = supplier.newSupplierDaysRemaining;
-    final dayWord = remaining == 1 ? 'day' : 'days';
-
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 8,
-        vertical: 5,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFFFF9F1C),
-            Color(0xFFFFC857),
-          ],
-        ),
+        color: const Color(0xFFFFF7E9),
         borderRadius: BorderRadius.circular(99),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x26E78600),
-            blurRadius: 7,
-            offset: Offset(0, 3),
-          ),
-        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.auto_awesome_rounded,
-            color: Colors.white,
-            size: 11,
-          ),
-          const SizedBox(width: 4),
+          const Icon(Icons.auto_awesome_rounded, color: Color(0xFFE58A1F), size: 10),
+          const SizedBox(width: 3),
           Text(
-            'New • $remaining $dayWord left',
+            'NEW · ${remaining}D',
             style: const TextStyle(
-              color: Colors.white,
-              fontSize: 9,
+              color: Color(0xFFC96A00),
+              fontSize: 7.8,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -187,89 +146,18 @@ class SupplierProfileCard extends StatelessWidget {
     );
   }
 
-  Widget ratingChip() {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 8,
-        vertical: 5,
-      ),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF8E8),
-        borderRadius: BorderRadius.circular(99),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            supplier.reviews > 0
-                ? Icons.star_rounded
-                : Icons.star_border_rounded,
-            color: supplier.reviews > 0
-                ? const Color(0xFFFFB703)
-                : const Color(0xFF8B9DAA),
-            size: 13,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            ratingLabel,
-            style: const TextStyle(
-              color: Color(0xFF102C44),
-              fontSize: 9.3,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget codChip() {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 8,
-        vertical: 5,
-      ),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE8F8FD),
-        borderRadius: BorderRadius.circular(99),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.payments_outlined,
-            color: Color(0xFF087AC0),
-            size: 13,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            paymentLabel,
-            style: const TextStyle(
-              color: Color(0xFF087AC0),
-              fontSize: 9.3,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-
-  Widget favoriteButton() {
+  Widget _favoriteButton() {
     return Tooltip(
       message: isFavorite ? 'Remove from Favorites' : 'Add to Favorites',
       child: Material(
-        color: isFavorite
-            ? const Color(0xFFFFEEF2)
-            : const Color(0xFFF2F7FA),
-        borderRadius: BorderRadius.circular(11),
+        color: isFavorite ? const Color(0xFFFFEEF2) : const Color(0xFFF1F6F9),
+        borderRadius: BorderRadius.circular(12),
         child: InkWell(
           onTap: favoriteBusy ? null : onFavoriteToggle,
-          borderRadius: BorderRadius.circular(11),
+          borderRadius: BorderRadius.circular(12),
           child: SizedBox(
-            width: 32,
-            height: 32,
+            width: 34,
+            height: 34,
             child: Center(
               child: favoriteBusy
                   ? const SizedBox(
@@ -281,12 +169,8 @@ class SupplierProfileCard extends StatelessWidget {
                       ),
                     )
                   : Icon(
-                      isFavorite
-                          ? Icons.favorite_rounded
-                          : Icons.favorite_border_rounded,
-                      color: isFavorite
-                          ? const Color(0xFFE94C72)
-                          : const Color(0xFF6F8799),
+                      isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                      color: isFavorite ? const Color(0xFFE94C72) : const Color(0xFF7690A2),
                       size: 18,
                     ),
             ),
@@ -297,132 +181,161 @@ class SupplierProfileCard extends StatelessWidget {
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 13),
+  Widget build(BuildContext context) {
+    final ownStore = !showFavoriteAction;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
       child: Material(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(23),
+        borderRadius: BorderRadius.circular(20),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(23),
+          borderRadius: BorderRadius.circular(20),
           child: Ink(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(23),
-              border: Border.all(
-                color: supplier.isNewSupplier
-                    ? const Color(0xFFFFD486)
-                    : const Color(0xFFE0EEF5),
-                width: supplier.isNewSupplier ? 1.3 : 1,
-              ),
-              boxShadow: [
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFE0EBF1)),
+              boxShadow: const [
                 BoxShadow(
-                  color: supplier.isNewSupplier
-                      ? const Color(0x18FFA000)
-                      : const Color(0x10000000),
+                  color: Color(0x0D002A47),
                   blurRadius: 14,
-                  offset: const Offset(0, 7),
+                  offset: Offset(0, 6),
                 ),
               ],
             ),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                storePhoto(),
-                const SizedBox(width: 13),
+                _storePhoto(),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
                             child: Text(
                               supplier.name,
-                              maxLines: 1,
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 color: Color(0xFF102C44),
-                                fontSize: 15.3,
+                                fontSize: 13.3,
+                                height: 1.08,
                                 fontWeight: FontWeight.w900,
+                                letterSpacing: -0.1,
                               ),
                             ),
                           ),
-                          const SizedBox(width: 6),
-                          verifiedChip(),
-                          if (showFavoriteAction) ...[
-                            const SizedBox(width: 6),
-                            favoriteButton(),
-                          ],
+                          const SizedBox(width: 5),
+                          _verifiedBadge(),
                         ],
                       ),
                       const SizedBox(height: 5),
                       Row(
                         children: [
-                          const Icon(
-                            Icons.location_on_rounded,
-                            color: Color(0xFF7B8FA3),
-                            size: 14,
-                          ),
-                          const SizedBox(width: 4),
+                          const Icon(Icons.location_on_rounded, color: Color(0xFF7B8FA3), size: 13),
+                          const SizedBox(width: 3),
                           Expanded(
                             child: Text(
-                              supplier.location,
+                              compactLocation,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 color: Color(0xFF6D8294),
-                                fontSize: 11.2,
+                                fontSize: 9.7,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 7),
-                      Text(
-                        supplier.description,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFF52677A),
-                          fontSize: 10.8,
-                          height: 1.35,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
+                      const SizedBox(height: 8),
+                      Row(
                         children: [
-                          if (supplier.isNewSupplier) newSupplierChip(),
-                          ratingChip(),
-                          codChip(),
+                          Icon(
+                            supplier.reviews > 0 ? Icons.star_rounded : Icons.star_border_rounded,
+                            color: supplier.reviews > 0
+                                ? const Color(0xFFFFB703)
+                                : const Color(0xFF92A4B1),
+                            size: 13,
+                          ),
+                          const SizedBox(width: 3),
+                          Flexible(
+                            child: Text(
+                              reviewLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFF667E90),
+                                fontSize: 9.2,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            width: 1,
+                            height: 12,
+                            margin: const EdgeInsets.symmetric(horizontal: 7),
+                            color: const Color(0xFFDDE7ED),
+                          ),
+                          const Icon(Icons.inventory_2_outlined, color: Color(0xFF087AC0), size: 12),
+                          const SizedBox(width: 3),
+                          Text(
+                            '$availableListingCount listing${availableListingCount == 1 ? '' : 's'}',
+                            style: const TextStyle(
+                              color: Color(0xFF087AC0),
+                              fontSize: 9.0,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          if (supplier.isNewSupplier) _newBadge(),
+                          if (supplier.isNewSupplier) const SizedBox(width: 6),
+                          if (ownStore)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE8F8F3),
+                                borderRadius: BorderRadius.circular(99),
+                              ),
+                              child: const Text(
+                                'YOUR STORE',
+                                style: TextStyle(
+                                  color: Color(0xFF0B8D68),
+                                  fontSize: 7.5,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                          const Spacer(),
+                          Text(
+                            ownStore ? 'Open store' : 'View store',
+                            style: const TextStyle(
+                              color: Color(0xFF087AC0),
+                              fontSize: 9.1,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(width: 2),
+                          const Icon(Icons.arrow_forward_rounded, color: Color(0xFF087AC0), size: 14),
                         ],
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
-                Container(
-                  width: 31,
-                  height: 31,
-                  margin: const EdgeInsets.only(top: 39),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE8F8FD),
-                    borderRadius: BorderRadius.circular(11),
-                  ),
-                  child: const Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    color: Color(0xFF087AC0),
-                    size: 13,
-                  ),
-                ),
+                if (showFavoriteAction) ...[
+                  const SizedBox(width: 8),
+                  _favoriteButton(),
+                ],
               ],
             ),
           ),
@@ -441,9 +354,7 @@ class SupplierInitial extends StatelessWidget {
   final String initial;
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Container(
       color: const Color(0xFFEAF8FC),
       alignment: Alignment.center,
@@ -451,7 +362,7 @@ class SupplierInitial extends StatelessWidget {
         initial,
         style: const TextStyle(
           color: Color(0xFF087AC0),
-          fontSize: 28,
+          fontSize: 27,
           fontWeight: FontWeight.w900,
         ),
       ),

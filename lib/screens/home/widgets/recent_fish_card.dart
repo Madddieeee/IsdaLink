@@ -195,8 +195,8 @@ class RecentFishCard extends StatelessWidget {
     final imageUrl = supplierImageUrl.trim();
 
     return Container(
-      width: 20,
-      height: 20,
+      width: isWide ? 23 : 20,
+      height: isWide ? 23 : 20,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(
@@ -300,7 +300,12 @@ class RecentFishCard extends StatelessWidget {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 8, 10, 9),
+        padding: EdgeInsets.fromLTRB(
+          isWide ? 12 : 10,
+          isWide ? 10 : 8,
+          isWide ? 12 : 10,
+          isWide ? 10 : 9,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -317,34 +322,47 @@ class RecentFishCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: const Color(0xFF102C44),
-                        fontSize: isWide ? 13.4 : 12.5,
+                        fontSize: isWide ? 14.2 : 12.5,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 6),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      '₱${formatNumber(product.price)}',
-                      style: const TextStyle(
-                        color: Color(0xFF0875D1),
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w900,
-                      ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEAF8FD),
+                    borderRadius: BorderRadius.circular(9),
+                    border: Border.all(
+                      color: const Color(0xFFD8EEF6),
                     ),
-                    Text(
-                      'per ${priceUnitLabel()}',
-                      style: const TextStyle(
-                        color: Color(0xFF7B8FA3),
-                        fontSize: 7.7,
-                        fontWeight: FontWeight.w700,
-                      ),
+                  ),
+                  child: RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '₱${formatNumber(product.price)}',
+                          style: TextStyle(
+                            color: const Color(0xFF0875D1),
+                            fontSize: isWide ? 12.2 : 10.9,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        TextSpan(
+                          text: ' / ${priceUnitLabel()}',
+                          style: TextStyle(
+                            color: const Color(0xFF6F8FA4),
+                            fontSize: isWide ? 8.2 : 7.6,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ],
             ),
@@ -371,23 +389,30 @@ class RecentFishCard extends StatelessWidget {
 
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(19),
-      elevation: 2,
-      shadowColor: const Color(0x3000355C),
+      borderRadius: BorderRadius.circular(22),
+      elevation: 0,
+      shadowColor: Colors.transparent,
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(19),
+        borderRadius: BorderRadius.circular(22),
         splashColor: const Color(0x1F0A73D8),
         highlightColor: const Color(0x0F0A73D8),
         child: Ink(
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(19),
+            borderRadius: BorderRadius.circular(22),
             border: Border.all(
-              color: const Color(0xFFD6E6EF),
-              width: 0.8,
+              color: const Color(0xFFD7E8F1),
+              width: 0.9,
             ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x12002842),
+                blurRadius: 16,
+                offset: Offset(0, 7),
+              ),
+            ],
           ),
           child: Column(
             children: [

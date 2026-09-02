@@ -131,18 +131,18 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
   String filterDescription() {
     switch (selectedFilter.toLowerCase()) {
       case 'active':
-        return 'Orders currently pending or accepted.';
+        return 'Orders still moving toward completion.';
       case 'pending':
-        return 'Orders waiting for supplier confirmation.';
+        return 'Waiting for supplier confirmation.';
       case 'accepted':
-        return 'Orders confirmed by the supplier.';
+        return 'Confirmed orders waiting to be completed.';
       case 'completed':
-        return 'Completed Cash on Delivery transactions.';
+        return 'Completed Cash on Delivery orders.';
       case 'cancelled':
-        return 'Cancelled, rejected, returned, or refunded records.';
+        return 'Cancelled or otherwise stopped orders.';
       case 'all':
       default:
-        return 'All Cash on Delivery orders from your account.';
+        return 'Your Cash on Delivery order history.';
     }
   }
 
@@ -904,13 +904,13 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
           5,
           0,
           5,
-          8,
+          7,
         ),
         padding: const EdgeInsets.fromLTRB(
-          12,
-          10,
-          10,
-          10,
+          11,
+          9,
+          9,
+          9,
         ),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
@@ -1163,9 +1163,15 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
   Widget listHeading(
     int visibleCount,
   ) {
-    final title = selectedFilter == 'All'
-        ? 'All COD Orders'
-        : '$selectedFilter Orders';
+    final title = switch (selectedFilter.toLowerCase()) {
+      'all' => 'Your Orders',
+      'active' => 'Active Orders',
+      'pending' => 'Pending Orders',
+      'accepted' => 'Accepted Orders',
+      'completed' => 'Completed Orders',
+      'cancelled' => 'Cancelled Orders',
+      _ => '$selectedFilter Orders',
+    };
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -1218,7 +1224,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  '$visibleCount result${visibleCount == 1 ? '' : 's'} · '
+                  '$visibleCount order${visibleCount == 1 ? '' : 's'} · '
                   '${filterDescription()}',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -1334,7 +1340,10 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
         ),
       ),
       child: Text(
-        'Unable to load your orders: $error',
+        AppErrorMessage.from(
+          error,
+          fallback: 'Your orders could not be loaded. Please try again.',
+        ),
         style: const TextStyle(
           color: Color(0xFFD32F2F),
           fontSize: 12,
@@ -1707,14 +1716,6 @@ class _OrdersOverviewPanel extends StatelessWidget {
                 ),
               ),
               Spacer(),
-              Text(
-                'Tap a metric',
-                style: TextStyle(
-                  color: Color(0xFFBCE8EC),
-                  fontSize: 7.8,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 8),

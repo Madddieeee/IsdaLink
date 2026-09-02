@@ -131,6 +131,48 @@ class ProductDetailsScreen extends StatelessWidget {
     return value.toStringAsFixed(1);
   }
 
+  String formatPrice(
+    double value,
+  ) {
+    var fixed = value % 1 == 0
+        ? value.toStringAsFixed(0)
+        : value.toStringAsFixed(2);
+
+    if (fixed.contains('.')) {
+      fixed = fixed.replaceFirst(RegExp(r'0+$'), '');
+      fixed = fixed.replaceFirst(RegExp(r'\.$'), '');
+    }
+
+    final parts = fixed.split('.');
+    final whole = parts.first;
+    final grouped = StringBuffer();
+
+    for (var index = 0; index < whole.length; index++) {
+      if (index > 0 && (whole.length - index) % 3 == 0) {
+        grouped.write(',');
+      }
+      grouped.write(whole[index]);
+    }
+
+    return parts.length > 1
+        ? '${grouped.toString()}.${parts[1]}'
+        : grouped.toString();
+  }
+
+  String compactPriceUnit(
+    String value,
+  ) {
+    var unit = cleanUnit(value).trim();
+
+    if (unit.toLowerCase().startsWith('per ')) {
+      unit = unit.substring(4).trim();
+    } else if (unit.startsWith('/')) {
+      unit = unit.substring(1).trim();
+    }
+
+    return unit.isEmpty ? '' : '/ $unit';
+  }
+
   String cleanUnit(
     String value,
   ) {
@@ -612,30 +654,35 @@ class ProductDetailsScreen extends StatelessWidget {
 
   Widget productImage(
     FishProduct activeProduct, {
-    double size = 158,
+    double width = 176,
+    double height = 176,
+    double borderRadius = 29,
+    bool showShadow = true,
   }) {
     final imageUrl = activeProduct.imageUrl.trim();
 
     return Container(
-      width: size,
-      height: size,
+      width: width,
+      height: height,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(29),
+        borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
           color: Colors.white,
           width: 3,
         ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x35001B33),
-            blurRadius: 24,
-            offset: Offset(0, 12),
-          ),
-        ],
+        boxShadow: showShadow
+            ? const [
+                BoxShadow(
+                  color: Color(0x35001B33),
+                  blurRadius: 24,
+                  offset: Offset(0, 12),
+                ),
+              ]
+            : null,
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(25),
+        borderRadius: BorderRadius.circular(borderRadius - 4),
         child: hasNetworkImage(imageUrl)
             ? Image.network(
                 imageUrl,
@@ -651,7 +698,7 @@ class ProductDetailsScreen extends StatelessWidget {
 
                   return ProductEmojiFallback(
                     emoji: activeProduct.emoji,
-                    size: size * 0.30,
+                    size: (width < height ? width : height) * 0.22,
                     loading: true,
                   );
                 },
@@ -662,13 +709,13 @@ class ProductDetailsScreen extends StatelessWidget {
                 ) {
                   return ProductEmojiFallback(
                     emoji: activeProduct.emoji,
-                    size: size * 0.34,
+                    size: (width < height ? width : height) * 0.24,
                   );
                 },
               )
             : ProductEmojiFallback(
                 emoji: activeProduct.emoji,
-                size: size * 0.34,
+                size: (width < height ? width : height) * 0.24,
               ),
       ),
     );
@@ -754,74 +801,23 @@ class ProductDetailsScreen extends StatelessWidget {
     );
   }
 
+
   Widget productSummaryCard(
     FishProduct activeProduct, {
     required String updatedLabel,
   }) {
     final isOutOfStock = activeProduct.availableQuantity <= 0;
+    final isLowStock = !isOutOfStock &&
+        activeProduct.availableQuantity <= activeProduct.lowStockThreshold;
 
-    Widget compactMeta({
-      required IconData icon,
-      required String label,
-      required String value,
-      required Color color,
-      int flex = 1,
-    }) {
-      return Expanded(
-        flex: flex,
-        child: Row(
-          children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: color.withAlpha(18),
-                borderRadius: BorderRadius.circular(11),
-              ),
-              child: Icon(
-                icon,
-                color: color,
-                size: 16,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFF8397A7),
-                      fontSize: 8.4,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    value,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFF102C44),
-                      fontSize: 9.8,
-                      height: 1.1,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
+    final stockMessage = isOutOfStock
+        ? 'Currently unavailable for ordering.'
+        : isLowStock
+            ? 'Only ${formatNumber(activeProduct.availableQuantity)} ${activeProduct.quantityUnit} left in stock.'
+            : '${formatNumber(activeProduct.availableQuantity)} ${activeProduct.quantityUnit} ready for ordering.';
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      padding: const EdgeInsets.fromLTRB(16, 17, 16, 15),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(26),
@@ -839,75 +835,43 @@ class ProductDetailsScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE8F8FD),
-                      borderRadius: BorderRadius.circular(99),
-                    ),
-                    child: Text(
-                      activeProduct.category,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFF087AC0),
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              statusChip(
-                icon: isOutOfStock
-                    ? Icons.cancel_rounded
-                    : Icons.check_circle_rounded,
-                label: activeProduct.stockStatus,
-                color: activeProduct.stockColor,
-              ),
-            ],
-          ),
-          const SizedBox(height: 11),
           Text(
             activeProduct.name,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: Color(0xFF102C44),
-              fontSize: 25,
+              fontSize: 26,
               height: 1.04,
               fontWeight: FontWeight.w900,
-              letterSpacing: -0.3,
+              letterSpacing: -0.35,
             ),
           ),
           const SizedBox(height: 10),
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                '₱${formatNumber(activeProduct.price)}',
-                style: const TextStyle(
-                  color: Color(0xFF0875D1),
-                  fontSize: 32,
-                  height: 1,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.4,
+              Flexible(
+                child: Text(
+                  '₱${formatPrice(activeProduct.price)}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFF0875D1),
+                    fontSize: 32,
+                    height: 1,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.4,
+                  ),
                 ),
               ),
               const SizedBox(width: 7),
               Padding(
-                padding: const EdgeInsets.only(bottom: 3),
+                padding: const EdgeInsets.only(bottom: 4),
                 child: Text(
-                  cleanUnit(activeProduct.priceUnit),
+                  compactPriceUnit(activeProduct.priceUnit),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Color(0xFF52677A),
                     fontSize: 11.8,
@@ -919,27 +883,25 @@ class ProductDetailsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 13),
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 10,
-            ),
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 colors: [
-                  Color(0xFFF0FAFF),
-                  Color(0xFFF8FCFF),
+                  activeProduct.stockColor.withAlpha(14),
+                  const Color(0xFFF8FCFF),
                 ],
               ),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: const Color(0xFFD8ECF6),
+                color: activeProduct.stockColor.withAlpha(36),
               ),
             ),
             child: Row(
               children: [
                 Container(
-                  width: 32,
-                  height: 32,
+                  width: 34,
+                  height: 34,
                   decoration: BoxDecoration(
                     color: activeProduct.stockColor.withAlpha(20),
                     borderRadius: BorderRadius.circular(11),
@@ -953,15 +915,11 @@ class ProductDetailsScreen extends StatelessWidget {
                 const SizedBox(width: 9),
                 Expanded(
                   child: Text(
-                    isOutOfStock
-                        ? 'Currently unavailable for ordering.'
-                        : '${formatNumber(activeProduct.availableQuantity)} '
-                            '${activeProduct.quantityUnit} available',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    stockMessage,
                     style: const TextStyle(
                       color: Color(0xFF31566F),
                       fontSize: 10.8,
+                      height: 1.35,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -969,11 +927,12 @@ class ProductDetailsScreen extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 11),
+          const SizedBox(height: 12),
           Container(
+            width: double.infinity,
             padding: const EdgeInsets.symmetric(
-              horizontal: 11,
-              vertical: 10,
+              horizontal: 12,
+              vertical: 11,
             ),
             decoration: BoxDecoration(
               color: const Color(0xFFFBFDFE),
@@ -984,25 +943,105 @@ class ProductDetailsScreen extends StatelessWidget {
             ),
             child: Row(
               children: [
-                compactMeta(
-                  icon: Icons.payments_outlined,
-                  label: 'Payment',
-                  value: 'Cash on Delivery',
-                  color: const Color(0xFF0875D1),
-                  flex: 11,
+                Expanded(
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEAF5FF),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.payments_outlined,
+                          color: Color(0xFF0875D1),
+                          size: 18,
+                        ),
+                      ),
+                      const SizedBox(width: 9),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Payment',
+                              style: TextStyle(
+                                color: Color(0xFF8397A7),
+                                fontSize: 8.7,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            SizedBox(height: 3),
+                            Text(
+                              'Cash on Delivery',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Color(0xFF102C44),
+                                fontSize: 10.4,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 Container(
                   width: 1,
-                  height: 34,
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
+                  height: 40,
+                  margin: const EdgeInsets.symmetric(horizontal: 10),
                   color: const Color(0xFFDDEAF1),
                 ),
-                compactMeta(
-                  icon: Icons.schedule_rounded,
-                  label: 'Last updated',
-                  value: updatedLabel,
-                  color: const Color(0xFF11A87A),
-                  flex: 9,
+                Expanded(
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE8F8F2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.schedule_rounded,
+                          color: Color(0xFF11A87A),
+                          size: 18,
+                        ),
+                      ),
+                      const SizedBox(width: 9),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text(
+                              'Last updated',
+                              style: TextStyle(
+                                color: Color(0xFF8397A7),
+                                fontSize: 8.7,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              updatedLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFF102C44),
+                                fontSize: 10.4,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -1053,7 +1092,7 @@ class ProductDetailsScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'SUPPLIER STORE',
+                      'SUPPLIED BY',
                       style: TextStyle(
                         color: Color(0xFF8CA0AE),
                         fontSize: 8.3,
@@ -1107,7 +1146,7 @@ class ProductDetailsScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 6),
                     Row(
                       children: [
                         Icon(
@@ -1121,9 +1160,7 @@ class ProductDetailsScreen extends StatelessWidget {
                         Expanded(
                           child: Text(
                             hasReviews
-                                ? '${activeSupplier.rating.toStringAsFixed(1)} · '
-                                    '${activeSupplier.reviews} review'
-                                    '${activeSupplier.reviews == 1 ? '' : 's'}'
+                                ? '${activeSupplier.rating.toStringAsFixed(1)} · ${activeSupplier.reviews} review${activeSupplier.reviews == 1 ? '' : 's'}'
                                 : 'No reviews yet',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -1543,7 +1580,7 @@ class ProductDetailsScreen extends StatelessWidget {
               SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Cash on Delivery Process',
+                  'How ordering works',
                   style: TextStyle(
                     color: Color(0xFF102C44),
                     fontSize: 15,
@@ -1553,6 +1590,16 @@ class ProductDetailsScreen extends StatelessWidget {
               ),
               _CodOnlyPill(),
             ],
+          ),
+          const SizedBox(height: 5),
+          const Text(
+            'Review your order, track updates in My Orders, then pay after delivery is completed.',
+            style: TextStyle(
+              color: Color(0xFF5E7688),
+              fontSize: 10.2,
+              height: 1.35,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: 13),
           compactOrderStep(
@@ -1580,7 +1627,11 @@ class ProductDetailsScreen extends StatelessWidget {
 
   PreferredSizeWidget productAppBar(
     BuildContext context,
-  ) {
+    FishProduct activeProduct, {
+    required bool collapsed,
+  }) {
+    final compactUnit = compactPriceUnit(activeProduct.priceUnit);
+
     return PreferredSize(
       preferredSize: const Size.fromHeight(62),
       child: DecoratedBox(
@@ -1609,13 +1660,31 @@ class ProductDetailsScreen extends StatelessWidget {
             statusBarBrightness: Brightness.dark,
           ),
           titleSpacing: 2,
-          title: const Text(
-            'Product Details',
-            style: TextStyle(
-              fontSize: 19,
-              fontWeight: FontWeight.w900,
-              letterSpacing: -0.2,
-            ),
+          title: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            switchInCurve: Curves.easeOut,
+            switchOutCurve: Curves.easeIn,
+            child: collapsed
+                ? Text(
+                    activeProduct.name,
+                    key: const ValueKey('product-name'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 17.5,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.2,
+                    ),
+                  )
+                : const Text(
+                    'Product Details',
+                    key: ValueKey('product-details'),
+                    style: TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
           ),
           leading: Padding(
             padding: const EdgeInsets.all(9),
@@ -1636,35 +1705,62 @@ class ProductDetailsScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(right: 16),
               child: Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 11,
-                    vertical: 7,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(28),
-                    borderRadius: BorderRadius.circular(99),
-                    border: Border.all(
-                      color: Colors.white.withAlpha(38),
-                    ),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.payments_outlined,
-                        size: 14,
-                      ),
-                      SizedBox(width: 5),
-                      Text(
-                        'COD',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w900,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 180),
+                  child: collapsed
+                      ? Container(
+                          key: const ValueKey('collapsed-price'),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 11,
+                            vertical: 7,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withAlpha(28),
+                            borderRadius: BorderRadius.circular(99),
+                            border: Border.all(
+                              color: Colors.white.withAlpha(38),
+                            ),
+                          ),
+                          child: Text(
+                            '₱${formatPrice(activeProduct.price)}$compactUnit',
+                            maxLines: 1,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        )
+                      : Container(
+                          key: const ValueKey('cod-pill'),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 11,
+                            vertical: 7,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withAlpha(28),
+                            borderRadius: BorderRadius.circular(99),
+                            border: Border.all(
+                              color: Colors.white.withAlpha(38),
+                            ),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.payments_outlined,
+                                size: 14,
+                              ),
+                              SizedBox(width: 5),
+                              Text(
+                                'COD',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
                 ),
               ),
             ),
@@ -1681,12 +1777,14 @@ class ProductDetailsScreen extends StatelessWidget {
         ? '${supplier.name}-${activeProduct.name}'
         : stockId;
 
+    final isOutOfStock = activeProduct.availableQuantity <= 0;
+
     return SliverToBoxAdapter(
       child: SizedBox(
-        height: 204,
+        height: 330,
         width: double.infinity,
         child: Stack(
-          clipBehavior: Clip.hardEdge,
+          clipBehavior: Clip.none,
           children: [
             const Positioned.fill(
               child: DecoratedBox(
@@ -1711,13 +1809,71 @@ class ProductDetailsScreen extends StatelessWidget {
                 ),
               ),
             ),
-            Align(
-              alignment: const Alignment(0, -0.08),
+            Positioned(
+              left: 26,
+              right: 26,
+              top: 34,
               child: Hero(
                 tag: 'product-image-$tag',
-                child: productImage(
-                  activeProduct,
-                  size: 154,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    productImage(
+                      activeProduct,
+                      width: double.infinity,
+                      height: 230,
+                      borderRadius: 30,
+                    ),
+                    Positioned(
+                      top: 14,
+                      right: 14,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 13,
+                          vertical: 9,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(238),
+                          borderRadius: BorderRadius.circular(99),
+                          border: Border.all(
+                            color: Colors.white.withAlpha(220),
+                          ),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x2300152A),
+                              blurRadius: 14,
+                              offset: Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isOutOfStock
+                                  ? Icons.block_rounded
+                                  : Icons.check_circle_rounded,
+                              color: isOutOfStock
+                                  ? const Color(0xFF718391)
+                                  : const Color(0xFF1976B8),
+                              size: 15,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              activeProduct.stockStatus,
+                              style: TextStyle(
+                                color: isOutOfStock
+                                    ? const Color(0xFF617381)
+                                    : const Color(0xFF234D70),
+                                fontSize: 10.2,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -1725,10 +1881,49 @@ class ProductDetailsScreen extends StatelessWidget {
               left: 0,
               right: 0,
               bottom: -1,
-              height: 31,
+              height: 33,
               child: IgnorePointer(
                 child: CustomPaint(
                   painter: _ProductHeaderWavePainter(),
+                ),
+              ),
+            ),
+            Positioned(
+              left: 28,
+              bottom: 16,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 13,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFF2D6F9C),
+                      Color(0xFF3A82AF),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(99),
+                  border: Border.all(
+                    color: Colors.white.withAlpha(120),
+                  ),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x2200152A),
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  activeProduct.category,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9.6,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
             ),
@@ -1772,7 +1967,7 @@ class ProductDetailsScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '₱${formatNumber(activeProduct.price)}',
+                    '₱${formatPrice(activeProduct.price)}',
                     style: const TextStyle(
                       color: Color(0xFF102C44),
                       fontSize: 20,
@@ -1782,7 +1977,7 @@ class ProductDetailsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    cleanUnit(activeProduct.priceUnit),
+                    compactPriceUnit(activeProduct.priceUnit),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -1901,13 +2096,36 @@ class ProductDetailsScreen extends StatelessWidget {
     );
     final ownerListing = isOwnListing(stockData);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F8FB),
-      extendBodyBehindAppBar: false,
-      appBar: productAppBar(context),
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
+    var collapsed = false;
+
+    return StatefulBuilder(
+      builder: (
+        context,
+        setLocalState,
+      ) {
+        return Scaffold(
+          backgroundColor: const Color(0xFFF4F8FB),
+          extendBodyBehindAppBar: false,
+          appBar: productAppBar(
+            context,
+            activeProduct,
+            collapsed: collapsed,
+          ),
+          body: NotificationListener<ScrollNotification>(
+            onNotification: (notification) {
+              final shouldCollapse = notification.metrics.pixels > 318;
+
+              if (shouldCollapse != collapsed) {
+                setLocalState(() {
+                  collapsed = shouldCollapse;
+                });
+              }
+
+              return false;
+            },
+            child: CustomScrollView(
+              physics: const ClampingScrollPhysics(),
+              slivers: [
           productHero(
             activeProduct,
           ),
@@ -1944,14 +2162,17 @@ class ProductDetailsScreen extends StatelessWidget {
               ),
             ),
           ),
-        ],
-      ),
-      bottomNavigationBar: bottomOrderBar(
-        context,
-        activeSupplier,
-        activeProduct,
-        ownerListing: ownerListing,
-      ),
+              ],
+            ),
+          ),
+          bottomNavigationBar: bottomOrderBar(
+            context,
+            activeSupplier,
+            activeProduct,
+            ownerListing: ownerListing,
+          ),
+        );
+      },
     );
   }
 

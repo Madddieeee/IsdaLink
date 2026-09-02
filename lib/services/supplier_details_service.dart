@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:isdalink/models/fish_product.dart';
 import 'package:isdalink/models/supplier.dart';
+import 'package:isdalink/utils/search_matcher.dart';
 import 'package:isdalink/utils/stock_state.dart';
 
 class SupplierDetailsStats {
@@ -258,9 +259,15 @@ class SupplierDetailsService {
         ).toLowerCase();
 
         final matchesQuery = normalizedQuery.isEmpty ||
-            productName.contains(normalizedQuery) ||
-            category.contains(normalizedQuery) ||
-            description.contains(normalizedQuery);
+            SearchMatcher.matches(
+              query: normalizedQuery,
+              values: [
+                productName,
+                category,
+                description,
+                quantityUnit,
+              ],
+            );
 
         final matchesUnit = normalizedUnit == 'all' ||
             quantityUnit == normalizedUnit;
@@ -283,6 +290,10 @@ class SupplierDetailsService {
             return getDoubleValue(secondData, 'price').compareTo(
               getDoubleValue(firstData, 'price'),
             );
+          case 'stock_high':
+            return getDoubleValue(secondData, 'quantity').compareTo(
+              getDoubleValue(firstData, 'quantity'),
+            );
           case 'name':
             return getStringValue(
               firstData,
@@ -297,8 +308,12 @@ class SupplierDetailsService {
                 );
           case 'latest':
           default:
-            final firstDate = getDateTimeValue(firstData['createdAt']);
-            final secondDate = getDateTimeValue(secondData['createdAt']);
+            final firstDate = getDateTimeValue(
+              firstData['restockedAt'] ?? firstData['createdAt'],
+            );
+            final secondDate = getDateTimeValue(
+              secondData['restockedAt'] ?? secondData['createdAt'],
+            );
 
             if (firstDate == null && secondDate == null) {
               return 0;
