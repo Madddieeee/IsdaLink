@@ -63,11 +63,6 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
   }
 
   String storeImageUrl(Map<String, dynamic> data) {
-    final storePhoto = stringValue(data, 'storePhotoUrl');
-    if (storePhoto.isNotEmpty) {
-      return storePhoto;
-    }
-
     return stringValue(data, 'profileImageUrl');
   }
 
@@ -1207,7 +1202,7 @@ class _SupplierProfileActionCard extends StatelessWidget {
             ? 'Revise the rejected request using the previous details'
             : withdrawn
                 ? 'Continue from the withdrawn request or start fresh'
-                : 'Store identity, location, store photo and permit';
+                : 'Store identity, location, verification photo and permit';
 
     final requestLabel = pending
         ? 'Pending'
@@ -1905,7 +1900,7 @@ class _HybridPolicyNote extends StatelessWidget {
           SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Storefront details can be maintained directly. Verified identity, business location, store photo, and permit changes are reviewed by the administrator before they replace the approved information shown to vendors.',
+              'Public storefront photos can be changed anytime from View My Shop without Admin approval. Verified identity, business location, verification photo, and permit changes still require administrator review.',
               style: TextStyle(
                 color: Color(0xFF745A25),
                 fontSize: 9.4,

@@ -221,31 +221,10 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
       var imageUrl = firstNonEmpty(
         data,
         const [
-          'storePhotoUrl',
           'profileImageUrl',
-          'businessPhotoUrl',
-          'photoUrl',
-          'imageUrl',
         ],
         fallback: supplierStoreImageUrl,
       );
-
-      if (imageUrl.isEmpty) {
-        final application = data['supplierApplication'];
-
-        if (application is Map) {
-          imageUrl = firstNonEmpty(
-            Map<String, dynamic>.from(application),
-            const [
-              'storePhotoUrl',
-              'profileImageUrl',
-              'businessPhotoUrl',
-              'photoUrl',
-              'imageUrl',
-            ],
-          );
-        }
-      }
 
       if (!mounted || imageUrl.isEmpty) {
         return;

@@ -71,24 +71,7 @@ class UserProfileService {
       imageUrl,
     );
 
-    if (isApprovedSupplier) {
-      await FirebaseFirestore.instance
-          .collection(
-            'supplierProfiles',
-          )
-          .doc(
-            user.uid,
-          )
-          .set(
-            {
-              'profileImageUrl': imageUrl,
-              'updatedAt': FieldValue.serverTimestamp(),
-            },
-            SetOptions(
-              merge: true,
-            ),
-          );
-    }
+    // Personal account photos and supplier storefront branding are separate.
   }
 
   Future<
@@ -128,24 +111,7 @@ class UserProfileService {
       null,
     );
 
-    if (isApprovedSupplier) {
-      await FirebaseFirestore.instance
-          .collection(
-            'supplierProfiles',
-          )
-          .doc(
-            user.uid,
-          )
-          .set(
-            {
-              'profileImageUrl': FieldValue.delete(),
-              'updatedAt': FieldValue.serverTimestamp(),
-            },
-            SetOptions(
-              merge: true,
-            ),
-          );
-    }
+    // Removing the personal account photo does not change storefront branding.
   }
 
   Future<

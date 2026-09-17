@@ -95,6 +95,15 @@ class CloudinaryUploadService {
       return true;
     }
 
+    final storefrontPrefix = '${CloudinaryConfig.supplierStorefrontFolder}/';
+    if (normalized.startsWith(storefrontPrefix)) {
+      final remainder = normalized.substring(storefrontPrefix.length);
+      final segments = remainder.split('/');
+      return segments.length == 2 &&
+          _isSafeFolderSegment(segments[0]) &&
+          (segments[1] == 'profile' || segments[1] == 'cover');
+    }
+
     final verificationPrefix = '${CloudinaryConfig.supplierVerificationFolder}/';
     if (!normalized.startsWith(verificationPrefix)) {
       return false;

@@ -1077,7 +1077,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
       showMessage(
         permit
             ? 'Business permit photo uploaded.'
-            : 'Store photo uploaded.',
+            : 'Verification store photo uploaded.',
       );
     } on StateError catch (error) {
       showMessage(error.message.toString(), isError: true);
@@ -1644,7 +1644,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
         SupplierActivationSectionCard(
           icon: Icons.verified_user_outlined,
           title: 'Verification Requirements',
-          subtitle: 'Permit number, permit photo, and store photo.',
+          subtitle: 'Permit number, permit photo, and verification store photo.',
           children: [
             Container(
               padding: const EdgeInsets.all(12),
@@ -1709,9 +1709,9 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
             ),
             gap(),
             SupplierVerificationPhotoCard(
-              title: 'Store Photo',
+              title: 'Verification Store Photo',
               subtitle:
-                  'Upload a clear store photo used as the supplier profile cover after approval.',
+                  'Upload a clear store photo for Admin verification. You can set your public profile and cover photos after approval.',
               permit: false,
               localImage: storeImage,
               imageUrl: storeImageUrl,
@@ -1854,7 +1854,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
               storagePath: permitStoragePath,
             ),
             SupplierReviewImage(
-              title: 'Store Photo',
+              title: 'Verification Store Photo',
               localImage: storeImage,
               imageUrl: storeImageUrl,
               storagePath: '',

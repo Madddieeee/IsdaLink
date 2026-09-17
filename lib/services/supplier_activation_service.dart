@@ -310,15 +310,14 @@ class SupplierActivationService {
       'businessPermitNumber': input.businessPermitNumber,
       'businessPermitUrl': input.businessPermitUrl,
       'businessPermitStoragePath': input.businessPermitStoragePath,
+      // Verification evidence only. Public storefront branding is set by
+      // the approved supplier later from their own store page.
       'storePhotoUrl': input.storePhotoUrl,
-      'coverImageUrl': input.storePhotoUrl,
-      // Preserved for the current supplier cards and profile model.
-      'profileImageUrl': input.storePhotoUrl,
       'hasBusinessPermit': true,
       'hasStorePhoto': true,
       'verificationStatus': 'pending',
       'paymentMethod': 'COD',
-      'applicationVersion': 4,
+      'applicationVersion': 5,
       'accountCreatedAt': ?accountCreatedAt,
       'submittedAt': FieldValue.serverTimestamp(),
     };

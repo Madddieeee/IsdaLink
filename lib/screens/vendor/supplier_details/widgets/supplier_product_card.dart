@@ -38,11 +38,24 @@ class SupplierProductCard extends StatelessWidget {
   String formatNumber(
     double value,
   ) {
-    if (value % 1 == 0) {
-      return value.toStringAsFixed(0);
+    final raw = value % 1 == 0
+        ? value.toStringAsFixed(0)
+        : value.toStringAsFixed(1);
+    final parts = raw.split('.');
+    final digits = parts.first;
+    final buffer = StringBuffer();
+
+    for (var index = 0; index < digits.length; index++) {
+      final remaining = digits.length - index;
+      buffer.write(digits[index]);
+      if (remaining > 1 && remaining % 3 == 1) {
+        buffer.write(',');
+      }
     }
 
-    return value.toStringAsFixed(1);
+    return parts.length == 2
+        ? '${buffer.toString()}.${parts[1]}'
+        : buffer.toString();
   }
 
   String get cleanPriceUnit {
@@ -62,11 +75,11 @@ class SupplierProductCard extends StatelessWidget {
 
   Widget productImage() {
     return SizedBox(
-      height: 104,
+      height: 90,
       width: double.infinity,
       child: ClipRRect(
         borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(20),
+          top: Radius.circular(17),
         ),
         child: hasNetworkImage
             ? Image.network(
@@ -102,8 +115,8 @@ class SupplierProductCard extends StatelessWidget {
   Widget stockBadge() {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: 8,
-        vertical: 5,
+        horizontal: 7,
+        vertical: 4,
       ),
       decoration: BoxDecoration(
         color: stockColor.withAlpha(236),
@@ -117,10 +130,10 @@ class SupplierProductCard extends StatelessWidget {
         ],
       ),
       child: Text(
-        stockStatus,
+        stockStatus.toUpperCase(),
         style: const TextStyle(
           color: Colors.white,
-          fontSize: 8.6,
+          fontSize: 7.8,
           fontWeight: FontWeight.w900,
         ),
       ),
@@ -133,14 +146,14 @@ class SupplierProductCard extends StatelessWidget {
   ) {
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(17),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(17),
         child: Ink(
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(17),
             border: Border.all(
               color: const Color(0xFFE0EEF5),
             ),
@@ -159,7 +172,7 @@ class SupplierProductCard extends StatelessWidget {
                 children: [
                   productImage(),
                   Positioned(
-                    left: 9,
+                    right: 9,
                     top: 9,
                     child: stockBadge(),
                   ),
@@ -167,97 +180,93 @@ class SupplierProductCard extends StatelessWidget {
               ),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(11, 9, 11, 10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  padding: const EdgeInsets.fromLTRB(9, 7, 8, 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Text(
-                        productName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFF102C44),
-                          fontSize: 13.1,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      if (showCategory) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          category,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFF7B8FA3),
-                            fontSize: 9.2,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 7),
-                      Text(
-                        '₱${formatNumber(price)} / $cleanPriceUnit',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFF087AC0),
-                          fontSize: 13.3,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(height: 5),
-                      Row(
-                        children: [
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: stockColor,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 5),
-                          Expanded(
-                            child: Text(
-                              '${formatNumber(quantity)} '
-                              '$quantityUnit available',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Color(0xFF62798B),
-                                fontSize: 8.9,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Spacer(),
-                      Container(
-                        width: double.infinity,
-                        height: 29,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE8F8FD),
-                          borderRadius: BorderRadius.circular(11),
-                        ),
-                        child: const Row(
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              'View details',
-                              style: TextStyle(
-                                color: Color(0xFF087AC0),
-                                fontSize: 9.5,
+                              productName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFF102C44),
+                                fontSize: 12.2,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
-                            SizedBox(width: 4),
-                            Icon(
-                              Icons.arrow_forward_rounded,
-                              color: Color(0xFF087AC0),
-                              size: 13,
+                            if (showCategory) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                category,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Color(0xFF7B8FA3),
+                                  fontSize: 8.4,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 4),
+                            Text(
+                              '₱${formatNumber(price)} / $cleanPriceUnit',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFF087AC0),
+                                fontSize: 12.1,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Container(
+                                  width: 7,
+                                  height: 7,
+                                  decoration: BoxDecoration(
+                                    color: stockColor,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                                Expanded(
+                                  child: Text(
+                                    '${formatNumber(quantity)} $quantityUnit available',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: Color(0xFF52677A),
+                                      fontSize: 8.4,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Container(
+                        width: 31,
+                        height: 31,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF5FBFE),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: const Color(0xFFDCECF4),
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.arrow_forward_rounded,
+                          color: Color(0xFF087AC0),
+                          size: 17,
                         ),
                       ),
                     ],

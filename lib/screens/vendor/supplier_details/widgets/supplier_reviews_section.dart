@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:isdalink/utils/order_helpers.dart';
 
-class SupplierReviewsSection extends StatelessWidget {
+class SupplierReviewsSection extends StatefulWidget {
   const SupplierReviewsSection({
     super.key,
     required this.supplierId,
@@ -11,6 +11,16 @@ class SupplierReviewsSection extends StatelessWidget {
 
   final String? supplierId;
   final String supplierName;
+
+  @override
+  State<SupplierReviewsSection> createState() => _SupplierReviewsSectionState();
+}
+
+class _SupplierReviewsSectionState extends State<SupplierReviewsSection> {
+  int? selectedRating;
+
+  String? get supplierId => widget.supplierId;
+  String get supplierName => widget.supplierName;
 
   Stream<QuerySnapshot<Map<String, dynamic>>>? get reviewsStream {
     final id = supplierId?.trim() ?? '';
@@ -274,6 +284,116 @@ class SupplierReviewsSection extends StatelessWidget {
     );
   }
 
+  int documentRating(
+    QueryDocumentSnapshot<Map<String, dynamic>> document,
+  ) {
+    return OrderHelpers.getDoubleValue(
+      document.data(),
+      'rating',
+    ).round().clamp(1, 5);
+  }
+
+  Widget ratingFilterRow(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> sortedReviews,
+  ) {
+    final counts = <int, int>{
+      5: 0,
+      4: 0,
+      3: 0,
+      2: 0,
+      1: 0,
+    };
+
+    for (final document in sortedReviews) {
+      final rating = documentRating(document);
+      counts[rating] = (counts[rating] ?? 0) + 1;
+    }
+
+    final availableRatings = [
+      5,
+      4,
+      3,
+      2,
+      1,
+    ].where((rating) => (counts[rating] ?? 0) > 0).toList();
+
+    Widget filterChip({
+      required String label,
+      required bool selected,
+      required VoidCallback onTap,
+    }) {
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(13),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 8,
+            ),
+            decoration: BoxDecoration(
+              color: selected
+                  ? const Color(0xFF087AC0)
+                  : Colors.white,
+              borderRadius: BorderRadius.circular(13),
+              border: Border.all(
+                color: selected
+                    ? const Color(0xFF087AC0)
+                    : const Color(0xFFDCECF4),
+              ),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                color: selected
+                    ? Colors.white
+                    : const Color(0xFF52677A),
+                fontSize: 10.2,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 38,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: 1 + availableRatings.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 7),
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return filterChip(
+              label: 'All (${sortedReviews.length})',
+              selected: selectedRating == null,
+              onTap: () {
+                setState(() {
+                  selectedRating = null;
+                });
+              },
+            );
+          }
+
+          final rating = availableRatings[index - 1];
+          return filterChip(
+            label: '$rating★ (${counts[rating]})',
+            selected: selectedRating == rating,
+            onTap: () {
+              setState(() {
+                selectedRating = rating;
+              });
+            },
+          );
+        },
+      ),
+    );
+  }
+
   Widget reviewsBody(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
   ) {
@@ -298,29 +418,30 @@ class SupplierReviewsSection extends StatelessWidget {
 
     final averageRating = totalRating / sortedReviews.length;
 
+    final visibleReviews = selectedRating == null
+        ? sortedReviews
+        : sortedReviews.where(
+            (document) => documentRating(document) == selectedRating,
+          ).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [
-                Color(0xFFFFF4D8),
-                Color(0xFFFFFBF0),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(23),
+            color: const Color(0xFFF2F9FD),
+            borderRadius: BorderRadius.circular(21),
             border: Border.all(
-              color: const Color(0xFFFFE2A0),
+              color: const Color(0xFFDCECF4),
             ),
           ),
           child: Row(
             children: [
               Container(
-                width: 56,
-                height: 56,
+                width: 52,
+                height: 52,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -330,7 +451,7 @@ class SupplierReviewsSection extends StatelessWidget {
                   averageRating.toStringAsFixed(1),
                   style: const TextStyle(
                     color: Color(0xFF102C44),
-                    fontSize: 22,
+                    fontSize: 21,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -369,9 +490,13 @@ class SupplierReviewsSection extends StatelessWidget {
             ],
           ),
         ),
+        const SizedBox(height: 12),
+        ratingFilterRow(sortedReviews),
         const SizedBox(height: 16),
         Text(
-          'Reviews for $supplierName',
+          selectedRating == null
+              ? 'Reviews for $supplierName'
+              : '$selectedRating-star reviews',
           style: const TextStyle(
             color: Color(0xFF102C44),
             fontSize: 16,
@@ -388,7 +513,7 @@ class SupplierReviewsSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        ...sortedReviews.take(8).map(reviewTile),
+        ...visibleReviews.take(8).map(reviewTile),
       ],
     );
   }

@@ -188,16 +188,6 @@ class ProductDetailsScreen extends StatelessWidget {
   String profileImageFromData(
     Map<String, dynamic>? data,
   ) {
-    final storePhotoUrl = getStringValue(
-      data,
-      'storePhotoUrl',
-      '',
-    );
-
-    if (storePhotoUrl.isNotEmpty) {
-      return storePhotoUrl;
-    }
-
     final profileImageUrl = getStringValue(
       data,
       'profileImageUrl',
@@ -208,35 +198,20 @@ class ProductDetailsScreen extends StatelessWidget {
       return profileImageUrl;
     }
 
-    final photoUrl = getStringValue(
-      data,
-      'photoUrl',
-      '',
-    );
-
-    if (photoUrl.isNotEmpty) {
-      return photoUrl;
-    }
-
-    final application = data?['supplierApplication'];
-
-    if (application is Map<String, dynamic>) {
-      return getStringValue(
-        application,
-        'storePhotoUrl',
-        supplier.profileImageUrl,
-      );
-    }
-
-    if (application is Map) {
-      return getStringValue(
-        Map<String, dynamic>.from(application),
-        'storePhotoUrl',
-        supplier.profileImageUrl,
-      );
-    }
-
     return supplier.profileImageUrl;
+  }
+
+  String coverImageFromData(
+    Map<String, dynamic>? data,
+  ) {
+    if (data?['coverImageSetByOwner'] == true) {
+      final value = getStringValue(data, 'coverImageUrl', '');
+      if (value.isNotEmpty) {
+        return value;
+      }
+    }
+
+    return supplier.coverImageUrl;
   }
 
   String productImageFromData(
@@ -336,6 +311,7 @@ class ProductDetailsScreen extends StatelessWidget {
       reviews: reviews < 0 ? 0 : reviews,
       products: supplier.products,
       profileImageUrl: profileImageFromData(data),
+      coverImageUrl: coverImageFromData(data),
       accountCreatedAt: getDateTimeValue(
             data?['accountCreatedAt'],
           ) ??

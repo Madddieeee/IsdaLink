@@ -76,6 +76,50 @@ class SupplierProfileService {
     );
   }
 
+
+  Future<void> updateStorefrontImage({
+    required String uid,
+    required String imageUrl,
+    required bool isCover,
+  }) async {
+    final url = imageUrl.trim();
+    if (!url.startsWith('https://')) {
+      throw StateError('A valid storefront image is required.');
+    }
+
+    final updates = <String, dynamic>{
+      isCover ? 'coverImageUrl' : 'profileImageUrl': url,
+      // Public storefront branding is independent from supplier verification
+      // evidence. Do not mutate any verification/store-photo fields here.
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+
+    // This flag distinguishes an owner-selected cover from legacy data where
+    // a verification/profile photo may have been copied into the cover field.
+    if (isCover) {
+      updates['coverImageSetByOwner'] = true;
+    }
+
+    await supplierProfileRef(uid).update(updates);
+  }
+
+  Future<void> removeStorefrontImage({
+    required String uid,
+    required bool isCover,
+  }) async {
+    final updates = <String, dynamic>{
+      isCover ? 'coverImageUrl' : 'profileImageUrl': FieldValue.delete(),
+      // Removing storefront branding must not alter verification evidence.
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+
+    if (isCover) {
+      updates['coverImageSetByOwner'] = FieldValue.delete();
+    }
+
+    await supplierProfileRef(uid).update(updates);
+  }
+
   Future<void> submitVerifiedChangeRequest({
     required String uid,
     required String supplierName,

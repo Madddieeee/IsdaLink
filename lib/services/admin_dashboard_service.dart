@@ -252,9 +252,6 @@ class AdminDashboardService {
       },
       if (changesStorePhoto) ...<String, dynamic>{
         'storePhotoUrl': requestedStorePhotoUrl,
-        'coverImageUrl': requestedStorePhotoUrl,
-        'profileImageUrl': requestedStorePhotoUrl,
-        'photoUrl': requestedStorePhotoUrl,
         'hasStorePhoto': true,
       },
       'verificationStatus': 'approved',
@@ -280,12 +277,6 @@ class AdminDashboardService {
           'location': requestedLocation,
           'storeLocation': requestedLocation,
         },
-        if (changesStorePhoto) ...<String, dynamic>{
-          'storePhotoUrl': requestedStorePhotoUrl,
-          'coverImageUrl': requestedStorePhotoUrl,
-          'profileImageUrl': requestedStorePhotoUrl,
-          'photoUrl': requestedStorePhotoUrl,
-        },
         'updatedAt': FieldValue.serverTimestamp(),
       },
     );
@@ -295,10 +286,6 @@ class AdminDashboardService {
       <String, dynamic>{
         if (changesLocation) 'supplierLocation': requestedLocation,
         'supplierApplication': updatedApplication,
-        if (changesStorePhoto) ...<String, dynamic>{
-          'profileImageUrl': requestedStorePhotoUrl,
-          'photoUrl': requestedStorePhotoUrl,
-        },
         'updatedAt': FieldValue.serverTimestamp(),
       },
     );
@@ -445,6 +432,13 @@ class AdminDashboardService {
         'businessPermitNumber': FieldValue.delete(),
         'businessPermitUrl': FieldValue.delete(),
         'businessPermitStoragePath': FieldValue.delete(),
+        'storePhotoUrl': FieldValue.delete(),
+        // Legacy applications used the verification store photo as public
+        // branding. Clear those aliases so the approved owner can choose
+        // profile and cover photos independently from View My Shop.
+        'profileImageUrl': FieldValue.delete(),
+        'coverImageUrl': FieldValue.delete(),
+        'coverImageSetByOwner': FieldValue.delete(),
 
         'updatedAt': FieldValue.serverTimestamp(),
       },

@@ -251,7 +251,7 @@ class PendingSupplierCard extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: VerificationLinkButton(
-                  label: 'Store Photo',
+                  label: 'Verification Store Photo',
                   icon: Icons.photo,
                   url: storePhotoUrl,
                 ),

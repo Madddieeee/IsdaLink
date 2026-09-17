@@ -270,6 +270,13 @@ class _SupplierVerifiedChangeRequestScreenState
         application,
         'businessPermitStoragePath',
       );
+      final privateStorePhoto = stringValue(
+        application,
+        'storePhotoUrl',
+      );
+      if (privateStorePhoto.isNotEmpty) {
+        currentStorePhotoUrl = privateStorePhoto;
+      }
 
       final previousPermit = stringValue(
         widget.previousRequestData,
@@ -922,7 +929,7 @@ class _SupplierVerifiedChangeRequestScreenState
       case _VerifiedChangeType.businessLocation:
         return 'Business Location';
       case _VerifiedChangeType.storePhoto:
-        return 'Store Photo';
+        return 'Verification Store Photo';
       case _VerifiedChangeType.businessPermit:
         return 'Business Permit';
     }
@@ -935,7 +942,7 @@ class _SupplierVerifiedChangeRequestScreenState
       case _VerifiedChangeType.businessLocation:
         return 'Update only the approved address and map pin';
       case _VerifiedChangeType.storePhoto:
-        return 'Replace only the approved main store image';
+        return 'Replace the private store photo used as verification evidence';
       case _VerifiedChangeType.businessPermit:
         return 'Update only the permit number or evidence';
     }
@@ -961,7 +968,7 @@ class _SupplierVerifiedChangeRequestScreenState
       case _VerifiedChangeType.businessLocation:
         return currentLocation;
       case _VerifiedChangeType.storePhoto:
-        return 'Current approved store image';
+        return 'Current verification store photo';
       case _VerifiedChangeType.businessPermit:
         return currentPermitNumber.isEmpty
             ? 'Permit on file'
@@ -1361,9 +1368,9 @@ class _SupplierVerifiedChangeRequestScreenState
           const SizedBox(height: 12),
           _FinalFormCard(
             number: storePhotoSectionNumber!.toString(),
-            title: 'Store Photo',
+            title: 'Verification Store Photo',
             subtitle:
-                'The requested photo becomes the main supplier/store image only after approval.',
+                'This updates verification evidence only and does not change your public profile or cover photos.',
             icon: Icons.photo_camera_back_outlined,
             child: _ImageCompareRow(
               currentUrl: currentStorePhotoUrl,

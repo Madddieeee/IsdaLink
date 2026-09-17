@@ -6,6 +6,7 @@ class CloudinaryConfig {
 
   static const String fishStockFolder = 'isdalink/fish_stocks';
   static const String profileFolder = 'isdalink/profile_photos';
+  static const String supplierStorefrontFolder = 'isdalink/supplier_storefront';
   static const String supplierVerificationFolder =
       'isdalink/supplier_verification';
 }

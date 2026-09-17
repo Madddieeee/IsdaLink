@@ -189,32 +189,19 @@ class _RecommendedSupplierCardState extends State<RecommendedSupplierCard> {
     );
   }
 
-  Widget _statusPill({
-    required IconData icon,
-    required String label,
-    required Color foreground,
-    required Color background,
-  }) {
+  Widget verifiedMark() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+      width: 20,
+      height: 20,
       decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(99),
+        color: const Color(0xFFEAF8FD),
+        borderRadius: BorderRadius.circular(7),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 10, color: foreground),
-          const SizedBox(width: 3),
-          Text(
-            label,
-            style: TextStyle(
-              color: foreground,
-              fontSize: 8.2,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
+      alignment: Alignment.center,
+      child: const Icon(
+        Icons.verified_rounded,
+        size: 13,
+        color: Color(0xFF0B8FC4),
       ),
     );
   }
@@ -273,30 +260,26 @@ class _RecommendedSupplierCardState extends State<RecommendedSupplierCard> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              supplier.name.trim().isEmpty
-                                  ? 'Supplier'
-                                  : supplier.name,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 13.4,
-                                height: 1.08,
-                                fontWeight: FontWeight.w900,
-                                color: Color(0xFF102D48),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Wrap(
-                              spacing: 4,
-                              runSpacing: 3,
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _statusPill(
-                                  icon: Icons.verified_rounded,
-                                  label: 'Verified',
-                                  foreground: const Color(0xFF16835F),
-                                  background: const Color(0xFFE7F8F1),
+                                Expanded(
+                                  child: Text(
+                                    supplier.name.trim().isEmpty
+                                        ? 'Supplier'
+                                        : supplier.name,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 13.4,
+                                      height: 1.08,
+                                      fontWeight: FontWeight.w900,
+                                      color: Color(0xFF102D48),
+                                    ),
+                                  ),
                                 ),
+                                const SizedBox(width: 4),
+                                verifiedMark(),
                               ],
                             ),
                           ],

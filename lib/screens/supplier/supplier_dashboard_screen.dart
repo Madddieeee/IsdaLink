@@ -385,52 +385,19 @@ class SupplierDashboardScreen
     >
     data,
   ) {
-    const keys =
-        <
-          String
-        >[
-          'storePhotoUrl',
-          'profileImageUrl',
-          'photoUrl',
-        ];
+    final value = data['profileImageUrl']?.toString().trim() ?? '';
+    return value.startsWith('https://') ? value : '';
+  }
 
-    for (final key in keys) {
-      final value =
-          data[key]?.toString().trim() ??
-          '';
-
-      if (value.startsWith(
-            'http://',
-          ) ||
-          value.startsWith(
-            'https://',
-          )) {
-        return value;
-      }
+  String coverImageUrl(
+    Map<String, dynamic> data,
+  ) {
+    if (data['coverImageSetByOwner'] != true) {
+      return '';
     }
 
-    final application = data['supplierApplication'];
-
-    if (application
-        is Map<
-          String,
-          dynamic
-        >) {
-      final value =
-          application['storePhotoUrl']?.toString().trim() ??
-          '';
-
-      if (value.startsWith(
-            'http://',
-          ) ||
-          value.startsWith(
-            'https://',
-          )) {
-        return value;
-      }
-    }
-
-    return '';
+    final value = data['coverImageUrl']?.toString().trim() ?? '';
+    return value.startsWith('https://') ? value : '';
   }
 
   String supplierLocation(
@@ -546,6 +513,10 @@ class SupplierDashboardScreen
       profileImageUrl: profileImageUrl(
         data,
       ),
+      coverImageUrl: coverImageUrl(data),
+      accountCreatedAt: data['accountCreatedAt'] is Timestamp
+          ? (data['accountCreatedAt'] as Timestamp).toDate()
+          : null,
     );
   }
 

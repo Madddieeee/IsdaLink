@@ -264,37 +264,30 @@ class SupplierBrowseService {
   String profileImageFromProfile(
     Map<String, dynamic> data,
   ) {
-    final application = nestedApplication(data);
-
-    final directImage = firstAvailableText(
+    return firstAvailableText(
       data,
       const [
-        'storePhotoUrl',
         'profileImageUrl',
-        'businessPhotoUrl',
-        'photoUrl',
-        'imageUrl',
       ],
     );
+  }
 
-    if (directImage.isNotEmpty) {
-      return directImage;
+  String coverImageFromProfile(
+    Map<String, dynamic> data,
+  ) {
+    // Legacy supplier records may contain a copied verification/profile image
+    // in coverImageUrl. Only show a cover after the shop owner explicitly
+    // chooses one from View My Shop.
+    if (data['coverImageSetByOwner'] != true) {
+      return '';
     }
 
-    if (application != null) {
-      return firstAvailableText(
-        application,
-        const [
-          'profileImageUrl',
-          'storePhotoUrl',
-          'businessPhotoUrl',
-          'photoUrl',
-          'imageUrl',
-        ],
-      );
-    }
-
-    return '';
+    return firstAvailableText(
+      data,
+      const [
+        'coverImageUrl',
+      ],
+    );
   }
 
   double ratingFromProfile(
@@ -385,6 +378,7 @@ class SupplierBrowseService {
       reviews: reviewCountFromProfile(data),
       products: const <FishProduct>[],
       profileImageUrl: profileImageFromProfile(data),
+      coverImageUrl: coverImageFromProfile(data),
       accountCreatedAt: firstAvailableDateTime(
         data,
         const [

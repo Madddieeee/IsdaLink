@@ -9,6 +9,7 @@ class Supplier {
   final int reviews;
   final List<FishProduct> products;
   final String profileImageUrl;
+  final String coverImageUrl;
   final DateTime? accountCreatedAt;
 
   const Supplier({
@@ -20,6 +21,7 @@ class Supplier {
     required this.reviews,
     required this.products,
     this.profileImageUrl = '',
+    this.coverImageUrl = '',
     this.accountCreatedAt,
   });
 

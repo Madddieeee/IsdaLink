@@ -112,7 +112,7 @@ class SupplierChangeRequestReviewScreen extends StatelessWidget {
                 rejecting
                     ? 'The current approved supplier information will remain unchanged. Add a short reason so the supplier knows what to correct.'
                     : changesStorePhoto
-                        ? 'Only the requested verified changes will be approved. The requested store photo will become the main supplier/store image across IsdaLink.'
+                        ? 'Only the requested verified changes will be approved. A requested verification store photo updates the private verification record and does not change public storefront branding.'
                         : 'Only the requested verified changes will be approved. Unselected supplier information will remain unchanged.',
                 style: const TextStyle(
                   color: Color(0xFF52677A),
@@ -128,7 +128,7 @@ class SupplierChangeRequestReviewScreen extends StatelessWidget {
                       ? 'Rejection reason'
                       : 'Optional admin note',
                   hintText: rejecting
-                      ? 'Example: Upload a clearer current store photo.'
+                      ? 'Example: Upload a clearer current verification store photo.'
                       : 'Optional note for the supplier',
                   filled: true,
                   fillColor: const Color(0xFFF7FAFC),
@@ -491,9 +491,8 @@ class SupplierChangeRequestReviewScreen extends StatelessWidget {
                     'requestedBusinessPermitStoragePath',
                   );
                   final currentStorePhoto = stringValue(
-                    profile,
+                    application,
                     'storePhotoUrl',
-                    stringValue(profile, 'profileImageUrl'),
                   );
                   final requestedStorePhoto = stringValue(
                     request,
@@ -629,7 +628,7 @@ class SupplierChangeRequestReviewScreen extends StatelessWidget {
                         currentChildren: [
                           if (changesStorePhoto)
                             _EvidencePreview(
-                              label: 'Current store photo',
+                              label: 'Current verification photo',
                               imageUrl: currentStorePhoto,
                             ),
                           if (changesStorePhoto && changesPermit)
@@ -645,7 +644,7 @@ class SupplierChangeRequestReviewScreen extends StatelessWidget {
                         requestedChildren: [
                           if (changesStorePhoto)
                             _EvidencePreview(
-                              label: 'Requested store photo',
+                              label: 'Requested verification photo',
                               imageUrl: requestedStorePhoto,
                             ),
                           if (changesStorePhoto && changesPermit)
@@ -938,7 +937,7 @@ class _ApprovalImpactCard extends StatelessWidget {
           Expanded(
             child: Text(
               changesStorePhoto
-                  ? 'Approval applies only the listed changes. The requested store photo becomes the main supplier/store image. Rejection leaves the approved profile unchanged.'
+                  ? 'Approval applies only the listed verified changes. Verification store photos remain separate from the supplier’s public profile and cover images. Rejection leaves the approved business information unchanged.'
                   : 'Approval applies only the listed changes. Unselected supplier information remains unchanged. Rejection leaves the approved profile unchanged.',
               style: const TextStyle(
                 color: Color(0xFF745A25),

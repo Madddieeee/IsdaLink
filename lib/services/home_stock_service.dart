@@ -99,10 +99,8 @@ class HomeStockService {
     Map<String, String> imageUrlsById,
   ) {
     for (final key in const [
-      'supplierStorePhotoUrl',
       'supplierProfileImageUrl',
       'supplierImageUrl',
-      'storePhotoUrl',
       'profileImageUrl',
     ]) {
       final imageUrl = OrderHelpers.getStringValue(data, key, '');
