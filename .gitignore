@@ -51,3 +51,4 @@ dataset/*.csv
 *firebase-adminsdk*.json
 firebase-debug.log
 firebase-debug.*.log
+tools/dataset/
