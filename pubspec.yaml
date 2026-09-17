@@ -68,6 +68,12 @@ flutter:
 
   assets:
     - assets/images/login_bg.jpg
+    - assets/images/home_ocean_banner.png
+    - assets/images/home_header_boat.png
+    - assets/images/isdalink_logo.png
+    - assets/images/Fish.png
+    - assets/images/Store.png
+    - assets/images/Store1.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:

@@ -1,7 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 class HomeHeader extends StatelessWidget {
   const HomeHeader({
@@ -21,501 +18,346 @@ class HomeHeader extends StatelessWidget {
   final VoidCallback? onFishStocksTap;
   final VoidCallback? onActiveOrdersTap;
 
-  User? get currentUser => FirebaseAuth.instance.currentUser;
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final compact = screenWidth <= 400;
 
-  String stringValue(
-    Map<String, dynamic>? data,
-    String key,
-    String fallback,
-  ) {
-    if (data == null) {
-      return fallback;
-    }
-
-    final value = data[key];
-
-    if (value == null) {
-      return fallback;
-    }
-
-    final text = value.toString().trim();
-    return text.isEmpty ? fallback : text;
-  }
-
-  double doubleValue(
-    Map<String, dynamic> data,
-    String key,
-  ) {
-    final value = data[key];
-
-    if (value is int) {
-      return value.toDouble();
-    }
-
-    if (value is double) {
-      return value;
-    }
-
-    if (value is String) {
-      return double.tryParse(value) ?? 0;
-    }
-
-    return 0;
-  }
-
-  bool approvedSupplier(
-    Map<String, dynamic> data,
-  ) {
-    final status = stringValue(
-      data,
-      'status',
-      '',
-    ).toLowerCase();
-
-    final verificationStatus = stringValue(
-      data,
-      'verificationStatus',
-      '',
-    ).toLowerCase();
-
-    final isApproved = data['isApproved'] == true;
-    final isVerified = data['isVerified'] == true;
-
-    return status == 'approved' ||
-        status == 'active' ||
-        status == 'verified' ||
-        verificationStatus == 'approved' ||
-        verificationStatus == 'verified' ||
-        isApproved ||
-        isVerified;
-  }
-
-  bool availableFishStock(
-    Map<String, dynamic> data,
-  ) {
-    final status = stringValue(
-      data,
-      'status',
-      'available',
-    ).toLowerCase();
-
-    final quantity = doubleValue(
-      data,
-      'quantity',
-    );
-
-    return (status == 'available' || status == 'active') &&
-        quantity > 0;
-  }
-
-  bool activeVendorOrder(
-    Map<String, dynamic> data,
-  ) {
-    final status = stringValue(
-      data,
-      'orderStatus',
-      '',
-    ).toLowerCase();
-
-    return status == 'pending' || status == 'accepted';
-  }
-
-  String fallbackName() {
-    final displayName = currentUser?.displayName?.trim() ?? '';
-
-    if (displayName.isNotEmpty) {
-      return displayName;
-    }
-
-    final email = currentUser?.email?.trim() ?? '';
-
-    if (email.contains('@')) {
-      return email.split('@').first;
-    }
-
-    return 'IsdaLink User';
-  }
-
-  Widget buildLiveHeader({
-    required BuildContext context,
-    required String userName,
-    required int supplierCount,
-    required int fishStockCount,
-    required int activeOrderCount,
-  }) {
-    final topPadding = MediaQuery.paddingOf(context).top;
-    final isDarkMode =
-        MediaQuery.platformBrightnessOf(context) == Brightness.dark;
-
-    final headerGradient = isDarkMode
-        ? const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF06101E),
-              Color(0xFF082D4F),
-              Color(0xFF07536C),
-            ],
-            stops: [
-              0,
-              0.56,
-              1,
-            ],
-          )
-        : const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF06355F),
-              Color(0xFF0875D1),
-              Color(0xFF12B6D6),
-            ],
-            stops: [
-              0,
-              0.56,
-              1,
-            ],
-          );
-
-    final overlayStyle = SystemUiOverlayStyle(
-      statusBarColor: isDarkMode
-          ? const Color(0xFF06101E)
-          : const Color(0xFF06355F),
-      statusBarIconBrightness: Brightness.light,
-      statusBarBrightness: Brightness.dark,
-      systemNavigationBarColor: Colors.white,
-      systemNavigationBarIconBrightness: Brightness.dark,
-    );
-
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: overlayStyle,
+    return ClipPath(
+      clipper: _OceanEdge(),
       child: SizedBox(
-        width: double.infinity,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Positioned.fill(
-              child: IgnorePointer(
-                child: CustomPaint(
-                  painter: _PremiumWaveTransitionPainter(
-                    isDarkMode: isDarkMode,
+        height: compact ? 260 : 276,
+        child: DecoratedBox(
+          decoration: const BoxDecoration(
+            color: Color(0xFF063A61),
+          ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Positioned.fill(
+                child: Image.asset(
+                  'assets/images/home_header_boat.png',
+                  fit: BoxFit.cover,
+                  alignment: const Alignment(0.60, -0.10),
+                ),
+              ),
+
+              // Darken the left side only so the boat stays visible while
+              // the hero text remains readable, like the approved reference.
+              const Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      stops: [0.0, 0.43, 0.74, 1.0],
+                      colors: [
+                        Color(0xE8063559),
+                        Color(0xB7085680),
+                        Color(0x580A7199),
+                        Color(0x180A7199),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            ClipPath(
-              clipper: const _PremiumHomeHeaderClipper(),
-              clipBehavior: Clip.hardEdge,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: isDarkMode
-                      ? const Color(0xFF06101E)
-                      : const Color(0xFF06355F),
-                  gradient: headerGradient,
-                ),
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: IgnorePointer(
-                        child: CustomPaint(
-                          painter: _PremiumMarineBackdropPainter(
-                            isDarkMode: isDarkMode,
-                          ),
+
+              // Small curved light brand area, instead of a full-width pale
+              // strip. This keeps the top much closer to the reference.
+              Positioned(
+                top: 0,
+                left: 0,
+                child: IgnorePointer(
+                  child: ClipPath(
+                    clipper: _TopBrandWaveClipper(),
+                    child: Container(
+                      width: screenWidth * (compact ? 0.58 : 0.56),
+                      height: compact ? 100 : 106,
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Color(0xFFF9FDFF),
+                            Color(0xFFEAF8FE),
+                            Color(0xD7D8F2FC),
+                          ],
                         ),
                       ),
                     ),
-                    Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        16,
-                        topPadding + 6,
-                        12,
-                        29,
+                  ),
+                ),
+              ),
+
+              Positioned(
+                top: compact ? 106 : 112,
+                left: compact ? 26 : 32,
+                child: const _HeaderMessageText(),
+              ),
+
+              SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    compact ? 14 : 18,
+                    8,
+                    compact ? 14 : 18,
+                    30,
+                  ),
+                  child: Stack(
+                    children: [
+                      Align(
+                        alignment: Alignment.topCenter,
+                        child: _TopBrandRow(
+                          compact: compact,
+                          screenWidth: screenWidth,
+                          onProfileTap: onProfileTap,
+                        ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _PremiumHeaderTopBar(
-                            isDarkMode: isDarkMode,
-                            onProfileTap: onProfileTap,
-                            onLogout: onLogout,
-                          ),
-                          const SizedBox(height: 14),
-                          _PremiumGreeting(
-                            userName: userName,
-                          ),
-                          const SizedBox(height: 12),
-                          _PremiumSearchBar(
-                            onTap: onSearchTap,
-                            isDarkMode: isDarkMode,
-                          ),
-                          const SizedBox(height: 10),
-                          _PremiumNetworkPanel(
-                            supplierCount: supplierCount,
-                            fishStockCount: fishStockCount,
-                            activeOrderCount: activeOrderCount,
-                            isDarkMode: isDarkMode,
-                            onSuppliersTap: onSuppliersTap,
-                            onFishStocksTap: onFishStocksTap,
-                            onActiveOrdersTap: onActiveOrdersTap,
-                          ),
-                        ],
+                      Align(
+                        alignment: Alignment.bottomCenter,
+                        child: _HeaderSearch(
+                          onTap: onSearchTap,
+                          compact: compact,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TopBrandRow extends StatelessWidget {
+  const _TopBrandRow({
+    required this.compact,
+    required this.screenWidth,
+    required this.onProfileTap,
+  });
+
+  final bool compact;
+  final double screenWidth;
+  final VoidCallback? onProfileTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final horizontalPagePadding = compact ? 14.0 : 18.0;
+    final waveWidth = screenWidth * (compact ? 0.58 : 0.56);
+
+    return SizedBox(
+      height: compact ? 62 : 66,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Center the complete IsdaLink lockup inside the white wave itself,
+          // independent of the controls on the right.
+          Positioned(
+            left: -horizontalPagePadding,
+            top: compact ? -4 : -3,
+            width: waveWidth,
+            child: Transform.translate(
+              offset: const Offset(-12, 0),
+              child: Center(
+                child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: compact ? 146 : 158,
+                    height: compact ? 42 : 46,
+                    child: Image.asset(
+                      'assets/images/isdalink_logo.png',
+                      fit: BoxFit.contain,
+                      alignment: Alignment.center,
+                      filterQuality: FilterQuality.high,
+                    ),
+                  ),
+                  Transform.translate(
+                    offset: const Offset(0, -2),
+                    child: Text(
+                      'Fresh Tides, Better Tomorrow',
+                      maxLines: 1,
+                      softWrap: false,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: const Color(0xFF174A70),
+                        fontSize: compact ? 7.4 : 8.0,
+                        height: 1.0,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.05,
                       ),
                     ),
+                  ),
                   ],
                 ),
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
+          ),
 
-  @override
-  Widget build(
-    BuildContext context,
-  ) {
-    final uid = currentUser?.uid;
-
-    if (uid == null || uid.trim().isEmpty) {
-      return buildLiveHeader(
-        context: context,
-        userName: fallbackName(),
-        supplierCount: 0,
-        fishStockCount: 0,
-        activeOrderCount: 0,
-      );
-    }
-
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .snapshots(),
-      builder: (context, userSnapshot) {
-        final userName = stringValue(
-          userSnapshot.data?.data(),
-          'name',
-          fallbackName(),
-        );
-
-        return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-          stream: FirebaseFirestore.instance
-              .collection('supplierProfiles')
-              .where('status', isEqualTo: 'approved')
-              .snapshots(),
-          builder: (context, supplierSnapshot) {
-            final supplierCount = supplierSnapshot.hasData
-                ? supplierSnapshot.data!.docs.where(
-                    (document) {
-                      return approvedSupplier(
-                        document.data(),
-                      );
-                    },
-                  ).length
-                : 0;
-
-            return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-              stream: FirebaseFirestore.instance
-                  .collection('fishStocks')
-                  .snapshots(),
-              builder: (context, stockSnapshot) {
-                final fishStockCount = stockSnapshot.hasData
-                    ? stockSnapshot.data!.docs.where(
-                        (document) {
-                          return availableFishStock(
-                            document.data(),
-                          );
-                        },
-                      ).length
-                    : 0;
-
-                return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                  stream: FirebaseFirestore.instance
-                      .collection('orders')
-                      .where(
-                        'vendorId',
-                        isEqualTo: uid,
-                      )
-                      .snapshots(),
-                  builder: (context, orderSnapshot) {
-                    final activeOrderCount = orderSnapshot.hasData
-                        ? orderSnapshot.data!.docs.where(
-                            (document) {
-                              return activeVendorOrder(
-                                document.data(),
-                              );
-                            },
-                          ).length
-                        : 0;
-
-                    return buildLiveHeader(
-                      context: context,
-                      userName: userName,
-                      supplierCount: supplierCount,
-                      fishStockCount: fishStockCount,
-                      activeOrderCount: activeOrderCount,
-                    );
-                  },
-                );
-              },
-            );
-          },
-        );
-      },
-    );
-  }
-}
-
-class _PremiumHeaderTopBar extends StatelessWidget {
-  const _PremiumHeaderTopBar({
-    required this.isDarkMode,
-    required this.onProfileTap,
-    required this.onLogout,
-  });
-
-  final bool isDarkMode;
-  final VoidCallback? onProfileTap;
-  final VoidCallback onLogout;
-
-  @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return Row(
-      children: [
-        const Expanded(
-          child: _BrandLockup(),
-        ),
-        _RegionChip(
-          isDarkMode: isDarkMode,
-        ),
-        const SizedBox(width: 7),
-        _PremiumActionButton(
-          icon: Icons.person_rounded,
-          tooltip: 'Profile',
-          onTap: onProfileTap,
-          isDarkMode: isDarkMode,
-        ),
-        const SizedBox(width: 6),
-        _PremiumActionButton(
-          icon: Icons.logout_rounded,
-          tooltip: 'Log out',
-          onTap: onLogout,
-          isDarkMode: isDarkMode,
-        ),
-      ],
-    );
-  }
-}
-
-class _BrandLockup extends StatelessWidget {
-  const _BrandLockup();
-
-  @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 31,
-          height: 31,
-          decoration: BoxDecoration(
-            color: Colors.white.withAlpha(24),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: Colors.white.withAlpha(42),
+          // Keep location and action controls aligned independently on the
+          // right so they never push the logo away from the wave center.
+          Align(
+            alignment: Alignment.topRight,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _RegionLabel(compact: compact),
+                SizedBox(width: compact ? 5 : 7),
+                _HeaderActionButton(
+                  tooltip: 'Notifications',
+                  icon: Icons.notifications_none_rounded,
+                  onTap: null,
+                  compact: compact,
+                ),
+                SizedBox(width: compact ? 5 : 7),
+                _HeaderActionButton(
+                  tooltip: 'My profile',
+                  icon: Icons.person_rounded,
+                  onTap: onProfileTap,
+                  compact: compact,
+                ),
+              ],
             ),
           ),
-          child: const Icon(
-            Icons.set_meal_rounded,
-            color: Color(0xFFE9FDFF),
-            size: 17,
-          ),
-        ),
-        const SizedBox(width: 8),
-        const Flexible(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'ISDALINK',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 10.8,
-                  height: 1,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.35,
-                ),
-              ),
-              SizedBox(height: 4),
-              Text(
-                'FISH SUPPLY NETWORK',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: Color(0xFFBFEFF3),
-                  fontSize: 6.8,
-                  height: 1,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.72,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
-class _RegionChip extends StatelessWidget {
-  const _RegionChip({
-    required this.isDarkMode,
-  });
-
-  final bool isDarkMode;
+class _HeaderMessageText extends StatelessWidget {
+  const _HeaderMessageText();
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return Container(
-      height: 31,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 9,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white.withAlpha(
-          isDarkMode ? 17 : 24,
-        ),
-        borderRadius: BorderRadius.circular(99),
-        border: Border.all(
-          color: Colors.white.withAlpha(
-            isDarkMode ? 22 : 36,
+  Widget build(BuildContext context) {
+    return Transform.rotate(
+      angle: -0.035,
+      alignment: Alignment.centerLeft,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            'Fresh fish.\nConnected in Caraga.',
+            textAlign: TextAlign.left,
+            maxLines: 2,
+            style: TextStyle(
+              color: Color(0xFFF8FCFF),
+              fontSize: 14.6,
+              height: 1.08,
+              fontWeight: FontWeight.w800,
+              fontStyle: FontStyle.italic,
+              letterSpacing: 0.08,
+              shadows: [
+                Shadow(
+                  color: Color(0x8600182B),
+                  blurRadius: 7,
+                  offset: Offset(0, 1.5),
+                ),
+              ],
+            ),
           ),
-        ),
+          const SizedBox(height: 4),
+          const SizedBox(
+            width: 106,
+            height: 12,
+            child: CustomPaint(
+              painter: _MessageUnderlinePainter(),
+            ),
+          ),
+        ],
       ),
-      child: const Row(
+    );
+  }
+}
+
+class _MessageUnderlinePainter extends CustomPainter {
+  const _MessageUnderlinePainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0x99F7FCFF)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.6
+      ..strokeCap = StrokeCap.round;
+
+    final path = Path()
+      ..moveTo(size.width * 0.08, size.height * 0.66)
+      ..cubicTo(
+        size.width * 0.28,
+        size.height * 0.98,
+        size.width * 0.52,
+        size.height * 0.90,
+        size.width * 0.72,
+        size.height * 0.53,
+      )
+      ..cubicTo(
+        size.width * 0.82,
+        size.height * 0.34,
+        size.width * 0.91,
+        size.height * 0.30,
+        size.width * 0.97,
+        size.height * 0.38,
+      );
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _MessageUnderlinePainter oldDelegate) => false;
+}
+
+class _RegionLabel extends StatelessWidget {
+  const _RegionLabel({
+    required this.compact,
+  });
+
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: compact ? 39 : 43,
+      padding: EdgeInsets.symmetric(horizontal: compact ? 9 : 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(242),
+        borderRadius: BorderRadius.circular(999),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x12002440),
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             Icons.location_on_rounded,
-            color: Color(0xFFE9FDFF),
-            size: 13,
+            color: const Color(0xFF0B3658),
+            size: compact ? 15 : 17,
           ),
-          SizedBox(width: 4),
+          SizedBox(width: compact ? 3 : 5),
           Text(
             'Caraga',
             style: TextStyle(
-              color: Colors.white,
-              fontSize: 9.1,
-              fontWeight: FontWeight.w900,
+              color: const Color(0xFF0B3658),
+              fontSize: compact ? 9.6 : 10.4,
+              fontWeight: FontWeight.w800,
             ),
+          ),
+          SizedBox(width: compact ? 1 : 2),
+          Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: const Color(0xFF0B3658),
+            size: compact ? 15 : 17,
           ),
         ],
       ),
@@ -523,49 +365,40 @@ class _RegionChip extends StatelessWidget {
   }
 }
 
-class _PremiumActionButton extends StatelessWidget {
-  const _PremiumActionButton({
-    required this.icon,
+class _HeaderActionButton extends StatelessWidget {
+  const _HeaderActionButton({
     required this.tooltip,
+    required this.icon,
     required this.onTap,
-    required this.isDarkMode,
+    required this.compact,
   });
 
-  final IconData icon;
   final String tooltip;
+  final IconData icon;
   final VoidCallback? onTap;
-  final bool isDarkMode;
+  final bool compact;
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
+    final size = compact ? 38.0 : 42.0;
+
     return Tooltip(
       message: tooltip,
       child: Material(
-        color: Colors.white.withAlpha(
-          isDarkMode ? 17 : 24,
-        ),
-        borderRadius: BorderRadius.circular(11),
+        color: Colors.white.withAlpha(242),
+        shape: const CircleBorder(),
+        elevation: 0.5,
+        shadowColor: const Color(0x16001D33),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(11),
-          splashColor: Colors.white.withAlpha(28),
-          child: Container(
-            width: 31,
-            height: 31,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(11),
-              border: Border.all(
-                color: Colors.white.withAlpha(
-                  isDarkMode ? 20 : 34,
-                ),
-              ),
-            ),
+          customBorder: const CircleBorder(),
+          child: SizedBox(
+            width: size,
+            height: size,
             child: Icon(
               icon,
-              color: Colors.white,
-              size: 16,
+              color: const Color(0xFF0B3658),
+              size: compact ? 19 : 21,
             ),
           ),
         ),
@@ -574,436 +407,52 @@ class _PremiumActionButton extends StatelessWidget {
   }
 }
 
-class _PremiumGreeting extends StatelessWidget {
-  const _PremiumGreeting({
-    required this.userName,
-  });
-
-  final String userName;
-
-  @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Row(
-          children: [
-            SizedBox(
-              width: 18,
-              child: Divider(
-                color: Color(0xFF82E9F1),
-                thickness: 2,
-                height: 2,
-              ),
-            ),
-            SizedBox(width: 7),
-            Text(
-              'GOOD DAY',
-              style: TextStyle(
-                color: Color(0xFFCBF4F7),
-                fontSize: 8.4,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.15,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 7),
-        Text(
-          userName,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 25,
-            height: 1.03,
-            fontWeight: FontWeight.w900,
-            letterSpacing: -0.35,
-          ),
-        ),
-        const SizedBox(height: 7),
-        const Text(
-          'Fresh fish, trusted suppliers, and clear Cash on Delivery order tracking.',
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: Color(0xFFDDF5F7),
-            fontSize: 11.1,
-            height: 1.36,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _PremiumSearchBar extends StatelessWidget {
-  const _PremiumSearchBar({
+class _HeaderSearch extends StatelessWidget {
+  const _HeaderSearch({
     required this.onTap,
-    required this.isDarkMode,
+    required this.compact,
   });
 
   final VoidCallback onTap;
-  final bool isDarkMode;
+  final bool compact;
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return Semantics(
-      button: true,
-      label: 'Search IsdaLink marketplace',
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(18),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(18),
-          child: Ink(
-            height: 50,
-            padding: const EdgeInsets.fromLTRB(8, 5, 7, 5),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: Colors.white,
-                width: 1.3,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withAlpha(
-                    isDarkMode ? 32 : 25,
-                  ),
-                  blurRadius: 20,
-                  offset: const Offset(0, 9),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEAF7FC),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.search_rounded,
-                    color: Color(0xFF47728A),
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                const Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Search IsdaLink Market',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Color(0xFF163C55),
-                          fontSize: 11.1,
-                          height: 1,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Fish, suppliers, or locations',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Color(0xFF8AA0AF),
-                          fontSize: 8.4,
-                          height: 1,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xFF0875D1),
-                        Color(0xFF10ACC9),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x2B0875D1),
-                        blurRadius: 9,
-                        offset: Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.arrow_outward_rounded,
-                    color: Colors.white,
-                    size: 17,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
+  Widget build(BuildContext context) {
+    final searchHeight = compact ? 47.0 : 50.0;
 
-class _PremiumNetworkPanel extends StatelessWidget {
-  const _PremiumNetworkPanel({
-    required this.supplierCount,
-    required this.fishStockCount,
-    required this.activeOrderCount,
-    required this.isDarkMode,
-    this.onSuppliersTap,
-    this.onFishStocksTap,
-    this.onActiveOrdersTap,
-  });
-
-  final int supplierCount;
-  final int fishStockCount;
-  final int activeOrderCount;
-  final bool isDarkMode;
-  final VoidCallback? onSuppliersTap;
-  final VoidCallback? onFishStocksTap;
-  final VoidCallback? onActiveOrdersTap;
-
-  @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(
-        10,
-        9,
-        10,
-        9,
-      ),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.white.withAlpha(
-              isDarkMode ? 20 : 34,
-            ),
-            Colors.white.withAlpha(
-              isDarkMode ? 9 : 17,
-            ),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: Colors.white.withAlpha(
-            isDarkMode ? 22 : 42,
-          ),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(
-              isDarkMode ? 30 : 19,
-            ),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 7,
-                height: 7,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF8AF0B0),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Color(0x668AF0B0),
-                      blurRadius: 7,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 7),
-              const Text(
-                'LIVE MARKETPLACE',
-                style: TextStyle(
-                  color: Color(0xFFD8F7F5),
-                  fontSize: 7.8,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.9,
-                ),
-              ),
-              const Spacer(),
-              const Text(
-                'Tap to explore',
-                style: TextStyle(
-                  color: Color(0xFFBCE8EC),
-                  fontSize: 7.8,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: _PremiumMetricItem(
-                  icon: Icons.storefront_rounded,
-                  value: supplierCount,
-                  label: 'Suppliers',
-                  accentColor: const Color(0xFFA8F0DC),
-                  onTap: onSuppliersTap,
-                ),
-              ),
-              const _PremiumMetricDivider(),
-              Expanded(
-                child: _PremiumMetricItem(
-                  icon: Icons.set_meal_rounded,
-                  value: fishStockCount,
-                  label: 'Fish Stocks',
-                  accentColor: const Color(0xFFAEEBFF),
-                  onTap: onFishStocksTap,
-                ),
-              ),
-              const _PremiumMetricDivider(),
-              Expanded(
-                child: _PremiumMetricItem(
-                  icon: Icons.receipt_long_rounded,
-                  value: activeOrderCount,
-                  label: 'Active Orders',
-                  accentColor: const Color(0xFFFFDEA0),
-                  onTap: onActiveOrdersTap,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PremiumMetricDivider extends StatelessWidget {
-  const _PremiumMetricDivider();
-
-  @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return Container(
-      width: 1,
-      height: 35,
-      margin: const EdgeInsets.symmetric(
-        horizontal: 3,
-      ),
-      color: Colors.white.withAlpha(39),
-    );
-  }
-}
-
-class _PremiumMetricItem extends StatelessWidget {
-  const _PremiumMetricItem({
-    required this.icon,
-    required this.value,
-    required this.label,
-    required this.accentColor,
-    this.onTap,
-  });
-
-  final IconData icon;
-  final int value;
-  final String label;
-  final Color accentColor;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return Semantics(
-      button: onTap != null,
-      label: 'Open $label',
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(15),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(15),
-          splashColor: Colors.white.withAlpha(23),
-          highlightColor: Colors.white.withAlpha(10),
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(999),
+      elevation: 2.5,
+      shadowColor: const Color(0x26002036),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: SizedBox(
+          width: double.infinity,
+          height: searchHeight,
           child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 5,
-              vertical: 4,
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? 16 : 18,
             ),
             child: Row(
               children: [
-                Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: accentColor.withAlpha(32),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: accentColor.withAlpha(70),
-                    ),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: accentColor,
-                    size: 15,
-                  ),
+                Icon(
+                  Icons.search_rounded,
+                  color: const Color(0xFF123452),
+                  size: compact ? 23 : 25,
                 ),
-                const SizedBox(width: 7),
+                SizedBox(width: compact ? 9 : 11),
                 Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '$value',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 17,
-                          height: 1,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFFD8F3F5),
-                          fontSize: 7.8,
-                          height: 1,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    'Search fish, suppliers, or locations...',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: const Color(0xFF8B97A4),
+                      fontSize: compact ? 10.6 : 11.4,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
@@ -1015,297 +464,65 @@ class _PremiumMetricItem extends StatelessWidget {
   }
 }
 
-class _PremiumHeaderWaveGeometry {
-  const _PremiumHeaderWaveGeometry._();
+class _OceanEdge extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path()
+      ..lineTo(0, size.height - 12)
+      ..cubicTo(
+        size.width * 0.20,
+        size.height - 2,
+        size.width * 0.44,
+        size.height - 20,
+        size.width * 0.66,
+        size.height - 14,
+      )
+      ..cubicTo(
+        size.width * 0.82,
+        size.height - 10,
+        size.width * 0.93,
+        size.height - 4,
+        size.width,
+        size.height - 7,
+      )
+      ..lineTo(size.width, 0)
+      ..close();
 
-  static Path clipPath(
-    Size size,
-  ) {
+    return path;
+  }
+
+  @override
+  bool shouldReclip(covariant _OceanEdge oldClipper) => false;
+}
+
+class _TopBrandWaveClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
     final path = Path()
       ..moveTo(0, 0)
-      ..lineTo(
-        0,
-        size.height - 31,
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width, size.height * 0.64)
+      ..cubicTo(
+        size.width * 0.86,
+        size.height * 0.94,
+        size.width * 0.64,
+        size.height * 1.00,
+        size.width * 0.43,
+        size.height * 0.92,
       )
       ..cubicTo(
-        size.width * 0.18,
-        size.height - 17,
-        size.width * 0.38,
-        size.height - 7,
-        size.width * 0.56,
-        size.height - 11,
-      )
-      ..cubicTo(
-        size.width * 0.72,
-        size.height - 15,
-        size.width * 0.87,
-        size.height - 31,
-        size.width + 8,
-        size.height - 33,
-      )
-      ..lineTo(
-        size.width + 8,
+        size.width * 0.24,
+        size.height * 0.85,
+        size.width * 0.11,
+        size.height * 1.02,
         0,
+        size.height * 0.95,
       )
       ..close();
 
     return path;
   }
 
-  static Path bottomEdge(
-    Size size,
-  ) {
-    return Path()
-      ..moveTo(
-        -8,
-        size.height - 31,
-      )
-      ..cubicTo(
-        size.width * 0.18,
-        size.height - 17,
-        size.width * 0.38,
-        size.height - 7,
-        size.width * 0.56,
-        size.height - 11,
-      )
-      ..cubicTo(
-        size.width * 0.72,
-        size.height - 15,
-        size.width * 0.87,
-        size.height - 31,
-        size.width + 10,
-        size.height - 33,
-      );
-  }
-}
-
-class _PremiumHomeHeaderClipper extends CustomClipper<Path> {
-  const _PremiumHomeHeaderClipper();
-
   @override
-  Path getClip(
-    Size size,
-  ) {
-    return _PremiumHeaderWaveGeometry.clipPath(
-      size,
-    );
-  }
-
-  @override
-  bool shouldReclip(
-    covariant CustomClipper<Path> oldClipper,
-  ) {
-    return false;
-  }
-}
-
-class _PremiumWaveTransitionPainter extends CustomPainter {
-  const _PremiumWaveTransitionPainter({
-    required this.isDarkMode,
-  });
-
-  final bool isDarkMode;
-
-  @override
-  void paint(
-    Canvas canvas,
-    Size size,
-  ) {
-    final wave = _PremiumHeaderWaveGeometry.bottomEdge(
-      size,
-    );
-
-    final shadowPaint = Paint()
-      ..color = Colors.black.withAlpha(
-        isDarkMode ? 52 : 32,
-      )
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 18
-      ..strokeCap = StrokeCap.round
-      ..maskFilter = const MaskFilter.blur(
-        BlurStyle.normal,
-        8,
-      );
-
-    canvas.drawPath(
-      wave,
-      shadowPaint,
-    );
-
-    final underglowPaint = Paint()
-      ..shader = const LinearGradient(
-        begin: Alignment.centerLeft,
-        end: Alignment.centerRight,
-        colors: [
-          Color(0xFF0B76C8),
-          Color(0xFF16B8D5),
-          Color(0xFF77E6EB),
-        ],
-      ).createShader(
-        Rect.fromLTWH(
-          0,
-          size.height - 45,
-          size.width,
-          32,
-        ),
-      )
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 10
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawPath(
-      wave,
-      underglowPaint,
-    );
-
-    final foamPaint = Paint()
-      ..color = Colors.white.withAlpha(
-        isDarkMode ? 42 : 104,
-      )
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.1
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawPath(
-      wave,
-      foamPaint,
-    );
-
-    final softHighlightPaint = Paint()
-      ..color = const Color(0xFFBFF8FA).withAlpha(
-        isDarkMode ? 28 : 62,
-      )
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round
-      ..maskFilter = const MaskFilter.blur(
-        BlurStyle.normal,
-        3,
-      );
-
-    canvas.drawPath(
-      wave,
-      softHighlightPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(
-    covariant _PremiumWaveTransitionPainter oldDelegate,
-  ) {
-    return oldDelegate.isDarkMode != isDarkMode;
-  }
-}
-
-class _PremiumMarineBackdropPainter extends CustomPainter {
-  const _PremiumMarineBackdropPainter({
-    required this.isDarkMode,
-  });
-
-  final bool isDarkMode;
-
-  @override
-  void paint(
-    Canvas canvas,
-    Size size,
-  ) {
-    final glowCenter = Offset(
-      size.width * 0.87,
-      size.height * 0.28,
-    );
-
-    final glowPaint = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          Colors.white.withAlpha(
-            isDarkMode ? 12 : 22,
-          ),
-          Colors.white.withAlpha(0),
-        ],
-      ).createShader(
-        Rect.fromCircle(
-          center: glowCenter,
-          radius: size.width * 0.42,
-        ),
-      );
-
-    canvas.drawCircle(
-      glowCenter,
-      size.width * 0.42,
-      glowPaint,
-    );
-
-    final ringPaint = Paint()
-      ..color = Colors.white.withAlpha(
-        isDarkMode ? 5 : 10,
-      )
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-
-    for (final radius in [
-      size.width * 0.10,
-      size.width * 0.18,
-    ]) {
-      canvas.drawCircle(
-        Offset(
-          size.width * 0.93,
-          size.height * 0.36,
-        ),
-        radius,
-        ringPaint,
-      );
-    }
-
-    final wavePaint = Paint()
-      ..color = Colors.white.withAlpha(
-        isDarkMode ? 5 : 10,
-      )
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-
-    final upperWave = Path()
-      ..moveTo(
-        -20,
-        size.height * 0.27,
-      )
-      ..cubicTo(
-        size.width * 0.24,
-        size.height * 0.18,
-        size.width * 0.47,
-        size.height * 0.37,
-        size.width + 24,
-        size.height * 0.22,
-      );
-
-    final lowerWave = Path()
-      ..moveTo(
-        -24,
-        size.height * 0.72,
-      )
-      ..cubicTo(
-        size.width * 0.28,
-        size.height * 0.60,
-        size.width * 0.58,
-        size.height * 0.82,
-        size.width + 22,
-        size.height * 0.66,
-      );
-
-    canvas
-      ..drawPath(
-        upperWave,
-        wavePaint,
-      )
-      ..drawPath(
-        lowerWave,
-        wavePaint,
-      );
-  }
-
-  @override
-  bool shouldRepaint(
-    covariant _PremiumMarineBackdropPainter oldDelegate,
-  ) {
-    return oldDelegate.isDarkMode != isDarkMode;
-  }
+  bool shouldReclip(covariant _TopBrandWaveClipper oldClipper) => false;
 }

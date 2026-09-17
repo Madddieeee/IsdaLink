@@ -5,6 +5,8 @@ class HomeSectionHeader extends StatelessWidget {
     super.key,
     required this.title,
     required this.icon,
+    this.assetIconPath,
+    this.subtitle,
     this.actionLabel,
     this.badgeLabel,
     this.onViewAll,
@@ -12,136 +14,135 @@ class HomeSectionHeader extends StatelessWidget {
 
   final String title;
   final IconData icon;
+  final String? assetIconPath;
+  final String? subtitle;
   final String? actionLabel;
   final String? badgeLabel;
   final VoidCallback? onViewAll;
 
-  String get eyebrow {
-    switch (title.trim().toLowerCase()) {
-      case 'recommended suppliers':
-        return 'ISDALINK PICKS';
-      case 'latest fish stocks':
-        return 'FRESH MARKET';
-      default:
-        return 'ISDALINK';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final hasSubtitle = subtitle != null && subtitle!.trim().isNotEmpty;
+    final hasBadge = badgeLabel != null && badgeLabel!.trim().isNotEmpty;
+
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: hasSubtitle ? CrossAxisAlignment.start : CrossAxisAlignment.center,
       children: [
         Container(
-          width: 36,
-          height: 36,
+          width: 32,
+          height: 32,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF075C9B),
-                Color(0xFF078ED1),
-                Color(0xFF11B9D1),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x220A73D8),
-                blurRadius: 9,
-                offset: Offset(0, 4),
-              ),
-            ],
+            color: const Color(0xFFE4F6FC),
+            borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, color: Colors.white, size: 18),
+          child: assetIconPath != null && assetIconPath!.trim().isNotEmpty
+              ? Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Image.asset(
+                    assetIconPath!,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, error, stack) => Icon(
+                      icon,
+                      color: const Color(0xFF087EBA),
+                      size: 17,
+                    ),
+                  ),
+                )
+              : Icon(
+                  icon,
+                  color: const Color(0xFF087EBA),
+                  size: 17,
+                ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 9),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                eyebrow,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Color(0xFF5D8BA5),
-                  fontSize: 7.2,
-                  height: 1,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.82,
-                ),
+              Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF102D48),
+                        fontSize: 19,
+                        height: 1.05,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.45,
+                      ),
+                    ),
+                  ),
+                  if (hasBadge) ...[
+                    const SizedBox(width: 7),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE7F8F1),
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                      child: Text(
+                        badgeLabel!,
+                        maxLines: 1,
+                        style: const TextStyle(
+                          color: Color(0xFF16835F),
+                          fontSize: 8.5,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Color(0xFF12354C),
-                  fontSize: 16.2,
-                  height: 1.05,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.25,
+              if (hasSubtitle) ...[
+                const SizedBox(height: 3),
+                Text(
+                  subtitle!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFF758B9B),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ),
-        if (badgeLabel?.trim().isNotEmpty == true) ...[
-          Container(
-            margin: const EdgeInsets.only(right: 7),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE8F8F1),
-              borderRadius: BorderRadius.circular(99),
-              border: Border.all(color: const Color(0xFFC7EEDD)),
+        if (onViewAll != null) ...[
+          const SizedBox(width: 6),
+          TextButton(
+            onPressed: onViewAll,
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-            child: Text(
-              badgeLabel!.trim(),
-              style: const TextStyle(
-                color: Color(0xFF16835F),
-                fontSize: 8.8,
-                fontWeight: FontWeight.w900,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  actionLabel ?? 'See all',
+                  style: const TextStyle(
+                    color: Color(0xFF008EC5),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(width: 2),
+                const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 10,
+                  color: Color(0xFF008EC5),
+                ),
+              ],
             ),
           ),
         ],
-        if (onViewAll != null)
-          Material(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(99),
-            child: InkWell(
-              onTap: onViewAll,
-              borderRadius: BorderRadius.circular(99),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(8, 7, 2, 7),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      actionLabel?.trim().isNotEmpty == true
-                          ? actionLabel!.trim()
-                          : 'View all',
-                      style: const TextStyle(
-                        color: Color(0xFF0876C8),
-                        fontSize: 9.4,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(width: 2),
-                    const Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      color: Color(0xFF0876C8),
-                      size: 10,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
       ],
     );
   }

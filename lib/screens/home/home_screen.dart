@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -11,7 +13,7 @@ import 'package:isdalink/screens/home/widgets/home_carousel_physics.dart';
 import 'package:isdalink/screens/home/widgets/home_section_header.dart';
 import 'package:isdalink/screens/home/widgets/recent_fish_posts.dart';
 import 'package:isdalink/screens/home/widgets/recommended_supplier_card.dart';
-import 'package:isdalink/screens/home/widgets/top_selling_fish_strip.dart';
+import 'package:isdalink/screens/home/widgets/home_market_showcase.dart';
 import 'package:isdalink/screens/profile/me_screen.dart';
 import 'package:isdalink/screens/vendor/browse_suppliers_screen.dart';
 import 'package:isdalink/screens/vendor/latest_fish_stocks_screen.dart';
@@ -95,7 +97,7 @@ class HomeScreen
   }
 
   void openHomeSearch(
-    BuildContext context,
+    BuildContext context, {String initialQuery = ''}
   ) {
     showModalBottomSheet<
       void
@@ -108,6 +110,7 @@ class HomeScreen
             sheetContext,
           ) {
             return HomeSearchSheet(
+              initialQuery: initialQuery,
               onSupplierTap:
                   (
                     supplier,
@@ -224,7 +227,7 @@ class HomeScreen
     BuildContext context,
   ) {
     return SizedBox(
-      height: 205,
+      height: 162,
       child:
           StreamBuilder<
             QuerySnapshot<
@@ -396,8 +399,8 @@ class HomeScreen
                       }
 
                       final screenWidth = MediaQuery.sizeOf(context).width;
-                      final cardWidth = (screenWidth * 0.56)
-                          .clamp(205.0, 224.0)
+                      final cardWidth = (screenWidth * 0.53)
+                          .clamp(196.0, 214.0)
                           .toDouble();
 
                       return _HomeSupplierSnappingCarousel(
@@ -419,7 +422,7 @@ class HomeScreen
       width: 148,
       child: Center(
         child: SizedBox(
-          height: 158,
+          height: 150,
           child: Material(
             color: Colors.transparent,
             borderRadius: BorderRadius.circular(20),
@@ -452,17 +455,27 @@ class HomeScreen
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
-                        width: 34,
-                        height: 34,
+                        width: 48,
+                        height: 48,
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(11),
-                          border: Border.all(color: const Color(0xFFD3EAF3)),
+                          color: const Color(0xFFE4F6FB),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: const Color(0xFFC7E7F1),
+                          ),
                         ),
-                        child: const Icon(
-                          Icons.storefront_rounded,
-                          color: Color(0xFF087AC0),
-                          size: 17,
+                        child: Padding(
+                          padding: const EdgeInsets.all(7),
+                          child: Image.asset(
+                            'assets/images/Store1.png',
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, _, _) =>
+                                const Icon(
+                                  Icons.storefront_rounded,
+                                  color: Color(0xFF087AC0),
+                                  size: 30,
+                                ),
+                          ),
                         ),
                       ),
                       const Spacer(),
@@ -470,36 +483,46 @@ class HomeScreen
                         '$totalSuppliers suppliers',
                         style: const TextStyle(
                           color: Color(0xFF7693A4),
-                          fontSize: 8.8,
+                          fontSize: 9,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
                       const SizedBox(height: 3),
                       const Text(
-                        'Explore all',
+                        'All suppliers',
                         style: TextStyle(
                           color: Color(0xFF123B55),
-                          fontSize: 14.2,
+                          fontSize: 14,
                           height: 1.05,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
-                      const SizedBox(height: 7),
+                      const SizedBox(height: 6),
                       const Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Browse market',
+                            'Browse',
                             style: TextStyle(
                               color: Color(0xFF087AC0),
-                              fontSize: 8.8,
+                              fontSize: 9.2,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
-                          SizedBox(width: 4),
-                          Icon(
-                            Icons.arrow_forward_rounded,
-                            color: Color(0xFF087AC0),
-                            size: 13,
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: Color(0xFFD8F1F8),
+                              shape: BoxShape.circle,
+                            ),
+                            child: SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: Icon(
+                                Icons.arrow_forward_rounded,
+                                color: Color(0xFF087AC0),
+                                size: 14,
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -763,31 +786,20 @@ class HomeScreen
             Expanded(
               child: ListView(
                 padding: EdgeInsets.zero,
-                physics: const BouncingScrollPhysics(),
+                physics: const ClampingScrollPhysics(),
                 children: [
                   HomeHeader(
                     onLogout: () => logout(context),
                     onSearchTap: () => openHomeSearch(context),
                     onProfileTap: () => openMe(context),
+                    onActiveOrdersTap: () => openMyOrders(context),
                   ),
-                  const SizedBox(height: 10),
-                  TopSellingFishStrip(
-                    onProductTap: (
-                      supplier,
-                      product,
-                      stockId,
-                      supplierId,
-                    ) {
-                      openProductDetails(
-                        context,
-                        supplier,
-                        product,
-                        stockId: stockId,
-                        supplierId: supplierId,
-                      );
-                    },
+                  const SizedBox(height: 4),
+                  HomeMarketShowcase(
+                    onBrowseSuppliers: () => openBrowseSuppliers(context),
+                    onBrowseFishStocks: () => openLatestFishStocks(context),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: HomeSectionHeader(
@@ -797,9 +809,9 @@ class HomeScreen
                       onViewAll: () => openBrowseSuppliers(context),
                     ),
                   ),
-                  const SizedBox(height: 9),
+                  const SizedBox(height: 4),
                   recommendedSuppliersList(context),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
                   RecentFishPosts(
                     onViewAll: () => openLatestFishStocks(context),
                     onProductTap: (
@@ -817,7 +829,7 @@ class HomeScreen
                       );
                     },
                   ),
-                  const SizedBox(height: 20),
+                  const HomeMarketFooter(),
                 ],
               ),
             ),
@@ -858,7 +870,7 @@ class _HomeScrollChromeState extends State<_HomeScrollChrome> {
       return false;
     }
 
-    final shouldShow = notification.metrics.pixels > 92;
+    final shouldShow = notification.metrics.pixels > 1;
 
     if (shouldShow != compactHeaderVisible) {
       setState(() {
@@ -899,89 +911,62 @@ class _HomeScrollChromeState extends State<_HomeScrollChrome> {
           top: widget.statusBarHeight,
           left: 0,
           right: 0,
-          height: 46,
+          height: 60,
           child: IgnorePointer(
             ignoring: !compactHeaderVisible,
             child: AnimatedSlide(
               duration: const Duration(milliseconds: 180),
               curve: Curves.easeOutCubic,
-              offset: compactHeaderVisible
-                  ? Offset.zero
-                  : const Offset(0, -0.35),
+              offset: Offset.zero,
               child: AnimatedOpacity(
                 duration: const Duration(milliseconds: 150),
                 opacity: compactHeaderVisible ? 1 : 0,
-                child: Material(
-                  color: const Color(0xFF064A78),
-                  elevation: 2,
-                  shadowColor: const Color(0x33001C31),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 29,
-                          height: 29,
-                          decoration: BoxDecoration(
-                            color: const Color(0x1FFFFFFF),
-                            borderRadius: BorderRadius.circular(9),
-                            border: Border.all(
-                              color: const Color(0x33FFFFFF),
-                            ),
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(18),
+                    bottomRight: Radius.circular(18),
+                  ),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        // Change 0.72 to control the frosted header opacity.
+                        // Lower = more transparent; higher = more solid white.
+                        color: const Color.fromRGBO(255, 255, 255, 0.72),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x22063A5A),
+                            blurRadius: 4,
+                            offset: Offset(0, 1),
                           ),
-                          child: const Icon(
-                            Icons.set_meal_rounded,
-                            size: 16,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(width: 9),
-                        const Expanded(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'ISDALINK',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10.5,
-                                  height: 1,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 1.0,
-                                ),
-                              ),
-                              SizedBox(height: 3),
-                              Text(
-                                'Fish supply network',
-                                style: TextStyle(
-                                  color: Color(0xFFCFE9F6),
-                                  fontSize: 7.8,
-                                  height: 1,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Material(
-                          color: const Color(0x1FFFFFFF),
-                          borderRadius: BorderRadius.circular(10),
-                          child: InkWell(
-                            onTap: widget.onSearchTap,
-                            borderRadius: BorderRadius.circular(10),
-                            child: const SizedBox(
-                              width: 32,
-                              height: 32,
-                              child: Icon(
-                                Icons.search_rounded,
-                                color: Colors.white,
-                                size: 18,
+                        ],
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 108,
+                              height: 36,
+                              child: Image.asset(
+                                'assets/images/isdalink_logo.png',
+                                fit: BoxFit.contain,
+                                alignment: Alignment.centerLeft,
+                                filterQuality: FilterQuality.high,
                               ),
                             ),
-                          ),
+                            const Spacer(),
+                            const _PinnedHeaderCircleButton(
+                              icon: Icons.notifications_none_rounded,
+                              onTap: null,
+                            ),
+                            const SizedBox(width: 8),
+                            _PinnedHeaderSearchButton(
+                              onTap: widget.onSearchTap,
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -993,6 +978,85 @@ class _HomeScrollChromeState extends State<_HomeScrollChrome> {
     );
   }
 }
+
+class _PinnedHeaderCircleButton extends StatelessWidget {
+  const _PinnedHeaderCircleButton({
+    required this.icon,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFFEAF7FB),
+      shape: const CircleBorder(
+        side: BorderSide(color: Color(0xFFCDE7F0)),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: SizedBox(
+          width: 38,
+          height: 38,
+          child: Icon(
+            icon,
+            color: const Color(0xFF075C9B),
+            size: 19,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PinnedHeaderSearchButton extends StatelessWidget {
+  const _PinnedHeaderSearchButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFFEAF7FB),
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          height: 38,
+          padding: const EdgeInsets.symmetric(horizontal: 13),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: const Color(0xFFCDE7F0)),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.search_rounded,
+                color: Color(0xFF075C9B),
+                size: 18,
+              ),
+              SizedBox(width: 6),
+              Text(
+                'Search',
+                style: TextStyle(
+                  color: Color(0xFF174A70),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 
 
 class _HomeSupplierSnappingCarousel extends StatelessWidget {
@@ -1015,7 +1079,10 @@ class _HomeSupplierSnappingCarousel extends StatelessWidget {
       ),
       itemCount: children.length,
       itemBuilder: (context, index) {
-        return children[index];
+        return Padding(
+          padding: const EdgeInsets.only(right: 12),
+          child: children[index],
+        );
       },
     );
   }
@@ -1416,7 +1483,10 @@ class HomeSearchSheet
     super.key,
     required this.onSupplierTap,
     required this.onProductTap,
+    this.initialQuery = '',
   });
+
+  final String initialQuery;
 
   final void Function(
     Supplier supplier,
@@ -1471,6 +1541,9 @@ class _HomeSearchSheetState
   @override
   void initState() {
     super.initState();
+    query = widget.initialQuery;
+    searchController.text = query;
+    if (query.isNotEmpty) selectedFilter = HomeSearchFilter.fish;
     searchHistoryService = SearchHistoryService(
       userId: FirebaseAuth.instance.currentUser?.uid,
     );

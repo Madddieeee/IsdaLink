@@ -5,7 +5,7 @@ import 'package:isdalink/models/fish_product.dart';
 import 'package:isdalink/models/supplier.dart';
 import 'package:isdalink/screens/home/widgets/home_section_header.dart';
 import 'package:isdalink/screens/home/widgets/home_carousel_physics.dart';
-import 'package:isdalink/screens/home/widgets/recent_fish_card.dart';
+import 'package:isdalink/screens/home/widgets/home_market_fish_card.dart';
 import 'package:isdalink/services/home_stock_service.dart';
 import 'package:isdalink/services/supplier_browse_service.dart';
 import 'package:isdalink/utils/app_error_message.dart';
@@ -110,7 +110,7 @@ class RecentFishPosts extends StatelessWidget {
 
   Widget loadingGrid() {
     return SizedBox(
-      height: 214,
+      height: 232,
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         scrollDirection: Axis.horizontal,
@@ -202,7 +202,7 @@ class RecentFishPosts extends StatelessWidget {
       return supplierUnavailableCard(context);
     }
 
-    return RecentFishCard(
+    return HomeMarketFishCard(
       product: product,
       supplierName: supplier.name,
       supplierImageUrl: stockService.supplierImageUrlForStock(
@@ -225,10 +225,10 @@ class RecentFishPosts extends StatelessWidget {
     required int totalStocks,
   }) {
     return SizedBox(
-      width: 134,
+      width: 148,
       child: Center(
         child: SizedBox(
-          height: 158,
+          height: 150,
           child: Material(
             color: Colors.transparent,
             borderRadius: BorderRadius.circular(20),
@@ -261,17 +261,23 @@ class RecentFishPosts extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
-                        width: 34,
-                        height: 34,
+                        width: 48,
+                        height: 48,
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(11),
-                          border: Border.all(color: const Color(0xFFD3EAF3)),
+                          color: const Color(0xFFE4F6FB),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: const Color(0xFFC7E7F1),
+                          ),
                         ),
-                        child: const Icon(
-                          Icons.set_meal_rounded,
-                          color: Color(0xFF087AC0),
-                          size: 17,
+                        child: Padding(
+                          padding: const EdgeInsets.all(7),
+                          child: Image.asset(
+                            'assets/images/Fish.png',
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, _, _) =>
+                                const SizedBox.shrink(),
+                          ),
                         ),
                       ),
                       const Spacer(),
@@ -279,36 +285,46 @@ class RecentFishPosts extends StatelessWidget {
                         '$totalStocks fish stocks',
                         style: const TextStyle(
                           color: Color(0xFF7693A4),
-                          fontSize: 8.8,
+                          fontSize: 9,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
                       const SizedBox(height: 3),
                       const Text(
-                        'See all fresh stock',
+                        'All fish stocks',
                         style: TextStyle(
                           color: Color(0xFF123B55),
-                          fontSize: 13.5,
-                          height: 1.08,
+                          fontSize: 14,
+                          height: 1.05,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
-                      const SizedBox(height: 7),
+                      const SizedBox(height: 6),
                       const Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Browse market',
+                            'Browse',
                             style: TextStyle(
                               color: Color(0xFF087AC0),
-                              fontSize: 8.8,
+                              fontSize: 9.2,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
-                          SizedBox(width: 4),
-                          Icon(
-                            Icons.arrow_forward_rounded,
-                            color: Color(0xFF087AC0),
-                            size: 13,
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: Color(0xFFD8F1F8),
+                              shape: BoxShape.circle,
+                            ),
+                            child: SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: Icon(
+                                Icons.arrow_forward_rounded,
+                                color: Color(0xFF087AC0),
+                                size: 14,
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -364,7 +380,7 @@ class RecentFishPosts extends StatelessWidget {
 
                 final screenWidth = MediaQuery.sizeOf(context).width;
                 final cardWidth =
-                    (screenWidth * 0.50).clamp(184.0, 198.0).toDouble();
+                    (screenWidth * 0.51).clamp(188.0, 202.0).toDouble();
                 final cards = <Widget>[
                   for (final document in documents)
                     SizedBox(
@@ -386,7 +402,7 @@ class RecentFishPosts extends StatelessWidget {
                 ];
 
                 body = SizedBox(
-                  height: 214,
+                  height: 232,
                   child: _HomeFishSnappingCarousel(
                     itemExtent: cardWidth + 12,
                     children: cards,
@@ -401,14 +417,16 @@ class RecentFishPosts extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: HomeSectionHeader(
                     title: 'Latest Fish Stocks',
-                    icon: Icons.set_meal,
+                    icon: Icons.set_meal_rounded,
+                    assetIconPath: 'assets/images/Fish.png',
+                    subtitle: 'Freshly posted by suppliers across Caraga',
                     badgeLabel:
                         unseenCount > 0 ? '$unseenCount updates' : null,
                     actionLabel: 'View all',
                     onViewAll: onViewAll,
                   ),
                 ),
-                const SizedBox(height: 9),
+                const SizedBox(height: 4),
                 body,
               ],
             );
