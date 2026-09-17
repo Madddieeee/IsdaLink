@@ -355,40 +355,29 @@ function canonicalRecord(row, rowNumber, mapping, sourceFile) {
   const vendorHistoricalId = clean(field(row, 'vendor_id'));
   const supplierHistoricalId = clean(field(row, 'supplier_id'));
 
-  if (!vendorHistoricalId) {
-    throw new Error(`Row ${rowNumber}: vendor_id is blank.`);
+  const vendorName = clean(field(row, 'vendor_name'));
+  const supplierName = clean(field(row, 'supplier_name'));
+
+  if (!vendorHistoricalId && !supplierHistoricalId) {
+    throw new Error(`Row ${rowNumber}: at least one participant ID is required.`);
+  }
+  if (!vendorName || !supplierName) {
+    throw new Error(`Row ${rowNumber}: vendor_name and supplier_name are required.`);
   }
 
-  if (!supplierHistoricalId) {
-    throw new Error(`Row ${rowNumber}: supplier_id is blank.`);
+  const vendorUid = vendorHistoricalId
+    ? mappedUid(mapping.vendors, vendorHistoricalId) : '';
+  const supplierUid = supplierHistoricalId
+    ? mappedUid(mapping.suppliers, supplierHistoricalId) : '';
+
+  if (vendorHistoricalId && !vendorUid) {
+    throw new Error(`Row ${rowNumber}: ${vendorHistoricalId} has no Firebase UID mapping.`);
   }
-
-  const vendorUid = mappedUid(
-    mapping.vendors,
-    vendorHistoricalId,
-  );
-  const supplierUid = mappedUid(
-    mapping.suppliers,
-    supplierHistoricalId,
-  );
-
-  if (!vendorUid) {
-    throw new Error(
-      `Row ${rowNumber}: ${vendorHistoricalId} has no Firebase UID mapping.`,
-    );
+  if (supplierHistoricalId && !supplierUid) {
+    throw new Error(`Row ${rowNumber}: ${supplierHistoricalId} has no Firebase UID mapping.`);
   }
-
-  if (!supplierUid) {
-    throw new Error(
-      `Row ${rowNumber}: ${supplierHistoricalId} has no Firebase UID mapping.`,
-    );
-  }
-
-  if (vendorUid === supplierUid) {
-    throw new Error(
-      `Row ${rowNumber}: vendor and supplier resolve to the same Firebase UID. ` +
-      'Historical self-transactions are not allowed.',
-    );
+  if (vendorUid && supplierUid && vendorUid === supplierUid) {
+    throw new Error(`Row ${rowNumber}: historical self-transactions are not allowed.`);
   }
 
   const productName = clean(field(row, 'fish_product'));
@@ -492,8 +481,12 @@ function canonicalRecord(row, rowNumber, mapping, sourceFile) {
     completionTime,
 
     vendorHistoricalId,
+    vendorName,
+    vendorIsExternal: !vendorHistoricalId,
     vendorUid,
     supplierHistoricalId,
+    supplierName,
+    supplierIsExternal: !supplierHistoricalId,
     supplierUid,
 
     productName,
@@ -742,10 +735,10 @@ async function main() {
   }
 
   const requiredVendorIds = new Set(
-    records.map((record) => record.vendorHistoricalId),
+    records.map((record) => record.vendorHistoricalId).filter(Boolean),
   );
   const requiredSupplierIds = new Set(
-    records.map((record) => record.supplierHistoricalId),
+    records.map((record) => record.supplierHistoricalId).filter(Boolean),
   );
 
   const missingVendorIds = [...requiredVendorIds].filter(
