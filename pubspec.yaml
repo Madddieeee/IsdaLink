@@ -74,7 +74,8 @@ flutter:
     - assets/images/Fish.png
     - assets/images/Store.png
     - assets/images/Store1.png
-
+    - assets/images/productdetailwave.png
+    
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg
