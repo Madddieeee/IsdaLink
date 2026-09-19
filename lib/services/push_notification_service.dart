@@ -11,8 +11,7 @@ import 'package:isdalink/services/notification_navigation_service.dart';
 class PushNotificationService {
   PushNotificationService._();
 
-  static final PushNotificationService instance =
-      PushNotificationService._();
+  static final PushNotificationService instance = PushNotificationService._();
 
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   final Set<String> _activeRegistrations = <String>{};
@@ -45,35 +44,25 @@ class PushNotificationService {
       _showForegroundAlert,
     );
 
-    _messageOpenedSubscription =
-        FirebaseMessaging.onMessageOpenedApp.listen(
-      (message) {
-        unawaited(_handleInteraction(message));
-      },
-    );
+    _messageOpenedSubscription = FirebaseMessaging.onMessageOpenedApp.listen((
+      message,
+    ) {
+      unawaited(_handleInteraction(message));
+    });
 
-    _tokenSubscription = _messaging.onTokenRefresh.listen(
-      (token) {
-        final user = FirebaseAuth.instance.currentUser;
+    _tokenSubscription = _messaging.onTokenRefresh.listen((token) {
+      final user = FirebaseAuth.instance.currentUser;
 
-        if (user != null) {
-          unawaited(
-            _registerDevice(
-              user,
-              tokenOverride: token,
-            ),
-          );
-        }
-      },
-    );
+      if (user != null) {
+        unawaited(_registerDevice(user, tokenOverride: token));
+      }
+    });
 
-    _authSubscription = FirebaseAuth.instance.authStateChanges().listen(
-      (user) {
-        if (user != null) {
-          unawaited(_registerDevice(user));
-        }
-      },
-    );
+    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (user != null) {
+        unawaited(_registerDevice(user));
+      }
+    });
 
     final currentUser = FirebaseAuth.instance.currentUser;
 
@@ -90,10 +79,7 @@ class PushNotificationService {
     }
   }
 
-  Future<void> _registerDevice(
-    User user, {
-    String? tokenOverride,
-  }) async {
+  Future<void> _registerDevice(User user, {String? tokenOverride}) async {
     final registrationKey = '${user.uid}:${tokenOverride ?? 'current'}';
 
     if (!_activeRegistrations.add(registrationKey)) {
@@ -126,16 +112,13 @@ class PushNotificationService {
           .doc(user.uid)
           .collection('pushTokens')
           .doc(_tokenDocumentId(token))
-          .set(
-        <String, dynamic>{
-          'userId': user.uid,
-          'token': token,
-          'platform': defaultTargetPlatform.name,
-          'enabled': true,
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
+          .set(<String, dynamic>{
+            'userId': user.uid,
+            'token': token,
+            'platform': defaultTargetPlatform.name,
+            'enabled': true,
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
     } catch (error) {
       debugPrint('Push registration skipped: $error');
     } finally {
@@ -186,15 +169,14 @@ class PushNotificationService {
       return;
     }
 
-    _rememberMessage(
-      _shownMessageIds,
-      messageKey,
-    );
+    _rememberMessage(_shownMessageIds, messageKey);
 
-    final title = message.notification?.title ??
+    final title =
+        message.notification?.title ??
         message.data['title']?.toString().trim() ??
         'IsdaLink';
-    final body = message.notification?.body ??
+    final body =
+        message.notification?.body ??
         message.data['message']?.toString().trim() ??
         '';
     final messenger = _messengerKey?.currentState;
@@ -207,9 +189,7 @@ class PushNotificationService {
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          content: Text(
-            body.isEmpty ? title : '$title\n$body',
-          ),
+          content: Text(body.isEmpty ? title : '$title\n$body'),
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 6),
           action: SnackBarAction(
@@ -222,9 +202,7 @@ class PushNotificationService {
       );
   }
 
-  Future<void> _handleInteraction(
-    RemoteMessage message,
-  ) async {
+  Future<void> _handleInteraction(RemoteMessage message) async {
     final interactionKey = _messageKey(message);
 
     if (_handledInteractionIds.contains(interactionKey)) {
@@ -245,27 +223,21 @@ class PushNotificationService {
       return;
     }
 
-    for (var attempt = 0;
-        attempt < 30 && navigatorKey.currentState == null;
-        attempt++) {
-      await Future<void>.delayed(
-        const Duration(milliseconds: 100),
-      );
+    for (
+      var attempt = 0;
+      attempt < 30 && navigatorKey.currentState == null;
+      attempt++
+    ) {
+      await Future<void>.delayed(const Duration(milliseconds: 100));
     }
 
     if (navigatorKey.currentState == null) {
       return;
     }
 
-    _rememberMessage(
-      _handledInteractionIds,
-      interactionKey,
-    );
+    _rememberMessage(_handledInteractionIds, interactionKey);
 
-    await _markNotificationRead(
-      message: message,
-      userId: currentUser.uid,
-    );
+    await _markNotificationRead(message: message, userId: currentUser.uid);
 
     NotificationNavigationService.open(
       navigatorKey: navigatorKey,
@@ -280,13 +252,11 @@ class PushNotificationService {
     final notificationId =
         message.data['notificationId']?.toString().trim() ?? '';
     final type = message.data['type']?.toString().trim() ?? '';
-    final unreadCount = int.tryParse(
-          message.data['unreadCount']?.toString() ?? '',
-        ) ??
-        1;
+    final unreadCount =
+        int.tryParse(message.data['unreadCount']?.toString() ?? '') ?? 1;
     final grouped =
         message.data['grouped']?.toString().toLowerCase() == 'true' ||
-            unreadCount > 1;
+        unreadCount > 1;
 
     try {
       if (grouped && type.isNotEmpty) {
@@ -304,13 +274,10 @@ class PushNotificationService {
           final batch = FirebaseFirestore.instance.batch();
 
           for (final document in documents.skip(start).take(450)) {
-            batch.update(
-              document.reference,
-              {
-                'isRead': true,
-                'readAt': FieldValue.serverTimestamp(),
-              },
-            );
+            batch.update(document.reference, {
+              'isRead': true,
+              'readAt': FieldValue.serverTimestamp(),
+            });
           }
 
           await batch.commit();
@@ -323,19 +290,14 @@ class PushNotificationService {
         await FirebaseFirestore.instance
             .collection('notifications')
             .doc(notificationId)
-            .update({
-          'isRead': true,
-          'readAt': FieldValue.serverTimestamp(),
-        });
+            .update({'isRead': true, 'readAt': FieldValue.serverTimestamp()});
       }
     } catch (error) {
       debugPrint('Notification read update skipped: $error');
     }
   }
 
-  String _messageKey(
-    RemoteMessage message,
-  ) {
+  String _messageKey(RemoteMessage message) {
     final notificationId =
         message.data['notificationId']?.toString().trim() ?? '';
 
@@ -350,7 +312,8 @@ class PushNotificationService {
     }
 
     final type = message.data['type']?.toString().trim() ?? 'notification';
-    final subject = message.data['orderId']?.toString().trim() ??
+    final subject =
+        message.data['orderId']?.toString().trim() ??
         message.data['stockId']?.toString().trim() ??
         message.data['subjectId']?.toString().trim() ??
         '';
@@ -358,10 +321,7 @@ class PushNotificationService {
     return '$type:$subject:${message.sentTime?.millisecondsSinceEpoch ?? 0}';
   }
 
-  void _rememberMessage(
-    Set<String> values,
-    String value,
-  ) {
+  void _rememberMessage(Set<String> values, String value) {
     values.add(value);
 
     while (values.length > 120) {

@@ -5,9 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:isdalink/utils/app_error_message.dart';
 
 class ManageProfileScreen extends StatefulWidget {
-  const ManageProfileScreen({
-    super.key,
-  });
+  const ManageProfileScreen({super.key});
 
   @override
   State<ManageProfileScreen> createState() => _ManageProfileScreenState();
@@ -88,18 +86,13 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
 
     final parts = name
         .split(' ')
-        .where(
-          (part) => part.trim().isNotEmpty,
-        )
+        .where((part) => part.trim().isNotEmpty)
         .toList();
 
     if (parts.length == 1) {
       final value = parts.first;
 
-      return value.substring(
-        0,
-        value.length >= 2 ? 2 : 1,
-      ).toUpperCase();
+      return value.substring(0, value.length >= 2 ? 2 : 1).toUpperCase();
     }
 
     return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
@@ -155,27 +148,15 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
     return text.isEmpty ? fallback : text;
   }
 
-  String collapseSpaces(
-    String value,
-  ) {
-    return value.trim().replaceAll(
-          RegExp(r'\s+'),
-          ' ',
-        );
+  String collapseSpaces(String value) {
+    return value.trim().replaceAll(RegExp(r'\s+'), ' ');
   }
 
-  String phoneDigits(
-    String value,
-  ) {
-    return value.replaceAll(
-      RegExp(r'[^0-9]'),
-      '',
-    );
+  String phoneDigits(String value) {
+    return value.replaceAll(RegExp(r'[^0-9]'), '');
   }
 
-  String normalizePhilippinePhone(
-    String value,
-  ) {
+  String normalizePhilippinePhone(String value) {
     final digits = phoneDigits(value);
 
     if (digits.startsWith('09') && digits.length == 11) {
@@ -193,9 +174,7 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
     return value.trim();
   }
 
-  String? validateName(
-    String? value,
-  ) {
+  String? validateName(String? value) {
     final name = collapseSpaces(value ?? '');
 
     if (name.isEmpty) {
@@ -206,9 +185,7 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
       return 'Enter at least 2 characters.';
     }
 
-    final namePattern = RegExp(
-      r"^[A-Za-zÀ-ÖØ-öø-ÿÑñ.' -]+$",
-    );
+    final namePattern = RegExp(r"^[A-Za-zÀ-ÖØ-öø-ÿÑñ.' -]+$");
 
     if (!namePattern.hasMatch(name)) {
       return 'Use letters, spaces, hyphens, or apostrophes only.';
@@ -217,9 +194,7 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
     return null;
   }
 
-  String? validatePhone(
-    String? value,
-  ) {
+  String? validatePhone(String? value) {
     final input = (value ?? '').trim();
 
     if (input.isEmpty) {
@@ -228,12 +203,9 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
 
     final digits = phoneDigits(input);
 
-    final isLocal =
-        digits.startsWith('09') && digits.length == 11;
-    final isShortLocal =
-        digits.startsWith('9') && digits.length == 10;
-    final isInternational =
-        digits.startsWith('639') && digits.length == 12;
+    final isLocal = digits.startsWith('09') && digits.length == 11;
+    final isShortLocal = digits.startsWith('9') && digits.length == 10;
+    final isInternational = digits.startsWith('639') && digits.length == 12;
 
     if (!isLocal && !isShortLocal && !isInternational) {
       return 'Use 09XXXXXXXXX or +639XXXXXXXXX.';
@@ -262,11 +234,7 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
 
       final data = snapshot.data();
 
-      role = getStringValue(
-        data,
-        'role',
-        'vendor',
-      ).toLowerCase();
+      role = getStringValue(data, 'role', 'vendor').toLowerCase();
 
       supplierStatus = getStringValue(
         data,
@@ -275,19 +243,11 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
       ).toLowerCase();
 
       final loadedName = collapseSpaces(
-        getStringValue(
-          data,
-          'name',
-          user.displayName ?? 'IsdaLink User',
-        ),
+        getStringValue(data, 'name', user.displayName ?? 'IsdaLink User'),
       );
 
       final loadedPhone = normalizePhilippinePhone(
-        getStringValue(
-          data,
-          'phone',
-          '',
-        ),
+        getStringValue(data, 'phone', ''),
       );
 
       nameController.text = loadedName;
@@ -301,10 +261,7 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
       initialName = loadedName;
       initialPhone = loadedPhone;
     } catch (_) {
-      showMessage(
-        'Unable to load your account information.',
-        isError: true,
-      );
+      showMessage('Unable to load your account information.', isError: true);
     } finally {
       if (mounted) {
         setState(() {
@@ -351,15 +308,11 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
       final firestore = FirebaseFirestore.instance;
       final batch = firestore.batch();
 
-      batch.set(
-        firestore.collection('users').doc(user.uid),
-        {
-          'name': name,
-          'phone': phone,
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
+      batch.set(firestore.collection('users').doc(user.uid), {
+        'name': name,
+        'phone': phone,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
 
       if (isSupplierEnabled) {
         batch.set(
@@ -388,14 +341,13 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
         phoneController.text = phone;
       });
 
-      showMessage(
-        'Account information updated successfully.',
-      );
+      showMessage('Account information updated successfully.');
     } on FirebaseException catch (error) {
       showMessage(
         AppErrorMessage.from(
           error,
-          fallback: 'Unable to save your account information. Please try again.',
+          fallback:
+              'Unable to save your account information. Please try again.',
         ),
         isError: true,
       );
@@ -403,7 +355,8 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
       showMessage(
         AppErrorMessage.from(
           error,
-          fallback: 'Something went wrong while saving your profile. Please try again.',
+          fallback:
+              'Something went wrong while saving your profile. Please try again.',
           allowBusinessMessage: true,
         ),
         isError: true,
@@ -417,10 +370,7 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
     }
   }
 
-  void showMessage(
-    String message, {
-    bool isError = false,
-  }) {
+  void showMessage(String message, {bool isError = false}) {
     if (!mounted) {
       return;
     }
@@ -432,12 +382,7 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
       ..showSnackBar(
         SnackBar(
           behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.fromLTRB(
-            18,
-            0,
-            18,
-            18,
-          ),
+          margin: const EdgeInsets.fromLTRB(18, 0, 18, 18),
           backgroundColor: isError
               ? const Color(0xFFB3261E)
               : const Color(0xFF147D64),
@@ -497,18 +442,11 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
           color: const Color(0xFFE5F4FD),
           borderRadius: BorderRadius.circular(11),
         ),
-        child: Icon(
-          icon,
-          color: const Color(0xFF146BFF),
-          size: 20,
-        ),
+        child: Icon(icon, color: const Color(0xFF146BFF), size: 20),
       ),
       filled: true,
       fillColor: const Color(0xFFF2F7FB),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 15,
-        vertical: 17,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 17),
       errorMaxLines: 2,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
@@ -516,29 +454,19 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(
-          color: Color(0xFFE1EBF2),
-        ),
+        borderSide: const BorderSide(color: Color(0xFFE1EBF2)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(
-          color: Color(0xFF146BFF),
-          width: 1.5,
-        ),
+        borderSide: const BorderSide(color: Color(0xFF146BFF), width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(
-          color: Color(0xFFD32F2F),
-        ),
+        borderSide: const BorderSide(color: Color(0xFFD32F2F)),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(
-          color: Color(0xFFD32F2F),
-          width: 1.5,
-        ),
+        borderSide: const BorderSide(color: Color(0xFFD32F2F), width: 1.5),
       ),
     );
   }
@@ -554,20 +482,10 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF063B66),
-            Color(0xFF075FAE),
-            Color(0xFF146BFF),
-          ],
-          stops: [
-            0.0,
-            0.52,
-            1.0,
-          ],
+          colors: [Color(0xFF063B66), Color(0xFF075FAE), Color(0xFF146BFF)],
+          stops: [0.0, 0.52, 1.0],
         ),
-        borderRadius: BorderRadius.vertical(
-          bottom: Radius.circular(34),
-        ),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(34)),
         boxShadow: [
           BoxShadow(
             color: Color(0x24146BFF),
@@ -587,9 +505,7 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.white.withAlpha(10),
-                border: Border.all(
-                  color: Colors.white.withAlpha(18),
-                ),
+                border: Border.all(color: Colors.white.withAlpha(18)),
               ),
             ),
           ),
@@ -601,19 +517,12 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
               height: 82,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white.withAlpha(18),
-                ),
+                border: Border.all(color: Colors.white.withAlpha(18)),
               ),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(
-              18,
-              47,
-              18,
-              23,
-            ),
+            padding: const EdgeInsets.fromLTRB(18, 47, 18, 23),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -687,18 +596,11 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
                 ),
                 const SizedBox(height: 16),
                 Container(
-                  padding: const EdgeInsets.fromLTRB(
-                    13,
-                    13,
-                    13,
-                    13,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(13, 13, 13, 13),
                   decoration: BoxDecoration(
                     color: Colors.white.withAlpha(31),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: Colors.white.withAlpha(31),
-                    ),
+                    border: Border.all(color: Colors.white.withAlpha(31)),
                   ),
                   child: Row(
                     children: [
@@ -769,8 +671,7 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
                                     ),
                                     decoration: BoxDecoration(
                                       color: Colors.white.withAlpha(28),
-                                      borderRadius:
-                                          BorderRadius.circular(99),
+                                      borderRadius: BorderRadius.circular(99),
                                       border: Border.all(
                                         color: Colors.white.withAlpha(28),
                                       ),
@@ -801,9 +702,7 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
                         decoration: BoxDecoration(
                           color: statusColor.withAlpha(42),
                           borderRadius: BorderRadius.circular(99),
-                          border: Border.all(
-                            color: statusColor.withAlpha(110),
-                          ),
+                          border: Border.all(color: statusColor.withAlpha(110)),
                         ),
                         child: Text(
                           syncStatusLabel,
@@ -843,18 +742,11 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFE9F7FF),
-                Color(0xFFDDF1FF),
-              ],
+              colors: [Color(0xFFE9F7FF), Color(0xFFDDF1FF)],
             ),
             borderRadius: BorderRadius.circular(14),
           ),
-          child: Icon(
-            icon,
-            color: const Color(0xFF146BFF),
-            size: 22,
-          ),
+          child: Icon(icon, color: const Color(0xFF146BFF), size: 22),
         ),
         const SizedBox(width: 11),
         Expanded(
@@ -888,18 +780,11 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
 
   Widget personalDetailsCard() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(
-        16,
-        17,
-        16,
-        17,
-      ),
+      padding: const EdgeInsets.fromLTRB(16, 17, 16, 17),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(26),
-        border: Border.all(
-          color: const Color(0xFFE1EBF2),
-        ),
+        border: Border.all(color: const Color(0xFFE1EBF2)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x10000000),
@@ -927,9 +812,7 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
               enabled: !isSaving,
               textCapitalization: TextCapitalization.words,
               textInputAction: TextInputAction.next,
-              autofillHints: const [
-                AutofillHints.name,
-              ],
+              autofillHints: const [AutofillHints.name],
               validator: validateName,
               onFieldSubmitted: (_) {
                 phoneFocusNode.requestFocus();
@@ -946,13 +829,9 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
               enabled: !isSaving,
               keyboardType: TextInputType.phone,
               textInputAction: TextInputAction.done,
-              autofillHints: const [
-                AutofillHints.telephoneNumber,
-              ],
+              autofillHints: const [AutofillHints.telephoneNumber],
               inputFormatters: [
-                FilteringTextInputFormatter.allow(
-                  RegExp(r'[0-9+\s-]'),
-                ),
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9+\s-]')),
                 LengthLimitingTextInputFormatter(16),
               ],
               validator: validatePhone,
@@ -982,9 +861,7 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(
-            vertical: 11,
-          ),
+          padding: const EdgeInsets.symmetric(vertical: 11),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -995,11 +872,7 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
                   color: const Color(0xFFEAF7FB),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  icon,
-                  color: const Color(0xFF146BFF),
-                  size: 20,
-                ),
+                child: Icon(icon, color: const Color(0xFF146BFF), size: 20),
               ),
               const SizedBox(width: 11),
               Expanded(
@@ -1057,29 +930,18 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
             ],
           ),
         ),
-        if (showDivider)
-          const Divider(
-            height: 1,
-            color: Color(0xFFE5EDF3),
-          ),
+        if (showDivider) const Divider(height: 1, color: Color(0xFFE5EDF3)),
       ],
     );
   }
 
   Widget accountAccessCard() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(
-        16,
-        17,
-        16,
-        8,
-      ),
+      padding: const EdgeInsets.fromLTRB(16, 17, 16, 8),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(26),
-        border: Border.all(
-          color: const Color(0xFFE1EBF2),
-        ),
+        border: Border.all(color: const Color(0xFFE1EBF2)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x0D000000),
@@ -1118,8 +980,8 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
             note: isSupplierEnabled
                 ? 'Supplier tools and supplier analytics are available.'
                 : supplierStatus == 'pending'
-                    ? 'Your application is waiting for administrator review.'
-                    : 'Supplier access can be requested from Account Center.',
+                ? 'Your application is waiting for administrator review.'
+                : 'Supplier access can be requested from Account Center.',
             showDivider: false,
           ),
         ],
@@ -1129,18 +991,11 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
 
   Widget syncCard() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(
-        14,
-        13,
-        14,
-        13,
-      ),
+      padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
       decoration: BoxDecoration(
         color: const Color(0xFFEAF7FB),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFF72C6F8).withAlpha(75),
-        ),
+        border: Border.all(color: const Color(0xFF72C6F8).withAlpha(75)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1177,8 +1032,8 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
                   isSupplierEnabled
                       ? 'Saving updates Account Center. Your contact number also updates the supplier storefront; verified owner identity stays protected.'
                       : supplierStatus == 'pending'
-                          ? 'Saving updates Account Center only. Submitted supplier verification details stay unchanged while under review.'
-                          : 'Saving updates the name and contact number shown in Account Center.',
+                      ? 'Saving updates Account Center only. Submitted supplier verification details stay unchanged while under review.'
+                      : 'Saving updates the name and contact number shown in Account Center.',
                   style: const TextStyle(
                     color: Color(0xFF52677A),
                     fontSize: 10.5,
@@ -1198,12 +1053,7 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
     final canSave = hasChanges && !isSaving;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(
-        18,
-        10,
-        18,
-        16,
-      ),
+      padding: const EdgeInsets.fromLTRB(18, 10, 18, 16),
       decoration: const BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -1220,9 +1070,7 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
           width: double.infinity,
           height: 53,
           child: ElevatedButton.icon(
-            onPressed: canSave
-                ? saveProfile
-                : null,
+            onPressed: canSave ? saveProfile : null,
             icon: isSaving
                 ? const SizedBox(
                     width: 19,
@@ -1242,8 +1090,8 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
               isSaving
                   ? 'Saving Changes...'
                   : hasChanges
-                      ? 'Save Changes'
-                      : 'Profile Up to Date',
+                  ? 'Save Changes'
+                  : 'Profile Up to Date',
               style: const TextStyle(
                 fontSize: 14.5,
                 fontWeight: FontWeight.w900,
@@ -1269,11 +1117,7 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
   Widget loadingBody() {
     return const Scaffold(
       backgroundColor: Color(0xFFF4F8FB),
-      body: Center(
-        child: CircularProgressIndicator(
-          color: Color(0xFF146BFF),
-        ),
-      ),
+      body: Center(child: CircularProgressIndicator(color: Color(0xFF146BFF))),
     );
   }
 
@@ -1303,9 +1147,7 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     if (currentUser == null) {
       return loggedOutBody();
     }
@@ -1330,12 +1172,7 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
               child: ListView(
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: const EdgeInsets.fromLTRB(
-                  18,
-                  18,
-                  18,
-                  22,
-                ),
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 22),
                 children: [
                   personalDetailsCard(),
                   const SizedBox(height: 14),

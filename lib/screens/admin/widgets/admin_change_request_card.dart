@@ -45,9 +45,7 @@ class AdminChangeRequestCard extends StatelessWidget {
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
-  List<String> changedFields(
-    Map<String, dynamic> data,
-  ) {
+  List<String> changedFields(Map<String, dynamic> data) {
     final raw = data['changedFields'];
 
     if (raw is! List) {
@@ -64,25 +62,14 @@ class AdminChangeRequestCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final data = document.data();
 
-    final supplierName = stringValue(
-      data,
-      'supplierName',
-      'Approved Supplier',
-    );
+    final supplierName = stringValue(data, 'supplierName', 'Approved Supplier');
     final requestedLocation = stringValue(
       data,
       'requestedLocation',
       'Requested business location',
     );
-    final requestedPhoto = stringValue(
-      data,
-      'requestedStorePhotoUrl',
-    );
-    final reason = stringValue(
-      data,
-      'reason',
-      'No reason provided',
-    );
+    final requestedPhoto = stringValue(data, 'requestedStorePhotoUrl');
+    final reason = stringValue(data, 'reason', 'No reason provided');
     final changes = changedFields(data);
 
     return Container(
@@ -91,9 +78,7 @@ class AdminChangeRequestCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(23),
-        border: Border.all(
-          color: const Color(0xFFE0E9F1),
-        ),
+        border: Border.all(color: const Color(0xFFE0E9F1)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x0E102C44),
@@ -103,8 +88,7 @@ class AdminChangeRequestCard extends StatelessWidget {
         ],
       ),
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
@@ -122,11 +106,7 @@ class AdminChangeRequestCard extends StatelessWidget {
                       : Image.network(
                           requestedPhoto,
                           fit: BoxFit.cover,
-                          errorBuilder: (
-                            context,
-                            error,
-                            stackTrace,
-                          ) {
+                          errorBuilder: (context, error, stackTrace) {
                             return const Icon(
                               Icons.storefront_rounded,
                               color: Color(0xFF146BFF),
@@ -138,8 +118,7 @@ class AdminChangeRequestCard extends StatelessWidget {
               const SizedBox(width: 11),
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       supplierName,
@@ -164,10 +143,7 @@ class AdminChangeRequestCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 5,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFFF3DC),
                   borderRadius: BorderRadius.circular(99),
@@ -203,8 +179,7 @@ class AdminChangeRequestCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(14),
             ),
             child: Row(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Icon(
                   Icons.location_on_outlined,
@@ -274,9 +249,7 @@ class AdminChangeRequestCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0xFFFFF8E9),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: const Color(0xFFF0E0B5),
-              ),
+              border: Border.all(color: const Color(0xFFF0E0B5)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -309,16 +282,10 @@ class AdminChangeRequestCard extends StatelessWidget {
             height: 43,
             child: ElevatedButton.icon(
               onPressed: onOpen,
-              icon: const Icon(
-                Icons.fact_check_outlined,
-                size: 17,
-              ),
+              icon: const Icon(Icons.fact_check_outlined, size: 17),
               label: const Text(
                 'Review Current vs Requested',
-                style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 10.2,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 10.2),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF146BFF),

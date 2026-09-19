@@ -178,9 +178,7 @@ class _UnitOption extends StatelessWidget {
           duration: const Duration(milliseconds: 170),
           padding: const EdgeInsets.fromLTRB(12, 11, 11, 11),
           decoration: BoxDecoration(
-            color: selected
-                ? const Color(0xFFEAF8FF)
-                : const Color(0xFFF4F8FB),
+            color: selected ? const Color(0xFFEAF8FF) : const Color(0xFFF4F8FB),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: selected

@@ -26,7 +26,9 @@ class HomeSectionHeader extends StatelessWidget {
     final hasBadge = badgeLabel != null && badgeLabel!.trim().isNotEmpty;
 
     return Row(
-      crossAxisAlignment: hasSubtitle ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+      crossAxisAlignment: hasSubtitle
+          ? CrossAxisAlignment.start
+          : CrossAxisAlignment.center,
       children: [
         Container(
           width: 32,
@@ -41,18 +43,11 @@ class HomeSectionHeader extends StatelessWidget {
                   child: Image.asset(
                     assetIconPath!,
                     fit: BoxFit.contain,
-                    errorBuilder: (_, error, stack) => Icon(
-                      icon,
-                      color: const Color(0xFF087EBA),
-                      size: 17,
-                    ),
+                    errorBuilder: (_, error, stack) =>
+                        Icon(icon, color: const Color(0xFF087EBA), size: 17),
                   ),
                 )
-              : Icon(
-                  icon,
-                  color: const Color(0xFF087EBA),
-                  size: 17,
-                ),
+              : Icon(icon, color: const Color(0xFF087EBA), size: 17),
         ),
         const SizedBox(width: 9),
         Expanded(
@@ -79,7 +74,10 @@ class HomeSectionHeader extends StatelessWidget {
                   if (hasBadge) ...[
                     const SizedBox(width: 7),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFE7F8F1),
                         borderRadius: BorderRadius.circular(99),

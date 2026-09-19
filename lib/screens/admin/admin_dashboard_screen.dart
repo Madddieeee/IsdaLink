@@ -11,12 +11,8 @@ import 'package:isdalink/screens/welcome_screen.dart';
 import 'package:isdalink/services/admin_dashboard_service.dart';
 import 'package:isdalink/utils/app_error_message.dart';
 
-class AdminDashboardScreen
-    extends
-        StatelessWidget {
-  const AdminDashboardScreen({
-    super.key,
-  });
+class AdminDashboardScreen extends StatelessWidget {
+  const AdminDashboardScreen({super.key});
 
   AdminDashboardService get adminService => const AdminDashboardService();
 
@@ -25,30 +21,17 @@ class AdminDashboardScreen
     String message, {
     bool isError = false,
   }) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(
+    ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          message,
-        ),
+        content: Text(message),
         backgroundColor: isError
-            ? const Color(
-                0xFFD32F2F,
-              )
-            : const Color(
-                0xFF2E7D32,
-              ),
+            ? const Color(0xFFD32F2F)
+            : const Color(0xFF2E7D32),
       ),
     );
   }
 
-  Future<
-    void
-  >
-  logout(
-    BuildContext context,
-  ) async {
+  Future<void> logout(BuildContext context) async {
     await adminService.logout();
 
     if (!context.mounted) {
@@ -57,35 +40,17 @@ class AdminDashboardScreen
 
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(
-        builder:
-            (
-              _,
-            ) => const WelcomeScreen(),
-      ),
-      (
-        route,
-      ) => false,
+      MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+      (route) => false,
     );
   }
 
-  Future<
-    void
-  >
-  approveSupplier({
+  Future<void> approveSupplier({
     required BuildContext context,
-    required QueryDocumentSnapshot<
-      Map<
-        String,
-        dynamic
-      >
-    >
-    supplierDocument,
+    required QueryDocumentSnapshot<Map<String, dynamic>> supplierDocument,
   }) async {
     try {
-      await adminService.approveSupplier(
-        supplierDocument,
-      );
+      await adminService.approveSupplier(supplierDocument);
 
       if (!context.mounted) {
         return;
@@ -95,9 +60,7 @@ class AdminDashboardScreen
         context,
         'Supplier approved. Supplier Dashboard is now available to this account.',
       );
-    } catch (
-      error
-    ) {
+    } catch (error) {
       if (!context.mounted) {
         return;
       }
@@ -106,7 +69,8 @@ class AdminDashboardScreen
         context,
         AppErrorMessage.from(
           error,
-          fallback: 'The supplier application could not be approved. Please try again.',
+          fallback:
+              'The supplier application could not be approved. Please try again.',
           allowBusinessMessage: true,
         ),
         isError: true,
@@ -114,18 +78,9 @@ class AdminDashboardScreen
     }
   }
 
-  Future<
-    void
-  >
-  rejectSupplier({
+  Future<void> rejectSupplier({
     required BuildContext context,
-    required QueryDocumentSnapshot<
-      Map<
-        String,
-        dynamic
-      >
-    >
-    supplierDocument,
+    required QueryDocumentSnapshot<Map<String, dynamic>> supplierDocument,
   }) async {
     var draftReason = '';
 
@@ -161,10 +116,7 @@ class AdminDashboardScreen
                   children: [
                     const Text(
                       'Tell the applicant why the supplier request was declined. This reason will be shown to the applicant so they know what to correct before applying again.',
-                      style: TextStyle(
-                        color: Color(0xFF52677A),
-                        height: 1.4,
-                      ),
+                      style: TextStyle(color: Color(0xFF52677A), height: 1.4),
                     ),
                     const SizedBox(height: 16),
                     TextField(
@@ -200,9 +152,7 @@ class AdminDashboardScreen
                   child: const Text('Cancel'),
                 ),
                 ElevatedButton(
-                  onPressed: canReject
-                      ? () => closeDialog(reason)
-                      : null,
+                  onPressed: canReject ? () => closeDialog(reason) : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFD32F2F),
                     foregroundColor: Colors.white,
@@ -236,9 +186,7 @@ class AdminDashboardScreen
         context,
         'Supplier application rejected. The applicant was notified with the reason.',
       );
-    } catch (
-      error
-    ) {
+    } catch (error) {
       if (!context.mounted) {
         return;
       }
@@ -247,7 +195,8 @@ class AdminDashboardScreen
         context,
         AppErrorMessage.from(
           error,
-          fallback: 'The supplier application could not be rejected. Please try again.',
+          fallback:
+              'The supplier application could not be rejected. Please try again.',
           allowBusinessMessage: true,
         ),
         isError: true,
@@ -257,58 +206,14 @@ class AdminDashboardScreen
 
   Widget dashboardBody({
     required BuildContext context,
-    required List<
-      QueryDocumentSnapshot<
-        Map<
-          String,
-          dynamic
-        >
-      >
-    >
-    users,
-    required List<
-      QueryDocumentSnapshot<
-        Map<
-          String,
-          dynamic
-        >
-      >
-    >
-    suppliers,
-    required List<
-      QueryDocumentSnapshot<
-        Map<
-          String,
-          dynamic
-        >
-      >
-    >
-    changeRequests,
-    required List<
-      QueryDocumentSnapshot<
-        Map<
-          String,
-          dynamic
-        >
-      >
-    >
-    stocks,
-    required List<
-      QueryDocumentSnapshot<
-        Map<
-          String,
-          dynamic
-        >
-      >
-    >
-    orders,
+    required List<QueryDocumentSnapshot<Map<String, dynamic>>> users,
+    required List<QueryDocumentSnapshot<Map<String, dynamic>>> suppliers,
+    required List<QueryDocumentSnapshot<Map<String, dynamic>>> changeRequests,
+    required List<QueryDocumentSnapshot<Map<String, dynamic>>> stocks,
+    required List<QueryDocumentSnapshot<Map<String, dynamic>>> orders,
   }) {
-    final pendingSuppliers = adminService.pendingSuppliers(
-      suppliers,
-    );
-    final approvedSuppliers = adminService.approvedSuppliers(
-      suppliers,
-    );
+    final pendingSuppliers = adminService.pendingSuppliers(suppliers);
+    final approvedSuppliers = adminService.approvedSuppliers(suppliers);
     final pendingChangeRequests = adminService.pendingChangeRequests(
       changeRequests,
     );
@@ -321,47 +226,34 @@ class AdminDashboardScreen
           suppliersCount: approvedSuppliers.length,
           pendingCount: totalPending,
           ordersCount: orders.length,
-          onLogout: () => logout(
-            context,
-          ),
+          onLogout: () => logout(context),
         ),
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(
-              18,
-              22,
-              18,
-              20,
-            ),
+            padding: const EdgeInsets.fromLTRB(18, 22, 18, 20),
             children: [
               _AdminAttentionSummary(
-                supplierApplications:
-                    pendingSuppliers.length,
-                verifiedChangeRequests:
-                    pendingChangeRequests.length,
+                supplierApplications: pendingSuppliers.length,
+                verifiedChangeRequests: pendingChangeRequests.length,
               ),
-              const SizedBox(
-                height: 24,
-              ),
+              const SizedBox(height: 24),
               const AdminSectionTitle(
                 title: 'New Supplier Applications',
-                subtitle: 'Review vendor applications and approve or reject supplier access.',
+                subtitle:
+                    'Review vendor applications and approve or reject supplier access.',
                 icon: Icons.hourglass_top,
               ),
-              const SizedBox(
-                height: 16,
-              ),
+              const SizedBox(height: 16),
               if (pendingSuppliers.isEmpty)
                 const AdminEmptyCard(
                   icon: Icons.check_circle_outline,
                   title: 'No pending supplier applications',
-                  subtitle: 'Vendor applications will appear here after they tap Become a Supplier.',
+                  subtitle:
+                      'Vendor applications will appear here after they tap Become a Supplier.',
                 )
               else
                 ...pendingSuppliers.map(
-                  (
-                    document,
-                  ) => PendingSupplierCard(
+                  (document) => PendingSupplierCard(
                     document: document,
                     onReject: () => rejectSupplier(
                       context: context,
@@ -373,28 +265,24 @@ class AdminDashboardScreen
                     ),
                   ),
                 ),
-              const SizedBox(
-                height: 26,
-              ),
+              const SizedBox(height: 26),
               const AdminSectionTitle(
                 title: 'Verified Profile Changes',
-                subtitle: 'Review protected business, location, store-photo and permit changes from approved suppliers.',
+                subtitle:
+                    'Review protected business, location, store-photo and permit changes from approved suppliers.',
                 icon: Icons.manage_accounts_outlined,
               ),
-              const SizedBox(
-                height: 16,
-              ),
+              const SizedBox(height: 16),
               if (pendingChangeRequests.isEmpty)
                 const AdminEmptyCard(
                   icon: Icons.verified_user_outlined,
                   title: 'No supplier change requests',
-                  subtitle: 'Verified business information change requests will appear here for review.',
+                  subtitle:
+                      'Verified business information change requests will appear here for review.',
                 )
               else
                 ...pendingChangeRequests.map(
-                  (
-                    document,
-                  ) => AdminChangeRequestCard(
+                  (document) => AdminChangeRequestCard(
                     document: document,
                     onOpen: () => Navigator.push(
                       context,
@@ -406,42 +294,33 @@ class AdminDashboardScreen
                     ),
                   ),
                 ),
-              const SizedBox(
-                height: 26,
-              ),
+              const SizedBox(height: 26),
               const AdminSectionTitle(
                 title: 'Approved Suppliers',
-                subtitle: 'Suppliers with dashboard access and visible supplier profile status.',
+                subtitle:
+                    'Suppliers with dashboard access and visible supplier profile status.',
                 icon: Icons.verified,
               ),
-              const SizedBox(
-                height: 16,
-              ),
+              const SizedBox(height: 16),
               if (approvedSuppliers.isEmpty)
                 const AdminEmptyCard(
                   icon: Icons.storefront_outlined,
                   title: 'No approved suppliers yet',
-                  subtitle: 'Approved suppliers will appear here after admin review.',
+                  subtitle:
+                      'Approved suppliers will appear here after admin review.',
                 )
               else
                 ...approvedSuppliers.map(
-                  (
-                    document,
-                  ) => ApprovedSupplierCard(
-                    document: document,
-                  ),
+                  (document) => ApprovedSupplierCard(document: document),
                 ),
-              const SizedBox(
-                height: 26,
-              ),
+              const SizedBox(height: 26),
               const AdminSectionTitle(
                 title: 'System Overview',
-                subtitle: 'Quick snapshot of current marketplace and account records.',
+                subtitle:
+                    'Quick snapshot of current marketplace and account records.',
                 icon: Icons.analytics_outlined,
               ),
-              const SizedBox(
-                height: 16,
-              ),
+              const SizedBox(height: 16),
               AdminOverviewCard(
                 usersCount: users.length,
                 suppliersCount: suppliers.length,
@@ -456,143 +335,78 @@ class AdminDashboardScreen
   }
 
   Widget buildDashboardStreams() {
-    return StreamBuilder<
-      QuerySnapshot<
-        Map<
-          String,
-          dynamic
-        >
-      >
-    >(
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: adminService.usersStream,
-      builder:
-          (
-            context,
-            usersSnapshot,
-          ) {
-            return StreamBuilder<
-              QuerySnapshot<
-                Map<
-                  String,
-                  dynamic
-                >
-              >
-            >(
-              stream: adminService.supplierProfilesStream,
-              builder:
-                  (
-                    context,
-                    suppliersSnapshot,
-                  ) {
-                    return StreamBuilder<
-                      QuerySnapshot<
-                        Map<
-                          String,
-                          dynamic
-                        >
-                      >
-                    >(
-                      stream: adminService.fishStocksStream,
-                      builder:
-                          (
-                            context,
-                            stocksSnapshot,
-                          ) {
-                            return StreamBuilder<
-                              QuerySnapshot<
-                                Map<
-                                  String,
-                                  dynamic
-                                >
-                              >
-                            >(
-                              stream: adminService.ordersStream,
-                              builder:
-                                  (
-                                    context,
-                                    ordersSnapshot,
-                                  ) {
-                                    return StreamBuilder<
-                                      QuerySnapshot<
-                                        Map<
-                                          String,
-                                          dynamic
-                                        >
-                                      >
-                                    >(
-                                      stream: adminService.supplierChangeRequestsStream,
-                                      builder:
-                                          (
-                                            context,
-                                            changeRequestsSnapshot,
-                                          ) {
-                                            if (usersSnapshot.hasError) {
-                                              return AdminErrorBody(
-                                                error: usersSnapshot.error!,
-                                              );
-                                            }
+      builder: (context, usersSnapshot) {
+        return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+          stream: adminService.supplierProfilesStream,
+          builder: (context, suppliersSnapshot) {
+            return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+              stream: adminService.fishStocksStream,
+              builder: (context, stocksSnapshot) {
+                return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                  stream: adminService.ordersStream,
+                  builder: (context, ordersSnapshot) {
+                    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                      stream: adminService.supplierChangeRequestsStream,
+                      builder: (context, changeRequestsSnapshot) {
+                        if (usersSnapshot.hasError) {
+                          return AdminErrorBody(error: usersSnapshot.error!);
+                        }
 
-                                            if (suppliersSnapshot.hasError) {
-                                              return AdminErrorBody(
-                                                error: suppliersSnapshot.error!,
-                                              );
-                                            }
+                        if (suppliersSnapshot.hasError) {
+                          return AdminErrorBody(
+                            error: suppliersSnapshot.error!,
+                          );
+                        }
 
-                                            if (stocksSnapshot.hasError) {
-                                              return AdminErrorBody(
-                                                error: stocksSnapshot.error!,
-                                              );
-                                            }
+                        if (stocksSnapshot.hasError) {
+                          return AdminErrorBody(error: stocksSnapshot.error!);
+                        }
 
-                                            if (ordersSnapshot.hasError) {
-                                              return AdminErrorBody(
-                                                error: ordersSnapshot.error!,
-                                              );
-                                            }
+                        if (ordersSnapshot.hasError) {
+                          return AdminErrorBody(error: ordersSnapshot.error!);
+                        }
 
-                                            if (changeRequestsSnapshot.hasError) {
-                                              return AdminErrorBody(
-                                                error: changeRequestsSnapshot.error!,
-                                              );
-                                            }
+                        if (changeRequestsSnapshot.hasError) {
+                          return AdminErrorBody(
+                            error: changeRequestsSnapshot.error!,
+                          );
+                        }
 
-                                            if (!usersSnapshot.hasData ||
-                                                !suppliersSnapshot.hasData ||
-                                                !stocksSnapshot.hasData ||
-                                                !ordersSnapshot.hasData ||
-                                                !changeRequestsSnapshot.hasData) {
-                                              return const AdminLoadingBody();
-                                            }
+                        if (!usersSnapshot.hasData ||
+                            !suppliersSnapshot.hasData ||
+                            !stocksSnapshot.hasData ||
+                            !ordersSnapshot.hasData ||
+                            !changeRequestsSnapshot.hasData) {
+                          return const AdminLoadingBody();
+                        }
 
-                                            return Scaffold(
-                                              backgroundColor: const Color(
-                                                0xFFF4F8FB,
-                                              ),
-                                              body: dashboardBody(
-                                                context: context,
-                                                users: usersSnapshot.data!.docs,
-                                                suppliers: suppliersSnapshot.data!.docs,
-                                                changeRequests: changeRequestsSnapshot.data!.docs,
-                                                stocks: stocksSnapshot.data!.docs,
-                                                orders: ordersSnapshot.data!.docs,
-                                              ),
-                                            );
-                                          },
-                                    );
-                                  },
-                            );
-                          },
+                        return Scaffold(
+                          backgroundColor: const Color(0xFFF4F8FB),
+                          body: dashboardBody(
+                            context: context,
+                            users: usersSnapshot.data!.docs,
+                            suppliers: suppliersSnapshot.data!.docs,
+                            changeRequests: changeRequestsSnapshot.data!.docs,
+                            stocks: stocksSnapshot.data!.docs,
+                            orders: ordersSnapshot.data!.docs,
+                          ),
+                        );
+                      },
                     );
                   },
+                );
+              },
             );
           },
+        );
+      },
     );
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return buildDashboardStreams();
   }
 }
@@ -608,8 +422,7 @@ class _AdminAttentionSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final total =
-        supplierApplications + verifiedChangeRequests;
+    final total = supplierApplications + verifiedChangeRequests;
     final allClear = total == 0;
 
     return Container(
@@ -620,20 +433,11 @@ class _AdminAttentionSummary extends StatelessWidget {
             : const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF102C44),
-                  Color(0xFF146BFF),
-                ],
+                colors: [Color(0xFF102C44), Color(0xFF146BFF)],
               ),
-        color: allClear
-            ? Colors.white
-            : null,
+        color: allClear ? Colors.white : null,
         borderRadius: BorderRadius.circular(22),
-        border: allClear
-            ? Border.all(
-                color: const Color(0xFFDDE8F0),
-              )
-            : null,
+        border: allClear ? Border.all(color: const Color(0xFFDDE8F0)) : null,
         boxShadow: const [
           BoxShadow(
             color: Color(0x0D102C44),
@@ -643,8 +447,7 @@ class _AdminAttentionSummary extends StatelessWidget {
         ],
       ),
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
@@ -654,32 +457,24 @@ class _AdminAttentionSummary extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: allClear
                       ? const Color(0xFFEAF8F2)
-                      : Colors.white.withValues(
-                          alpha: 0.14,
-                        ),
+                      : Colors.white.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(13),
                 ),
                 child: Icon(
                   allClear
                       ? Icons.task_alt_rounded
-                      : Icons
-                          .notification_important_outlined,
-                  color: allClear
-                      ? const Color(0xFF16845C)
-                      : Colors.white,
+                      : Icons.notification_important_outlined,
+                  color: allClear ? const Color(0xFF16845C) : Colors.white,
                   size: 20,
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      allClear
-                          ? 'All caught up'
-                          : 'Needs Attention',
+                      allClear ? 'All caught up' : 'Needs Attention',
                       style: TextStyle(
                         color: allClear
                             ? const Color(0xFF102C44)
@@ -711,9 +506,7 @@ class _AdminAttentionSummary extends StatelessWidget {
                   height: 34,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(
-                      alpha: 0.15,
-                    ),
+                    color: Colors.white.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
                   child: Text(
@@ -771,15 +564,10 @@ class _AdminAttentionMetric extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 9,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
       decoration: BoxDecoration(
         color: dark
-            ? Colors.white.withValues(
-                alpha: 0.11,
-              )
+            ? Colors.white.withValues(alpha: 0.11)
             : const Color(0xFFF5F9FC),
         borderRadius: BorderRadius.circular(14),
       ),
@@ -788,9 +576,7 @@ class _AdminAttentionMetric extends StatelessWidget {
           Icon(
             icon,
             size: 16,
-            color: dark
-                ? Colors.white
-                : const Color(0xFF146BFF),
+            color: dark ? Colors.white : const Color(0xFF146BFF),
           ),
           const SizedBox(width: 6),
           Expanded(
@@ -799,9 +585,7 @@ class _AdminAttentionMetric extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: dark
-                    ? const Color(0xFFE6F0F8)
-                    : const Color(0xFF5F7587),
+                color: dark ? const Color(0xFFE6F0F8) : const Color(0xFF5F7587),
                 fontSize: 8.3,
                 fontWeight: FontWeight.w700,
               ),
@@ -811,9 +595,7 @@ class _AdminAttentionMetric extends StatelessWidget {
           Text(
             '$value',
             style: TextStyle(
-              color: dark
-                  ? Colors.white
-                  : const Color(0xFF102C44),
+              color: dark ? Colors.white : const Color(0xFF102C44),
               fontSize: 12,
               fontWeight: FontWeight.w900,
             ),
@@ -823,4 +605,3 @@ class _AdminAttentionMetric extends StatelessWidget {
     );
   }
 }
-

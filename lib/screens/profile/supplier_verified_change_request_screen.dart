@@ -43,8 +43,7 @@ class _SupplierVerifiedChangeRequestScreenState
   final imagePicker = ImagePicker();
   final uploadService = const CloudinaryUploadService();
   final profileService = const SupplierProfileService();
-  final verificationStorageService =
-      const SupplierVerificationStorageService();
+  final verificationStorageService = const SupplierVerificationStorageService();
 
   final selectedChanges = <_VerifiedChangeType>{};
 
@@ -89,18 +88,14 @@ class _SupplierVerifiedChangeRequestScreenState
   }
 
   String get currentStoreName => stringValue(
-        widget.profileData,
-        'storeName',
-        stringValue(
-          widget.profileData,
-          'businessName',
-          stringValue(
-            widget.profileData,
-            'supplierName',
-            'Fish Supplier',
-          ),
-        ),
-      );
+    widget.profileData,
+    'storeName',
+    stringValue(
+      widget.profileData,
+      'businessName',
+      stringValue(widget.profileData, 'supplierName', 'Fish Supplier'),
+    ),
+  );
 
   String get currentProvince =>
       stringValue(widget.profileData, 'storeProvince');
@@ -108,18 +103,13 @@ class _SupplierVerifiedChangeRequestScreenState
   String get currentLocality =>
       stringValue(widget.profileData, 'storeCityMunicipality');
 
-  String get currentAddress =>
-      stringValue(widget.profileData, 'storeAddress');
+  String get currentAddress => stringValue(widget.profileData, 'storeAddress');
 
   String get currentLocation => stringValue(
-        widget.profileData,
-        'storeLocation',
-        stringValue(
-          widget.profileData,
-          'location',
-          'Location not available',
-        ),
-      );
+    widget.profileData,
+    'storeLocation',
+    stringValue(widget.profileData, 'location', 'Location not available'),
+  );
 
   double? get currentLatitude =>
       coordinate(widget.profileData['storeLatitude']);
@@ -127,18 +117,13 @@ class _SupplierVerifiedChangeRequestScreenState
   double? get currentLongitude =>
       coordinate(widget.profileData['storeLongitude']);
 
-  bool get uploadBusy =>
-      uploadingStorePhoto || uploadingPermitPhoto;
+  bool get uploadBusy => uploadingStorePhoto || uploadingPermitPhoto;
 
   bool get needsStorePhotoEvidence =>
-      selectedChanges.contains(
-        _VerifiedChangeType.storePhoto,
-      );
+      selectedChanges.contains(_VerifiedChangeType.storePhoto);
 
   bool get needsPermitEvidence =>
-      selectedChanges.contains(
-        _VerifiedChangeType.businessPermit,
-      );
+      selectedChanges.contains(_VerifiedChangeType.businessPermit);
 
   @override
   void initState() {
@@ -154,10 +139,7 @@ class _SupplierVerifiedChangeRequestScreenState
     currentStorePhotoUrl = stringValue(
       widget.profileData,
       'storePhotoUrl',
-      stringValue(
-        widget.profileData,
-        'profileImageUrl',
-      ),
+      stringValue(widget.profileData, 'profileImageUrl'),
     );
 
     _applyPreviousRequestIfRevising();
@@ -166,13 +148,9 @@ class _SupplierVerifiedChangeRequestScreenState
 
   void _applyPreviousRequestIfRevising() {
     final previous = widget.previousRequestData;
-    final status = stringValue(
-      previous,
-      'status',
-    ).toLowerCase();
+    final status = stringValue(previous, 'status').toLowerCase();
 
-    if (previous == null ||
-        (status != 'rejected' && status != 'withdrawn')) {
+    if (previous == null || (status != 'rejected' && status != 'withdrawn')) {
       return;
     }
 
@@ -214,16 +192,9 @@ class _SupplierVerifiedChangeRequestScreenState
       'requestedStoreCityMunicipality',
       currentLocality,
     );
-    selectedLatitude = coordinate(
-      previous['requestedStoreLatitude'],
-    );
-    selectedLongitude = coordinate(
-      previous['requestedStoreLongitude'],
-    );
-    requestedStorePhotoUrl = stringValue(
-      previous,
-      'requestedStorePhotoUrl',
-    );
+    selectedLatitude = coordinate(previous['requestedStoreLatitude']);
+    selectedLongitude = coordinate(previous['requestedStoreLongitude']);
+    requestedStorePhotoUrl = stringValue(previous, 'requestedStorePhotoUrl');
     requestedPermitPhotoUrl = stringValue(
       previous,
       'requestedBusinessPermitUrl',
@@ -232,10 +203,7 @@ class _SupplierVerifiedChangeRequestScreenState
       previous,
       'requestedBusinessPermitStoragePath',
     );
-    reasonController.text = stringValue(
-      previous,
-      'reason',
-    );
+    reasonController.text = stringValue(previous, 'reason');
   }
 
   @override
@@ -249,8 +217,7 @@ class _SupplierVerifiedChangeRequestScreenState
 
   Future<void> loadPrivateApplication() async {
     try {
-      final application =
-          await profileService.loadPrivateSupplierApplication(
+      final application = await profileService.loadPrivateSupplierApplication(
         widget.uid,
       );
 
@@ -258,22 +225,13 @@ class _SupplierVerifiedChangeRequestScreenState
         return;
       }
 
-      currentPermitNumber = stringValue(
-        application,
-        'businessPermitNumber',
-      );
-      currentPermitUrl = stringValue(
-        application,
-        'businessPermitUrl',
-      );
+      currentPermitNumber = stringValue(application, 'businessPermitNumber');
+      currentPermitUrl = stringValue(application, 'businessPermitUrl');
       currentPermitStoragePath = stringValue(
         application,
         'businessPermitStoragePath',
       );
-      final privateStorePhoto = stringValue(
-        application,
-        'storePhotoUrl',
-      );
+      final privateStorePhoto = stringValue(application, 'storePhotoUrl');
       if (privateStorePhoto.isNotEmpty) {
         currentStorePhotoUrl = privateStorePhoto;
       }
@@ -300,10 +258,7 @@ class _SupplierVerifiedChangeRequestScreenState
     }
   }
 
-  void showMessage(
-    String message, {
-    bool isError = false,
-  }) {
+  void showMessage(String message, {bool isError = false}) {
     if (!mounted) {
       return;
     }
@@ -321,9 +276,7 @@ class _SupplierVerifiedChangeRequestScreenState
           ),
           content: Text(
             message,
-            style: const TextStyle(
-              fontWeight: FontWeight.w700,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.w700),
           ),
         ),
       );
@@ -368,26 +321,18 @@ class _SupplierVerifiedChangeRequestScreenState
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () => Navigator.pop(
-                          sheetContext,
-                          ImageSource.camera,
-                        ),
-                        icon: const Icon(
-                          Icons.camera_alt_outlined,
-                        ),
+                        onPressed: () =>
+                            Navigator.pop(sheetContext, ImageSource.camera),
+                        icon: const Icon(Icons.camera_alt_outlined),
                         label: const Text('Camera'),
                       ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () => Navigator.pop(
-                          sheetContext,
-                          ImageSource.gallery,
-                        ),
-                        icon: const Icon(
-                          Icons.photo_library_outlined,
-                        ),
+                        onPressed: () =>
+                            Navigator.pop(sheetContext, ImageSource.gallery),
+                        icon: const Icon(Icons.photo_library_outlined),
                         label: const Text('Gallery'),
                       ),
                     ),
@@ -401,9 +346,7 @@ class _SupplierVerifiedChangeRequestScreenState
     );
   }
 
-  Future<void> pickAndUploadPhoto({
-    required bool permit,
-  }) async {
+  Future<void> pickAndUploadPhoto({required bool permit}) async {
     if (submitting || uploadBusy) {
       return;
     }
@@ -458,9 +401,7 @@ class _SupplierVerifiedChangeRequestScreenState
       });
 
       showMessage(
-        permit
-            ? 'Permit evidence uploaded.'
-            : 'Current store photo uploaded.',
+        permit ? 'Permit evidence uploaded.' : 'Current store photo uploaded.',
       );
     } on StateError catch (error) {
       showMessage(error.message.toString(), isError: true);
@@ -468,7 +409,8 @@ class _SupplierVerifiedChangeRequestScreenState
       showMessage(
         AppErrorMessage.from(
           error,
-          fallback: 'The verification photo could not be uploaded. Please try again.',
+          fallback:
+              'The verification photo could not be uploaded. Please try again.',
           allowBusinessMessage: true,
         ),
         isError: true,
@@ -487,8 +429,7 @@ class _SupplierVerifiedChangeRequestScreenState
   }
 
   Future<void> chooseBusinessPin() async {
-    if (selectedProvince.isEmpty ||
-        selectedLocality.isEmpty) {
+    if (selectedProvince.isEmpty || selectedLocality.isEmpty) {
       showMessage(
         'Choose the province and city/municipality first.',
         isError: true,
@@ -525,10 +466,7 @@ class _SupplierVerifiedChangeRequestScreenState
     });
   }
 
-  bool sameCoordinate(
-    double? left,
-    double? right,
-  ) {
+  bool sameCoordinate(double? left, double? right) {
     if (left == null || right == null) {
       return left == right;
     }
@@ -549,36 +487,24 @@ class _SupplierVerifiedChangeRequestScreenState
     return selectedProvince != currentProvince ||
         selectedLocality != currentLocality ||
         storeAddressController.text.trim() != currentAddress ||
-        !sameCoordinate(
-          selectedLatitude,
-          currentLatitude,
-        ) ||
-        !sameCoordinate(
-          selectedLongitude,
-          currentLongitude,
-        );
+        !sameCoordinate(selectedLatitude, currentLatitude) ||
+        !sameCoordinate(selectedLongitude, currentLongitude);
   }
 
   List<String> submissionChangedFields() {
     final changes = <String>[];
 
-    if (selectedChanges.contains(
-          _VerifiedChangeType.storeName,
-        ) &&
+    if (selectedChanges.contains(_VerifiedChangeType.storeName) &&
         storeNameController.text.trim() != currentStoreName) {
       changes.add('Store name');
     }
 
-    if (selectedChanges.contains(
-          _VerifiedChangeType.businessLocation,
-        ) &&
+    if (selectedChanges.contains(_VerifiedChangeType.businessLocation) &&
         locationActuallyChanged()) {
       changes.add('Business location');
     }
 
-    if (selectedChanges.contains(
-          _VerifiedChangeType.storePhoto,
-        ) &&
+    if (selectedChanges.contains(_VerifiedChangeType.storePhoto) &&
         requestedStorePhotoUrl.isNotEmpty &&
         requestedStorePhotoUrl != currentStorePhotoUrl) {
       changes.add('Store photo');
@@ -586,14 +512,12 @@ class _SupplierVerifiedChangeRequestScreenState
 
     final permitChanged =
         permitNumberController.text.trim() != currentPermitNumber ||
-            (requestedPermitStoragePath.isNotEmpty &&
-                requestedPermitStoragePath != currentPermitStoragePath) ||
-            (requestedPermitPhotoUrl.isNotEmpty &&
-                requestedPermitPhotoUrl != currentPermitUrl);
+        (requestedPermitStoragePath.isNotEmpty &&
+            requestedPermitStoragePath != currentPermitStoragePath) ||
+        (requestedPermitPhotoUrl.isNotEmpty &&
+            requestedPermitPhotoUrl != currentPermitUrl);
 
-    if (selectedChanges.contains(
-          _VerifiedChangeType.businessPermit,
-        ) &&
+    if (selectedChanges.contains(_VerifiedChangeType.businessPermit) &&
         permitChanged) {
       changes.add('Business permit');
     }
@@ -616,16 +540,11 @@ class _SupplierVerifiedChangeRequestScreenState
   bool validateDetailsStep() {
     FocusScope.of(context).unfocus();
 
-    if (selectedChanges.contains(
-      _VerifiedChangeType.storeName,
-    )) {
+    if (selectedChanges.contains(_VerifiedChangeType.storeName)) {
       final name = storeNameController.text.trim();
 
       if (name.length < 2 || name.length > 100) {
-        showMessage(
-          'Enter a valid store or business name.',
-          isError: true,
-        );
+        showMessage('Enter a valid store or business name.', isError: true);
         return false;
       }
 
@@ -638,9 +557,7 @@ class _SupplierVerifiedChangeRequestScreenState
       }
     }
 
-    if (selectedChanges.contains(
-      _VerifiedChangeType.businessLocation,
-    )) {
+    if (selectedChanges.contains(_VerifiedChangeType.businessLocation)) {
       if (!SupplierCaragaLocations.isValidSelection(
         province: selectedProvince,
         locality: selectedLocality,
@@ -662,12 +579,8 @@ class _SupplierVerifiedChangeRequestScreenState
         return false;
       }
 
-      if (selectedLatitude == null ||
-          selectedLongitude == null) {
-        showMessage(
-          'Choose the requested business map pin.',
-          isError: true,
-        );
+      if (selectedLatitude == null || selectedLongitude == null) {
+        showMessage('Choose the requested business map pin.', isError: true);
         return false;
       }
 
@@ -693,8 +606,7 @@ class _SupplierVerifiedChangeRequestScreenState
       }
     }
 
-    if (needsStorePhotoEvidence &&
-        requestedStorePhotoUrl.isEmpty) {
+    if (needsStorePhotoEvidence && requestedStorePhotoUrl.isEmpty) {
       showMessage(
         'Upload a current store photo for Admin verification.',
         isError: true,
@@ -702,36 +614,24 @@ class _SupplierVerifiedChangeRequestScreenState
       return false;
     }
 
-    if (selectedChanges.contains(
-          _VerifiedChangeType.storePhoto,
-        ) &&
+    if (selectedChanges.contains(_VerifiedChangeType.storePhoto) &&
         requestedStorePhotoUrl == currentStorePhotoUrl) {
-      showMessage(
-        'Upload a new store photo before continuing.',
-        isError: true,
-      );
+      showMessage('Upload a new store photo before continuing.', isError: true);
       return false;
     }
 
     if (needsPermitEvidence) {
-      final permitNumber =
-          permitNumberController.text.trim();
+      final permitNumber = permitNumberController.text.trim();
 
-      if (permitNumber.length < 3 ||
-          permitNumber.length > 80) {
-        showMessage(
-          'Enter a valid business permit number.',
-          isError: true,
-        );
+      if (permitNumber.length < 3 || permitNumber.length > 80) {
+        showMessage('Enter a valid business permit number.', isError: true);
         return false;
       }
 
       if (requestedPermitStoragePath.isEmpty &&
           requestedPermitPhotoUrl.isEmpty) {
         showMessage(
-          selectedChanges.contains(
-            _VerifiedChangeType.storeName,
-          )
+          selectedChanges.contains(_VerifiedChangeType.storeName)
               ? 'Upload current permit evidence for the requested business-name change.'
               : 'Upload the updated business permit photo.',
           isError: true,
@@ -739,9 +639,7 @@ class _SupplierVerifiedChangeRequestScreenState
         return false;
       }
 
-      if (selectedChanges.contains(
-            _VerifiedChangeType.businessPermit,
-          ) &&
+      if (selectedChanges.contains(_VerifiedChangeType.businessPermit) &&
           permitNumber == currentPermitNumber &&
           requestedPermitStoragePath == currentPermitStoragePath &&
           requestedPermitPhotoUrl == currentPermitUrl) {
@@ -764,10 +662,7 @@ class _SupplierVerifiedChangeRequestScreenState
     }
 
     if (submissionChangedFields().isEmpty) {
-      showMessage(
-        'No verified changes were detected.',
-        isError: true,
-      );
+      showMessage('No verified changes were detected.', isError: true);
       return false;
     }
 
@@ -842,17 +737,13 @@ class _SupplierVerifiedChangeRequestScreenState
         ? requestedPermitStoragePath
         : currentPermitStoragePath;
 
-    final storePhotoUrl = changesStorePhoto &&
-            requestedStorePhotoUrl.isNotEmpty
+    final storePhotoUrl = changesStorePhoto && requestedStorePhotoUrl.isNotEmpty
         ? requestedStorePhotoUrl
         : currentStorePhotoUrl;
 
     if ((permitStoragePath.isEmpty && permitUrl.isEmpty) ||
         storePhotoUrl.isEmpty) {
-      showMessage(
-        'Verification evidence is incomplete.',
-        isError: true,
-      );
+      showMessage('Verification evidence is incomplete.', isError: true);
       return;
     }
 
@@ -870,8 +761,9 @@ class _SupplierVerifiedChangeRequestScreenState
         requestedStoreProvince: changesLocation
             ? selectedProvince
             : currentProvince,
-        requestedStoreCityMunicipality:
-            changesLocation ? selectedLocality : currentLocality,
+        requestedStoreCityMunicipality: changesLocation
+            ? selectedLocality
+            : currentLocality,
         requestedStoreAddress: changesLocation
             ? storeAddressController.text.trim()
             : currentAddress,
@@ -895,15 +787,10 @@ class _SupplierVerifiedChangeRequestScreenState
         return;
       }
 
-      showMessage(
-        'Verified change request submitted for Admin review.',
-      );
+      showMessage('Verified change request submitted for Admin review.');
       Navigator.pop(context);
     } on StateError catch (error) {
-      showMessage(
-        error.message.toString(),
-        isError: true,
-      );
+      showMessage(error.message.toString(), isError: true);
     } catch (error) {
       showMessage(
         AppErrorMessage.from(
@@ -978,12 +865,7 @@ class _SupplierVerifiedChangeRequestScreenState
 
   Widget selectionStep() {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(
-        16,
-        14,
-        16,
-        24,
-      ),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
       children: [
         _ApprovedStoreHero(
           storeName: currentStoreName,
@@ -998,34 +880,29 @@ class _SupplierVerifiedChangeRequestScreenState
               'Select only the verified information you actually need to update.',
         ),
         const SizedBox(height: 10),
-        ..._VerifiedChangeType.values.map(
-          (type) {
-            final selected =
-                selectedChanges.contains(type);
+        ..._VerifiedChangeType.values.map((type) {
+          final selected = selectedChanges.contains(type);
 
-            return Padding(
-              padding: const EdgeInsets.only(
-                bottom: 9,
-              ),
-              child: _ChangeSelectionCard(
-                icon: changeIcon(type),
-                title: changeTitle(type),
-                subtitle: changeSubtitle(type),
-                currentValue: currentValue(type),
-                selected: selected,
-                onTap: () {
-                  setState(() {
-                    if (selected) {
-                      selectedChanges.remove(type);
-                    } else {
-                      selectedChanges.add(type);
-                    }
-                  });
-                },
-              ),
-            );
-          },
-        ),
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 9),
+            child: _ChangeSelectionCard(
+              icon: changeIcon(type),
+              title: changeTitle(type),
+              subtitle: changeSubtitle(type),
+              currentValue: currentValue(type),
+              selected: selected,
+              onTap: () {
+                setState(() {
+                  if (selected) {
+                    selectedChanges.remove(type);
+                  } else {
+                    selectedChanges.add(type);
+                  }
+                });
+              },
+            ),
+          );
+        }),
         const SizedBox(height: 4),
         const _SecurityInfoCard(
           text:
@@ -1036,10 +913,7 @@ class _SupplierVerifiedChangeRequestScreenState
   }
 
   Widget detailsStep() {
-    final localities =
-        SupplierCaragaLocations.localitiesFor(
-      selectedProvince,
-    );
+    final localities = SupplierCaragaLocations.localitiesFor(selectedProvince);
     final changesStoreName = selectedChanges.contains(
       _VerifiedChangeType.storeName,
     );
@@ -1052,16 +926,11 @@ class _SupplierVerifiedChangeRequestScreenState
     final changesPermit = selectedChanges.contains(
       _VerifiedChangeType.businessPermit,
     );
-    final hasEvidenceSection =
-        changesStorePhoto || changesPermit;
+    final hasEvidenceSection = changesStorePhoto || changesPermit;
 
     var nextSectionNumber = 1;
-    final nameSectionNumber = changesStoreName
-        ? nextSectionNumber++
-        : null;
-    final locationSectionNumber = changesLocation
-        ? nextSectionNumber++
-        : null;
+    final nameSectionNumber = changesStoreName ? nextSectionNumber++ : null;
+    final locationSectionNumber = changesLocation ? nextSectionNumber++ : null;
     final evidenceSectionNumber = hasEvidenceSection
         ? nextSectionNumber++
         : null;
@@ -1070,28 +939,22 @@ class _SupplierVerifiedChangeRequestScreenState
     final evidenceTitle = changesStorePhoto && changesPermit
         ? 'Store Photo and Business Permit'
         : changesStorePhoto
-            ? 'Store Photo'
-            : 'Business Permit';
+        ? 'Store Photo'
+        : 'Business Permit';
     final evidenceSubtitle = changesStorePhoto && changesPermit
         ? 'Upload the new store image and updated permit evidence.'
         : changesStorePhoto
-            ? 'Upload the new main store image for Admin review.'
-            : 'Enter the updated permit details and upload its evidence.';
+        ? 'Upload the new main store image for Admin review.'
+        : 'Enter the updated permit details and upload its evidence.';
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(
-        16,
-        14,
-        16,
-        24,
-      ),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
       children: [
         if (changesStoreName) ...[
           _FinalFormCard(
             number: nameSectionNumber!.toString(),
             title: 'Business / Store Name',
-            subtitle:
-                'Enter only the new approved name vendors should see.',
+            subtitle: 'Enter only the new approved name vendors should see.',
             icon: Icons.storefront_outlined,
             child: TextField(
               controller: storeNameController,
@@ -1113,23 +976,18 @@ class _SupplierVerifiedChangeRequestScreenState
             child: Column(
               children: [
                 DropdownButtonFormField<String>(
-                  key: ValueKey(
-                    'province-$selectedProvince',
-                  ),
-                  initialValue:
-                      selectedProvince.isEmpty
-                          ? null
-                          : selectedProvince,
+                  key: ValueKey('province-$selectedProvince'),
+                  initialValue: selectedProvince.isEmpty
+                      ? null
+                      : selectedProvince,
                   isExpanded: true,
                   decoration: _inputDecoration(
                     label: 'Province',
                     icon: Icons.public_outlined,
                   ),
-                  items: SupplierCaragaLocations
-                      .provinces
+                  items: SupplierCaragaLocations.provinces
                       .map(
-                        (province) =>
-                            DropdownMenuItem<String>(
+                        (province) => DropdownMenuItem<String>(
                           value: province,
                           child: Text(province),
                         ),
@@ -1139,8 +997,7 @@ class _SupplierVerifiedChangeRequestScreenState
                       ? null
                       : (value) {
                           setState(() {
-                            selectedProvince =
-                                value ?? '';
+                            selectedProvince = value ?? '';
                             selectedLocality = '';
                             selectedLatitude = null;
                             selectedLongitude = null;
@@ -1149,13 +1006,10 @@ class _SupplierVerifiedChangeRequestScreenState
                 ),
                 const SizedBox(height: 11),
                 DropdownButtonFormField<String>(
-                  key: ValueKey(
-                    'locality-$selectedProvince-$selectedLocality',
-                  ),
-                  initialValue:
-                      selectedLocality.isEmpty
-                          ? null
-                          : selectedLocality,
+                  key: ValueKey('locality-$selectedProvince-$selectedLocality'),
+                  initialValue: selectedLocality.isEmpty
+                      ? null
+                      : selectedLocality,
                   isExpanded: true,
                   decoration: _inputDecoration(
                     label: 'City / Municipality',
@@ -1163,25 +1017,21 @@ class _SupplierVerifiedChangeRequestScreenState
                   ),
                   items: localities
                       .map(
-                        (locality) =>
-                            DropdownMenuItem<String>(
+                        (locality) => DropdownMenuItem<String>(
                           value: locality,
                           child: Text(locality),
                         ),
                       )
                       .toList(),
-                  onChanged:
-                      submitting ||
-                              selectedProvince.isEmpty
-                          ? null
-                          : (value) {
-                              setState(() {
-                                selectedLocality =
-                                    value ?? '';
-                                selectedLatitude = null;
-                                selectedLongitude = null;
-                              });
-                            },
+                  onChanged: submitting || selectedProvince.isEmpty
+                      ? null
+                      : (value) {
+                          setState(() {
+                            selectedLocality = value ?? '';
+                            selectedLatitude = null;
+                            selectedLongitude = null;
+                          });
+                        },
                 ),
                 const SizedBox(height: 11),
                 TextField(
@@ -1195,12 +1045,8 @@ class _SupplierVerifiedChangeRequestScreenState
                 ),
                 const SizedBox(height: 11),
                 _MapPinCard(
-                  hasPin:
-                      selectedLatitude != null &&
-                          selectedLongitude != null,
-                  onTap: submitting
-                      ? null
-                      : chooseBusinessPin,
+                  hasPin: selectedLatitude != null && selectedLongitude != null,
+                  onTap: submitting ? null : chooseBusinessPin,
                 ),
               ],
             ),
@@ -1227,20 +1073,16 @@ class _SupplierVerifiedChangeRequestScreenState
                     requiredBadge: true,
                     onTap: submitting
                         ? null
-                        : () => pickAndUploadPhoto(
-                              permit: false,
-                            ),
+                        : () => pickAndUploadPhoto(permit: false),
                   ),
-                if (needsStorePhotoEvidence &&
-                    needsPermitEvidence)
+                if (needsStorePhotoEvidence && needsPermitEvidence)
                   const SizedBox(height: 10),
                 if (needsPermitEvidence) ...[
                   TextField(
                     controller: permitNumberController,
                     decoration: _inputDecoration(
                       label: 'Business permit number',
-                      icon:
-                          Icons.confirmation_number_outlined,
+                      icon: Icons.confirmation_number_outlined,
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -1248,18 +1090,16 @@ class _SupplierVerifiedChangeRequestScreenState
                     title: 'Business Permit Evidence',
                     subtitle:
                         requestedPermitStoragePath.isEmpty &&
-                                requestedPermitPhotoUrl.isEmpty
-                            ? 'Upload the document matching the updated permit details.'
-                            : 'Updated permit evidence ready for Admin review.',
+                            requestedPermitPhotoUrl.isEmpty
+                        ? 'Upload the document matching the updated permit details.'
+                        : 'Updated permit evidence ready for Admin review.',
                     imageUrl: requestedPermitPhotoUrl,
                     storagePath: requestedPermitStoragePath,
                     busy: uploadingPermitPhoto,
                     requiredBadge: true,
                     onTap: submitting
                         ? null
-                        : () => pickAndUploadPhoto(
-                              permit: true,
-                            ),
+                        : () => pickAndUploadPhoto(permit: true),
                   ),
                 ],
               ],
@@ -1281,8 +1121,7 @@ class _SupplierVerifiedChangeRequestScreenState
             decoration: _inputDecoration(
               label: 'Reason for request',
               icon: Icons.edit_note_rounded,
-              hint:
-                  'Example: We transferred to a new market stall.',
+              hint: 'Example: We transferred to a new market stall.',
             ),
           ),
         ),
@@ -1295,9 +1134,7 @@ class _SupplierVerifiedChangeRequestScreenState
     final hasRequestedDetails = changes.any(
       (change) => change != 'Store photo',
     );
-    final hasStorePhotoChange = changes.contains(
-      'Store photo',
-    );
+    final hasStorePhotoChange = changes.contains('Store photo');
     final permitNumberChanged =
         permitNumberController.text.trim() != currentPermitNumber;
 
@@ -1311,12 +1148,7 @@ class _SupplierVerifiedChangeRequestScreenState
     final reasonSectionNumber = nextSectionNumber;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(
-        16,
-        14,
-        16,
-        24,
-      ),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
       children: [
         const _ReviewReadyHero(),
         if (hasRequestedDetails) ...[
@@ -1324,8 +1156,7 @@ class _SupplierVerifiedChangeRequestScreenState
           _FinalFormCard(
             number: requestedDetailsSectionNumber!.toString(),
             title: 'Requested Changes',
-            subtitle:
-                'Review each change before sending it to Admin.',
+            subtitle: 'Review each change before sending it to Admin.',
             icon: Icons.fact_check_outlined,
             child: Column(
               children: [
@@ -1333,28 +1164,23 @@ class _SupplierVerifiedChangeRequestScreenState
                   _CurrentRequestedRow(
                     label: 'Store / business name',
                     currentValue: currentStoreName,
-                    requestedValue:
-                        storeNameController.text.trim(),
+                    requestedValue: storeNameController.text.trim(),
                   ),
-                if (changes.contains(
-                  'Business location',
-                ))
+                if (changes.contains('Business location'))
                   _CurrentRequestedRow(
                     label: 'Business location',
                     currentValue: currentLocation,
                     requestedValue: requestedLocation,
                   ),
-                if (changes.contains(
-                  'Business permit',
-                ))
+                if (changes.contains('Business permit'))
                   _CurrentRequestedRow(
                     label: permitNumberChanged
                         ? 'Business permit number'
                         : 'Business permit evidence',
                     currentValue: permitNumberChanged
                         ? currentPermitNumber.isEmpty
-                            ? 'Current permit on file'
-                            : currentPermitNumber
+                              ? 'Current permit on file'
+                              : currentPermitNumber
                         : 'Current permit document',
                     requestedValue: permitNumberChanged
                         ? permitNumberController.text.trim()
@@ -1391,9 +1217,7 @@ class _SupplierVerifiedChangeRequestScreenState
             decoration: BoxDecoration(
               color: const Color(0xFFF5F9FC),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: const Color(0xFFE1EAF1),
-              ),
+              border: Border.all(color: const Color(0xFFE1EAF1)),
             ),
             child: Text(
               reasonController.text.trim(),
@@ -1426,28 +1250,18 @@ class _SupplierVerifiedChangeRequestScreenState
       prefixIcon: Icon(icon),
       filled: true,
       fillColor: const Color(0xFFF8FBFD),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: 14,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(
-          color: Color(0xFFDCE7EF),
-        ),
+        borderSide: const BorderSide(color: Color(0xFFDCE7EF)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(
-          color: Color(0xFFDCE7EF),
-        ),
+        borderSide: const BorderSide(color: Color(0xFFDCE7EF)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(
-          color: Color(0xFF146BFF),
-          width: 1.4,
-        ),
+        borderSide: const BorderSide(color: Color(0xFF146BFF), width: 1.4),
       ),
     );
   }
@@ -1459,17 +1273,11 @@ class _SupplierVerifiedChangeRequestScreenState
       body: SafeArea(
         child: Column(
           children: [
-            _RequestTopBar(
-              onBack: previousStep,
-            ),
-            _RequestProgress(
-              currentStep: step,
-            ),
+            _RequestTopBar(onBack: previousStep),
+            _RequestProgress(currentStep: step),
             Expanded(
               child: loadingPrivateData
-                  ? const Center(
-                      child: CircularProgressIndicator(),
-                    )
+                  ? const Center(child: CircularProgressIndicator())
                   : switch (step) {
                       0 => selectionStep(),
                       1 => detailsStep(),
@@ -1481,8 +1289,7 @@ class _SupplierVerifiedChangeRequestScreenState
               busy: submitting || uploadBusy,
               canContinue: selectedChanges.isNotEmpty,
               onBack: step == 0 ? null : previousStep,
-              onContinue:
-                  step == 2 ? submitRequest : nextStep,
+              onContinue: step == 2 ? submitRequest : nextStep,
             ),
           ],
         ),
@@ -1492,28 +1299,17 @@ class _SupplierVerifiedChangeRequestScreenState
 }
 
 class _RequestTopBar extends StatelessWidget {
-  const _RequestTopBar({
-    required this.onBack,
-  });
+  const _RequestTopBar({required this.onBack});
 
   final VoidCallback onBack;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(
-        14,
-        9,
-        14,
-        10,
-      ),
+      padding: const EdgeInsets.fromLTRB(14, 9, 14, 10),
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          bottom: BorderSide(
-            color: Color(0xFFE2EBF2),
-          ),
-        ),
+        border: Border(bottom: BorderSide(color: Color(0xFFE2EBF2))),
       ),
       child: Row(
         children: [
@@ -1526,18 +1322,14 @@ class _RequestTopBar extends StatelessWidget {
               child: const SizedBox(
                 width: 42,
                 height: 42,
-                child: Icon(
-                  Icons.arrow_back_rounded,
-                  color: Color(0xFF146BFF),
-                ),
+                child: Icon(Icons.arrow_back_rounded, color: Color(0xFF146BFF)),
               ),
             ),
           ),
           const SizedBox(width: 11),
           const Expanded(
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Request Verified Change',
@@ -1560,10 +1352,7 @@ class _RequestTopBar extends StatelessWidget {
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 8,
-              vertical: 5,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
             decoration: BoxDecoration(
               color: const Color(0xFFFFF3DC),
               borderRadius: BorderRadius.circular(99),
@@ -1595,110 +1384,96 @@ class _RequestTopBar extends StatelessWidget {
 }
 
 class _RequestProgress extends StatelessWidget {
-  const _RequestProgress({
-    required this.currentStep,
-  });
+  const _RequestProgress({required this.currentStep});
 
   final int currentStep;
 
   @override
   Widget build(BuildContext context) {
-    const labels = <String>[
-      'Changes',
-      'Details',
-      'Review',
-    ];
+    const labels = <String>['Changes', 'Details', 'Review'];
 
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(
-        16,
-        8,
-        16,
-        11,
-      ),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 11),
       child: Row(
-        children: List.generate(
-          labels.length,
-          (index) {
-            final active = index <= currentStep;
+        children: List.generate(labels.length, (index) {
+          final active = index <= currentStep;
 
-            return Expanded(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            if (index > 0)
-                              Expanded(
-                                child: Container(
-                                  height: 2,
-                                  color: index <= currentStep
-                                      ? const Color(0xFF146BFF)
-                                      : const Color(0xFFE1EAF1),
-                                ),
-                              ),
-                            Container(
-                              width: 24,
-                              height: 24,
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                color: active
+          return Expanded(
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          if (index > 0)
+                            Expanded(
+                              child: Container(
+                                height: 2,
+                                color: index <= currentStep
                                     ? const Color(0xFF146BFF)
-                                    : const Color(0xFFEAF0F5),
-                                shape: BoxShape.circle,
+                                    : const Color(0xFFE1EAF1),
                               ),
-                              child: active && index < currentStep
-                                  ? const Icon(
-                                      Icons.check_rounded,
-                                      size: 14,
-                                      color: Colors.white,
-                                    )
-                                  : Text(
-                                      '${index + 1}',
-                                      style: TextStyle(
-                                        color: active
-                                            ? Colors.white
-                                            : const Color(0xFF8295A5),
-                                        fontSize: 8.5,
-                                        fontWeight: FontWeight.w900,
-                                      ),
-                                    ),
                             ),
-                            if (index < labels.length - 1)
-                              Expanded(
-                                child: Container(
-                                  height: 2,
-                                  color: index < currentStep
-                                      ? const Color(0xFF146BFF)
-                                      : const Color(0xFFE1EAF1),
-                                ),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          labels[index],
-                          style: TextStyle(
-                            color: index == currentStep
-                                ? const Color(0xFF146BFF)
-                                : const Color(0xFF7B8FA3),
-                            fontSize: 7.8,
-                            fontWeight: index == currentStep
-                                ? FontWeight.w900
-                                : FontWeight.w700,
+                          Container(
+                            width: 24,
+                            height: 24,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: active
+                                  ? const Color(0xFF146BFF)
+                                  : const Color(0xFFEAF0F5),
+                              shape: BoxShape.circle,
+                            ),
+                            child: active && index < currentStep
+                                ? const Icon(
+                                    Icons.check_rounded,
+                                    size: 14,
+                                    color: Colors.white,
+                                  )
+                                : Text(
+                                    '${index + 1}',
+                                    style: TextStyle(
+                                      color: active
+                                          ? Colors.white
+                                          : const Color(0xFF8295A5),
+                                      fontSize: 8.5,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
                           ),
+                          if (index < labels.length - 1)
+                            Expanded(
+                              child: Container(
+                                height: 2,
+                                color: index < currentStep
+                                    ? const Color(0xFF146BFF)
+                                    : const Color(0xFFE1EAF1),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        labels[index],
+                        style: TextStyle(
+                          color: index == currentStep
+                              ? const Color(0xFF146BFF)
+                              : const Color(0xFF7B8FA3),
+                          fontSize: 7.8,
+                          fontWeight: index == currentStep
+                              ? FontWeight.w900
+                              : FontWeight.w700,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            );
-          },
-        ),
+                ),
+              ],
+            ),
+          );
+        }),
       ),
     );
   }
@@ -1723,11 +1498,7 @@ class _ApprovedStoreHero extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF0C446F),
-            Color(0xFF0B75BC),
-            Color(0xFF146BFF),
-          ],
+          colors: [Color(0xFF0C446F), Color(0xFF0B75BC), Color(0xFF146BFF)],
         ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: const [
@@ -1745,9 +1516,7 @@ class _ApprovedStoreHero extends StatelessWidget {
             child: Container(
               width: 62,
               height: 62,
-              color: Colors.white.withValues(
-                alpha: 0.13,
-              ),
+              color: Colors.white.withValues(alpha: 0.13),
               child: imageUrl.isEmpty
                   ? const Icon(
                       Icons.storefront_rounded,
@@ -1757,11 +1526,7 @@ class _ApprovedStoreHero extends StatelessWidget {
                   : Image.network(
                       imageUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (
-                        context,
-                        error,
-                        stackTrace,
-                      ) {
+                      errorBuilder: (context, error, stackTrace) {
                         return const Icon(
                           Icons.storefront_rounded,
                           color: Colors.white,
@@ -1774,8 +1539,7 @@ class _ApprovedStoreHero extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Row(
                   children: [
@@ -1809,8 +1573,7 @@ class _ApprovedStoreHero extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Row(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Padding(
                       padding: EdgeInsets.only(top: 1),
@@ -1859,8 +1622,7 @@ class _SectionIntro extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      crossAxisAlignment:
-          CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           width: 29,
@@ -1882,8 +1644,7 @@ class _SectionIntro extends StatelessWidget {
         const SizedBox(width: 9),
         Expanded(
           child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 title,
@@ -1931,9 +1692,7 @@ class _ChangeSelectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected
-          ? const Color(0xFFF2F8FF)
-          : Colors.white,
+      color: selected ? const Color(0xFFF2F8FF) : Colors.white,
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         onTap: onTap,
@@ -1962,17 +1721,14 @@ class _ChangeSelectionCard extends StatelessWidget {
                 ),
                 child: Icon(
                   icon,
-                  color: selected
-                      ? Colors.white
-                      : const Color(0xFF146BFF),
+                  color: selected ? Colors.white : const Color(0xFF146BFF),
                   size: 20,
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
@@ -2007,15 +1763,11 @@ class _ChangeSelectionCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               AnimatedContainer(
-                duration: const Duration(
-                  milliseconds: 180,
-                ),
+                duration: const Duration(milliseconds: 180),
                 width: 25,
                 height: 25,
                 decoration: BoxDecoration(
-                  color: selected
-                      ? const Color(0xFF146BFF)
-                      : Colors.white,
+                  color: selected ? const Color(0xFF146BFF) : Colors.white,
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: selected
@@ -2062,9 +1814,7 @@ class _FinalFormCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: const Color(0xFFDDE8F0),
-        ),
+        border: Border.all(color: const Color(0xFFDDE8F0)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x0B102C44),
@@ -2074,8 +1824,7 @@ class _FinalFormCard extends StatelessWidget {
         ],
       ),
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
@@ -2086,17 +1835,12 @@ class _FinalFormCard extends StatelessWidget {
                   color: const Color(0xFFEAF5FF),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  icon,
-                  color: const Color(0xFF146BFF),
-                  size: 19,
-                ),
+                child: Icon(icon, color: const Color(0xFF146BFF), size: 19),
               ),
               const SizedBox(width: 9),
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       '$number. $title',
@@ -2130,10 +1874,7 @@ class _FinalFormCard extends StatelessWidget {
 }
 
 class _MapPinCard extends StatelessWidget {
-  const _MapPinCard({
-    required this.hasPin,
-    required this.onTap,
-  });
+  const _MapPinCard({required this.hasPin, required this.onTap});
 
   final bool hasPin;
   final VoidCallback? onTap;
@@ -2141,9 +1882,7 @@ class _MapPinCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: hasPin
-          ? const Color(0xFFF0FBF7)
-          : const Color(0xFFF7FAFC),
+      color: hasPin ? const Color(0xFFF0FBF7) : const Color(0xFFF7FAFC),
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
@@ -2153,9 +1892,7 @@ class _MapPinCard extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: hasPin
-                  ? const Color(0xFFBDE8D7)
-                  : const Color(0xFFDDE7EE),
+              color: hasPin ? const Color(0xFFBDE8D7) : const Color(0xFFDDE7EE),
             ),
           ),
           child: Row(
@@ -2182,8 +1919,7 @@ class _MapPinCard extends StatelessWidget {
               const SizedBox(width: 9),
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       hasPin
@@ -2210,10 +1946,7 @@ class _MapPinCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: Color(0xFF8DA2B2),
-              ),
+              const Icon(Icons.chevron_right_rounded, color: Color(0xFF8DA2B2)),
             ],
           ),
         ),
@@ -2256,9 +1989,7 @@ class _UploadEvidenceCard extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: ready
-                  ? const Color(0xFFBFE7D8)
-                  : const Color(0xFFDDE7EE),
+              color: ready ? const Color(0xFFBFE7D8) : const Color(0xFFDDE7EE),
             ),
           ),
           child: Row(
@@ -2274,28 +2005,24 @@ class _UploadEvidenceCard extends StatelessWidget {
                   child: busy
                       ? const Padding(
                           padding: EdgeInsets.all(14),
-                          child:
-                              CircularProgressIndicator(
-                            strokeWidth: 2,
-                          ),
+                          child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : ready
-                          ? VerificationEvidenceImage(
-                              storagePath: storagePath,
-                              legacyUrl: imageUrl,
-                              fit: BoxFit.cover,
-                            )
-                          : const Icon(
-                              Icons.add_a_photo_outlined,
-                              color: Color(0xFF146BFF),
-                            ),
+                      ? VerificationEvidenceImage(
+                          storagePath: storagePath,
+                          legacyUrl: imageUrl,
+                          fit: BoxFit.cover,
+                        )
+                      : const Icon(
+                          Icons.add_a_photo_outlined,
+                          color: Color(0xFF146BFF),
+                        ),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
@@ -2312,25 +2039,20 @@ class _UploadEvidenceCard extends StatelessWidget {
                         if (requiredBadge) ...[
                           const SizedBox(width: 5),
                           Container(
-                            padding:
-                                const EdgeInsets.symmetric(
+                            padding: const EdgeInsets.symmetric(
                               horizontal: 6,
                               vertical: 3,
                             ),
                             decoration: BoxDecoration(
-                              color:
-                                  const Color(0xFFFFEEE8),
-                              borderRadius:
-                                  BorderRadius.circular(99),
+                              color: const Color(0xFFFFEEE8),
+                              borderRadius: BorderRadius.circular(99),
                             ),
                             child: const Text(
                               'Required',
                               style: TextStyle(
-                                color:
-                                    Color(0xFFD2603D),
+                                color: Color(0xFFD2603D),
                                 fontSize: 6.8,
-                                fontWeight:
-                                    FontWeight.w900,
+                                fontWeight: FontWeight.w900,
                               ),
                             ),
                           ),
@@ -2378,25 +2100,17 @@ class _ReviewReadyHero extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF0D6853),
-            Color(0xFF139B78),
-          ],
+          colors: [Color(0xFF0D6853), Color(0xFF139B78)],
         ),
         borderRadius: BorderRadius.circular(22),
       ),
       child: const Row(
         children: [
-          Icon(
-            Icons.fact_check_rounded,
-            color: Colors.white,
-            size: 28,
-          ),
+          Icon(Icons.fact_check_rounded, color: Colors.white, size: 28),
           SizedBox(width: 11),
           Expanded(
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Review before submitting',
@@ -2444,13 +2158,10 @@ class _CurrentRequestedRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFF7FAFC),
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(
-          color: const Color(0xFFE2EBF2),
-        ),
+        border: Border.all(color: const Color(0xFFE2EBF2)),
       ),
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
@@ -2462,8 +2173,7 @@ class _CurrentRequestedRow extends StatelessWidget {
           ),
           const SizedBox(height: 7),
           Row(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: _ReviewValue(
@@ -2473,10 +2183,7 @@ class _CurrentRequestedRow extends StatelessWidget {
                 ),
               ),
               const Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: 7,
-                  vertical: 16,
-                ),
+                padding: EdgeInsets.symmetric(horizontal: 7, vertical: 16),
                 child: Icon(
                   Icons.arrow_forward_rounded,
                   color: Color(0xFF9AACBA),
@@ -2512,8 +2219,7 @@ class _ReviewValue extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment:
-          CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
@@ -2549,15 +2255,10 @@ class _ImageCompareRow extends StatelessWidget {
   final String currentUrl;
   final String requestedUrl;
 
-  Widget imageBox(
-    String label,
-    String url, {
-    required bool requested,
-  }) {
+  Widget imageBox(String label, String url, {required bool requested}) {
     return Expanded(
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
@@ -2584,11 +2285,7 @@ class _ImageCompareRow extends StatelessWidget {
                   : Image.network(
                       url,
                       fit: BoxFit.cover,
-                      errorBuilder: (
-                        context,
-                        error,
-                        stackTrace,
-                      ) {
+                      errorBuilder: (context, error, stackTrace) {
                         return const Icon(
                           Icons.broken_image_outlined,
                           color: Color(0xFF8DA2B2),
@@ -2606,26 +2303,16 @@ class _ImageCompareRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        imageBox(
-          'CURRENT',
-          currentUrl,
-          requested: false,
-        ),
+        imageBox('CURRENT', currentUrl, requested: false),
         const SizedBox(width: 9),
-        imageBox(
-          'REQUESTED',
-          requestedUrl,
-          requested: true,
-        ),
+        imageBox('REQUESTED', requestedUrl, requested: true),
       ],
     );
   }
 }
 
 class _SecurityInfoCard extends StatelessWidget {
-  const _SecurityInfoCard({
-    required this.text,
-  });
+  const _SecurityInfoCard({required this.text});
 
   final String text;
 
@@ -2636,19 +2323,12 @@ class _SecurityInfoCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFFFF8E9),
         borderRadius: BorderRadius.circular(17),
-        border: Border.all(
-          color: const Color(0xFFF0E0B5),
-        ),
+        border: Border.all(color: const Color(0xFFF0E0B5)),
       ),
       child: Row(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            Icons.shield_outlined,
-            color: Color(0xFF9B721F),
-            size: 18,
-          ),
+          const Icon(Icons.shield_outlined, color: Color(0xFF9B721F), size: 18),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -2687,19 +2367,10 @@ class _BottomActionBar extends StatelessWidget {
     final finalStep = step == 2;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(
-        16,
-        10,
-        16,
-        12,
-      ),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: Color(0xFFE1EAF1),
-          ),
-        ),
+        border: Border(top: BorderSide(color: Color(0xFFE1EAF1))),
       ),
       child: Row(
         children: [
@@ -2709,21 +2380,15 @@ class _BottomActionBar extends StatelessWidget {
               child: OutlinedButton(
                 onPressed: busy ? null : onBack,
                 style: OutlinedButton.styleFrom(
-                  foregroundColor:
-                      const Color(0xFF526B7E),
-                  side: const BorderSide(
-                    color: Color(0xFFD4E0E8),
-                  ),
+                  foregroundColor: const Color(0xFF526B7E),
+                  side: const BorderSide(color: Color(0xFFD4E0E8)),
                   shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(15),
+                    borderRadius: BorderRadius.circular(15),
                   ),
                 ),
                 child: const Text(
                   'Back',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.w900),
                 ),
               ),
             ),
@@ -2733,8 +2398,7 @@ class _BottomActionBar extends StatelessWidget {
             child: SizedBox(
               height: 48,
               child: ElevatedButton.icon(
-                onPressed: busy ||
-                        (!canContinue && step == 0)
+                onPressed: busy || (!canContinue && step == 0)
                     ? null
                     : onContinue,
                 icon: busy && finalStep
@@ -2755,21 +2419,17 @@ class _BottomActionBar extends StatelessWidget {
                 label: Text(
                   finalStep
                       ? busy
-                          ? 'Submitting...'
-                          : 'Submit for Admin Review'
+                            ? 'Submitting...'
+                            : 'Submit for Admin Review'
                       : 'Continue',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                  ),
+                  style: const TextStyle(fontWeight: FontWeight.w900),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      const Color(0xFF146BFF),
+                  backgroundColor: const Color(0xFF146BFF),
                   foregroundColor: Colors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(15),
+                    borderRadius: BorderRadius.circular(15),
                   ),
                 ),
               ),

@@ -4,10 +4,7 @@ import 'package:flutter/widgets.dart';
 /// card while still allowing the final compact discovery card to rest flush
 /// against the trailing screen padding.
 class HomeItemSnapScrollPhysics extends ScrollPhysics {
-  const HomeItemSnapScrollPhysics({
-    super.parent,
-    required this.itemExtent,
-  });
+  const HomeItemSnapScrollPhysics({super.parent, required this.itemExtent});
 
   final double itemExtent;
 
@@ -34,10 +31,7 @@ class HomeItemSnapScrollPhysics extends ScrollPhysics {
 
     final snapped = item.roundToDouble() * itemExtent;
     return snapped
-        .clamp(
-          position.minScrollExtent,
-          position.maxScrollExtent,
-        )
+        .clamp(position.minScrollExtent, position.maxScrollExtent)
         .toDouble();
   }
 

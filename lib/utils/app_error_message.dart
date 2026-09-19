@@ -79,11 +79,7 @@ class AppErrorMessage {
   static String _clean(Object error) {
     var text = error.toString().trim();
 
-    const prefixes = <String>[
-      'Exception: ',
-      'StateError: ',
-      'Bad state: ',
-    ];
+    const prefixes = <String>['Exception: ', 'StateError: ', 'Bad state: '];
 
     for (final prefix in prefixes) {
       if (text.startsWith(prefix)) {

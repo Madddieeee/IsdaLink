@@ -11,22 +11,13 @@ class SupplierOrdersEmptyCard extends StatelessWidget {
   final VoidCallback onClearFilters;
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(
-        20,
-        22,
-        20,
-        20,
-      ),
+      padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(25),
-        border: Border.all(
-          color: const Color(0xFFE1EBF2),
-        ),
+        border: Border.all(color: const Color(0xFFE1EBF2)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x0F00152A),
@@ -45,18 +36,14 @@ class SupplierOrdersEmptyCard extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             child: Icon(
-              filtered
-                  ? Icons.search_off_rounded
-                  : Icons.receipt_long_outlined,
+              filtered ? Icons.search_off_rounded : Icons.receipt_long_outlined,
               color: const Color(0xFF146BFF),
               size: 32,
             ),
           ),
           const SizedBox(height: 13),
           Text(
-            filtered
-                ? 'No matching COD orders'
-                : 'No incoming COD orders yet',
+            filtered ? 'No matching COD orders' : 'No incoming COD orders yet',
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Color(0xFF102C44),
@@ -81,15 +68,10 @@ class SupplierOrdersEmptyCard extends StatelessWidget {
             const SizedBox(height: 12),
             TextButton.icon(
               onPressed: onClearFilters,
-              icon: const Icon(
-                Icons.filter_alt_off_outlined,
-                size: 18,
-              ),
+              icon: const Icon(Icons.filter_alt_off_outlined, size: 18),
               label: const Text(
                 'Clear Search and Filters',
-                style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w900),
               ),
             ),
           ],
@@ -100,22 +82,16 @@ class SupplierOrdersEmptyCard extends StatelessWidget {
 }
 
 class SupplierOrdersLoadingCard extends StatelessWidget {
-  const SupplierOrdersLoadingCard({
-    super.key,
-  });
+  const SupplierOrdersLoadingCard({super.key});
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(23),
-        border: Border.all(
-          color: const Color(0xFFE1EBF2),
-        ),
+        border: Border.all(color: const Color(0xFFE1EBF2)),
       ),
       child: const Row(
         children: [
@@ -145,30 +121,18 @@ class SupplierOrdersLoadingCard extends StatelessWidget {
 }
 
 class SupplierOrdersErrorCard extends StatelessWidget {
-  const SupplierOrdersErrorCard({
-    super.key,
-    required this.onRetry,
-  });
+  const SupplierOrdersErrorCard({super.key, required this.onRetry});
 
   final VoidCallback onRetry;
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(
-        18,
-        20,
-        18,
-        18,
-      ),
+      padding: const EdgeInsets.fromLTRB(18, 20, 18, 18),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(23),
-        border: Border.all(
-          color: const Color(0xFFF2C7C5),
-        ),
+        border: Border.all(color: const Color(0xFFF2C7C5)),
       ),
       child: Column(
         children: [
@@ -200,15 +164,10 @@ class SupplierOrdersErrorCard extends StatelessWidget {
           const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: onRetry,
-            icon: const Icon(
-              Icons.refresh_rounded,
-              size: 18,
-            ),
+            icon: const Icon(Icons.refresh_rounded, size: 18),
             label: const Text(
               'Try Again',
-              style: TextStyle(
-                fontWeight: FontWeight.w900,
-              ),
+              style: TextStyle(fontWeight: FontWeight.w900),
             ),
           ),
         ],

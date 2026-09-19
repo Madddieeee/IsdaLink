@@ -8,13 +8,10 @@ import 'package:isdalink/utils/app_error_message.dart';
 import 'package:isdalink/screens/map/vendor_delivery_map_card.dart';
 
 class RegionLocationScreen extends StatefulWidget {
-  const RegionLocationScreen({
-    super.key,
-  });
+  const RegionLocationScreen({super.key});
 
   @override
-  State<RegionLocationScreen> createState() =>
-      _RegionLocationScreenState();
+  State<RegionLocationScreen> createState() => _RegionLocationScreenState();
 }
 
 class _RegionLocationScreenState extends State<RegionLocationScreen> {
@@ -125,8 +122,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
     ],
   };
 
-  static const locationCodesByProvince =
-      <String, Map<String, String>>{
+  static const locationCodesByProvince = <String, Map<String, String>>{
     'Agusan del Norte': {
       'Butuan City': butuanCityCode,
       'Buenavista': '1600201000',
@@ -247,11 +243,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
     final values = locationsByProvince[province] ?? const <String>[];
 
     return List<String>.from(values)
-      ..sort(
-        (a, b) => a.toLowerCase().compareTo(
-              b.toLowerCase(),
-            ),
-      );
+      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
   }
 
   String get locationPreview {
@@ -270,10 +262,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
         .trim();
   }
 
-  bool isGeneralLocationOnly(
-    String address, {
-    String legacyLocation = '',
-  }) {
+  bool isGeneralLocationOnly(String address, {String legacyLocation = ''}) {
     final normalizedAddress = normalizeAddress(address);
 
     if (normalizedAddress.isEmpty) {
@@ -357,26 +346,14 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
 
       final data = snapshot.data();
 
-      final storedProvince = getStringValue(
-        data,
-        'province',
-        '',
-      );
+      final storedProvince = getStringValue(data, 'province', '');
 
-      final storedCity = getStringValue(
-        data,
-        'cityMunicipality',
-        '',
-      );
+      final storedCity = getStringValue(data, 'cityMunicipality', '');
 
       final legacyLocation = getStringValue(
         data,
         'location',
-        getStringValue(
-          data,
-          'marketLocation',
-          '',
-        ),
+        getStringValue(data, 'marketLocation', ''),
       );
 
       if (storedCity == 'City of Butuan' ||
@@ -396,21 +373,17 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
         }
       }
 
-      if (selectedProvince != null &&
-          !availableCities.contains(selectedCity)) {
+      if (selectedProvince != null && !availableCities.contains(selectedCity)) {
         selectedCity = null;
       }
 
-      final storedDeliveryAddress = getStringValue(
-        data,
-        'deliveryAddress',
-        '',
-      );
+      final storedDeliveryAddress = getStringValue(data, 'deliveryAddress', '');
 
-      deliveryAddressController.text = isGeneralLocationOnly(
-        storedDeliveryAddress,
-        legacyLocation: legacyLocation,
-      )
+      deliveryAddressController.text =
+          isGeneralLocationOnly(
+            storedDeliveryAddress,
+            legacyLocation: legacyLocation,
+          )
           ? ''
           : storedDeliveryAddress;
       deliveryLatitude = coordinateValue(data?['deliveryLatitude']);
@@ -436,10 +409,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
       initialDeliveryLatitude = deliveryLatitude;
       initialDeliveryLongitude = deliveryLongitude;
     } catch (_) {
-      showMessage(
-        'Unable to load your saved location.',
-        isError: true,
-      );
+      showMessage('Unable to load your saved location.', isError: true);
     } finally {
       if (mounted) {
         setState(() {
@@ -449,9 +419,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
     }
   }
 
-  String? validateProvince(
-    String? value,
-  ) {
+  String? validateProvince(String? value) {
     if (value == null || !provinces.contains(value)) {
       return 'Select your province.';
     }
@@ -459,9 +427,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
     return null;
   }
 
-  String? validateCity(
-    String? value,
-  ) {
+  String? validateCity(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'Select your city or municipality.';
     }
@@ -477,9 +443,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
     return null;
   }
 
-  String localityType(
-    String value,
-  ) {
+  String localityType(String value) {
     if (value == 'Butuan City' || value.startsWith('City of ')) {
       return 'City';
     }
@@ -501,158 +465,132 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
       useSafeArea: true,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black.withAlpha(165),
-      builder: (
-        sheetContext,
-      ) {
+      builder: (sheetContext) {
         return _LocationPickerSearchHost(
-          builder: (
-            context,
-            searchController,
-            searchFocusNode,
-          ) {
+          builder: (context, searchController, searchFocusNode) {
             return StatefulBuilder(
-              builder: (
-                context,
-                setSheetState,
-              ) {
-            final query =
-                searchController.text.trim().toLowerCase();
+              builder: (context, setSheetState) {
+                final query = searchController.text.trim().toLowerCase();
 
-            final filteredOptions = options.where(
-              (option) {
-                if (query.isEmpty) {
-                  return true;
-                }
+                final filteredOptions = options.where((option) {
+                  if (query.isEmpty) {
+                    return true;
+                  }
 
-                return option.toLowerCase().contains(query);
-              },
-            ).toList();
+                  return option.toLowerCase().contains(query);
+                }).toList();
 
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom:
-                    MediaQuery.of(sheetContext).viewInsets.bottom,
-              ),
-              child: Container(
-                constraints: BoxConstraints(
-                  maxHeight:
-                      MediaQuery.of(sheetContext).size.height * 0.80,
-                ),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF8FBFD),
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(30),
+                return Padding(
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Color(0x55000000),
-                      blurRadius: 30,
-                      offset: Offset(0, -12),
+                  child: Container(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(sheetContext).size.height * 0.80,
                     ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(height: 10),
-                    Container(
-                      width: 42,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFBED0DC),
-                        borderRadius: BorderRadius.circular(99),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFF8FBFD),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(30),
                       ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        20,
-                        16,
-                        12,
-                        14,
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE8F5FD),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Icon(
-                              icon,
-                              color: const Color(0xFF146BFF),
-                              size: 23,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  title,
-                                  style: const TextStyle(
-                                    color: Color(0xFF102C44),
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  subtitle,
-                                  style: const TextStyle(
-                                    color: Color(0xFF7B8FA3),
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          IconButton(
-                            tooltip: 'Close',
-                            onPressed: () {
-                              searchFocusNode.unfocus();
-                              Navigator.pop(sheetContext);
-                            },
-                            icon: const Icon(
-                              Icons.close_rounded,
-                              color: Color(0xFF52677A),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (searchable)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                          18,
-                          0,
-                          18,
-                          13,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Color(0x55000000),
+                          blurRadius: 30,
+                          offset: Offset(0, -12),
                         ),
-                        child: TextField(
-                          controller: searchController,
-                          focusNode: searchFocusNode,
-                          autofocus: false,
-                          textInputAction: TextInputAction.search,
-                          onChanged: (_) {
-                            setSheetState(() {});
-                          },
-                          decoration: InputDecoration(
-                            hintText: 'Search city or municipality',
-                            hintStyle: const TextStyle(
-                              color: Color(0xFF8BA0B1),
-                              fontSize: 12,
-                            ),
-                            prefixIcon: const Icon(
-                              Icons.search_rounded,
-                              color: Color(0xFF146BFF),
-                            ),
-                            suffixIcon:
-                                searchController.text.isEmpty
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(height: 10),
+                        Container(
+                          width: 42,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFBED0DC),
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 16, 12, 14),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE8F5FD),
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: Icon(
+                                  icon,
+                                  color: const Color(0xFF146BFF),
+                                  size: 23,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      title,
+                                      style: const TextStyle(
+                                        color: Color(0xFF102C44),
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      subtitle,
+                                      style: const TextStyle(
+                                        color: Color(0xFF7B8FA3),
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                tooltip: 'Close',
+                                onPressed: () {
+                                  searchFocusNode.unfocus();
+                                  Navigator.pop(sheetContext);
+                                },
+                                icon: const Icon(
+                                  Icons.close_rounded,
+                                  color: Color(0xFF52677A),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (searchable)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(18, 0, 18, 13),
+                            child: TextField(
+                              controller: searchController,
+                              focusNode: searchFocusNode,
+                              autofocus: false,
+                              textInputAction: TextInputAction.search,
+                              onChanged: (_) {
+                                setSheetState(() {});
+                              },
+                              decoration: InputDecoration(
+                                hintText: 'Search city or municipality',
+                                hintStyle: const TextStyle(
+                                  color: Color(0xFF8BA0B1),
+                                  fontSize: 12,
+                                ),
+                                prefixIcon: const Icon(
+                                  Icons.search_rounded,
+                                  color: Color(0xFF146BFF),
+                                ),
+                                suffixIcon: searchController.text.isEmpty
                                     ? null
                                     : IconButton(
                                         tooltip: 'Clear search',
@@ -660,163 +598,132 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
                                           searchController.clear();
                                           setSheetState(() {});
                                         },
-                                        icon: const Icon(
-                                          Icons.close_rounded,
-                                        ),
+                                        icon: const Icon(Icons.close_rounded),
                                       ),
-                            filled: true,
-                            fillColor: Colors.white,
-                            border: OutlineInputBorder(
-                              borderRadius:
-                                  BorderRadius.circular(16),
-                              borderSide: const BorderSide(
-                                color: Color(0xFFE2ECF3),
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius:
-                                  BorderRadius.circular(16),
-                              borderSide: const BorderSide(
-                                color: Color(0xFFE2ECF3),
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius:
-                                  BorderRadius.circular(16),
-                              borderSide: const BorderSide(
-                                color: Color(0xFF146BFF),
-                                width: 1.5,
+                                filled: true,
+                                fillColor: Colors.white,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xFFE2ECF3),
+                                  ),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xFFE2ECF3),
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xFF146BFF),
+                                    width: 1.5,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ),
-                    Divider(
-                      height: 1,
-                      color: Colors.black.withAlpha(15),
-                    ),
-                    Flexible(
-                      child: ListView.separated(
-                        shrinkWrap: true,
-                        padding: const EdgeInsets.fromLTRB(
-                          12,
-                          8,
-                          12,
-                          20,
-                        ),
-                        itemCount: filteredOptions.length,
-                        separatorBuilder: (
-                          context,
-                          index,
-                        ) {
-                          return const SizedBox(height: 4);
-                        },
-                        itemBuilder: (
-                          context,
-                          index,
-                        ) {
-                          final option = filteredOptions[index];
-                          final isSelected =
-                              option == selectedValue;
+                        Divider(height: 1, color: Colors.black.withAlpha(15)),
+                        Flexible(
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
+                            itemCount: filteredOptions.length,
+                            separatorBuilder: (context, index) {
+                              return const SizedBox(height: 4);
+                            },
+                            itemBuilder: (context, index) {
+                              final option = filteredOptions[index];
+                              final isSelected = option == selectedValue;
 
-                          return Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: () {
-                                searchFocusNode.unfocus();
-                                Navigator.pop(
-                                  sheetContext,
-                                  option,
-                                );
-                              },
-                              borderRadius:
-                                  BorderRadius.circular(16),
-                              child: AnimatedContainer(
-                                duration:
-                                    const Duration(milliseconds: 170),
-                                padding: const EdgeInsets.fromLTRB(
-                                  14,
-                                  12,
-                                  12,
-                                  12,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? const Color(0xFFE6F5FF)
-                                      : Colors.white,
-                                  borderRadius:
-                                      BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: isSelected
-                                        ? const Color(0xFF32A9FF)
-                                        : const Color(0xFFE5EDF3),
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            option,
-                                            style: TextStyle(
-                                              color: const Color(
-                                                0xFF102C44,
-                                              ),
-                                              fontSize: 12.5,
-                                              fontWeight: isSelected
-                                                  ? FontWeight.w900
-                                                  : FontWeight.w800,
-                                            ),
-                                          ),
-                                          if (title.contains('City'))
-                                            Padding(
-                                              padding:
-                                                  const EdgeInsets.only(
-                                                top: 3,
-                                              ),
-                                              child: Text(
-                                                localityType(option),
-                                                style:
-                                                    const TextStyle(
-                                                  color: Color(
-                                                    0xFF7B8FA3,
-                                                  ),
-                                                  fontSize: 9.8,
-                                                  fontWeight:
-                                                      FontWeight.w600,
-                                                ),
-                                              ),
-                                            ),
-                                        ],
+                              return Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () {
+                                    searchFocusNode.unfocus();
+                                    Navigator.pop(sheetContext, option);
+                                  },
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 170),
+                                    padding: const EdgeInsets.fromLTRB(
+                                      14,
+                                      12,
+                                      12,
+                                      12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? const Color(0xFFE6F5FF)
+                                          : Colors.white,
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? const Color(0xFF32A9FF)
+                                            : const Color(0xFFE5EDF3),
                                       ),
                                     ),
-                                    Icon(
-                                      isSelected
-                                          ? Icons
-                                              .check_circle_rounded
-                                          : Icons
-                                              .chevron_right_rounded,
-                                      color: isSelected
-                                          ? const Color(0xFF1DBB8A)
-                                          : const Color(0xFF9DB0BE),
-                                      size: 21,
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                option,
+                                                style: TextStyle(
+                                                  color: const Color(
+                                                    0xFF102C44,
+                                                  ),
+                                                  fontSize: 12.5,
+                                                  fontWeight: isSelected
+                                                      ? FontWeight.w900
+                                                      : FontWeight.w800,
+                                                ),
+                                              ),
+                                              if (title.contains('City'))
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                        top: 3,
+                                                      ),
+                                                  child: Text(
+                                                    localityType(option),
+                                                    style: const TextStyle(
+                                                      color: Color(0xFF7B8FA3),
+                                                      fontSize: 9.8,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                        Icon(
+                                          isSelected
+                                              ? Icons.check_circle_rounded
+                                              : Icons.chevron_right_rounded,
+                                          color: isSelected
+                                              ? const Color(0xFF1DBB8A)
+                                              : const Color(0xFF9DB0BE),
+                                          size: 21,
+                                        ),
+                                      ],
                                     ),
-                                  ],
+                                  ),
                                 ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-              );
-            },
+                  ),
+                );
+              },
             );
           },
         );
@@ -1050,9 +957,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
         initialDeliveryLongitude = deliveryLongitude;
       });
 
-      showMessage(
-        'Region and location updated successfully.',
-      );
+      showMessage('Region and location updated successfully.');
     } on FirebaseException catch (error) {
       showMessage(
         AppErrorMessage.from(
@@ -1065,7 +970,8 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
       showMessage(
         AppErrorMessage.from(
           error,
-          fallback: 'Something went wrong while saving your location. Please try again.',
+          fallback:
+              'Something went wrong while saving your location. Please try again.',
           allowBusinessMessage: true,
         ),
         isError: true,
@@ -1079,10 +985,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
     }
   }
 
-  void showMessage(
-    String message, {
-    bool isError = false,
-  }) {
+  void showMessage(String message, {bool isError = false}) {
     if (!mounted) {
       return;
     }
@@ -1094,12 +997,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
       ..showSnackBar(
         SnackBar(
           behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.fromLTRB(
-            18,
-            0,
-            18,
-            18,
-          ),
+          margin: const EdgeInsets.fromLTRB(18, 0, 18, 18),
           backgroundColor: isError
               ? const Color(0xFFB3261E)
               : const Color(0xFF147D64),
@@ -1136,8 +1034,8 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
     final statusLabel = hasChanges
         ? 'UNSAVED'
         : hasLocation
-            ? 'SYNCED'
-            : 'SET LOCATION';
+        ? 'SYNCED'
+        : 'SET LOCATION';
 
     return Container(
       width: double.infinity,
@@ -1145,20 +1043,10 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF063B66),
-            Color(0xFF075FAE),
-            Color(0xFF146BFF),
-          ],
-          stops: [
-            0.0,
-            0.52,
-            1.0,
-          ],
+          colors: [Color(0xFF063B66), Color(0xFF075FAE), Color(0xFF146BFF)],
+          stops: [0.0, 0.52, 1.0],
         ),
-        borderRadius: BorderRadius.vertical(
-          bottom: Radius.circular(34),
-        ),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(34)),
         boxShadow: [
           BoxShadow(
             color: Color(0x24146BFF),
@@ -1178,9 +1066,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.white.withAlpha(10),
-                border: Border.all(
-                  color: Colors.white.withAlpha(18),
-                ),
+                border: Border.all(color: Colors.white.withAlpha(18)),
               ),
             ),
           ),
@@ -1192,19 +1078,12 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
               height: 84,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white.withAlpha(18),
-                ),
+                border: Border.all(color: Colors.white.withAlpha(18)),
               ),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(
-              18,
-              47,
-              18,
-              24,
-            ),
+            padding: const EdgeInsets.fromLTRB(18, 47, 18, 24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1278,18 +1157,11 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
                 ),
                 const SizedBox(height: 16),
                 Container(
-                  padding: const EdgeInsets.fromLTRB(
-                    13,
-                    12,
-                    13,
-                    12,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(13, 12, 13, 12),
                   decoration: BoxDecoration(
                     color: Colors.white.withAlpha(31),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: Colors.white.withAlpha(31),
-                    ),
+                    border: Border.all(color: Colors.white.withAlpha(31)),
                   ),
                   child: Row(
                     children: [
@@ -1390,18 +1262,11 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFE9F7FF),
-                Color(0xFFDDF1FF),
-              ],
+              colors: [Color(0xFFE9F7FF), Color(0xFFDDF1FF)],
             ),
             borderRadius: BorderRadius.circular(14),
           ),
-          child: Icon(
-            icon,
-            color: const Color(0xFF146BFF),
-            size: 22,
-          ),
+          child: Icon(icon, color: const Color(0xFF146BFF), size: 22),
         ),
         const SizedBox(width: 11),
         Expanded(
@@ -1436,18 +1301,11 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
   Widget lockedRegionTile() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(
-        13,
-        12,
-        13,
-        12,
-      ),
+      padding: const EdgeInsets.fromLTRB(13, 12, 13, 12),
       decoration: BoxDecoration(
         color: const Color(0xFFF1F7FB),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: const Color(0xFFE1EBF2),
-        ),
+        border: Border.all(color: const Color(0xFFE1EBF2)),
       ),
       child: Row(
         children: [
@@ -1518,17 +1376,13 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
     String? emptyDisplay,
   }) {
     return FormField<String>(
-      key: ValueKey(
-        '$label-$value-$submitted',
-      ),
+      key: ValueKey('$label-$value-$submitted'),
       initialValue: value,
       autovalidateMode: submitted
           ? AutovalidateMode.onUserInteraction
           : AutovalidateMode.disabled,
       validator: validator,
-      builder: (
-        field,
-      ) {
+      builder: (field) {
         final hasValue = value != null && value.trim().isNotEmpty;
         final valid = hasValue && !field.hasError;
 
@@ -1538,15 +1392,11 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
             Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: isSaving
-                    ? null
-                    : onTap,
+                onTap: isSaving ? null : onTap,
                 borderRadius: BorderRadius.circular(18),
                 child: Ink(
                   height: 61,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 13,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 13),
                   decoration: BoxDecoration(
                     color: valid
                         ? const Color(0xFFF0FBF7)
@@ -1556,11 +1406,9 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
                       color: field.hasError
                           ? const Color(0xFFD32F2F)
                           : valid
-                              ? const Color(0xFF1DBB8A)
-                              : const Color(0xFFB8DFFF),
-                      width: valid || field.hasError
-                          ? 1.45
-                          : 1.25,
+                          ? const Color(0xFF1DBB8A)
+                          : const Color(0xFFB8DFFF),
+                      width: valid || field.hasError ? 1.45 : 1.25,
                     ),
                   ),
                   child: Row(
@@ -1586,8 +1434,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
                       Expanded(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               label.toUpperCase(),
@@ -1640,12 +1487,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
             ),
             if (field.hasError)
               Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  12,
-                  6,
-                  8,
-                  0,
-                ),
+                padding: const EdgeInsets.fromLTRB(12, 6, 8, 0),
                 child: Text(
                   field.errorText!,
                   style: const TextStyle(
@@ -1657,12 +1499,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
               )
             else if (helperText != null)
               Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  12,
-                  6,
-                  8,
-                  0,
-                ),
+                padding: const EdgeInsets.fromLTRB(12, 6, 8, 0),
                 child: Text(
                   helperText,
                   style: const TextStyle(
@@ -1708,30 +1545,19 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
         contentPadding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(
-            color: Color(0xFFB8DFFF),
-            width: 1.25,
-          ),
+          borderSide: const BorderSide(color: Color(0xFFB8DFFF), width: 1.25),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(
-            color: Color(0xFF146BFF),
-            width: 1.45,
-          ),
+          borderSide: const BorderSide(color: Color(0xFF146BFF), width: 1.45),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(
-            color: Color(0xFFD32F2F),
-          ),
+          borderSide: const BorderSide(color: Color(0xFFD32F2F)),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(
-            color: Color(0xFFD32F2F),
-            width: 1.45,
-          ),
+          borderSide: const BorderSide(color: Color(0xFFD32F2F), width: 1.45),
         ),
       ),
     );
@@ -1739,18 +1565,11 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
 
   Widget locationCard() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(
-        16,
-        17,
-        16,
-        17,
-      ),
+      padding: const EdgeInsets.fromLTRB(16, 17, 16, 17),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(26),
-        border: Border.all(
-          color: const Color(0xFFE1EBF2),
-        ),
+        border: Border.all(color: const Color(0xFFE1EBF2)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x10000000),
@@ -1765,8 +1584,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
           children: [
             sectionHeader(
               title: 'Location Details',
-              subtitle:
-                  'Keep the location shown in Account Center accurate.',
+              subtitle: 'Keep the location shown in Account Center accurate.',
               icon: Icons.location_on_outlined,
             ),
             const SizedBox(height: 17),
@@ -1779,8 +1597,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
               onTap: showProvincePicker,
               validator: validateProvince,
               emptyDisplay: 'Select province',
-              helperText:
-                  'Choose one of Caraga Region’s five provinces.',
+              helperText: 'Choose one of Caraga Region’s five provinces.',
             ),
             const SizedBox(height: 12),
             pickerField(
@@ -1814,12 +1631,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
     final canSave = hasChanges && !isSaving;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(
-        18,
-        10,
-        18,
-        16,
-      ),
+      padding: const EdgeInsets.fromLTRB(18, 10, 18, 16),
       decoration: const BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -1836,9 +1648,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
           width: double.infinity,
           height: 53,
           child: ElevatedButton.icon(
-            onPressed: canSave
-                ? saveLocation
-                : null,
+            onPressed: canSave ? saveLocation : null,
             icon: isSaving
                 ? const SizedBox(
                     width: 19,
@@ -1858,8 +1668,8 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
               isSaving
                   ? 'Saving Location...'
                   : hasChanges
-                      ? 'Save Location'
-                      : 'Location Up to Date',
+                  ? 'Save Location'
+                  : 'Location Up to Date',
               style: const TextStyle(
                 fontSize: 14.5,
                 fontWeight: FontWeight.w900,
@@ -1870,9 +1680,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
               disabledBackgroundColor: const Color(0xFFDCE7EF),
               foregroundColor: Colors.white,
               disabledForegroundColor: const Color(0xFF7B8FA3),
-              elevation: canSave
-                  ? 7
-                  : 0,
+              elevation: canSave ? 7 : 0,
               shadowColor: const Color(0x55146BFF),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -1887,18 +1695,12 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
   Widget loadingBody() {
     return const Scaffold(
       backgroundColor: Color(0xFFF4F8FB),
-      body: Center(
-        child: CircularProgressIndicator(
-          color: Color(0xFF146BFF),
-        ),
-      ),
+      body: Center(child: CircularProgressIndicator(color: Color(0xFF146BFF))),
     );
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     if (currentUser == null) {
       return const Scaffold(
         backgroundColor: Color(0xFFF4F8FB),
@@ -1932,15 +1734,8 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
             header(),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(
-                  18,
-                  18,
-                  18,
-                  22,
-                ),
-                children: [
-                  locationCard(),
-                ],
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 22),
+                children: [locationCard()],
               ),
             ),
             saveButton(),
@@ -1952,23 +1747,21 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
 }
 
 class _LocationPickerSearchHost extends StatefulWidget {
-  const _LocationPickerSearchHost({
-    required this.builder,
-  });
+  const _LocationPickerSearchHost({required this.builder});
 
   final Widget Function(
     BuildContext context,
     TextEditingController searchController,
     FocusNode searchFocusNode,
-  ) builder;
+  )
+  builder;
 
   @override
   State<_LocationPickerSearchHost> createState() =>
       _LocationPickerSearchHostState();
 }
 
-class _LocationPickerSearchHostState
-    extends State<_LocationPickerSearchHost> {
+class _LocationPickerSearchHostState extends State<_LocationPickerSearchHost> {
   final searchController = TextEditingController();
   final searchFocusNode = FocusNode();
 
@@ -1981,10 +1774,6 @@ class _LocationPickerSearchHostState
 
   @override
   Widget build(BuildContext context) {
-    return widget.builder(
-      context,
-      searchController,
-      searchFocusNode,
-    );
+    return widget.builder(context, searchController, searchFocusNode);
   }
 }

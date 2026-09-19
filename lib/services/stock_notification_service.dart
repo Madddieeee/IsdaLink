@@ -37,9 +37,7 @@ class StockNotificationTransition {
 class StockNotificationService {
   const StockNotificationService();
 
-  bool notificationsEnabled(
-    Map<String, dynamic> data,
-  ) {
+  bool notificationsEnabled(Map<String, dynamic> data) {
     return data['lowStockNotificationEnabled'] != false;
   }
 
@@ -49,9 +47,7 @@ class StockNotificationService {
     double? lowStockLevelOverride,
     bool? hiddenOverride,
   }) {
-    final previousStatus = StockState.calculatedStockStatus(
-      stockData,
-    );
+    final previousStatus = StockState.calculatedStockStatus(stockData);
 
     final nextStatus = StockState.calculatedStockStatus(
       stockData,
@@ -66,8 +62,7 @@ class StockNotificationService {
       '',
     );
 
-    if (nextStatus == 'hidden' ||
-        !notificationsEnabled(stockData)) {
+    if (nextStatus == 'hidden' || !notificationsEnabled(stockData)) {
       return StockNotificationTransition(
         previousStatus: previousStatus,
         nextStatus: nextStatus,
@@ -87,17 +82,13 @@ class StockNotificationService {
         lastNotifiedStatus != 'lowStock';
 
     final recoveringFromOutOfStock =
-        previousStatus == 'outOfStock' &&
-        nextStatus == 'lowStock';
+        previousStatus == 'outOfStock' && nextStatus == 'lowStock';
 
     return StockNotificationTransition(
       previousStatus: previousStatus,
       nextStatus: nextStatus,
-      shouldNotify:
-          shouldNotifyOutOfStock || shouldNotifyLowStock,
-      shouldReset:
-          nextStatus == 'available' ||
-          recoveringFromOutOfStock,
+      shouldNotify: shouldNotifyOutOfStock || shouldNotifyLowStock,
+      shouldReset: nextStatus == 'available' || recoveringFromOutOfStock,
     );
   }
 
@@ -119,11 +110,7 @@ class StockNotificationService {
 
     final supplierId = supplierIdOverride.trim().isNotEmpty
         ? supplierIdOverride.trim()
-        : OrderHelpers.getStringValue(
-            stockData,
-            'supplierId',
-            '',
-          );
+        : OrderHelpers.getStringValue(stockData, 'supplierId', '');
 
     if (supplierId.isEmpty) {
       return;
@@ -131,22 +118,14 @@ class StockNotificationService {
 
     final productName = productNameOverride.trim().isNotEmpty
         ? productNameOverride.trim()
-        : OrderHelpers.getStringValue(
-            stockData,
-            'productName',
-            'Fish Product',
-          );
+        : OrderHelpers.getStringValue(stockData, 'productName', 'Fish Product');
 
     final quantityUnit = quantityUnitOverride.trim().isNotEmpty
         ? quantityUnitOverride.trim()
-        : OrderHelpers.getStringValue(
-            stockData,
-            'quantityUnit',
-            'kilo',
-          );
+        : OrderHelpers.getStringValue(stockData, 'quantityUnit', 'kilo');
 
-    final threshold = lowStockLevelOverride ??
-        StockState.lowStockLevel(stockData);
+    final threshold =
+        lowStockLevelOverride ?? StockState.lowStockLevel(stockData);
 
     final outOfStock = transition.nextStatus == 'outOfStock';
 
@@ -154,28 +133,25 @@ class StockNotificationService {
         .collection('notifications')
         .doc();
 
-    transaction.set(
-      notificationReference,
-      {
-        'supplierId': supplierId,
-        'userId': supplierId,
-        'stockId': stockReference.id,
-        'productName': productName,
-        'title': outOfStock
-            ? '$productName Out of Stock'
-            : 'Low Stock: $productName',
-        'message': outOfStock
-            ? '$productName is out of stock. Restock this listing to keep it available to vendors.'
-            : '$productName has ${formatNumber(nextQuantity)} $quantityUnit remaining, reaching the ${formatNumber(threshold)} $quantityUnit alert level.',
-        'stockStatus': transition.nextStatus,
-        if (sourceOrderId.trim().isNotEmpty)
-          'sourceOrderId': sourceOrderId.trim(),
-        'type': 'stock_alert',
-        'severity': outOfStock ? 'critical' : 'warning',
-        'isRead': false,
-        'createdAt': FieldValue.serverTimestamp(),
-      },
-    );
+    transaction.set(notificationReference, {
+      'supplierId': supplierId,
+      'userId': supplierId,
+      'stockId': stockReference.id,
+      'productName': productName,
+      'title': outOfStock
+          ? '$productName Out of Stock'
+          : 'Low Stock: $productName',
+      'message': outOfStock
+          ? '$productName is out of stock. Restock this listing to keep it available to vendors.'
+          : '$productName has ${formatNumber(nextQuantity)} $quantityUnit remaining, reaching the ${formatNumber(threshold)} $quantityUnit alert level.',
+      'stockStatus': transition.nextStatus,
+      if (sourceOrderId.trim().isNotEmpty)
+        'sourceOrderId': sourceOrderId.trim(),
+      'type': 'stock_alert',
+      'severity': outOfStock ? 'critical' : 'warning',
+      'isRead': false,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
   }
 
   Stream<QuerySnapshot<Map<String, dynamic>>> notificationsStream(
@@ -183,34 +159,22 @@ class StockNotificationService {
   ) {
     return FirebaseFirestore.instance
         .collection('notifications')
-        .where(
-          'supplierId',
-          isEqualTo: supplierId,
-        )
+        .where('supplierId', isEqualTo: supplierId)
         .snapshots();
   }
 
   List<QueryDocumentSnapshot<Map<String, dynamic>>> unreadStockNotifications(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
   ) {
-    final notifications = documents.where(
-      (document) {
-        final data = document.data();
-        final type = OrderHelpers.getStringValue(
-          data,
-          'type',
-          '',
-        ).toLowerCase();
+    final notifications = documents.where((document) {
+      final data = document.data();
+      final type = OrderHelpers.getStringValue(data, 'type', '').toLowerCase();
 
-        return type == 'stock_alert' &&
-            data['isRead'] != true;
-      },
-    ).toList();
+      return type == 'stock_alert' && data['isRead'] != true;
+    }).toList();
 
     notifications.sort(
-      (a, b) => createdAtMillis(b).compareTo(
-        createdAtMillis(a),
-      ),
+      (a, b) => createdAtMillis(b).compareTo(createdAtMillis(a)),
     );
 
     return notifications;
@@ -226,21 +190,16 @@ class StockNotificationService {
     final batch = FirebaseFirestore.instance.batch();
 
     for (final notification in notifications) {
-      batch.update(
-        notification.reference,
-        {
-          'isRead': true,
-          'readAt': FieldValue.serverTimestamp(),
-        },
-      );
+      batch.update(notification.reference, {
+        'isRead': true,
+        'readAt': FieldValue.serverTimestamp(),
+      });
     }
 
     await batch.commit();
   }
 
-  int createdAtMillis(
-    QueryDocumentSnapshot<Map<String, dynamic>> document,
-  ) {
+  int createdAtMillis(QueryDocumentSnapshot<Map<String, dynamic>> document) {
     final value = document.data()['createdAt'];
 
     if (value is Timestamp) {
@@ -254,9 +213,7 @@ class StockNotificationService {
     return 0;
   }
 
-  String formatNumber(
-    double value,
-  ) {
+  String formatNumber(double value) {
     if (value % 1 == 0) {
       return value.toStringAsFixed(0);
     }

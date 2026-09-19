@@ -7,13 +7,10 @@ import 'package:isdalink/services/supplier_profile_service.dart';
 import 'package:isdalink/utils/app_error_message.dart';
 
 class SupplierProfileScreen extends StatefulWidget {
-  const SupplierProfileScreen({
-    super.key,
-  });
+  const SupplierProfileScreen({super.key});
 
   @override
-  State<SupplierProfileScreen> createState() =>
-      _SupplierProfileScreenState();
+  State<SupplierProfileScreen> createState() => _SupplierProfileScreenState();
 }
 
 class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
@@ -31,9 +28,7 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
     return value.isEmpty ? fallback : value;
   }
 
-  List<String> supportedUnits(
-    Map<String, dynamic>? data,
-  ) {
+  List<String> supportedUnits(Map<String, dynamic>? data) {
     final raw = data?['supportedUnits'];
 
     if (raw is! List) {
@@ -42,13 +37,7 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
 
     return raw
         .map((value) => value.toString().trim().toLowerCase())
-        .where(
-          (value) => const {
-            'kilo',
-            'tab',
-            'icebox',
-          }.contains(value),
-        )
+        .where((value) => const {'kilo', 'tab', 'icebox'}.contains(value))
         .toSet()
         .toList();
   }
@@ -66,10 +55,7 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
     return stringValue(data, 'profileImageUrl');
   }
 
-  void showMessage(
-    String message, {
-    bool isError = false,
-  }) {
+  void showMessage(String message, {bool isError = false}) {
     if (!mounted) {
       return;
     }
@@ -87,9 +73,7 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
           ),
           content: Text(
             message,
-            style: const TextStyle(
-              fontWeight: FontWeight.w700,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.w700),
           ),
         ),
       );
@@ -116,40 +100,34 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
             'primaryMarketArea',
             stringValue(data, 'serviceArea'),
           ),
-          initialDescription: stringValue(
-            data,
-            'description',
-          ),
+          initialDescription: stringValue(data, 'description'),
           initialSupportedUnits: supportedUnits(data),
           unitLabel: unitLabel,
-          onSave: ({
-            required String contactNumber,
-            required String primaryMarketArea,
-            required String description,
-            required List<String> supportedUnits,
-          }) {
-            return profileService.updatePublicStoreInformation(
-              uid: uid,
-              contactNumber: contactNumber,
-              primaryMarketArea: primaryMarketArea,
-              description: description,
-              supportedUnits: supportedUnits,
-            );
-          },
+          onSave:
+              ({
+                required String contactNumber,
+                required String primaryMarketArea,
+                required String description,
+                required List<String> supportedUnits,
+              }) {
+                return profileService.updatePublicStoreInformation(
+                  uid: uid,
+                  contactNumber: contactNumber,
+                  primaryMarketArea: primaryMarketArea,
+                  description: description,
+                  supportedUnits: supportedUnits,
+                );
+              },
         );
       },
     );
 
     if (updated == true) {
-      showMessage(
-        'Public store information updated.',
-      );
+      showMessage('Public store information updated.');
     }
   }
 
-  Future<void> withdrawVerifiedChangeRequest({
-    required String uid,
-  }) async {
+  Future<void> withdrawVerifiedChangeRequest({required String uid}) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
@@ -166,27 +144,17 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
           ),
           content: const Text(
             'The pending request will be cancelled. Your currently approved supplier information will remain unchanged.',
-            style: TextStyle(
-              color: Color(0xFF52677A),
-              height: 1.4,
-            ),
+            style: TextStyle(color: Color(0xFF52677A), height: 1.4),
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(
-                dialogContext,
-                false,
-              ),
+              onPressed: () => Navigator.pop(dialogContext, false),
               child: const Text('Keep Request'),
             ),
             ElevatedButton(
-              onPressed: () => Navigator.pop(
-                dialogContext,
-                true,
-              ),
+              onPressed: () => Navigator.pop(dialogContext, true),
               style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    const Color(0xFFB06A17),
+                backgroundColor: const Color(0xFFB06A17),
                 foregroundColor: Colors.white,
               ),
               child: const Text('Withdraw'),
@@ -201,18 +169,11 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
     }
 
     try {
-      await profileService.withdrawVerifiedChangeRequest(
-        uid: uid,
-      );
+      await profileService.withdrawVerifiedChangeRequest(uid: uid);
 
-      showMessage(
-        'Verified change request withdrawn.',
-      );
+      showMessage('Verified change request withdrawn.');
     } catch (_) {
-      showMessage(
-        'Could not withdraw the request. Try again.',
-        isError: true,
-      );
+      showMessage('Could not withdraw the request. Try again.', isError: true);
     }
   }
 
@@ -220,9 +181,7 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
     List<QueryDocumentSnapshot<Map<String, dynamic>>> notifications,
   ) async {
     try {
-      await notificationService.markNotificationsRead(
-        notifications,
-      );
+      await notificationService.markNotificationsRead(notifications);
     } catch (_) {
       showMessage(
         'Could not dismiss the notification. Try again.',
@@ -239,12 +198,10 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) =>
-            SupplierVerifiedChangeRequestScreen(
+        builder: (_) => SupplierVerifiedChangeRequestScreen(
           uid: uid,
           profileData: profileData,
-          previousRequestData:
-              previousRequestData,
+          previousRequestData: previousRequestData,
         ),
       ),
     );
@@ -257,9 +214,7 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
     if (user == null) {
       return const Scaffold(
         backgroundColor: Color(0xFFF4F8FB),
-        body: Center(
-          child: Text('No signed-in account.'),
-        ),
+        body: Center(child: Text('No signed-in account.')),
       );
     }
 
@@ -307,11 +262,7 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
                 final storeName = stringValue(
                   data,
                   'storeName',
-                  stringValue(
-                    data,
-                    'businessName',
-                    'Fish Supplier',
-                  ),
+                  stringValue(data, 'businessName', 'Fish Supplier'),
                 );
                 final ownerName = stringValue(
                   data,
@@ -340,141 +291,138 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
                 );
                 final units = supportedUnits(data);
 
-                return StreamBuilder<
-                    QuerySnapshot<Map<String, dynamic>>>(
-                  stream: notificationService.notificationsStream(
-                    user.uid,
-                  ),
+                return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                  stream: notificationService.notificationsStream(user.uid),
                   builder: (context, notificationSnapshot) {
                     final notifications =
                         notificationSnapshot.data?.docs ??
-                            <QueryDocumentSnapshot<
-                                Map<String, dynamic>>>[];
+                        <QueryDocumentSnapshot<Map<String, dynamic>>>[];
                     final unreadProfileChanges = notificationService
-                        .unreadProfileChangeNotifications(
-                      notifications,
-                    );
+                        .unreadProfileChangeNotifications(notifications);
                     final matchingNotifications = unreadProfileChanges.where(
-                      (notification) => stringValue(
-                        notification.data(),
-                        'status',
-                      ).toLowerCase() == requestStatus,
+                      (notification) =>
+                          stringValue(
+                            notification.data(),
+                            'status',
+                          ).toLowerCase() ==
+                          requestStatus,
                     );
                     final resolvedNotification = matchingNotifications.isEmpty
                         ? null
                         : matchingNotifications.first;
-                    final showRequestStatus = hasPendingRequest ||
+                    final showRequestStatus =
+                        hasPendingRequest ||
                         ((requestStatus == 'approved' ||
                                 requestStatus == 'rejected') &&
                             resolvedNotification != null);
 
                     return Column(
                       children: [
-                    _SupplierProfileTopBar(
-                      onBack: () => Navigator.pop(context),
-                    ),
-                    Expanded(
-                      child: ListView(
-                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
-                        children: [
-                          _SupplierIdentityCard(
-                            storeName: storeName,
-                            location: location,
-                            imageUrl: storeImageUrl(data),
-                          ),
-                          if (showRequestStatus) ...[
-                            const SizedBox(height: 12),
-                            _ChangeRequestStatusCard(
-                              status: requestStatus,
-                              adminNote: stringValue(
-                                requestData,
-                                'adminNote',
+                        _SupplierProfileTopBar(
+                          onBack: () => Navigator.pop(context),
+                        ),
+                        Expanded(
+                          child: ListView(
+                            padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+                            children: [
+                              _SupplierIdentityCard(
+                                storeName: storeName,
+                                location: location,
+                                imageUrl: storeImageUrl(data),
                               ),
-                              changedFields: requestData?['changedFields'],
-                              onWithdraw: hasPendingRequest
-                                  ? () => withdrawVerifiedChangeRequest(
-                                        uid: user.uid,
-                                      )
-                                  : null,
-                              onAcknowledge: resolvedNotification == null
-                                  ? null
-                                  : () => acknowledgeProfileChangeNotifications(
-                                        unreadProfileChanges,
-                                      ),
-                            ),
-                          ],
-                          const SizedBox(height: 12),
-                          _SupplierProfileActionCard(
-                            requestStatus: requestStatus,
-                            onEditPublic: () => editPublicStoreInformation(
-                              uid: user.uid,
-                              data: data,
-                            ),
-                            onRequestVerified: () => openVerifiedChangeRequest(
-                              uid: user.uid,
-                              profileData: data,
-                              previousRequestData:
-                                  requestStatus == 'rejected' ||
-                                          requestStatus == 'withdrawn'
-                                      ? requestData
+                              if (showRequestStatus) ...[
+                                const SizedBox(height: 12),
+                                _ChangeRequestStatusCard(
+                                  status: requestStatus,
+                                  adminNote: stringValue(
+                                    requestData,
+                                    'adminNote',
+                                  ),
+                                  changedFields: requestData?['changedFields'],
+                                  onWithdraw: hasPendingRequest
+                                      ? () => withdrawVerifiedChangeRequest(
+                                          uid: user.uid,
+                                        )
                                       : null,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          _ProfileSectionCard(
-                            title: 'Public Storefront',
-                            subtitle:
-                                'Live information vendors can see and you can maintain directly',
-                            icon: Icons.store_mall_directory_outlined,
-                            children: [
-                              _ProfileInfoRow(
-                                icon: Icons.phone_outlined,
-                                label: 'Store contact',
-                                value: contactNumber,
+                                  onAcknowledge: resolvedNotification == null
+                                      ? null
+                                      : () =>
+                                            acknowledgeProfileChangeNotifications(
+                                              unreadProfileChanges,
+                                            ),
+                                ),
+                              ],
+                              const SizedBox(height: 12),
+                              _SupplierProfileActionCard(
+                                requestStatus: requestStatus,
+                                onEditPublic: () => editPublicStoreInformation(
+                                  uid: user.uid,
+                                  data: data,
+                                ),
+                                onRequestVerified: () =>
+                                    openVerifiedChangeRequest(
+                                      uid: user.uid,
+                                      profileData: data,
+                                      previousRequestData:
+                                          requestStatus == 'rejected' ||
+                                              requestStatus == 'withdrawn'
+                                          ? requestData
+                                          : null,
+                                    ),
                               ),
-                              _ProfileInfoRow(
-                                icon: Icons.inventory_2_outlined,
-                                label: 'Selling units',
-                                value: units.isEmpty
-                                    ? 'Not specified'
-                                    : units.map(unitLabel).join(', '),
+                              const SizedBox(height: 12),
+                              _ProfileSectionCard(
+                                title: 'Public Storefront',
+                                subtitle:
+                                    'Live information vendors can see and you can maintain directly',
+                                icon: Icons.store_mall_directory_outlined,
+                                children: [
+                                  _ProfileInfoRow(
+                                    icon: Icons.phone_outlined,
+                                    label: 'Store contact',
+                                    value: contactNumber,
+                                  ),
+                                  _ProfileInfoRow(
+                                    icon: Icons.inventory_2_outlined,
+                                    label: 'Selling units',
+                                    value: units.isEmpty
+                                        ? 'Not specified'
+                                        : units.map(unitLabel).join(', '),
+                                  ),
+                                  _ProfileInfoRow(
+                                    icon: Icons.groups_2_outlined,
+                                    label: 'Primary market area',
+                                    value: primaryMarketArea,
+                                  ),
+                                  _ProfileDescriptionRow(text: description),
+                                ],
                               ),
-                              _ProfileInfoRow(
-                                icon: Icons.groups_2_outlined,
-                                label: 'Primary market area',
-                                value: primaryMarketArea,
+                              const SizedBox(height: 12),
+                              _ProfileSectionCard(
+                                title: 'Protected Account Details',
+                                subtitle:
+                                    'Owner identity and COD status remain tied to approval',
+                                icon: Icons.shield_outlined,
+                                locked: true,
+                                children: [
+                                  _ProfileInfoRow(
+                                    icon: Icons.person_outline_rounded,
+                                    label: 'Verified owner',
+                                    value: ownerName,
+                                  ),
+                                  const _ProfileInfoRow(
+                                    icon: Icons.payments_outlined,
+                                    label: 'Payment method',
+                                    value: 'COD',
+                                    showDivider: false,
+                                  ),
+                                ],
                               ),
-                              _ProfileDescriptionRow(
-                                text: description,
-                              ),
+                              const SizedBox(height: 12),
+                              const _HybridPolicyNote(),
                             ],
                           ),
-                          const SizedBox(height: 12),
-                          _ProfileSectionCard(
-                            title: 'Protected Account Details',
-                            subtitle:
-                                'Owner identity and COD status remain tied to approval',
-                            icon: Icons.shield_outlined,
-                            locked: true,
-                            children: [
-                              _ProfileInfoRow(
-                                icon: Icons.person_outline_rounded,
-                                label: 'Verified owner',
-                                value: ownerName,
-                              ),
-                              const _ProfileInfoRow(
-                                icon: Icons.payments_outlined,
-                                label: 'Payment method',
-                                value: 'COD',
-                                showDivider: false,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          const _HybridPolicyNote(),
-                        ],
-                      ),
-                    ),
+                        ),
                       ],
                     );
                   },
@@ -487,7 +435,6 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
     );
   }
 }
-
 
 class _PublicStoreInformationEditSheet extends StatefulWidget {
   const _PublicStoreInformationEditSheet({
@@ -509,7 +456,8 @@ class _PublicStoreInformationEditSheet extends StatefulWidget {
     required String primaryMarketArea,
     required String description,
     required List<String> supportedUnits,
-  }) onSave;
+  })
+  onSave;
 
   @override
   State<_PublicStoreInformationEditSheet> createState() =>
@@ -564,9 +512,7 @@ class _PublicStoreInformationEditSheetState
           ),
           content: Text(
             message,
-            style: const TextStyle(
-              fontWeight: FontWeight.w700,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.w700),
           ),
         ),
       );
@@ -581,28 +527,18 @@ class _PublicStoreInformationEditSheetState
       prefixIcon: Icon(icon),
       filled: true,
       fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: 14,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(
-          color: Color(0xFFDCE7EF),
-        ),
+        borderSide: const BorderSide(color: Color(0xFFDCE7EF)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(
-          color: Color(0xFFDCE7EF),
-        ),
+        borderSide: const BorderSide(color: Color(0xFFDCE7EF)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(
-          color: Color(0xFF146BFF),
-          width: 1.4,
-        ),
+        borderSide: const BorderSide(color: Color(0xFF146BFF), width: 1.4),
       ),
     );
   }
@@ -627,16 +563,12 @@ class _PublicStoreInformationEditSheetState
     }
 
     if (description.length < 8 || description.length > 240) {
-      showError(
-        'Use 8 to 240 characters for the store description.',
-      );
+      showError('Use 8 to 240 characters for the store description.');
       return;
     }
 
     if (selectedUnits.isEmpty) {
-      showError(
-        'Select at least one supported selling unit.',
-      );
+      showError('Select at least one supported selling unit.');
       return;
     }
 
@@ -688,17 +620,10 @@ class _PublicStoreInformationEditSheetState
       ),
       decoration: const BoxDecoration(
         color: Color(0xFFF5F9FC),
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(29),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(29)),
       ),
       child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(
-          18,
-          10,
-          18,
-          22 + bottomInset,
-        ),
+        padding: EdgeInsets.fromLTRB(18, 10, 18, 22 + bottomInset),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -715,14 +640,11 @@ class _PublicStoreInformationEditSheetState
             const SizedBox(height: 16),
             const Row(
               children: [
-                _SheetIcon(
-                  icon: Icons.edit_rounded,
-                ),
+                _SheetIcon(icon: Icons.edit_rounded),
                 SizedBox(width: 11),
                 Expanded(
                   child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Edit Public Storefront',
@@ -786,11 +708,7 @@ class _PublicStoreInformationEditSheetState
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: const [
-                'kilo',
-                'tab',
-                'icebox',
-              ].map((unit) {
+              children: const ['kilo', 'tab', 'icebox'].map((unit) {
                 final selected = selectedUnits.contains(unit);
 
                 return FilterChip(
@@ -802,9 +720,7 @@ class _PublicStoreInformationEditSheetState
                         : Icons.inventory_2_outlined,
                     size: 16,
                   ),
-                  label: Text(
-                    widget.unitLabel(unit),
-                  ),
+                  label: Text(widget.unitLabel(unit)),
                   onSelected: saving
                       ? null
                       : (value) {
@@ -847,9 +763,7 @@ class _PublicStoreInformationEditSheetState
                     : const Icon(Icons.save_rounded),
                 label: Text(
                   saving ? 'Saving...' : 'Save Storefront Changes',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                  ),
+                  style: const TextStyle(fontWeight: FontWeight.w900),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF146BFF),
@@ -868,9 +782,7 @@ class _PublicStoreInformationEditSheetState
 }
 
 class _SupplierProfileTopBar extends StatelessWidget {
-  const _SupplierProfileTopBar({
-    required this.onBack,
-  });
+  const _SupplierProfileTopBar({required this.onBack});
 
   final VoidCallback onBack;
 
@@ -880,9 +792,7 @@ class _SupplierProfileTopBar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(14, 9, 14, 10),
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          bottom: BorderSide(color: Color(0xFFE2EBF2)),
-        ),
+        border: Border(bottom: BorderSide(color: Color(0xFFE2EBF2))),
       ),
       child: Row(
         children: [
@@ -895,10 +805,7 @@ class _SupplierProfileTopBar extends StatelessWidget {
               child: const SizedBox(
                 width: 42,
                 height: 42,
-                child: Icon(
-                  Icons.arrow_back_rounded,
-                  color: Color(0xFF146BFF),
-                ),
+                child: Icon(Icons.arrow_back_rounded, color: Color(0xFF146BFF)),
               ),
             ),
           ),
@@ -973,21 +880,12 @@ class _SupplierIdentityCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(
-        15,
-        15,
-        15,
-        14,
-      ),
+      padding: const EdgeInsets.fromLTRB(15, 15, 15, 14),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF074F86),
-            Color(0xFF087FC5),
-            Color(0xFF13A9C9),
-          ],
+          colors: [Color(0xFF074F86), Color(0xFF087FC5), Color(0xFF13A9C9)],
         ),
         borderRadius: BorderRadius.circular(25),
         boxShadow: const [
@@ -1007,14 +905,10 @@ class _SupplierIdentityCard extends StatelessWidget {
                 height: 72,
                 padding: const EdgeInsets.all(2),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(
-                    alpha: 0.17,
-                  ),
+                  color: Colors.white.withValues(alpha: 0.17),
                   borderRadius: BorderRadius.circular(21),
                   border: Border.all(
-                    color: Colors.white.withValues(
-                      alpha: 0.45,
-                    ),
+                    color: Colors.white.withValues(alpha: 0.45),
                     width: 1.3,
                   ),
                 ),
@@ -1032,11 +926,7 @@ class _SupplierIdentityCard extends StatelessWidget {
                       : Image.network(
                           imageUrl,
                           fit: BoxFit.cover,
-                          errorBuilder: (
-                            context,
-                            error,
-                            stackTrace,
-                          ) {
+                          errorBuilder: (context, error, stackTrace) {
                             return const ColoredBox(
                               color: Color(0x1AFFFFFF),
                               child: Icon(
@@ -1052,8 +942,7 @@ class _SupplierIdentityCard extends StatelessWidget {
               const SizedBox(width: 13),
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
@@ -1063,12 +952,8 @@ class _SupplierIdentityCard extends StatelessWidget {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(
-                              alpha: 0.14,
-                            ),
-                            borderRadius: BorderRadius.circular(
-                              99,
-                            ),
+                            color: Colors.white.withValues(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(99),
                           ),
                           child: const Text(
                             'YOUR SUPPLIER STORE',
@@ -1101,8 +986,7 @@ class _SupplierIdentityCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 7),
                     Row(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Padding(
                           padding: EdgeInsets.only(top: 1),
@@ -1136,20 +1020,11 @@ class _SupplierIdentityCard extends StatelessWidget {
           const SizedBox(height: 13),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 9,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(
-                alpha: 0.10,
-              ),
+              color: Colors.white.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: Colors.white.withValues(
-                  alpha: 0.14,
-                ),
-              ),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
             ),
             child: const Row(
               children: [
@@ -1199,27 +1074,25 @@ class _SupplierProfileActionCard extends StatelessWidget {
     final requestSubtitle = pending
         ? 'Your verified request is waiting for Admin review'
         : rejected
-            ? 'Revise the rejected request using the previous details'
-            : withdrawn
-                ? 'Continue from the withdrawn request or start fresh'
-                : 'Store identity, location, verification photo and permit';
+        ? 'Revise the rejected request using the previous details'
+        : withdrawn
+        ? 'Continue from the withdrawn request or start fresh'
+        : 'Store identity, location, verification photo and permit';
 
     final requestLabel = pending
         ? 'Pending'
         : rejected
-            ? 'Revise'
-            : withdrawn
-                ? 'Continue'
-                : 'Request';
+        ? 'Revise'
+        : withdrawn
+        ? 'Continue'
+        : 'Request';
 
     return Container(
       padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: const Color(0xFFE0EAF1),
-        ),
+        border: Border.all(color: const Color(0xFFE0EAF1)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x0D102C44),
@@ -1229,8 +1102,7 @@ class _SupplierProfileActionCard extends StatelessWidget {
         ],
       ),
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
             'Manage Supplier Profile',
@@ -1252,12 +1124,10 @@ class _SupplierProfileActionCard extends StatelessWidget {
           const SizedBox(height: 11),
           _ProfileManagementAction(
             icon: Icons.edit_note_rounded,
-            iconBackground:
-                const Color(0xFFEAF5FF),
+            iconBackground: const Color(0xFFEAF5FF),
             iconColor: const Color(0xFF146BFF),
             title: 'Edit Public Storefront',
-            subtitle:
-                'Contact, selling units, market area and description',
+            subtitle: 'Contact, selling units, market area and description',
             trailingLabel: 'Edit now',
             onTap: onEditPublic,
           ),
@@ -1266,18 +1136,18 @@ class _SupplierProfileActionCard extends StatelessWidget {
             icon: pending
                 ? Icons.hourglass_top_rounded
                 : rejected
-                    ? Icons.refresh_rounded
-                    : Icons.verified_user_outlined,
+                ? Icons.refresh_rounded
+                : Icons.verified_user_outlined,
             iconBackground: pending
                 ? const Color(0xFFFFF4DE)
                 : rejected
-                    ? const Color(0xFFFFEEEE)
-                    : const Color(0xFFF1F4FF),
+                ? const Color(0xFFFFEEEE)
+                : const Color(0xFFF1F4FF),
             iconColor: pending
                 ? const Color(0xFFAF7516)
                 : rejected
-                    ? const Color(0xFFB53A36)
-                    : const Color(0xFF5369D8),
+                ? const Color(0xFFB53A36)
+                : const Color(0xFF5369D8),
             title: 'Verified Business Details',
             subtitle: requestSubtitle,
             trailingLabel: requestLabel,
@@ -1322,9 +1192,7 @@ class _ProfileManagementAction extends StatelessWidget {
           padding: const EdgeInsets.all(11),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: const Color(0xFFE4EDF3),
-            ),
+            border: Border.all(color: const Color(0xFFE4EDF3)),
           ),
           child: Row(
             children: [
@@ -1335,17 +1203,12 @@ class _ProfileManagementAction extends StatelessWidget {
                   color: iconBackground,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  icon,
-                  color: iconColor,
-                  size: 20,
-                ),
+                child: Icon(icon, color: iconColor, size: 20),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
@@ -1370,10 +1233,7 @@ class _ProfileManagementAction extends StatelessWidget {
               ),
               const SizedBox(width: 7),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 5,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                 decoration: BoxDecoration(
                   color: enabled
                       ? const Color(0xFFEAF4FF)
@@ -1422,40 +1282,40 @@ class _ChangeRequestStatusCard extends StatelessWidget {
     final title = pending
         ? 'Pending Admin Review'
         : approved
-            ? 'Verified change approved'
-            : 'Change request needs revision';
+        ? 'Verified change approved'
+        : 'Change request needs revision';
 
     final subtitle = pending
         ? 'Your current approved profile stays public while Admin reviews the request.'
         : approved
-            ? 'The approved verified changes are now live in your supplier profile.'
-            : adminNote.isEmpty
-                ? 'Your approved profile was not changed. Revise the request and submit again.'
-                : 'Admin note: $adminNote';
+        ? 'The approved verified changes are now live in your supplier profile.'
+        : adminNote.isEmpty
+        ? 'Your approved profile was not changed. Revise the request and submit again.'
+        : 'Admin note: $adminNote';
 
     final icon = pending
         ? Icons.hourglass_top_rounded
         : approved
-            ? Icons.check_circle_rounded
-            : Icons.info_outline_rounded;
+        ? Icons.check_circle_rounded
+        : Icons.info_outline_rounded;
 
     final background = pending
         ? const Color(0xFFFFF8E9)
         : approved
-            ? const Color(0xFFECF8F4)
-            : const Color(0xFFFFEEEE);
+        ? const Color(0xFFECF8F4)
+        : const Color(0xFFFFEEEE);
 
     final foreground = pending
         ? const Color(0xFF956A15)
         : approved
-            ? const Color(0xFF16845C)
-            : const Color(0xFFB53A36);
+        ? const Color(0xFF16845C)
+        : const Color(0xFFB53A36);
 
     final changes = changedFields is List
         ? (changedFields as List)
-            .map((value) => value.toString().trim())
-            .where((value) => value.isNotEmpty)
-            .toList()
+              .map((value) => value.toString().trim())
+              .where((value) => value.isNotEmpty)
+              .toList()
         : const <String>[];
 
     return Container(
@@ -1463,30 +1323,19 @@ class _ChangeRequestStatusCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: foreground.withValues(
-            alpha: 0.20,
-          ),
-        ),
+        border: Border.all(color: foreground.withValues(alpha: 0.20)),
       ),
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                icon,
-                color: foreground,
-                size: 20,
-              ),
+              Icon(icon, color: foreground, size: 20),
               const SizedBox(width: 9),
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
@@ -1500,9 +1349,7 @@ class _ChangeRequestStatusCard extends StatelessWidget {
                     Text(
                       subtitle,
                       style: TextStyle(
-                        color: foreground.withValues(
-                          alpha: 0.84,
-                        ),
+                        color: foreground.withValues(alpha: 0.84),
                         fontSize: 9.1,
                         height: 1.35,
                         fontWeight: FontWeight.w700,
@@ -1521,17 +1368,13 @@ class _ChangeRequestStatusCard extends StatelessWidget {
               children: changes
                   .map(
                     (change) => Container(
-                      padding:
-                          const EdgeInsets.symmetric(
+                      padding: const EdgeInsets.symmetric(
                         horizontal: 8,
                         vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: foreground.withValues(
-                          alpha: 0.09,
-                        ),
-                        borderRadius:
-                            BorderRadius.circular(99),
+                        color: foreground.withValues(alpha: 0.09),
+                        borderRadius: BorderRadius.circular(99),
                       ),
                       child: Text(
                         change,
@@ -1553,27 +1396,16 @@ class _ChangeRequestStatusCard extends StatelessWidget {
               height: 38,
               child: OutlinedButton.icon(
                 onPressed: onWithdraw,
-                icon: const Icon(
-                  Icons.undo_rounded,
-                  size: 15,
-                ),
+                icon: const Icon(Icons.undo_rounded, size: 15),
                 label: const Text(
                   'Withdraw Pending Request',
-                  style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w900,
-                  ),
+                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900),
                 ),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: foreground,
-                  side: BorderSide(
-                    color: foreground.withValues(
-                      alpha: 0.35,
-                    ),
-                  ),
+                  side: BorderSide(color: foreground.withValues(alpha: 0.35)),
                   shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
               ),
@@ -1586,16 +1418,10 @@ class _ChangeRequestStatusCard extends StatelessWidget {
               height: 38,
               child: FilledButton.icon(
                 onPressed: onAcknowledge,
-                icon: const Icon(
-                  Icons.done_rounded,
-                  size: 16,
-                ),
+                icon: const Icon(Icons.done_rounded, size: 16),
                 label: const Text(
                   'Got it',
-                  style: TextStyle(
-                    fontSize: 9.4,
-                    fontWeight: FontWeight.w900,
-                  ),
+                  style: TextStyle(fontSize: 9.4, fontWeight: FontWeight.w900),
                 ),
                 style: FilledButton.styleFrom(
                   backgroundColor: foreground,
@@ -1620,9 +1446,9 @@ class _ProfileSectionCard extends StatelessWidget {
     required this.icon,
     required this.children,
     this.locked = false,
-  })  : actionLabel = null,
-        onAction = null,
-        actionDisabled = false;
+  }) : actionLabel = null,
+       onAction = null,
+       actionDisabled = false;
 
   final String title;
   final String subtitle;
@@ -1738,11 +1564,7 @@ class _ProtectedPill extends StatelessWidget {
       child: const Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.lock_rounded,
-            color: Color(0xFF16845C),
-            size: 11,
-          ),
+          Icon(Icons.lock_rounded, color: Color(0xFF16845C), size: 11),
           SizedBox(width: 3),
           Text(
             'Protected',
@@ -1777,9 +1599,7 @@ class _ProfileInfoRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 9),
       decoration: BoxDecoration(
         border: showDivider
-            ? const Border(
-                bottom: BorderSide(color: Color(0xFFEDF2F6)),
-              )
+            ? const Border(bottom: BorderSide(color: Color(0xFFEDF2F6)))
             : null,
       ),
       child: Row(
@@ -1792,11 +1612,7 @@ class _ProfileInfoRow extends StatelessWidget {
               color: const Color(0xFFF0F7FC),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(
-              icon,
-              color: const Color(0xFF4D7C9C),
-              size: 16,
-            ),
+            child: Icon(icon, color: const Color(0xFF4D7C9C), size: 16),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -1831,9 +1647,7 @@ class _ProfileInfoRow extends StatelessWidget {
 }
 
 class _ProfileDescriptionRow extends StatelessWidget {
-  const _ProfileDescriptionRow({
-    required this.text,
-  });
+  const _ProfileDescriptionRow({required this.text});
 
   final String text;
 
@@ -1892,11 +1706,7 @@ class _HybridPolicyNote extends StatelessWidget {
       child: const Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.security_rounded,
-            color: Color(0xFF9B721F),
-            size: 18,
-          ),
+          Icon(Icons.security_rounded, color: Color(0xFF9B721F), size: 18),
           SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -1916,9 +1726,7 @@ class _HybridPolicyNote extends StatelessWidget {
 }
 
 class _SheetIcon extends StatelessWidget {
-  const _SheetIcon({
-    required this.icon,
-  });
+  const _SheetIcon({required this.icon});
 
   final IconData icon;
 
@@ -1931,18 +1739,11 @@ class _SheetIcon extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF146BFF),
-            Color(0xFF0B91C8),
-          ],
+          colors: [Color(0xFF146BFF), Color(0xFF0B91C8)],
         ),
         borderRadius: BorderRadius.circular(14),
       ),
-      child: Icon(
-        icon,
-        color: Colors.white,
-        size: 21,
-      ),
+      child: Icon(icon, color: Colors.white, size: 21),
     );
   }
 }
@@ -1954,23 +1755,15 @@ class _SupplierProfileLoading extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _SupplierProfileTopBar(
-          onBack: () => Navigator.pop(context),
-        ),
-        const Expanded(
-          child: Center(
-            child: CircularProgressIndicator(),
-          ),
-        ),
+        _SupplierProfileTopBar(onBack: () => Navigator.pop(context)),
+        const Expanded(child: Center(child: CircularProgressIndicator())),
       ],
     );
   }
 }
 
 class _SupplierProfileUnavailable extends StatelessWidget {
-  const _SupplierProfileUnavailable({
-    required this.onBack,
-  });
+  const _SupplierProfileUnavailable({required this.onBack});
 
   final VoidCallback onBack;
 

@@ -56,64 +56,56 @@ class AdminDashboardService {
   List<QueryDocumentSnapshot<Map<String, dynamic>>> pendingSuppliers(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> suppliers,
   ) {
-    return suppliers.where(
-      (document) {
-        final status = getStringValue(
-          document.data(),
-          'status',
-          'pending',
-        ).toLowerCase();
+    return suppliers.where((document) {
+      final status = getStringValue(
+        document.data(),
+        'status',
+        'pending',
+      ).toLowerCase();
 
-        return status == 'pending';
-      },
-    ).toList();
+      return status == 'pending';
+    }).toList();
   }
 
   List<QueryDocumentSnapshot<Map<String, dynamic>>> approvedSuppliers(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> suppliers,
   ) {
-    return suppliers.where(
-      (document) {
-        final status = getStringValue(
-          document.data(),
-          'status',
-          'pending',
-        ).toLowerCase();
+    return suppliers.where((document) {
+      final status = getStringValue(
+        document.data(),
+        'status',
+        'pending',
+      ).toLowerCase();
 
-        return status == 'approved' || status == 'active';
-      },
-    ).toList();
+      return status == 'approved' || status == 'active';
+    }).toList();
   }
 
   List<QueryDocumentSnapshot<Map<String, dynamic>>> pendingChangeRequests(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> requests,
   ) {
-    final pending = requests.where(
-      (document) {
-        final status = getStringValue(
-          document.data(),
-          'status',
-          '',
-        ).toLowerCase();
+    final pending = requests.where((document) {
+      final status = getStringValue(
+        document.data(),
+        'status',
+        '',
+      ).toLowerCase();
 
-        return status == 'pending';
-      },
-    ).toList();
+      return status == 'pending';
+    }).toList();
 
-    pending.sort(
-      (a, b) {
-        final aValue = a.data()['submittedAt'];
-        final bValue = b.data()['submittedAt'];
-        final aDate = aValue is Timestamp
-            ? aValue.toDate()
-            : DateTime.fromMillisecondsSinceEpoch(0);
-        final bDate = bValue is Timestamp
-            ? bValue.toDate()
-            : DateTime.fromMillisecondsSinceEpoch(0);
+    pending.sort((a, b) {
+      final aValue = a.data()['submittedAt'];
+      final bValue = b.data()['submittedAt'];
+      final aDate = aValue is Timestamp
+          ? aValue.toDate()
+          : DateTime.fromMillisecondsSinceEpoch(0);
+      final bDate = bValue is Timestamp
+          ? bValue.toDate()
+          : DateTime.fromMillisecondsSinceEpoch(0);
 
-        return bDate.compareTo(aDate);
-      },
-    );
+      return bDate.compareTo(aDate);
+    });
 
     return pending;
   }
@@ -145,16 +137,17 @@ class AdminDashboardService {
     }
 
     if (supplierData == null ||
-        getStringValue(supplierData, 'status', '').toLowerCase() != 'approved') {
+        getStringValue(supplierData, 'status', '').toLowerCase() !=
+            'approved') {
       throw StateError('The supplier profile is not currently approved.');
     }
 
     final rawChangedFields = requestData['changedFields'];
     final changedFields = rawChangedFields is List
         ? rawChangedFields
-            .map((value) => value.toString().trim())
-            .where((value) => value.isNotEmpty)
-            .toSet()
+              .map((value) => value.toString().trim())
+              .where((value) => value.isNotEmpty)
+              .toSet()
         : <String>{};
     final changesStoreName = changedFields.contains('Store name');
     final changesLocation = changedFields.contains('Business location');
@@ -225,8 +218,8 @@ class AdminDashboardService {
     final existingApplication = existingApplicationRaw is Map<String, dynamic>
         ? Map<String, dynamic>.from(existingApplicationRaw)
         : existingApplicationRaw is Map
-            ? Map<String, dynamic>.from(existingApplicationRaw)
-            : <String, dynamic>{};
+        ? Map<String, dynamic>.from(existingApplicationRaw)
+        : <String, dynamic>{};
 
     final updatedApplication = <String, dynamic>{
       ...existingApplication,
@@ -260,64 +253,52 @@ class AdminDashboardService {
     final adminUid = FirebaseAuth.instance.currentUser?.uid ?? '';
     final batch = firestore.batch();
 
-    batch.update(
-      supplierRef,
-      <String, dynamic>{
-        if (changesStoreName) ...<String, dynamic>{
-          'storeName': requestedStoreName,
-          'supplierName': requestedStoreName,
-          'businessName': requestedStoreName,
-        },
-        if (changesLocation) ...<String, dynamic>{
-          'storeProvince': requestedProvince,
-          'storeCityMunicipality': requestedCity,
-          'storeAddress': requestedAddress,
-          'storeLatitude': (requestedLatitude as num).toDouble(),
-          'storeLongitude': (requestedLongitude as num).toDouble(),
-          'location': requestedLocation,
-          'storeLocation': requestedLocation,
-        },
-        'updatedAt': FieldValue.serverTimestamp(),
+    batch.update(supplierRef, <String, dynamic>{
+      if (changesStoreName) ...<String, dynamic>{
+        'storeName': requestedStoreName,
+        'supplierName': requestedStoreName,
+        'businessName': requestedStoreName,
       },
-    );
+      if (changesLocation) ...<String, dynamic>{
+        'storeProvince': requestedProvince,
+        'storeCityMunicipality': requestedCity,
+        'storeAddress': requestedAddress,
+        'storeLatitude': (requestedLatitude as num).toDouble(),
+        'storeLongitude': (requestedLongitude as num).toDouble(),
+        'location': requestedLocation,
+        'storeLocation': requestedLocation,
+      },
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
 
-    batch.update(
-      userRef,
-      <String, dynamic>{
-        if (changesLocation) 'supplierLocation': requestedLocation,
-        'supplierApplication': updatedApplication,
-        'updatedAt': FieldValue.serverTimestamp(),
-      },
-    );
+    batch.update(userRef, <String, dynamic>{
+      if (changesLocation) 'supplierLocation': requestedLocation,
+      'supplierApplication': updatedApplication,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
 
-    batch.update(
-      requestRef,
-      <String, dynamic>{
-        'status': 'approved',
-        'adminNote': adminNote.trim(),
-        'reviewedAt': FieldValue.serverTimestamp(),
-        'reviewedBy': adminUid,
-        'updatedAt': FieldValue.serverTimestamp(),
-      },
-    );
+    batch.update(requestRef, <String, dynamic>{
+      'status': 'approved',
+      'adminNote': adminNote.trim(),
+      'reviewedAt': FieldValue.serverTimestamp(),
+      'reviewedBy': adminUid,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
 
     final notificationRef = firestore.collection('notifications').doc();
-    batch.set(
-      notificationRef,
-      <String, dynamic>{
-        'userId': supplierId,
-        'supplierId': supplierId,
-        'title': 'Profile Change Approved',
-        'message':
-            'Your verified supplier business change request was approved and is now visible to vendors.',
-        'type': 'supplier_profile_change',
-        'status': 'approved',
-        'requestId': supplierId,
-        'changedFields': changedFields.toList(),
-        'isRead': false,
-        'createdAt': FieldValue.serverTimestamp(),
-      },
-    );
+    batch.set(notificationRef, <String, dynamic>{
+      'userId': supplierId,
+      'supplierId': supplierId,
+      'title': 'Profile Change Approved',
+      'message':
+          'Your verified supplier business change request was approved and is now visible to vendors.',
+      'type': 'supplier_profile_change',
+      'status': 'approved',
+      'requestId': supplierId,
+      'changedFields': changedFields.toList(),
+      'isRead': false,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
 
     await batch.commit();
   }
@@ -347,36 +328,30 @@ class AdminDashboardService {
     final adminUid = FirebaseAuth.instance.currentUser?.uid ?? '';
     final batch = firestore.batch();
 
-    batch.update(
-      requestRef,
-      <String, dynamic>{
-        'status': 'rejected',
-        'adminNote': note,
-        'reviewedAt': FieldValue.serverTimestamp(),
-        'reviewedBy': adminUid,
-        'updatedAt': FieldValue.serverTimestamp(),
-      },
-    );
+    batch.update(requestRef, <String, dynamic>{
+      'status': 'rejected',
+      'adminNote': note,
+      'reviewedAt': FieldValue.serverTimestamp(),
+      'reviewedBy': adminUid,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
 
     final notificationRef = firestore.collection('notifications').doc();
-    batch.set(
-      notificationRef,
-      <String, dynamic>{
-        'userId': supplierId,
-        'supplierId': supplierId,
-        'title': 'Profile Change Needs Revision',
-        'message':
-            'Your verified supplier profile change request needs revision. Admin note: $note',
-        'type': 'supplier_profile_change',
-        'status': 'rejected',
-        'requestId': supplierId,
-        'changedFields': requestData['changedFields'] is List
-            ? List<dynamic>.from(requestData['changedFields'] as List)
-            : const <dynamic>[],
-        'isRead': false,
-        'createdAt': FieldValue.serverTimestamp(),
-      },
-    );
+    batch.set(notificationRef, <String, dynamic>{
+      'userId': supplierId,
+      'supplierId': supplierId,
+      'title': 'Profile Change Needs Revision',
+      'message':
+          'Your verified supplier profile change request needs revision. Admin note: $note',
+      'type': 'supplier_profile_change',
+      'status': 'rejected',
+      'requestId': supplierId,
+      'changedFields': requestData['changedFields'] is List
+          ? List<dynamic>.from(requestData['changedFields'] as List)
+          : const <dynamic>[],
+      'isRead': false,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
 
     await batch.commit();
   }
@@ -386,15 +361,9 @@ class AdminDashboardService {
   ) async {
     final data = supplierDocument.data();
 
-    final uid = getStringValue(
-      data,
-      'uid',
-      supplierDocument.id,
-    );
+    final uid = getStringValue(data, 'uid', supplierDocument.id);
 
-    final userRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid);
+    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
 
     final supplierRef = FirebaseFirestore.instance
         .collection('supplierProfiles')
@@ -405,65 +374,54 @@ class AdminDashboardService {
 
     final batch = FirebaseFirestore.instance.batch();
 
-    batch.set(
-      userRef,
-      {
-        'role': 'supplier',
-        'supplierStatus': 'approved',
-        'updatedAt': FieldValue.serverTimestamp(),
-      },
-      SetOptions(merge: true),
-    );
+    batch.set(userRef, {
+      'role': 'supplier',
+      'supplierStatus': 'approved',
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
 
-    batch.set(
-      supplierRef,
-      {
-        'status': 'approved',
-        'verificationStatus': 'approved',
-        'approvedAt': FieldValue.serverTimestamp(),
-        'accountCreatedAt': ?accountCreatedAt,
+    batch.set(supplierRef, {
+      'status': 'approved',
+      'verificationStatus': 'approved',
+      'approvedAt': FieldValue.serverTimestamp(),
+      'accountCreatedAt': ?accountCreatedAt,
 
-        // Supplier verification evidence remains in the private
-        // users/{uid}.supplierApplication record for owner/admin access.
-        // It is removed from the approved public supplier profile before
-        // marketplace users are allowed to read that profile.
-        'ownerAddress': FieldValue.delete(),
-        'email': FieldValue.delete(),
-        'businessPermitNumber': FieldValue.delete(),
-        'businessPermitUrl': FieldValue.delete(),
-        'businessPermitStoragePath': FieldValue.delete(),
-        'storePhotoUrl': FieldValue.delete(),
-        // Legacy applications used the verification store photo as public
-        // branding. Clear those aliases so the approved owner can choose
-        // profile and cover photos independently from View My Shop.
-        'profileImageUrl': FieldValue.delete(),
-        'coverImageUrl': FieldValue.delete(),
-        'coverImageSetByOwner': FieldValue.delete(),
+      // Supplier verification evidence remains in the private
+      // users/{uid}.supplierApplication record for owner/admin access.
+      // It is removed from the approved public supplier profile before
+      // marketplace users are allowed to read that profile.
+      'ownerAddress': FieldValue.delete(),
+      'email': FieldValue.delete(),
+      'businessPermitNumber': FieldValue.delete(),
+      'businessPermitUrl': FieldValue.delete(),
+      'businessPermitStoragePath': FieldValue.delete(),
+      'storePhotoUrl': FieldValue.delete(),
+      // Legacy applications used the verification store photo as public
+      // branding. Clear those aliases so the approved owner can choose
+      // profile and cover photos independently from View My Shop.
+      'profileImageUrl': FieldValue.delete(),
+      'coverImageUrl': FieldValue.delete(),
+      'coverImageSetByOwner': FieldValue.delete(),
 
-        'updatedAt': FieldValue.serverTimestamp(),
-      },
-      SetOptions(merge: true),
-    );
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
 
     final notificationRef = FirebaseFirestore.instance
         .collection('notifications')
         .doc();
 
-    batch.set(
-      notificationRef,
-      <String, dynamic>{
-        'userId': uid,
-        'supplierId': uid,
-        'title': 'Supplier Application Approved',
-        'message':
-            'Your supplier application was approved. Supplier tools are now available on your account.',
-        'type': 'supplier_application_status',
-        'status': 'approved',
-        'applicationId': uid,
-        'isRead': false,
-        'createdAt': FieldValue.serverTimestamp(),
-      },
-    );
+    batch.set(notificationRef, <String, dynamic>{
+      'userId': uid,
+      'supplierId': uid,
+      'title': 'Supplier Application Approved',
+      'message':
+          'Your supplier application was approved. Supplier tools are now available on your account.',
+      'type': 'supplier_application_status',
+      'status': 'approved',
+      'applicationId': uid,
+      'isRead': false,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
 
     await batch.commit();
   }
@@ -488,65 +446,48 @@ class AdminDashboardService {
 
     final data = supplierDocument.data();
 
-    final uid = getStringValue(
-      data,
-      'uid',
-      supplierDocument.id,
-    );
+    final uid = getStringValue(data, 'uid', supplierDocument.id);
 
     final batch = FirebaseFirestore.instance.batch();
 
-    final userRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid);
+    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
 
     final supplierRef = FirebaseFirestore.instance
         .collection('supplierProfiles')
         .doc(uid);
 
-    batch.set(
-      userRef,
-      {
-        'role': 'vendor',
-        'supplierStatus': 'rejected',
-        'updatedAt': FieldValue.serverTimestamp(),
-      },
-      SetOptions(merge: true),
-    );
+    batch.set(userRef, {
+      'role': 'vendor',
+      'supplierStatus': 'rejected',
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
 
-    batch.set(
-      supplierRef,
-      {
-        'status': 'rejected',
-        'verificationStatus': 'rejected',
-        'rejectionReason': reason,
-        'rejectedBy': adminUid,
-        'rejectedAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      },
-      SetOptions(merge: true),
-    );
+    batch.set(supplierRef, {
+      'status': 'rejected',
+      'verificationStatus': 'rejected',
+      'rejectionReason': reason,
+      'rejectedBy': adminUid,
+      'rejectedAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
 
     final notificationRef = FirebaseFirestore.instance
         .collection('notifications')
         .doc();
 
-    batch.set(
-      notificationRef,
-      <String, dynamic>{
-        'userId': uid,
-        'supplierId': uid,
-        'title': 'Supplier Application Declined',
-        'message':
-            'Your supplier application was declined. Tap to view the reason.',
-        'type': 'supplier_application_status',
-        'status': 'rejected',
-        'applicationId': uid,
-        'rejectionReason': reason,
-        'isRead': false,
-        'createdAt': FieldValue.serverTimestamp(),
-      },
-    );
+    batch.set(notificationRef, <String, dynamic>{
+      'userId': uid,
+      'supplierId': uid,
+      'title': 'Supplier Application Declined',
+      'message':
+          'Your supplier application was declined. Tap to view the reason.',
+      'type': 'supplier_application_status',
+      'status': 'rejected',
+      'applicationId': uid,
+      'rejectionReason': reason,
+      'isRead': false,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
 
     await batch.commit();
   }

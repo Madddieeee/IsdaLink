@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
-class AdminDashboardHeader
-    extends
-        StatelessWidget {
+class AdminDashboardHeader extends StatelessWidget {
   const AdminDashboardHeader({
     super.key,
     required this.usersCount,
@@ -26,33 +24,17 @@ class AdminDashboardHeader
     return Expanded(
       child: Container(
         height: 76,
-        margin: const EdgeInsets.symmetric(
-          horizontal: 4,
-        ),
+        margin: const EdgeInsets.symmetric(horizontal: 4),
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha(
-            38,
-          ),
-          borderRadius: BorderRadius.circular(
-            18,
-          ),
-          border: Border.all(
-            color: Colors.white.withAlpha(
-              36,
-            ),
-          ),
+          color: Colors.white.withAlpha(38),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white.withAlpha(36)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              color: Colors.white,
-              size: 20,
-            ),
-            const SizedBox(
-              height: 5,
-            ),
+            Icon(icon, color: Colors.white, size: 20),
+            const SizedBox(height: 5),
             Text(
               value,
               style: const TextStyle(
@@ -64,9 +46,7 @@ class AdminDashboardHeader
             Text(
               label,
               style: const TextStyle(
-                color: Color(
-                  0xFFDCE9F5,
-                ),
+                color: Color(0xFFDCE9F5),
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
               ),
@@ -78,34 +58,16 @@ class AdminDashboardHeader
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(
-        20,
-        54,
-        20,
-        24,
-      ),
+      padding: const EdgeInsets.fromLTRB(20, 54, 20, 24),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(
-              0xFF102C44,
-            ),
-            Color(
-              0xFF146BFF,
-            ),
-          ],
+          colors: [Color(0xFF102C44), Color(0xFF146BFF)],
         ),
-        borderRadius: BorderRadius.vertical(
-          bottom: Radius.circular(
-            32,
-          ),
-        ),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -116,12 +78,8 @@ class AdminDashboardHeader
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: Colors.white.withAlpha(
-                    38,
-                  ),
-                  borderRadius: BorderRadius.circular(
-                    15,
-                  ),
+                  color: Colors.white.withAlpha(38),
+                  borderRadius: BorderRadius.circular(15),
                 ),
                 child: const Icon(
                   Icons.admin_panel_settings,
@@ -129,9 +87,7 @@ class AdminDashboardHeader
                   size: 24,
                 ),
               ),
-              const SizedBox(
-                width: 12,
-              ),
+              const SizedBox(width: 12),
               const Expanded(
                 child: Text(
                   'Admin Dashboard',
@@ -148,9 +104,7 @@ class AdminDashboardHeader
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(
-                      38,
-                    ),
+                    color: Colors.white.withAlpha(38),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -162,22 +116,16 @@ class AdminDashboardHeader
               ),
             ],
           ),
-          const SizedBox(
-            height: 8,
-          ),
+          const SizedBox(height: 8),
           const Text(
             'Monitor users, supplier reviews, stocks, and COD orders.',
             style: TextStyle(
-              color: Color(
-                0xFFDCE9F5,
-              ),
+              color: Color(0xFFDCE9F5),
               fontSize: 13,
               height: 1.4,
             ),
           ),
-          const SizedBox(
-            height: 18,
-          ),
+          const SizedBox(height: 18),
           Row(
             children: [
               statCard(

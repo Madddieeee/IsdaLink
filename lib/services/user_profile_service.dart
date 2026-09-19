@@ -7,138 +7,74 @@ class UserProfileService {
 
   User? get currentUser => FirebaseAuth.instance.currentUser;
 
-  Stream<
-    DocumentSnapshot<
-      Map<
-        String,
-        dynamic
-      >
-    >
-  >?
-  profileStream() {
+  Stream<DocumentSnapshot<Map<String, dynamic>>>? profileStream() {
     final user = currentUser;
 
-    if (user ==
-        null) {
+    if (user == null) {
       return null;
     }
 
     return FirebaseFirestore.instance
-        .collection(
-          'users',
-        )
-        .doc(
-          user.uid,
-        )
+        .collection('users')
+        .doc(user.uid)
         .snapshots();
   }
 
-  Future<
-    void
-  >
-  updateProfileImageUrl({
+  Future<void> updateProfileImageUrl({
     required String imageUrl,
     required bool isApprovedSupplier,
   }) async {
     final user = currentUser;
 
-    if (user ==
-        null) {
-      throw Exception(
-        'Please log in first.',
-      );
+    if (user == null) {
+      throw Exception('Please log in first.');
     }
 
-    await FirebaseFirestore.instance
-        .collection(
-          'users',
-        )
-        .doc(
-          user.uid,
-        )
-        .set(
-          {
-            'profileImageUrl': imageUrl,
-            'photoUrl': imageUrl,
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(
-            merge: true,
-          ),
-        );
+    await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+      'profileImageUrl': imageUrl,
+      'photoUrl': imageUrl,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
 
-    await user.updatePhotoURL(
-      imageUrl,
-    );
+    await user.updatePhotoURL(imageUrl);
 
     // Personal account photos and supplier storefront branding are separate.
   }
 
-  Future<
-    void
-  >
-  removeProfileImageUrl({
-    required bool isApprovedSupplier,
-  }) async {
+  Future<void> removeProfileImageUrl({required bool isApprovedSupplier}) async {
     final user = currentUser;
 
-    if (user ==
-        null) {
-      throw Exception(
-        'Please log in first.',
-      );
+    if (user == null) {
+      throw Exception('Please log in first.');
     }
 
-    await FirebaseFirestore.instance
-        .collection(
-          'users',
-        )
-        .doc(
-          user.uid,
-        )
-        .set(
-          {
-            'profileImageUrl': FieldValue.delete(),
-            'photoUrl': FieldValue.delete(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(
-            merge: true,
-          ),
-        );
+    await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+      'profileImageUrl': FieldValue.delete(),
+      'photoUrl': FieldValue.delete(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
 
-    await user.updatePhotoURL(
-      null,
-    );
+    await user.updatePhotoURL(null);
 
     // Removing the personal account photo does not change storefront branding.
   }
 
-  Future<
-    void
-  >
-  logout() async {
+  Future<void> logout() async {
     await PushNotificationService.instance.signOut();
   }
 
   String getStringValue(
-    Map<
-      String,
-      dynamic
-    >?
-    data,
+    Map<String, dynamic>? data,
     String key,
     String fallback,
   ) {
-    if (data ==
-        null) {
+    if (data == null) {
       return fallback;
     }
 
     final value = data[key];
 
-    if (value ==
-        null) {
+    if (value == null) {
       return fallback;
     }
 

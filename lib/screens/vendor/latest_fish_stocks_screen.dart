@@ -21,8 +21,7 @@ class LatestFishStocksScreen extends StatefulWidget {
   const LatestFishStocksScreen({super.key});
 
   @override
-  State<LatestFishStocksScreen> createState() =>
-      _LatestFishStocksScreenState();
+  State<LatestFishStocksScreen> createState() => _LatestFishStocksScreenState();
 }
 
 class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
@@ -35,12 +34,7 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
   String selectedUnit = 'All';
   _FishStockSortOption sortOption = _FishStockSortOption.newest;
 
-  static const units = [
-    'All',
-    'Kilo',
-    'Tab',
-    'Icebox',
-  ];
+  static const units = ['All', 'Kilo', 'Tab', 'Icebox'];
 
   @override
   void initState() {
@@ -98,11 +92,7 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
     }
 
     final product = stockService.fishProductFromFirestore(data);
-    final supplierId = OrderHelpers.getStringValue(
-      data,
-      'supplierId',
-      '',
-    );
+    final supplierId = OrderHelpers.getStringValue(data, 'supplierId', '');
 
     Navigator.push(
       context,
@@ -235,15 +225,16 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
 
     filtered.sort((first, second) {
       if (query.isNotEmpty) {
-        final relevanceComparison = SearchMatcher.relevance(
-          query: query,
-          values: searchableValues(first.data()),
-        ).compareTo(
-          SearchMatcher.relevance(
-            query: query,
-            values: searchableValues(second.data()),
-          ),
-        );
+        final relevanceComparison =
+            SearchMatcher.relevance(
+              query: query,
+              values: searchableValues(first.data()),
+            ).compareTo(
+              SearchMatcher.relevance(
+                query: query,
+                values: searchableValues(second.data()),
+              ),
+            );
 
         if (relevanceComparison != 0) {
           return relevanceComparison;
@@ -251,19 +242,26 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
       }
 
       final firstProduct = stockService.fishProductFromFirestore(first.data());
-      final secondProduct = stockService.fishProductFromFirestore(second.data());
+      final secondProduct = stockService.fishProductFromFirestore(
+        second.data(),
+      );
 
       return switch (sortOption) {
         _FishStockSortOption.newest => compareLatest(first, second),
-        _FishStockSortOption.priceLowHigh =>
-          firstProduct.price.compareTo(secondProduct.price),
-        _FishStockSortOption.priceHighLow =>
-          secondProduct.price.compareTo(firstProduct.price),
-        _FishStockSortOption.mostStock => secondProduct.availableQuantity
-            .compareTo(firstProduct.availableQuantity),
-        _FishStockSortOption.fishName => firstProduct.name
-            .toLowerCase()
-            .compareTo(secondProduct.name.toLowerCase()),
+        _FishStockSortOption.priceLowHigh => firstProduct.price.compareTo(
+          secondProduct.price,
+        ),
+        _FishStockSortOption.priceHighLow => secondProduct.price.compareTo(
+          firstProduct.price,
+        ),
+        _FishStockSortOption.mostStock =>
+          secondProduct.availableQuantity.compareTo(
+            firstProduct.availableQuantity,
+          ),
+        _FishStockSortOption.fishName =>
+          firstProduct.name.toLowerCase().compareTo(
+            secondProduct.name.toLowerCase(),
+          ),
       };
     });
 
@@ -316,9 +314,7 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? const Color(0xFFEAF7FC)
-                      : Colors.white,
+                  color: isSelected ? const Color(0xFFEAF7FC) : Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: isSelected
@@ -560,11 +556,7 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF06355F),
-            Color(0xFF0875D1),
-            Color(0xFF12B6D6),
-          ],
+          colors: [Color(0xFF06355F), Color(0xFF0875D1), Color(0xFF12B6D6)],
           stops: [0.0, 0.58, 1.0],
         ),
         borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
@@ -977,9 +969,7 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
     );
   }
 
-  Widget emptyState({
-    required bool hasAvailableStocks,
-  }) {
+  Widget emptyState({required bool hasAvailableStocks}) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 26),
       child: Container(
@@ -1187,16 +1177,19 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
             );
           }
 
-          final supplierDocuments = supplierSnapshot.data?.docs ??
+          final supplierDocuments =
+              supplierSnapshot.data?.docs ??
               <QueryDocumentSnapshot<Map<String, dynamic>>>[];
           final approvedIds = approvedSupplierIds(supplierDocuments);
-          final supplierImageUrlsById =
-              stockService.supplierImageUrlsById(supplierDocuments);
+          final supplierImageUrlsById = stockService.supplierImageUrlsById(
+            supplierDocuments,
+          );
 
           return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
             stream: stockService.allFishPostsStream,
             builder: (context, stockSnapshot) {
-              final allDocuments = stockSnapshot.data?.docs ??
+              final allDocuments =
+                  stockSnapshot.data?.docs ??
                   <QueryDocumentSnapshot<Map<String, dynamic>>>[];
               final availableDocuments = stockService
                   .availableStocks(allDocuments)

@@ -38,14 +38,10 @@ class FishStockPriceStockCard extends StatelessWidget {
   final String? percentageError;
 
   String formatNumber(double value) {
-    return value % 1 == 0
-        ? value.toStringAsFixed(0)
-        : value.toStringAsFixed(1);
+    return value % 1 == 0 ? value.toStringAsFixed(0) : value.toStringAsFixed(1);
   }
 
-  void applyPreset(
-    String value,
-  ) {
+  void applyPreset(String value) {
     percentageController.text = value;
     percentageController.selection = TextSelection.collapsed(
       offset: percentageController.text.length,
@@ -64,17 +60,13 @@ class FishStockPriceStockCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final quantity =
-        double.tryParse(quantityController.text.trim()) ?? 0;
-    final percentage =
-        double.tryParse(percentageController.text.trim()) ?? 0;
-    final validPercentage =
-        percentage >= 1 && percentage <= 100;
+    final quantity = double.tryParse(quantityController.text.trim()) ?? 0;
+    final percentage = double.tryParse(percentageController.text.trim()) ?? 0;
+    final validPercentage = percentage >= 1 && percentage <= 100;
     final double suggested = validPercentage
         ? quantity * percentage / 100
         : 0.0;
-    final currentPercentage =
-        percentageController.text.trim();
+    final currentPercentage = percentageController.text.trim();
 
     return PostStockSectionCard(
       title: 'Price, Unit, and Stock',
@@ -89,8 +81,7 @@ class FishStockPriceStockCard extends StatelessWidget {
               Expanded(
                 child: TextField(
                   controller: priceController,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(
+                  keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
                   textInputAction: TextInputAction.next,
@@ -127,17 +118,12 @@ class FishStockPriceStockCard extends StatelessWidget {
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
                   ),
-                  items: units.map(
-                    (unit) {
-                      return DropdownMenuItem<String>(
-                        value: unit,
-                        child: Text(
-                          'per $unit',
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      );
-                    },
-                  ).toList(),
+                  items: units.map((unit) {
+                    return DropdownMenuItem<String>(
+                      value: unit,
+                      child: Text('per $unit', overflow: TextOverflow.ellipsis),
+                    );
+                  }).toList(),
                   onChanged: (value) {
                     if (value != null) {
                       onUnitChanged(value);
@@ -150,15 +136,10 @@ class FishStockPriceStockCard extends StatelessWidget {
           const SizedBox(height: 11),
           TextField(
             controller: quantityController,
-            keyboardType:
-                const TextInputType.numberWithOptions(
-              decimal: true,
-            ),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
             textInputAction: TextInputAction.next,
             inputFormatters: [
-              FilteringTextInputFormatter.allow(
-                RegExp(r'^\d*\.?\d{0,2}'),
-              ),
+              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
             ],
             onChanged: (_) => onPercentageChanged(),
             style: const TextStyle(
@@ -169,8 +150,7 @@ class FishStockPriceStockCard extends StatelessWidget {
               label: 'Available stock',
               icon: Icons.inventory_outlined,
               suffixText: selectedUnit,
-              helperText:
-                  'Quantity currently available for vendor orders.',
+              helperText: 'Quantity currently available for vendor orders.',
               errorText: quantityError,
             ),
           ),
@@ -181,15 +161,10 @@ class FishStockPriceStockCard extends StatelessWidget {
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFFEAF8FF),
-                  Color(0xFFEAFBF5),
-                ],
+                colors: [Color(0xFFEAF8FF), Color(0xFFEAFBF5)],
               ),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: const Color(0xFF75CFEA).withAlpha(88),
-              ),
+              border: Border.all(color: const Color(0xFF75CFEA).withAlpha(88)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,8 +175,7 @@ class FishStockPriceStockCard extends StatelessWidget {
                     SizedBox(width: 9),
                     Expanded(
                       child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             'Automatic Low-Stock Alert',
@@ -230,19 +204,11 @@ class FishStockPriceStockCard extends StatelessWidget {
                   spacing: 7,
                   runSpacing: 7,
                   children: [
-                    for (final value in const [
-                      '10',
-                      '20',
-                      '25',
-                      '30',
-                    ])
+                    for (final value in const ['10', '20', '25', '30'])
                       _PercentageChoice(
-                        label: value == '20'
-                            ? '20% Recommended'
-                            : '$value%',
+                        label: value == '20' ? '20% Recommended' : '$value%',
                         selected:
-                            !isCustomPercentage &&
-                            currentPercentage == value,
+                            !isCustomPercentage && currentPercentage == value,
                         onTap: () {
                           applyPreset(value);
                         },
@@ -258,8 +224,7 @@ class FishStockPriceStockCard extends StatelessWidget {
                   const SizedBox(height: 11),
                   TextField(
                     controller: percentageController,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(
+                    keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
                     textInputAction: TextInputAction.done,
@@ -296,18 +261,11 @@ class FishStockPriceStockCard extends StatelessWidget {
                 const SizedBox(height: 11),
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.fromLTRB(
-                    12,
-                    11,
-                    12,
-                    11,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
                   decoration: BoxDecoration(
                     color: Colors.white.withAlpha(210),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: const Color(0xFFDDEAF1),
-                    ),
+                    border: Border.all(color: const Color(0xFFDDEAF1)),
                   ),
                   child: Row(
                     children: [
@@ -315,20 +273,16 @@ class FishStockPriceStockCard extends StatelessWidget {
                         width: 39,
                         height: 39,
                         decoration: BoxDecoration(
-                          color: quantity > 0 &&
-                                  validPercentage
+                          color: quantity > 0 && validPercentage
                               ? const Color(0xFFE7F8F1)
                               : const Color(0xFFFFF2E8),
-                          borderRadius:
-                              BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(
                           quantity > 0 && validPercentage
-                              ? Icons
-                                  .notifications_active_rounded
+                              ? Icons.notifications_active_rounded
                               : Icons.calculate_outlined,
-                          color: quantity > 0 &&
-                                  validPercentage
+                          color: quantity > 0 && validPercentage
                               ? const Color(0xFF147D64)
                               : const Color(0xFFFF7A1A),
                           size: 21,
@@ -337,8 +291,7 @@ class FishStockPriceStockCard extends StatelessWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               quantity > 0 && validPercentage
@@ -357,8 +310,7 @@ class FishStockPriceStockCard extends StatelessWidget {
                                   ? '${formatNumber(suggested)} $selectedUnit'
                                   : 'Enter available stock',
                               style: TextStyle(
-                                color: quantity > 0 &&
-                                        validPercentage
+                                color: quantity > 0 && validPercentage
                                     ? const Color(0xFF102C44)
                                     : const Color(0xFF8BA0B1),
                                 fontSize: 13,
@@ -402,9 +354,7 @@ class _AlertIcon extends StatelessWidget {
       height: 37,
       decoration: const BoxDecoration(
         color: Color(0xFFFFF2E8),
-        borderRadius: BorderRadius.all(
-          Radius.circular(12),
-        ),
+        borderRadius: BorderRadius.all(Radius.circular(12)),
       ),
       child: const Icon(
         Icons.notifications_active_outlined,
@@ -435,10 +385,7 @@ class _PercentageChoice extends StatelessWidget {
         borderRadius: BorderRadius.circular(99),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
-          padding: const EdgeInsets.symmetric(
-            horizontal: 11,
-            vertical: 8,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
           decoration: BoxDecoration(
             color: selected
                 ? const Color(0xFF146BFF)
@@ -453,9 +400,7 @@ class _PercentageChoice extends StatelessWidget {
           child: Text(
             label,
             style: TextStyle(
-              color: selected
-                  ? Colors.white
-                  : const Color(0xFF52677A),
+              color: selected ? Colors.white : const Color(0xFF52677A),
               fontSize: 9.2,
               fontWeight: FontWeight.w900,
             ),

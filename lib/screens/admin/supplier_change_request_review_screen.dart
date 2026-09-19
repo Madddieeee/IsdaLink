@@ -75,8 +75,8 @@ class SupplierChangeRequestReviewScreen extends StatelessWidget {
     final hour = date.hour == 0
         ? 12
         : date.hour > 12
-            ? date.hour - 12
-            : date.hour;
+        ? date.hour - 12
+        : date.hour;
     final minute = date.minute.toString().padLeft(2, '0');
     final period = date.hour >= 12 ? 'PM' : 'AM';
 
@@ -112,12 +112,9 @@ class SupplierChangeRequestReviewScreen extends StatelessWidget {
                 rejecting
                     ? 'The current approved supplier information will remain unchanged. Add a short reason so the supplier knows what to correct.'
                     : changesStorePhoto
-                        ? 'Only the requested verified changes will be approved. A requested verification store photo updates the private verification record and does not change public storefront branding.'
-                        : 'Only the requested verified changes will be approved. Unselected supplier information will remain unchanged.',
-                style: const TextStyle(
-                  color: Color(0xFF52677A),
-                  height: 1.4,
-                ),
+                    ? 'Only the requested verified changes will be approved. A requested verification store photo updates the private verification record and does not change public storefront branding.'
+                    : 'Only the requested verified changes will be approved. Unselected supplier information will remain unchanged.',
+                style: const TextStyle(color: Color(0xFF52677A), height: 1.4),
               ),
               const SizedBox(height: 14),
               TextField(
@@ -217,7 +214,8 @@ class SupplierChangeRequestReviewScreen extends StatelessWidget {
           content: Text(
             AppErrorMessage.from(
               error,
-              fallback: 'The supplier change request could not be approved. Please try again.',
+              fallback:
+                  'The supplier change request could not be approved. Please try again.',
               allowBusinessMessage: true,
             ),
           ),
@@ -227,13 +225,8 @@ class SupplierChangeRequestReviewScreen extends StatelessWidget {
     }
   }
 
-  Future<void> reject(
-    BuildContext context,
-  ) async {
-    final note = await requestAdminNote(
-      context,
-      rejecting: true,
-    );
+  Future<void> reject(BuildContext context) async {
+    final note = await requestAdminNote(context, rejecting: true);
 
     if (note == null || !context.mounted) {
       return;
@@ -266,7 +259,8 @@ class SupplierChangeRequestReviewScreen extends StatelessWidget {
           content: Text(
             AppErrorMessage.from(
               error,
-              fallback: 'The supplier change request could not be rejected. Please try again.',
+              fallback:
+                  'The supplier change request could not be rejected. Please try again.',
               allowBusinessMessage: true,
             ),
           ),
@@ -315,9 +309,7 @@ class SupplierChangeRequestReviewScreen extends StatelessWidget {
     );
   }
 
-  List<String> changedFields(
-    Map<String, dynamic> request,
-  ) {
+  List<String> changedFields(Map<String, dynamic> request) {
     final raw = request['changedFields'];
 
     if (raw is! List) {
@@ -330,10 +322,7 @@ class SupplierChangeRequestReviewScreen extends StatelessWidget {
         .toList();
   }
 
-  bool hasChange(
-    Map<String, dynamic> request,
-    String label,
-  ) {
+  bool hasChange(Map<String, dynamic> request, String label) {
     return changedFields(request).contains(label);
   }
 
@@ -362,10 +351,7 @@ class SupplierChangeRequestReviewScreen extends StatelessWidget {
           children: [
             Text(
               'Review Verified Change',
-              style: TextStyle(
-                fontSize: 16.5,
-                fontWeight: FontWeight.w900,
-              ),
+              style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.w900),
             ),
             SizedBox(height: 2),
             Text(
@@ -389,9 +375,7 @@ class SupplierChangeRequestReviewScreen extends StatelessWidget {
           final request = requestSnapshot.data?.data();
 
           if (request == null) {
-            return const Center(
-              child: Text('Change request not found.'),
-            );
+            return const Center(child: Text('Change request not found.'));
           }
 
           return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
@@ -404,9 +388,7 @@ class SupplierChangeRequestReviewScreen extends StatelessWidget {
               final profile = profileSnapshot.data?.data();
 
               if (profile == null) {
-                return const Center(
-                  child: Text('Supplier profile not found.'),
-                );
+                return const Center(child: Text('Supplier profile not found.'));
               }
 
               return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
@@ -446,10 +428,7 @@ class SupplierChangeRequestReviewScreen extends StatelessWidget {
                     'requestedLocation',
                     currentLocation,
                   );
-                  final currentProvince = stringValue(
-                    profile,
-                    'storeProvince',
-                  );
+                  final currentProvince = stringValue(profile, 'storeProvince');
                   final requestedProvince = stringValue(
                     request,
                     'requestedStoreProvince',
@@ -498,22 +477,13 @@ class SupplierChangeRequestReviewScreen extends StatelessWidget {
                     request,
                     'requestedStorePhotoUrl',
                   );
-                  final changesStoreName = hasChange(
-                    request,
-                    'Store name',
-                  );
+                  final changesStoreName = hasChange(request, 'Store name');
                   final changesLocation = hasChange(
                     request,
                     'Business location',
                   );
-                  final changesStorePhoto = hasChange(
-                    request,
-                    'Store photo',
-                  );
-                  final changesPermit = hasChange(
-                    request,
-                    'Business permit',
-                  );
+                  final changesStorePhoto = hasChange(request, 'Store photo');
+                  final changesPermit = hasChange(request, 'Business permit');
 
                   return ListView(
                     padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
@@ -533,9 +503,7 @@ class SupplierChangeRequestReviewScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      _ApprovalImpactCard(
-                        changesStorePhoto: changesStorePhoto,
-                      ),
+                      _ApprovalImpactCard(changesStorePhoto: changesStorePhoto),
                       const SizedBox(height: 12),
                       if (changesStoreName || changesPermit)
                         _CompareSection(
@@ -574,90 +542,91 @@ class SupplierChangeRequestReviewScreen extends StatelessWidget {
                         const SizedBox(height: 12),
                       if (changesLocation)
                         _CompareSection(
-                        title: 'Business Location',
-                        icon: Icons.location_on_rounded,
-                        currentChildren: [
-                          _ReviewInfoRow(
-                            label: 'Approved location',
-                            value: currentLocation,
-                          ),
-                          _MapReviewButton(
-                            label: 'View Current Map Pin',
-                            onTap: () => openMap(
-                              context,
-                              title: '$currentName Current Location',
-                              subtitle: '$currentCity, $currentProvince',
-                              province: currentProvince,
-                              locality: currentCity,
-                              latitude: coordinate(profile['storeLatitude']),
-                              longitude: coordinate(profile['storeLongitude']),
-                              markerTitle: 'Current approved store',
+                          title: 'Business Location',
+                          icon: Icons.location_on_rounded,
+                          currentChildren: [
+                            _ReviewInfoRow(
+                              label: 'Approved location',
+                              value: currentLocation,
                             ),
-                          ),
-                        ],
-                        requestedChildren: [
-                          _ReviewInfoRow(
-                            label: 'Requested location',
-                            value: requestedLocation,
-                          ),
-                          _MapReviewButton(
-                            label: 'View Requested Map Pin',
-                            onTap: () => openMap(
-                              context,
-                              title: '$currentName Requested Location',
-                              subtitle: '$requestedCity, $requestedProvince',
-                              province: requestedProvince,
-                              locality: requestedCity,
-                              latitude: coordinate(
-                                request['requestedStoreLatitude'],
+                            _MapReviewButton(
+                              label: 'View Current Map Pin',
+                              onTap: () => openMap(
+                                context,
+                                title: '$currentName Current Location',
+                                subtitle: '$currentCity, $currentProvince',
+                                province: currentProvince,
+                                locality: currentCity,
+                                latitude: coordinate(profile['storeLatitude']),
+                                longitude: coordinate(
+                                  profile['storeLongitude'],
+                                ),
+                                markerTitle: 'Current approved store',
                               ),
-                              longitude: coordinate(
-                                request['requestedStoreLongitude'],
-                              ),
-                              markerTitle: 'Requested supplier store',
                             ),
-                          ),
-                        ],
-                      ),
-                      if (changesLocation)
-                        const SizedBox(height: 12),
+                          ],
+                          requestedChildren: [
+                            _ReviewInfoRow(
+                              label: 'Requested location',
+                              value: requestedLocation,
+                            ),
+                            _MapReviewButton(
+                              label: 'View Requested Map Pin',
+                              onTap: () => openMap(
+                                context,
+                                title: '$currentName Requested Location',
+                                subtitle: '$requestedCity, $requestedProvince',
+                                province: requestedProvince,
+                                locality: requestedCity,
+                                latitude: coordinate(
+                                  request['requestedStoreLatitude'],
+                                ),
+                                longitude: coordinate(
+                                  request['requestedStoreLongitude'],
+                                ),
+                                markerTitle: 'Requested supplier store',
+                              ),
+                            ),
+                          ],
+                        ),
+                      if (changesLocation) const SizedBox(height: 12),
                       if (changesStorePhoto || changesPermit)
                         _CompareSection(
-                        title: 'Verification Evidence',
-                        icon: Icons.photo_library_outlined,
-                        currentChildren: [
-                          if (changesStorePhoto)
-                            _EvidencePreview(
-                              label: 'Current verification photo',
-                              imageUrl: currentStorePhoto,
-                            ),
-                          if (changesStorePhoto && changesPermit)
-                            const SizedBox(height: 10),
-                          if (changesPermit)
-                            VerificationLinkButton(
-                              label: 'Current Permit',
-                              icon: Icons.description_outlined,
-                              url: currentPermitUrl,
-                              storagePath: currentPermitStoragePath,
-                            ),
-                        ],
-                        requestedChildren: [
-                          if (changesStorePhoto)
-                            _EvidencePreview(
-                              label: 'Requested verification photo',
-                              imageUrl: requestedStorePhoto,
-                            ),
-                          if (changesStorePhoto && changesPermit)
-                            const SizedBox(height: 10),
-                          if (changesPermit)
-                            VerificationLinkButton(
-                              label: 'Requested Permit',
-                              icon: Icons.description_outlined,
-                              url: requestedPermitUrl,
-                              storagePath: requestedPermitStoragePath,
-                            ),
-                        ],
-                      ),
+                          title: 'Verification Evidence',
+                          icon: Icons.photo_library_outlined,
+                          currentChildren: [
+                            if (changesStorePhoto)
+                              _EvidencePreview(
+                                label: 'Current verification photo',
+                                imageUrl: currentStorePhoto,
+                              ),
+                            if (changesStorePhoto && changesPermit)
+                              const SizedBox(height: 10),
+                            if (changesPermit)
+                              VerificationLinkButton(
+                                label: 'Current Permit',
+                                icon: Icons.description_outlined,
+                                url: currentPermitUrl,
+                                storagePath: currentPermitStoragePath,
+                              ),
+                          ],
+                          requestedChildren: [
+                            if (changesStorePhoto)
+                              _EvidencePreview(
+                                label: 'Requested verification photo',
+                                imageUrl: requestedStorePhoto,
+                              ),
+                            if (changesStorePhoto && changesPermit)
+                              const SizedBox(height: 10),
+                            if (changesPermit)
+                              VerificationLinkButton(
+                                label: 'Requested Permit',
+                                icon: Icons.description_outlined,
+                                url: requestedPermitUrl,
+                                storagePath: requestedPermitStoragePath,
+                              ),
+                          ],
+                        ),
                       if (!isPending) ...[
                         const SizedBox(height: 12),
                         _DecisionResultCard(
@@ -736,9 +705,7 @@ class _RequestHeaderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final changes = changedFields is List
-        ? (changedFields as List)
-            .map((value) => value.toString())
-            .toList()
+        ? (changedFields as List).map((value) => value.toString()).toList()
         : const <String>[];
 
     return Container(
@@ -747,10 +714,7 @@ class _RequestHeaderCard extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF102C44),
-            Color(0xFF146BFF),
-          ],
+          colors: [Color(0xFF102C44), Color(0xFF146BFF)],
         ),
         borderRadius: BorderRadius.circular(24),
       ),
@@ -839,9 +803,7 @@ class _RequestHeaderCard extends StatelessWidget {
 }
 
 class _RequestReasonCard extends StatelessWidget {
-  const _RequestReasonCard({
-    required this.reason,
-  });
+  const _RequestReasonCard({required this.reason});
 
   final String reason;
 
@@ -852,13 +814,10 @@ class _RequestReasonCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: const Color(0xFFDDE8F0),
-        ),
+        border: Border.all(color: const Color(0xFFDDE8F0)),
       ),
       child: Row(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: 36,
@@ -876,8 +835,7 @@ class _RequestReasonCard extends StatelessWidget {
           const SizedBox(width: 9),
           Expanded(
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
                   'Supplier reason',
@@ -907,9 +865,7 @@ class _RequestReasonCard extends StatelessWidget {
 }
 
 class _ApprovalImpactCard extends StatelessWidget {
-  const _ApprovalImpactCard({
-    required this.changesStorePhoto,
-  });
+  const _ApprovalImpactCard({required this.changesStorePhoto});
 
   final bool changesStorePhoto;
 
@@ -920,13 +876,10 @@ class _ApprovalImpactCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFFFF8E9),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: const Color(0xFFF0E0B5),
-        ),
+        border: Border.all(color: const Color(0xFFF0E0B5)),
       ),
       child: Row(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Icon(
             Icons.admin_panel_settings_outlined,
@@ -987,11 +940,7 @@ class _CompareSection extends StatelessWidget {
                   color: const Color(0xFFEAF5FF),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  icon,
-                  color: const Color(0xFF146BFF),
-                  size: 19,
-                ),
+                child: Icon(icon, color: const Color(0xFF146BFF), size: 19),
               ),
               const SizedBox(width: 10),
               Text(
@@ -1084,9 +1033,7 @@ class _ReviewInfoRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 7),
       decoration: BoxDecoration(
         border: showDivider
-            ? const Border(
-                bottom: BorderSide(color: Color(0xFFE2EBF1)),
-              )
+            ? const Border(bottom: BorderSide(color: Color(0xFFE2EBF1)))
             : null,
       ),
       child: Column(
@@ -1117,10 +1064,7 @@ class _ReviewInfoRow extends StatelessWidget {
 }
 
 class _MapReviewButton extends StatelessWidget {
-  const _MapReviewButton({
-    required this.label,
-    required this.onTap,
-  });
+  const _MapReviewButton({required this.label, required this.onTap});
 
   final String label;
   final VoidCallback onTap;
@@ -1146,10 +1090,7 @@ class _MapReviewButton extends StatelessWidget {
 }
 
 class _EvidencePreview extends StatelessWidget {
-  const _EvidencePreview({
-    required this.label,
-    required this.imageUrl,
-  });
+  const _EvidencePreview({required this.label, required this.imageUrl});
 
   final String label;
   final String imageUrl;
@@ -1201,10 +1142,7 @@ class _EvidencePreview extends StatelessWidget {
 }
 
 class _DecisionResultCard extends StatelessWidget {
-  const _DecisionResultCard({
-    required this.status,
-    required this.adminNote,
-  });
+  const _DecisionResultCard({required this.status, required this.adminNote});
 
   final String status;
   final String adminNote;
@@ -1219,9 +1157,7 @@ class _DecisionResultCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
-        color: approved
-            ? const Color(0xFFECF8F4)
-            : const Color(0xFFFFEEEE),
+        color: approved ? const Color(0xFFECF8F4) : const Color(0xFFFFEEEE),
         borderRadius: BorderRadius.circular(17),
       ),
       child: Row(
@@ -1236,8 +1172,8 @@ class _DecisionResultCard extends StatelessWidget {
             child: Text(
               adminNote.isEmpty
                   ? (approved
-                      ? 'This verified change request was approved.'
-                      : 'This verified change request was rejected.')
+                        ? 'This verified change request was approved.'
+                        : 'This verified change request was rejected.')
                   : 'Admin note: $adminNote',
               style: TextStyle(
                 color: foreground,

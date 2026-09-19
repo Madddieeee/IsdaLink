@@ -14,13 +14,10 @@ import 'package:isdalink/services/fish_stock_service.dart';
 import 'package:isdalink/utils/app_error_message.dart';
 
 class PostFishStockScreen extends StatefulWidget {
-  const PostFishStockScreen({
-    super.key,
-  });
+  const PostFishStockScreen({super.key});
 
   @override
-  State<PostFishStockScreen> createState() =>
-      _PostFishStockScreenState();
+  State<PostFishStockScreen> createState() => _PostFishStockScreenState();
 }
 
 class _PostFishStockScreenState extends State<PostFishStockScreen> {
@@ -28,9 +25,7 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
   final priceController = TextEditingController();
   final quantityController = TextEditingController();
   final lowStockController = TextEditingController();
-  final percentageController = TextEditingController(
-    text: '20',
-  );
+  final percentageController = TextEditingController(text: '20');
   final descriptionController = TextEditingController();
 
   final FishStockService fishStockService = const FishStockService();
@@ -64,11 +59,7 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
     'Bulk Fish Supply',
   ];
 
-  final List<String> units = const [
-    'kilo',
-    'tab',
-    'icebox',
-  ];
+  final List<String> units = const ['kilo', 'tab', 'icebox'];
 
   @override
   void dispose() {
@@ -83,26 +74,19 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
   }
 
   bool get hasProductImage {
-    return selectedImage != null ||
-        uploadedImageUrl.trim().isNotEmpty;
+    return selectedImage != null || uploadedImageUrl.trim().isNotEmpty;
   }
 
   double? get enteredPrice {
-    return double.tryParse(
-      priceController.text.trim(),
-    );
+    return double.tryParse(priceController.text.trim());
   }
 
   double? get enteredQuantity {
-    return double.tryParse(
-      quantityController.text.trim(),
-    );
+    return double.tryParse(quantityController.text.trim());
   }
 
   double? get enteredPercentage {
-    return double.tryParse(
-      percentageController.text.trim(),
-    );
+    return double.tryParse(percentageController.text.trim());
   }
 
   bool get productInformationComplete {
@@ -114,9 +98,7 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
     final price = enteredPrice;
     final quantity = enteredQuantity;
     final percentage = enteredPercentage;
-    final threshold = double.tryParse(
-      lowStockController.text.trim(),
-    );
+    final threshold = double.tryParse(lowStockController.text.trim());
 
     return price != null &&
         price > 0 &&
@@ -158,21 +140,12 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
 
     final shouldDiscard = await showDialog<bool>(
       context: context,
-      builder: (
-        dialogContext,
-      ) {
+      builder: (dialogContext) {
         return Dialog(
           backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 25,
-          ),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 25),
           child: Container(
-            padding: const EdgeInsets.fromLTRB(
-              20,
-              21,
-              20,
-              18,
-            ),
+            padding: const EdgeInsets.fromLTRB(20, 21, 20, 18),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(25),
@@ -226,17 +199,11 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () {
-                          Navigator.pop(
-                            dialogContext,
-                            false,
-                          );
+                          Navigator.pop(dialogContext, false);
                         },
                         style: OutlinedButton.styleFrom(
-                          foregroundColor:
-                              const Color(0xFF146BFF),
-                          side: const BorderSide(
-                            color: Color(0xFF9BD6FF),
-                          ),
+                          foregroundColor: const Color(0xFF146BFF),
+                          side: const BorderSide(color: Color(0xFF9BD6FF)),
                           minimumSize: const Size.fromHeight(47),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(15),
@@ -244,9 +211,7 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
                         ),
                         child: const Text(
                           'Continue Editing',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w900,
-                          ),
+                          style: TextStyle(fontWeight: FontWeight.w900),
                         ),
                       ),
                     ),
@@ -254,14 +219,10 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
-                          Navigator.pop(
-                            dialogContext,
-                            true,
-                          );
+                          Navigator.pop(dialogContext, true);
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              const Color(0xFFD94A45),
+                          backgroundColor: const Color(0xFFD94A45),
                           foregroundColor: Colors.white,
                           minimumSize: const Size.fromHeight(47),
                           elevation: 0,
@@ -271,9 +232,7 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
                         ),
                         child: const Text(
                           'Discard',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w900,
-                          ),
+                          style: TextStyle(fontWeight: FontWeight.w900),
                         ),
                       ),
                     ),
@@ -305,10 +264,7 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
     });
   }
 
-  Future<void> handlePopInvoked(
-    bool didPop,
-    Object? result,
-  ) async {
+  Future<void> handlePopInvoked(bool didPop, Object? result) async {
     if (didPop) {
       return;
     }
@@ -332,10 +288,7 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
     allowRoutePop();
   }
 
-  void showMessage(
-    String message, {
-    bool isError = false,
-  }) {
+  void showMessage(String message, {bool isError = false}) {
     if (!mounted) {
       return;
     }
@@ -371,12 +324,7 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
               ? const Color(0xFFB3261E)
               : const Color(0xFF147D64),
           behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.fromLTRB(
-            18,
-            0,
-            18,
-            18,
-          ),
+          margin: const EdgeInsets.fromLTRB(18, 0, 18, 18),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
           ),
@@ -384,12 +332,8 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
       );
   }
 
-  String formatNumber(
-    double value,
-  ) {
-    return value % 1 == 0
-        ? value.toStringAsFixed(0)
-        : value.toStringAsFixed(1);
+  String formatNumber(double value) {
+    return value % 1 == 0 ? value.toStringAsFixed(0) : value.toStringAsFixed(1);
   }
 
   void clearFieldErrors() {
@@ -410,20 +354,15 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
   }
 
   void calculateSuggestedThreshold() {
-    final quantity =
-        double.tryParse(quantityController.text.trim()) ?? 0;
-    final percentage =
-        double.tryParse(percentageController.text.trim()) ?? 20;
+    final quantity = double.tryParse(quantityController.text.trim()) ?? 0;
+    final percentage = double.tryParse(percentageController.text.trim()) ?? 20;
 
     if (quantity <= 0) {
       lowStockController.clear();
     } else {
-      final safePercentage =
-          percentage.clamp(1, 100).toDouble();
+      final safePercentage = percentage.clamp(1, 100).toDouble();
 
-      lowStockController.text = formatNumber(
-        quantity * safePercentage / 100,
-      );
+      lowStockController.text = formatNumber(quantity * safePercentage / 100);
     }
 
     setState(() {
@@ -472,23 +411,13 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
     });
   }
 
-  FishStockInput? buildInputFromForm({
-    required String imageUrl,
-  }) {
+  FishStockInput? buildInputFromForm({required String imageUrl}) {
     final productName = productNameController.text.trim();
     final description = descriptionController.text.trim();
-    final price = double.tryParse(
-      priceController.text.trim(),
-    );
-    final quantity = double.tryParse(
-      quantityController.text.trim(),
-    );
-    final percentage = double.tryParse(
-      percentageController.text.trim(),
-    );
-    final lowStockLevel = double.tryParse(
-      lowStockController.text.trim(),
-    );
+    final price = double.tryParse(priceController.text.trim());
+    final quantity = double.tryParse(quantityController.text.trim());
+    final percentage = double.tryParse(percentageController.text.trim());
+    final lowStockLevel = double.tryParse(lowStockController.text.trim());
 
     clearFieldErrors();
 
@@ -497,8 +426,7 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
     }
 
     if (description.length < 8) {
-      descriptionError =
-          'Add a short description with at least 8 characters.';
+      descriptionError = 'Add a short description with at least 8 characters.';
     }
 
     if (imageUrl.trim().isEmpty) {
@@ -510,18 +438,15 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
     }
 
     if (quantity == null || quantity <= 0) {
-      quantityError =
-          'Enter available stock greater than zero.';
+      quantityError = 'Enter available stock greater than zero.';
     }
 
-    if (percentage == null ||
-        percentage < 1 ||
-        percentage > 100) {
-      percentageError =
-          'Use a low-stock percentage from 1% to 100%.';
+    if (percentage == null || percentage < 1 || percentage > 100) {
+      percentageError = 'Use a low-stock percentage from 1% to 100%.';
     }
 
-    final hasErrors = productNameError != null ||
+    final hasErrors =
+        productNameError != null ||
         descriptionError != null ||
         imageError != null ||
         priceError != null ||
@@ -581,8 +506,7 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
     });
 
     try {
-      final imageUrl =
-          await cloudinaryUploadService.uploadImage(
+      final imageUrl = await cloudinaryUploadService.uploadImage(
         image,
         folder: 'isdalink/fish_stocks',
       );
@@ -601,7 +525,8 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
       showMessage(
         AppErrorMessage.from(
           error,
-          fallback: 'The product photo could not be uploaded. Please try again.',
+          fallback:
+              'The product photo could not be uploaded. Please try again.',
           allowBusinessMessage: true,
         ),
         isError: true,
@@ -624,10 +549,7 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
-      showMessage(
-        'Please log in before publishing fish stock.',
-        isError: true,
-      );
+      showMessage('Please log in before publishing fish stock.', isError: true);
       return;
     }
 
@@ -638,10 +560,7 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
         imageError = 'Add a clear product photo before publishing.';
       });
 
-      showMessage(
-        'Add a product photo before publishing.',
-        isError: true,
-      );
+      showMessage('Add a product photo before publishing.', isError: true);
       return;
     }
 
@@ -656,18 +575,13 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
         return;
       }
 
-      final input = buildInputFromForm(
-        imageUrl: imageUrl,
-      );
+      final input = buildInputFromForm(imageUrl: imageUrl);
 
       if (input == null) {
         return;
       }
 
-      await fishStockService.createFishStockPost(
-        user: user,
-        input: input,
-      );
+      await fishStockService.createFishStockPost(user: user, input: input);
 
       if (!mounted) {
         return;
@@ -678,20 +592,19 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
       showMessage(
         AppErrorMessage.from(
           error,
-          fallback: 'The stock listing could not be published. Please try again.',
+          fallback:
+              'The stock listing could not be published. Please try again.',
         ),
         isError: true,
       );
     } on StateError catch (error) {
-      showMessage(
-        error.message,
-        isError: true,
-      );
+      showMessage(error.message, isError: true);
     } catch (error) {
       showMessage(
         AppErrorMessage.from(
           error,
-          fallback: 'Something went wrong while publishing the stock listing. Please try again.',
+          fallback:
+              'Something went wrong while publishing the stock listing. Please try again.',
           allowBusinessMessage: true,
         ),
         isError: true,
@@ -705,27 +618,16 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
     }
   }
 
-  Future<void> showStockPostedDialog(
-    FishStockInput input,
-  ) async {
+  Future<void> showStockPostedDialog(FishStockInput input) async {
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (
-        dialogContext,
-      ) {
+      builder: (dialogContext) {
         return Dialog(
           backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 24,
-          ),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
           child: Container(
-            padding: const EdgeInsets.fromLTRB(
-              20,
-              21,
-              20,
-              18,
-            ),
+            padding: const EdgeInsets.fromLTRB(20, 21, 20, 18),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(26),
@@ -776,12 +678,7 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
                 const SizedBox(height: 15),
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.fromLTRB(
-                    13,
-                    12,
-                    13,
-                    12,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(13, 12, 13, 12),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF2F7FB),
                     borderRadius: BorderRadius.circular(17),
@@ -796,8 +693,7 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
                       const SizedBox(height: 8),
                       _DialogSummaryRow(
                         label: 'Available',
-                        value:
-                            '${formatNumber(input.quantity)} ${input.unit}',
+                        value: '${formatNumber(input.quantity)} ${input.unit}',
                       ),
                       const SizedBox(height: 8),
                       _DialogSummaryRow(
@@ -818,11 +714,8 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
                           clearForm();
                         },
                         style: OutlinedButton.styleFrom(
-                          foregroundColor:
-                              const Color(0xFF146BFF),
-                          side: const BorderSide(
-                            color: Color(0xFF9BD6FF),
-                          ),
+                          foregroundColor: const Color(0xFF146BFF),
+                          side: const BorderSide(color: Color(0xFF9BD6FF)),
                           minimumSize: const Size.fromHeight(48),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(15),
@@ -830,9 +723,7 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
                         ),
                         child: const Text(
                           'Post Another',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w900,
-                          ),
+                          style: TextStyle(fontWeight: FontWeight.w900),
                         ),
                       ),
                     ),
@@ -844,8 +735,7 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
                           allowRoutePop();
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              const Color(0xFF146BFF),
+                          backgroundColor: const Color(0xFF146BFF),
                           foregroundColor: Colors.white,
                           minimumSize: const Size.fromHeight(48),
                           elevation: 0,
@@ -855,9 +745,7 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
                         ),
                         child: const Text(
                           'Dashboard',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w900,
-                          ),
+                          style: TextStyle(fontWeight: FontWeight.w900),
                         ),
                       ),
                     ),
@@ -895,9 +783,7 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -911,25 +797,16 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
         onPopInvokedWithResult: handlePopInvoked,
         child: Scaffold(
           resizeToAvoidBottomInset: true,
-        backgroundColor: const Color(0xFFF4F8FB),
-        body: CustomScrollView(
-          controller: scrollController,
-          keyboardDismissBehavior:
-              ScrollViewKeyboardDismissBehavior.onDrag,
-          slivers: [
-            PostStockHeader(
-              onBack: handleBack,
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(
-                18,
-                17,
-                18,
-                24,
-              ),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate(
-                  [
+          backgroundColor: const Color(0xFFF4F8FB),
+          body: CustomScrollView(
+            controller: scrollController,
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            slivers: [
+              PostStockHeader(onBack: handleBack),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(18, 17, 18, 24),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
                     FishStockProductInformationCard(
                       productNameController: productNameController,
                       descriptionController: descriptionController,
@@ -938,9 +815,7 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
                       productNameError: productNameError,
                       descriptionError: descriptionError,
                       onPreviewChanged: refreshPreview,
-                      onCategoryChanged: (
-                        value,
-                      ) {
+                      onCategoryChanged: (value) {
                         setState(() {
                           selectedCategory = value;
                         });
@@ -966,18 +841,13 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
                       quantityError: quantityError,
                       percentageError: percentageError,
                       onPreviewChanged: refreshPreview,
-                      onPercentageChanged:
-                          calculateSuggestedThreshold,
-                      onCustomPercentageChanged: (
-                        value,
-                      ) {
+                      onPercentageChanged: calculateSuggestedThreshold,
+                      onCustomPercentageChanged: (value) {
                         setState(() {
                           useCustomPercentage = value;
                         });
                       },
-                      onUnitChanged: (
-                        value,
-                      ) {
+                      onUnitChanged: (value) {
                         setState(() {
                           selectedUnit = value;
                         });
@@ -995,19 +865,16 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
                       uploadedImageUrl: uploadedImageUrl,
                     ),
                     FishStockInfoCard(
-                      productInformationComplete:
-                          productInformationComplete,
+                      productInformationComplete: productInformationComplete,
                       photoComplete: hasProductImage,
-                      priceAndStockComplete:
-                          priceAndStockComplete,
+                      priceAndStockComplete: priceAndStockComplete,
                       listingReady: listingReady,
                     ),
-                  ],
+                  ]),
                 ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
           bottomNavigationBar: FishStockSubmitButton(
             isPosting: isPosting || isUploadingImage,
             isEnabled: listingReady,
@@ -1020,18 +887,13 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
 }
 
 class _DialogSummaryRow extends StatelessWidget {
-  const _DialogSummaryRow({
-    required this.label,
-    required this.value,
-  });
+  const _DialogSummaryRow({required this.label, required this.value});
 
   final String label;
   final String value;
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

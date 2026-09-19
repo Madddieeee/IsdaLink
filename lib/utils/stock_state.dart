@@ -3,9 +3,7 @@ import 'package:isdalink/utils/order_helpers.dart';
 class StockState {
   const StockState._();
 
-  static String normalizedStatus(
-    Map<String, dynamic> data,
-  ) {
+  static String normalizedStatus(Map<String, dynamic> data) {
     return OrderHelpers.getStringValue(
       data,
       'status',
@@ -13,27 +11,15 @@ class StockState {
     ).toLowerCase();
   }
 
-  static double quantity(
-    Map<String, dynamic> data,
-  ) {
-    return OrderHelpers.getDoubleValue(
-      data,
-      'quantity',
-    );
+  static double quantity(Map<String, dynamic> data) {
+    return OrderHelpers.getDoubleValue(data, 'quantity');
   }
 
-  static double lowStockLevel(
-    Map<String, dynamic> data,
-  ) {
-    return OrderHelpers.getDoubleValue(
-      data,
-      'lowStockLevel',
-    );
+  static double lowStockLevel(Map<String, dynamic> data) {
+    return OrderHelpers.getDoubleValue(data, 'lowStockLevel');
   }
 
-  static bool isIntentionallyHidden(
-    Map<String, dynamic> data,
-  ) {
+  static bool isIntentionallyHidden(Map<String, dynamic> data) {
     final status = normalizedStatus(data);
     final isActive = data['isActive'];
     final savedStockStatus = OrderHelpers.getStringValue(
@@ -93,9 +79,7 @@ class StockState {
     return 'available';
   }
 
-  static bool isMarketplaceOrderable(
-    Map<String, dynamic> data,
-  ) {
+  static bool isMarketplaceOrderable(Map<String, dynamic> data) {
     return !isIntentionallyHidden(data) && quantity(data) > 0;
   }
 
@@ -127,10 +111,7 @@ class StockState {
     return {
       'status': active ? 'available' : 'unavailable',
       'isActive': active,
-      'stockStatus': calculatedStockStatus(
-        data,
-        hiddenOverride: !active,
-      ),
+      'stockStatus': calculatedStockStatus(data, hiddenOverride: !active),
     };
   }
 }

@@ -94,11 +94,7 @@ class BrowseSuppliersHeader extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF06355F),
-            Color(0xFF0875D1),
-            Color(0xFF12B6D6),
-          ],
+          colors: [Color(0xFF06355F), Color(0xFF0875D1), Color(0xFF12B6D6)],
           stops: [0.0, 0.58, 1.0],
         ),
         borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
@@ -178,7 +174,10 @@ class BrowseSuppliersHeader extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withAlpha(25),
                       borderRadius: BorderRadius.circular(99),
@@ -187,7 +186,11 @@ class BrowseSuppliersHeader extends StatelessWidget {
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.location_on_rounded, color: Color(0xFFE6FAFC), size: 13),
+                        Icon(
+                          Icons.location_on_rounded,
+                          color: Color(0xFFE6FAFC),
+                          size: 13,
+                        ),
                         SizedBox(width: 4),
                         Text(
                           'Caraga',

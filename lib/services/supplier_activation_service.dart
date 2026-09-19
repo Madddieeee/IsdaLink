@@ -100,13 +100,16 @@ class SupplierActivationService {
     String notificationId = '',
   }) async {
     final firestore = FirebaseFirestore.instance;
-    final supplierDocument =
-        await firestore.collection('supplierProfiles').doc(user.uid).get();
+    final supplierDocument = await firestore
+        .collection('supplierProfiles')
+        .doc(user.uid)
+        .get();
     final supplierData = supplierDocument.data();
 
     if (!supplierDocument.exists ||
         supplierData == null ||
-        getStringValue(supplierData, 'status', '').toLowerCase() != 'rejected') {
+        getStringValue(supplierData, 'status', '').toLowerCase() !=
+            'rejected') {
       return null;
     }
 
@@ -148,20 +151,19 @@ class SupplierActivationService {
         .where('userId', isEqualTo: user.uid)
         .get();
 
-    final unseenRejections = notificationSnapshot.docs
-        .map(
-          (document) => _rejectionNoticeFromDocument(
-            user: user,
-            document: document,
-            activeReason: activeReason,
-            rejectedAtMillis: rejectedAtMillis,
-          ),
-        )
-        .whereType<SupplierRejectionNotice>()
-        .toList()
-      ..sort(
-        (a, b) => b.createdAtMillis.compareTo(a.createdAtMillis),
-      );
+    final unseenRejections =
+        notificationSnapshot.docs
+            .map(
+              (document) => _rejectionNoticeFromDocument(
+                user: user,
+                document: document,
+                activeReason: activeReason,
+                rejectedAtMillis: rejectedAtMillis,
+              ),
+            )
+            .whereType<SupplierRejectionNotice>()
+            .toList()
+          ..sort((a, b) => b.createdAtMillis.compareTo(a.createdAtMillis));
 
     return unseenRejections.isEmpty ? null : unseenRejections.first;
   }
@@ -187,7 +189,8 @@ class SupplierActivationService {
     final createdAtMillis = createdAt is Timestamp
         ? createdAt.millisecondsSinceEpoch
         : 0;
-    final belongsToActiveRejection = activeReason == reason &&
+    final belongsToActiveRejection =
+        activeReason == reason &&
         (rejectedAtMillis == 0 ||
             createdAtMillis == 0 ||
             (createdAtMillis - rejectedAtMillis).abs() <= 300000);
@@ -239,13 +242,11 @@ class SupplierActivationService {
       return;
     }
 
-    await notificationReference.update(
-      <String, dynamic>{
-        'isRead': true,
-        'readAt': FieldValue.serverTimestamp(),
-        'rejectionReasonViewedAt': FieldValue.serverTimestamp(),
-      },
-    );
+    await notificationReference.update(<String, dynamic>{
+      'isRead': true,
+      'readAt': FieldValue.serverTimestamp(),
+      'rejectionReasonViewedAt': FieldValue.serverTimestamp(),
+    });
   }
 
   Future<void> submitSupplierApplication({
@@ -265,8 +266,9 @@ class SupplierActivationService {
 
     final firestore = FirebaseFirestore.instance;
     final userReference = firestore.collection('users').doc(user.uid);
-    final supplierReference =
-        firestore.collection('supplierProfiles').doc(user.uid);
+    final supplierReference = firestore
+        .collection('supplierProfiles')
+        .doc(user.uid);
 
     final userDocument = await userReference.get();
     final userData = userDocument.data();
@@ -281,7 +283,9 @@ class SupplierActivationService {
     }
 
     if (currentStatus == 'pending') {
-      throw StateError('This account already has a pending supplier application.');
+      throw StateError(
+        'This account already has a pending supplier application.',
+      );
     }
 
     final accountCreatedAt = userData?['createdAt'];
@@ -323,37 +327,29 @@ class SupplierActivationService {
     };
 
     await firestore.runTransaction((transaction) async {
-      transaction.set(
-        supplierReference,
-        <String, dynamic>{
-          'uid': user.uid,
-          ...applicationData,
-          'status': 'pending',
-          if (currentStatus == 'rejected') ...<String, dynamic>{
-            'rejectionReason': FieldValue.delete(),
-            'rejectedBy': FieldValue.delete(),
-            'rejectedAt': FieldValue.delete(),
-          },
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
+      transaction.set(supplierReference, <String, dynamic>{
+        'uid': user.uid,
+        ...applicationData,
+        'status': 'pending',
+        if (currentStatus == 'rejected') ...<String, dynamic>{
+          'rejectionReason': FieldValue.delete(),
+          'rejectedBy': FieldValue.delete(),
+          'rejectedAt': FieldValue.delete(),
         },
-        SetOptions(merge: true),
-      );
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
 
-      transaction.set(
-        userReference,
-        <String, dynamic>{
-          'name': input.ownerName,
-          'email': input.email,
-          'phone': input.contactNumber,
-          'supplierLocation': input.storeLocation,
-          'region': 'Caraga Region',
-          'supplierStatus': 'pending',
-          'supplierApplication': applicationData,
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
+      transaction.set(userReference, <String, dynamic>{
+        'name': input.ownerName,
+        'email': input.email,
+        'phone': input.contactNumber,
+        'supplierLocation': input.storeLocation,
+        'region': 'Caraga Region',
+        'supplierStatus': 'pending',
+        'supplierApplication': applicationData,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
     });
   }
 }

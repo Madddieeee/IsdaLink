@@ -446,8 +446,7 @@ class SupplierSelectionSheet extends StatefulWidget {
   final String? selectedValue;
 
   @override
-  State<SupplierSelectionSheet> createState() =>
-      _SupplierSelectionSheetState();
+  State<SupplierSelectionSheet> createState() => _SupplierSelectionSheetState();
 }
 
 class _SupplierSelectionSheetState extends State<SupplierSelectionSheet> {
@@ -466,8 +465,8 @@ class _SupplierSelectionSheetState extends State<SupplierSelectionSheet> {
     final items = normalized.isEmpty
         ? widget.items
         : widget.items
-            .where((item) => item.toLowerCase().contains(normalized))
-            .toList();
+              .where((item) => item.toLowerCase().contains(normalized))
+              .toList();
 
     return Container(
       constraints: BoxConstraints(

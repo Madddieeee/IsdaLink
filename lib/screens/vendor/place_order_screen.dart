@@ -82,8 +82,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
       'Caraga Region',
       province,
       locality,
-      if (locality.isNotEmpty && province.isNotEmpty)
-        '$locality, $province',
+      if (locality.isNotEmpty && province.isNotEmpty) '$locality, $province',
       if (locality.isNotEmpty && province.isNotEmpty)
         '$locality, $province, Caraga Region',
     };
@@ -178,7 +177,10 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
   String formatPrice(double value) {
     final raw = value % 1 == 0
         ? value.toStringAsFixed(0)
-        : value.toStringAsFixed(2).replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
+        : value
+              .toStringAsFixed(2)
+              .replaceFirst(RegExp(r'0+$'), '')
+              .replaceFirst(RegExp(r'\.$'), '');
     final parts = raw.split('.');
     final whole = parts.first;
     final grouped = StringBuffer();
@@ -188,7 +190,9 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
       }
       grouped.write(whole[index]);
     }
-    return parts.length > 1 ? '${grouped.toString()}.${parts[1]}' : grouped.toString();
+    return parts.length > 1
+        ? '${grouped.toString()}.${parts[1]}'
+        : grouped.toString();
   }
 
   bool get hasBuyerChanges =>
@@ -229,13 +233,9 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
           .doc(supplierId)
           .get();
       final data = snapshot.data() ?? <String, dynamic>{};
-      var imageUrl = firstNonEmpty(
-        data,
-        const [
-          'profileImageUrl',
-        ],
-        fallback: supplierStoreImageUrl,
-      );
+      var imageUrl = firstNonEmpty(data, const [
+        'profileImageUrl',
+      ], fallback: supplierStoreImageUrl);
 
       if (!mounted || imageUrl.isEmpty) {
         return;
@@ -269,47 +269,36 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
 
       final userData = userDocument.data() ?? <String, dynamic>{};
 
-      buyerNameController.text = firstNonEmpty(
-        userData,
-        const ['name', 'fullName', 'displayName'],
-        fallback: user.displayName ?? user.email ?? 'Vendor',
-      );
+      buyerNameController.text = firstNonEmpty(userData, const [
+        'name',
+        'fullName',
+        'displayName',
+      ], fallback: user.displayName ?? user.email ?? 'Vendor');
 
-      buyerPhoneController.text = firstNonEmpty(
-        userData,
-        const ['phone', 'contactNumber', 'mobileNumber'],
-      );
+      buyerPhoneController.text = firstNonEmpty(userData, const [
+        'phone',
+        'contactNumber',
+        'mobileNumber',
+      ]);
 
-      buyerProvince = firstNonEmpty(
-        userData,
-        const ['province'],
-      );
+      buyerProvince = firstNonEmpty(userData, const ['province']);
 
-      buyerLocality = firstNonEmpty(
-        userData,
-        const [
-          'cityMunicipality',
-          'city',
-          'municipality',
-          'locality',
-        ],
-      );
+      buyerLocality = firstNonEmpty(userData, const [
+        'cityMunicipality',
+        'city',
+        'municipality',
+        'locality',
+      ]);
 
-      final storedDeliveryAddress = firstNonEmpty(
-        userData,
-        const ['deliveryAddress'],
-      );
-      buyerAddressController.text =
-          isGeneralLocationOnly(storedDeliveryAddress)
-              ? ''
-              : storedDeliveryAddress;
+      final storedDeliveryAddress = firstNonEmpty(userData, const [
+        'deliveryAddress',
+      ]);
+      buyerAddressController.text = isGeneralLocationOnly(storedDeliveryAddress)
+          ? ''
+          : storedDeliveryAddress;
 
-      deliveryLatitude = coordinateValue(
-        userData['deliveryLatitude'],
-      );
-      deliveryLongitude = coordinateValue(
-        userData['deliveryLongitude'],
-      );
+      deliveryLatitude = coordinateValue(userData['deliveryLatitude']);
+      deliveryLongitude = coordinateValue(userData['deliveryLongitude']);
 
       final latitude = deliveryLatitude;
       final longitude = deliveryLongitude;
@@ -336,8 +325,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
         buyerLoadError = '';
       });
     } catch (error) {
-      buyerNameController.text =
-          user.displayName ?? user.email ?? 'Vendor';
+      buyerNameController.text = user.displayName ?? user.email ?? 'Vendor';
       buyerAddressController.clear();
       savedBuyerName = buyerNameController.text.trim();
       savedBuyerPhone = buyerPhoneController.text.trim();
@@ -419,10 +407,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
     }
 
     if (!isValidPhoneNumber(phone)) {
-      showMessage(
-        'Enter a valid contact number before saving.',
-        isError: true,
-      );
+      showMessage('Enter a valid contact number before saving.', isError: true);
       return false;
     }
 
@@ -459,10 +444,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
       await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
-          .set(
-            updates,
-            SetOptions(merge: true),
-          );
+          .set(updates, SetOptions(merge: true));
 
       if (!mounted) {
         return false;
@@ -482,10 +464,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
 
       return true;
     } catch (_) {
-      showMessage(
-        'Unable to update your delivery information.',
-        isError: true,
-      );
+      showMessage('Unable to update your delivery information.', isError: true);
       return false;
     } finally {
       if (mounted) {
@@ -521,31 +500,20 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
 
     FocusScope.of(context).unfocus();
 
-    final result =
-        await Navigator.of(context)
-            .push<CaragaLocationResult>(
+    final result = await Navigator.of(context).push<CaragaLocationResult>(
       MaterialPageRoute(
-        builder: (_) =>
-            CaragaLocationPickerScreen(
+        builder: (_) => CaragaLocationPickerScreen(
           title: 'Delivery Location',
           subtitle: fullDeliveryAddress,
-          province:
-              buyerProvince.trim().isEmpty
-                  ? null
-                  : buyerProvince,
-          locality:
-              buyerLocality.trim().isEmpty
-                  ? null
-                  : buyerLocality,
+          province: buyerProvince.trim().isEmpty ? null : buyerProvince,
+          locality: buyerLocality.trim().isEmpty ? null : buyerLocality,
           initialLatitude: deliveryLatitude,
           initialLongitude: deliveryLongitude,
           instructionText:
               'Tap the map at the COD delivery reference point. '
               'This pin is only a location reference and does not calculate routes.',
-          markerTitle:
-              'COD delivery reference point',
-          confirmButtonLabel:
-              'Confirm Delivery Location',
+          markerTitle: 'COD delivery reference point',
+          confirmButtonLabel: 'Confirm Delivery Location',
         ),
       ),
     );
@@ -563,18 +531,12 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
 
     if (user != null) {
       try {
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .set(
-              {
-                'deliveryLatitude': result.latitude,
-                'deliveryLongitude': result.longitude,
-                'deliveryReferenceType': 'map_pin',
-                'updatedAt': FieldValue.serverTimestamp(),
-              },
-              SetOptions(merge: true),
-            );
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'deliveryLatitude': result.latitude,
+          'deliveryLongitude': result.longitude,
+          'deliveryReferenceType': 'map_pin',
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
       } catch (_) {
         if (!mounted) {
           return;
@@ -588,9 +550,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
       }
     }
 
-    showMessage(
-      'Delivery location saved for future orders.',
-    );
+    showMessage('Delivery location saved for future orders.');
   }
 
   void decreaseQuantity() {
@@ -607,10 +567,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
         quantity++;
       });
     } else {
-      showMessage(
-        'Quantity cannot exceed available stock.',
-        isError: true,
-      );
+      showMessage('Quantity cannot exceed available stock.', isError: true);
     }
   }
 
@@ -658,9 +615,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                 autofocus: true,
                 keyboardType: TextInputType.number,
                 textInputAction: TextInputAction.done,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                ],
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 onChanged: (value) {
                   draftQuantity = value;
                 },
@@ -726,10 +681,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
     final enteredQuantity = int.tryParse(enteredValue.trim());
 
     if (enteredQuantity == null || enteredQuantity < 1) {
-      showMessage(
-        'Enter a quantity of at least 1.',
-        isError: true,
-      );
+      showMessage('Enter a quantity of at least 1.', isError: true);
       return;
     }
 
@@ -746,10 +698,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
     });
   }
 
-  void showMessage(
-    String message, {
-    bool isError = false,
-  }) {
+  void showMessage(String message, {bool isError = false}) {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -770,18 +719,12 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
     }
 
     if (buyerPhoneController.text.trim().isEmpty) {
-      showMessage(
-        'Please enter the buyer contact number.',
-        isError: true,
-      );
+      showMessage('Please enter the buyer contact number.', isError: true);
       return false;
     }
 
     if (!isValidPhoneNumber(buyerPhoneController.text)) {
-      showMessage(
-        'Enter a valid buyer contact number.',
-        isError: true,
-      );
+      showMessage('Enter a valid buyer contact number.', isError: true);
       return false;
     }
 
@@ -801,12 +744,8 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
       return false;
     }
 
-    if (deliveryLatitude == null ||
-        deliveryLongitude == null) {
-      showMessage(
-        'Set your delivery location on the map.',
-        isError: true,
-      );
+    if (deliveryLatitude == null || deliveryLongitude == null) {
+      showMessage('Set your delivery location on the map.', isError: true);
       return false;
     }
 
@@ -832,8 +771,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
       barrierDismissible: !isSubmitting,
       barrierColor: const Color(0x99031C2C),
       builder: (dialogContext) {
-        final maxDialogHeight =
-            MediaQuery.sizeOf(dialogContext).height * 0.88;
+        final maxDialogHeight = MediaQuery.sizeOf(dialogContext).height * 0.88;
 
         return Dialog(
           insetPadding: const EdgeInsets.symmetric(
@@ -933,11 +871,10 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                             label: 'Payment',
                             value: 'Cash on Delivery',
                           ),
-                          _DeliveryConfirmationRow(address: fullDeliveryAddress),
-                          const Divider(
-                            height: 22,
-                            color: Color(0xFFD8E5ED),
+                          _DeliveryConfirmationRow(
+                            address: fullDeliveryAddress,
                           ),
+                          const Divider(height: 22, color: Color(0xFFD8E5ED)),
                           _ConfirmationRow(
                             label: 'Total payment',
                             value: '₱${formatPrice(totalAmount)}',
@@ -995,9 +932,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                             ),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: const Color(0xFF52677A),
-                              side: const BorderSide(
-                                color: Color(0xFFD3E0E8),
-                              ),
+                              side: const BorderSide(color: Color(0xFFD3E0E8)),
                               minimumSize: const Size.fromHeight(48),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(15),
@@ -1008,8 +943,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: ElevatedButton.icon(
-                            onPressed: () =>
-                                Navigator.pop(dialogContext, true),
+                            onPressed: () => Navigator.pop(dialogContext, true),
                             icon: const Icon(
                               Icons.arrow_forward_rounded,
                               size: 17,
@@ -1046,9 +980,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
     return result == true;
   }
 
-  String readableOrderError(
-    Object error,
-  ) {
+  String readableOrderError(Object error) {
     return AppErrorMessage.from(
       error,
       fallback: 'The order could not be placed. Please try again.',
@@ -1132,10 +1064,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
 
       final message = readableOrderError(error);
 
-      showMessage(
-        message,
-        isError: true,
-      );
+      showMessage(message, isError: true);
     }
   }
 
@@ -1179,9 +1108,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(28),
-              border: Border.all(
-                color: const Color(0xFFE2ECEF),
-              ),
+              border: Border.all(color: const Color(0xFFE2ECEF)),
               boxShadow: const [
                 BoxShadow(
                   color: Color(0x2A00152A),
@@ -1304,9 +1231,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                   decoration: BoxDecoration(
                     color: const Color(0xFFF6FAFD),
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: const Color(0xFFE0EBF2),
-                    ),
+                    border: Border.all(color: const Color(0xFFE0EBF2)),
                   ),
                   child: Column(
                     children: [
@@ -1322,10 +1247,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                         label: 'Payment',
                         value: 'Cash on Delivery',
                       ),
-                      const Divider(
-                        height: 20,
-                        color: Color(0xFFDDE8EF),
-                      ),
+                      const Divider(height: 20, color: Color(0xFFDDE8EF)),
                       _ConfirmationRow(
                         label: 'Total payment',
                         value: '₱${formatPrice(totalAmount)}',
@@ -1377,9 +1299,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                         },
                         style: OutlinedButton.styleFrom(
                           foregroundColor: const Color(0xFF0875D1),
-                          side: const BorderSide(
-                            color: Color(0xFFB8D8EA),
-                          ),
+                          side: const BorderSide(color: Color(0xFFB8D8EA)),
                           minimumSize: const Size.fromHeight(47),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(15),
@@ -1406,10 +1326,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                             ),
                           );
                         },
-                        icon: const Icon(
-                          Icons.receipt_long_outlined,
-                          size: 16,
-                        ),
+                        icon: const Icon(Icons.receipt_long_outlined, size: 16),
                         label: const Text(
                           'My Orders',
                           style: TextStyle(
@@ -1442,25 +1359,23 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
     final actionLabel = isEditingBuyer
         ? 'Save Delivery Details'
         : !hasDetailedDeliveryAddress
-            ? 'Add Delivery Address'
-            : !hasSavedDeliveryPin
-                ? 'Set Delivery Pin'
-                : 'Place Order';
+        ? 'Add Delivery Address'
+        : !hasSavedDeliveryPin
+        ? 'Set Delivery Pin'
+        : 'Place Order';
     final actionIcon = isEditingBuyer
         ? Icons.save_outlined
         : !hasDetailedDeliveryAddress
-            ? Icons.add_location_alt_outlined
-            : !hasSavedDeliveryPin
-                ? Icons.location_on_outlined
-                : Icons.arrow_forward_rounded;
+        ? Icons.add_location_alt_outlined
+        : !hasSavedDeliveryPin
+        ? Icons.location_on_outlined
+        : Icons.arrow_forward_rounded;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 11, 18, 10),
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(24),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
           BoxShadow(
             color: Color(0x1C00152A),
@@ -1519,10 +1434,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                     : handleCheckoutAction,
                 icon: isSubmitting
                     ? const SizedBox.shrink()
-                    : Icon(
-                        actionIcon,
-                        size: 18,
-                      ),
+                    : Icon(actionIcon, size: 18),
                 label: isSubmitting
                     ? const Row(
                         mainAxisSize: MainAxisSize.min,
@@ -1635,11 +1547,8 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
   }
 }
 
-
 class _DeliveryConfirmationRow extends StatelessWidget {
-  const _DeliveryConfirmationRow({
-    required this.address,
-  });
+  const _DeliveryConfirmationRow({required this.address});
 
   final String address;
 
@@ -1710,9 +1619,7 @@ class _ConfirmationRow extends StatelessWidget {
                     ? const Color(0xFF102C44)
                     : const Color(0xFF52677A),
                 fontSize: strong ? 11.7 : 10.7,
-                fontWeight: strong
-                    ? FontWeight.w900
-                    : FontWeight.w800,
+                fontWeight: strong ? FontWeight.w900 : FontWeight.w800,
               ),
             ),
           ),
@@ -1751,10 +1658,7 @@ class _OrderFishLogo extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFEAF8FF),
-            Color(0xFFDDF4FF),
-          ],
+          colors: [Color(0xFFEAF8FF), Color(0xFFDDF4FF)],
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0xFFCFEAF7)),

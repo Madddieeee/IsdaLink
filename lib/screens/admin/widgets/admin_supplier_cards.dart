@@ -35,9 +35,7 @@ class PendingSupplierCard extends StatelessWidget {
     return text;
   }
 
-  String supportedUnitLabel(
-    Map<String, dynamic> data,
-  ) {
+  String supportedUnitLabel(Map<String, dynamic> data) {
     final units = data['supportedUnits'];
 
     if (units is List && units.isNotEmpty) {
@@ -48,9 +46,7 @@ class PendingSupplierCard extends StatelessWidget {
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     final data = document.data();
 
     final supplierName = getStringValue(
@@ -59,11 +55,7 @@ class PendingSupplierCard extends StatelessWidget {
       'Supplier Application',
     );
 
-    final ownerName = getStringValue(
-      data,
-      'ownerName',
-      'Registered User',
-    );
+    final ownerName = getStringValue(data, 'ownerName', 'Registered User');
 
     final ownerAddress = getStringValue(
       data,
@@ -71,33 +63,17 @@ class PendingSupplierCard extends StatelessWidget {
       'No owner address',
     );
 
-    final email = getStringValue(
-      data,
-      'email',
-      'No email',
-    );
+    final email = getStringValue(data, 'email', 'No email');
 
     final phone = getStringValue(
       data,
       'phone',
-      getStringValue(
-        data,
-        'contactNumber',
-        'No contact number',
-      ),
+      getStringValue(data, 'contactNumber', 'No contact number'),
     );
 
-    final location = getStringValue(
-      data,
-      'location',
-      'Caraga Region',
-    );
+    final location = getStringValue(data, 'location', 'Caraga Region');
 
-    final serviceArea = getStringValue(
-      data,
-      'serviceArea',
-      location,
-    );
+    final serviceArea = getStringValue(data, 'serviceArea', location);
 
     final permitNumber = getStringValue(
       data,
@@ -105,22 +81,14 @@ class PendingSupplierCard extends StatelessWidget {
       'No permit number',
     );
 
-    final businessPermitUrl = getStringValue(
-      data,
-      'businessPermitUrl',
-      '',
-    );
+    final businessPermitUrl = getStringValue(data, 'businessPermitUrl', '');
     final businessPermitStoragePath = getStringValue(
       data,
       'businessPermitStoragePath',
       '',
     );
 
-    final storePhotoUrl = getStringValue(
-      data,
-      'storePhotoUrl',
-      '',
-    );
+    final storePhotoUrl = getStringValue(data, 'storePhotoUrl', '');
 
     final description = getStringValue(
       data,
@@ -188,36 +156,22 @@ class PendingSupplierCard extends StatelessWidget {
                   ],
                 ),
               ),
-              AdminStatusChip(
-                status: verificationStatus,
-              ),
+              AdminStatusChip(status: verificationStatus),
             ],
           ),
           const SizedBox(height: 12),
-          SupplierInfoRow(
-            icon: Icons.home_outlined,
-            value: ownerAddress,
-          ),
+          SupplierInfoRow(icon: Icons.home_outlined, value: ownerAddress),
           const SizedBox(height: 7),
-          SupplierInfoRow(
-            icon: Icons.location_on_outlined,
-            value: location,
-          ),
+          SupplierInfoRow(icon: Icons.location_on_outlined, value: location),
           const SizedBox(height: 7),
           SupplierInfoRow(
             icon: Icons.map_outlined,
             value: 'Service Area: $serviceArea',
           ),
           const SizedBox(height: 7),
-          SupplierInfoRow(
-            icon: Icons.phone_outlined,
-            value: phone,
-          ),
+          SupplierInfoRow(icon: Icons.phone_outlined, value: phone),
           const SizedBox(height: 7),
-          SupplierInfoRow(
-            icon: Icons.email_outlined,
-            value: email,
-          ),
+          SupplierInfoRow(icon: Icons.email_outlined, value: email),
           const SizedBox(height: 7),
           SupplierInfoRow(
             icon: Icons.scale_outlined,
@@ -268,9 +222,7 @@ class PendingSupplierCard extends StatelessWidget {
                   label: const Text('Reject'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFFD32F2F),
-                    side: const BorderSide(
-                      color: Color(0xFFD32F2F),
-                    ),
+                    side: const BorderSide(color: Color(0xFFD32F2F)),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -301,10 +253,7 @@ class PendingSupplierCard extends StatelessWidget {
 }
 
 class ApprovedSupplierCard extends StatelessWidget {
-  const ApprovedSupplierCard({
-    super.key,
-    required this.document,
-  });
+  const ApprovedSupplierCard({super.key, required this.document});
 
   final QueryDocumentSnapshot<Map<String, dynamic>> document;
 
@@ -329,9 +278,7 @@ class ApprovedSupplierCard extends StatelessWidget {
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     final data = document.data();
 
     final supplierName = getStringValue(
@@ -343,28 +290,16 @@ class ApprovedSupplierCard extends StatelessWidget {
     final location = getStringValue(
       data,
       'storeLocation',
-      getStringValue(
-        data,
-        'location',
-        'Caraga Region',
-      ),
+      getStringValue(data, 'location', 'Caraga Region'),
     );
 
     final profileImageUrl = getStringValue(
       data,
       'storePhotoUrl',
-      getStringValue(
-        data,
-        'profileImageUrl',
-        '',
-      ),
+      getStringValue(data, 'profileImageUrl', ''),
     );
 
-    final status = getStringValue(
-      data,
-      'status',
-      'approved',
-    );
+    final status = getStringValue(data, 'status', 'approved');
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -416,9 +351,7 @@ class ApprovedSupplierCard extends StatelessWidget {
               ],
             ),
           ),
-          AdminStatusChip(
-            status: status,
-          ),
+          AdminStatusChip(status: status),
         ],
       ),
     );
@@ -442,9 +375,7 @@ class VerificationLinkButton extends StatelessWidget {
   bool get hasEvidence =>
       storagePath.trim().isNotEmpty || url.trim().isNotEmpty;
 
-  Future<void> openEvidence(
-    BuildContext context,
-  ) async {
+  Future<void> openEvidence(BuildContext context) async {
     await showVerificationEvidenceViewer(
       context,
       title: label,
@@ -455,9 +386,7 @@ class VerificationLinkButton extends StatelessWidget {
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return OutlinedButton.icon(
       onPressed: hasEvidence ? () => openEvidence(context) : null,
       icon: Icon(icon),
@@ -465,12 +394,8 @@ class VerificationLinkButton extends StatelessWidget {
       style: OutlinedButton.styleFrom(
         foregroundColor: const Color(0xFF146BFF),
         disabledForegroundColor: const Color(0xFF7B8FA3),
-        side: const BorderSide(
-          color: Color(0xFF146BFF),
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
+        side: const BorderSide(color: Color(0xFF146BFF)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
     );
   }
@@ -504,9 +429,7 @@ class SupplierPhotoPreview extends StatelessWidget {
     return cleanedUrl;
   }
 
-  String googleDriveFileId(
-    String url,
-  ) {
+  String googleDriveFileId(String url) {
     final filePattern = RegExp(r'/file/d/([^/]+)');
     final fileMatch = filePattern.firstMatch(url);
 
@@ -529,9 +452,7 @@ class SupplierPhotoPreview extends StatelessWidget {
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: Container(
@@ -550,45 +471,28 @@ class SupplierPhotoPreview extends StatelessWidget {
                   );
                 },
               )
-            : Icon(
-                Icons.storefront,
-                color: iconColor,
-                size: size * 0.54,
-              ),
+            : Icon(Icons.storefront, color: iconColor, size: size * 0.54),
       ),
     );
   }
 }
 
 class SupplierInfoRow extends StatelessWidget {
-  const SupplierInfoRow({
-    super.key,
-    required this.icon,
-    required this.value,
-  });
+  const SupplierInfoRow({super.key, required this.icon, required this.value});
 
   final IconData icon;
   final String value;
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(
-          icon,
-          color: const Color(0xFF7B8FA3),
-          size: 16,
-        ),
+        Icon(icon, color: const Color(0xFF7B8FA3), size: 16),
         const SizedBox(width: 5),
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(
-              color: Color(0xFF52677A),
-              fontSize: 12,
-            ),
+            style: const TextStyle(color: Color(0xFF52677A), fontSize: 12),
           ),
         ),
       ],

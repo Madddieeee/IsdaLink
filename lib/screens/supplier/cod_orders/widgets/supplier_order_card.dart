@@ -41,10 +41,7 @@ class SupplierOrderCard extends StatelessWidget {
     return fallback;
   }
 
-  double firstDouble(
-    Map<String, dynamic> data,
-    List<String> keys,
-  ) {
+  double firstDouble(Map<String, dynamic> data, List<String> keys) {
     for (final key in keys) {
       final value = data[key];
 
@@ -64,9 +61,7 @@ class SupplierOrderCard extends StatelessWidget {
     return 0;
   }
 
-  String normalizedStatus(
-    String status,
-  ) {
+  String normalizedStatus(String status) {
     final normalized = status.toLowerCase();
 
     if (normalized == 'completed') {
@@ -76,9 +71,7 @@ class SupplierOrderCard extends StatelessWidget {
     return normalized;
   }
 
-  String displayStatus(
-    String status,
-  ) {
+  String displayStatus(String status) {
     final normalized = normalizedStatus(status);
 
     switch (normalized) {
@@ -95,9 +88,7 @@ class SupplierOrderCard extends StatelessWidget {
     }
   }
 
-  Color statusColor(
-    String status,
-  ) {
+  Color statusColor(String status) {
     final normalized = normalizedStatus(status);
 
     switch (normalized) {
@@ -114,9 +105,7 @@ class SupplierOrderCard extends StatelessWidget {
     }
   }
 
-  IconData statusIcon(
-    String status,
-  ) {
+  IconData statusIcon(String status) {
     final normalized = normalizedStatus(status);
 
     switch (normalized) {
@@ -135,14 +124,10 @@ class SupplierOrderCard extends StatelessWidget {
 
   String orderReference() {
     final data = document.data();
-    final provided = firstString(
-      data,
-      const [
-        'orderNumber',
-        'referenceNumber',
-      ],
-      fallback: '',
-    );
+    final provided = firstString(data, const [
+      'orderNumber',
+      'referenceNumber',
+    ], fallback: '');
 
     if (provided.isNotEmpty) {
       return provided;
@@ -155,19 +140,14 @@ class SupplierOrderCard extends StatelessWidget {
     return '#$shortId';
   }
 
-  Widget productImage(
-    String imageUrl,
-  ) {
+  Widget productImage(String imageUrl) {
     final placeholder = Container(
       alignment: Alignment.center,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFE4F5FC),
-            Color(0xFFCDEAF6),
-          ],
+          colors: [Color(0xFFE4F5FC), Color(0xFFCDEAF6)],
         ),
       ),
       child: const Icon(
@@ -184,42 +164,27 @@ class SupplierOrderCard extends StatelessWidget {
           : Image.network(
               imageUrl,
               fit: BoxFit.cover,
-              errorBuilder: (
-                context,
-                error,
-                stackTrace,
-              ) {
+              errorBuilder: (context, error, stackTrace) {
                 return placeholder;
               },
             ),
     );
   }
 
-  Widget statusChip(
-    String status,
-  ) {
+  Widget statusChip(String status) {
     final color = statusColor(status);
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 8,
-        vertical: 6,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: color.withAlpha(18),
         borderRadius: BorderRadius.circular(99),
-        border: Border.all(
-          color: color.withAlpha(55),
-        ),
+        border: Border.all(color: color.withAlpha(55)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            statusIcon(status),
-            color: color,
-            size: 13,
-          ),
+          Icon(statusIcon(status), color: color, size: 13),
           const SizedBox(width: 4),
           Text(
             displayStatus(status),
@@ -242,23 +207,14 @@ class SupplierOrderCard extends StatelessWidget {
   }) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.fromLTRB(
-          8,
-          9,
-          8,
-          9,
-        ),
+        padding: const EdgeInsets.fromLTRB(8, 9, 8, 9),
         decoration: BoxDecoration(
           color: const Color(0xFFF3F8FB),
           borderRadius: BorderRadius.circular(14),
         ),
         child: Column(
           children: [
-            Icon(
-              icon,
-              color: const Color(0xFF146BFF),
-              size: 17,
-            ),
+            Icon(icon, color: const Color(0xFF146BFF), size: 17),
             const SizedBox(height: 4),
             Text(
               label,
@@ -293,9 +249,7 @@ class SupplierOrderCard extends StatelessWidget {
     required String value,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        vertical: 6,
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -306,19 +260,13 @@ class SupplierOrderCard extends StatelessWidget {
               color: const Color(0xFFEAF7FB),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(
-              icon,
-              color: const Color(0xFF146BFF),
-              size: 17,
-            ),
+            child: Icon(icon, color: const Color(0xFF146BFF), size: 17),
           ),
           const SizedBox(width: 9),
           SizedBox(
             width: 72,
             child: Padding(
-              padding: const EdgeInsets.only(
-                top: 2,
-              ),
+              padding: const EdgeInsets.only(top: 2),
               child: Text(
                 label,
                 style: const TextStyle(
@@ -331,9 +279,7 @@ class SupplierOrderCard extends StatelessWidget {
           ),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(
-                top: 2,
-              ),
+              padding: const EdgeInsets.only(top: 2),
               child: Text(
                 value,
                 textAlign: TextAlign.right,
@@ -360,18 +306,15 @@ class SupplierOrderCard extends StatelessWidget {
   }) async {
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
-        builder: (_) =>
-            CaragaLocationPickerScreen(
+        builder: (_) => CaragaLocationPickerScreen(
           title: 'Delivery Reference Pin',
-          subtitle:
-              '$vendorName · $deliveryAddress',
+          subtitle: '$vendorName · $deliveryAddress',
           initialLatitude: latitude,
           initialLongitude: longitude,
           instructionText:
               'This is the vendor-selected COD delivery reference point. '
               'It is a location reference only and does not calculate routes.',
-          markerTitle:
-              'COD delivery reference point',
+          markerTitle: 'COD delivery reference point',
           readOnly: true,
         ),
       ),
@@ -387,8 +330,8 @@ class SupplierOrderCard extends StatelessWidget {
     final color = complete
         ? const Color(0xFF147D64)
         : active
-            ? const Color(0xFF146BFF)
-            : const Color(0xFFB1C1CC);
+        ? const Color(0xFF146BFF)
+        : const Color(0xFFB1C1CC);
 
     return Expanded(
       child: Column(
@@ -397,18 +340,12 @@ class SupplierOrderCard extends StatelessWidget {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: color.withAlpha(
-                complete || active ? 22 : 14,
-              ),
+              color: color.withAlpha(complete || active ? 22 : 14),
               shape: BoxShape.circle,
-              border: Border.all(
-                color: color.withAlpha(70),
-              ),
+              border: Border.all(color: color.withAlpha(70)),
             ),
             child: Icon(
-              complete
-                  ? Icons.check_rounded
-                  : icon,
+              complete ? Icons.check_rounded : icon,
               color: color,
               size: 17,
             ),
@@ -441,10 +378,7 @@ class SupplierOrderCard extends StatelessWidget {
           height: 44,
           child: ElevatedButton.icon(
             onPressed: onPressed,
-            icon: Icon(
-              icon,
-              size: 18,
-            ),
+            icon: Icon(icon, size: 18),
             label: Text(
               label,
               style: const TextStyle(
@@ -453,10 +387,8 @@ class SupplierOrderCard extends StatelessWidget {
               ),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor:
-                  color ?? const Color(0xFF146BFF),
-              disabledBackgroundColor:
-                  const Color(0xFFDCE7EF),
+              backgroundColor: color ?? const Color(0xFF146BFF),
+              disabledBackgroundColor: const Color(0xFFDCE7EF),
               foregroundColor: Colors.white,
               elevation: 0,
               shape: RoundedRectangleBorder(
@@ -473,23 +405,15 @@ class SupplierOrderCard extends StatelessWidget {
         height: 44,
         child: OutlinedButton.icon(
           onPressed: onPressed,
-          icon: Icon(
-            icon,
-            size: 18,
-          ),
+          icon: Icon(icon, size: 18),
           label: Text(
             label,
-            style: const TextStyle(
-              fontSize: 10.8,
-              fontWeight: FontWeight.w900,
-            ),
+            style: const TextStyle(fontSize: 10.8, fontWeight: FontWeight.w900),
           ),
           style: OutlinedButton.styleFrom(
-            foregroundColor:
-                color ?? const Color(0xFFD94A45),
+            foregroundColor: color ?? const Color(0xFFD94A45),
             side: BorderSide(
-              color: (color ?? const Color(0xFFD94A45))
-                  .withAlpha(105),
+              color: (color ?? const Color(0xFFD94A45)).withAlpha(105),
             ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
@@ -501,129 +425,68 @@ class SupplierOrderCard extends StatelessWidget {
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     final data = document.data();
 
-    final productName = firstString(
-      data,
-      const [
-        'productName',
-        'fishName',
-      ],
-      fallback: 'Fish Product',
-    );
-    final imageUrl = firstString(
-      data,
-      const [
-        'productImageUrl',
-        'imageUrl',
-        'fishImageUrl',
-      ],
-      fallback: '',
-    );
-    final vendorName = firstString(
-      data,
-      const [
-        'vendorName',
-        'buyerName',
-        'customerName',
-      ],
-      fallback: 'Registered Vendor',
-    );
-    final vendorPhone = firstString(
-      data,
-      const [
-        'vendorPhone',
-        'vendorContactNumber',
-        'contactNumber',
-        'phone',
-      ],
-      fallback: 'Not provided',
-    );
-    final vendorLocation = firstString(
-      data,
-      const [
-        'vendorLocation',
-        'deliveryAddress',
-        'location',
-      ],
-      fallback: 'Caraga Region',
-    );
-    final deliveryLatitude = firstDouble(
-      data,
-      const ['deliveryLatitude'],
-    );
-    final deliveryLongitude = firstDouble(
-      data,
-      const ['deliveryLongitude'],
-    );
-    final hasDeliveryPin =
-        deliveryLatitude != 0 &&
-        deliveryLongitude != 0;
-    final requestedQuantity = firstDouble(
-      data,
-      const [
-        'quantity',
-      ],
-    );
-    final fulfilledQuantity = firstDouble(
-      data,
-      const [
-        'fulfilledQuantity',
-        'quantity',
-      ],
-    );
-    final unfulfilledQuantity = firstDouble(
-      data,
-      const [
-        'unfulfilledQuantity',
-      ],
-    );
+    final productName = firstString(data, const [
+      'productName',
+      'fishName',
+    ], fallback: 'Fish Product');
+    final imageUrl = firstString(data, const [
+      'productImageUrl',
+      'imageUrl',
+      'fishImageUrl',
+    ], fallback: '');
+    final vendorName = firstString(data, const [
+      'vendorName',
+      'buyerName',
+      'customerName',
+    ], fallback: 'Registered Vendor');
+    final vendorPhone = firstString(data, const [
+      'vendorPhone',
+      'vendorContactNumber',
+      'contactNumber',
+      'phone',
+    ], fallback: 'Not provided');
+    final vendorLocation = firstString(data, const [
+      'vendorLocation',
+      'deliveryAddress',
+      'location',
+    ], fallback: 'Caraga Region');
+    final deliveryLatitude = firstDouble(data, const ['deliveryLatitude']);
+    final deliveryLongitude = firstDouble(data, const ['deliveryLongitude']);
+    final hasDeliveryPin = deliveryLatitude != 0 && deliveryLongitude != 0;
+    final requestedQuantity = firstDouble(data, const ['quantity']);
+    final fulfilledQuantity = firstDouble(data, const [
+      'fulfilledQuantity',
+      'quantity',
+    ]);
+    final unfulfilledQuantity = firstDouble(data, const [
+      'unfulfilledQuantity',
+    ]);
     final partialFulfillment =
         data['partialFulfillment'] == true ||
-            (fulfilledQuantity > 0 &&
-                requestedQuantity > fulfilledQuantity);
+        (fulfilledQuantity > 0 && requestedQuantity > fulfilledQuantity);
     final quantity = fulfilledQuantity;
-    final quantityUnit = firstString(
-      data,
-      const [
-        'quantityUnit',
-        'unit',
-      ],
-      fallback: 'kilo',
-    );
-    final totalAmount = firstDouble(
-      data,
-      const [
-        'fulfilledTotalAmount',
-        'totalAmount',
-        'grandTotal',
-      ],
-    );
-    final paymentMethod = firstString(
-      data,
-      const [
-        'paymentMethod',
-      ],
-      fallback: 'COD',
-    );
-    final paymentStatus = firstString(
-      data,
-      const [
-        'paymentStatus',
-      ],
-      fallback: 'To be paid on delivery',
-    );
-    final rawStatus = firstString(
-      data,
-      const [
-        'orderStatus',
-        'status',
-      ],
-      fallback: 'Pending',
-    );
+    final quantityUnit = firstString(data, const [
+      'quantityUnit',
+      'unit',
+    ], fallback: 'kilo');
+    final totalAmount = firstDouble(data, const [
+      'fulfilledTotalAmount',
+      'totalAmount',
+      'grandTotal',
+    ]);
+    final paymentMethod = firstString(data, const [
+      'paymentMethod',
+    ], fallback: 'COD');
+    final paymentStatus = firstString(data, const [
+      'paymentStatus',
+    ], fallback: 'To be paid on delivery');
+    final rawStatus = firstString(data, const [
+      'orderStatus',
+      'status',
+    ], fallback: 'Pending');
     final status = normalizedStatus(rawStatus);
     final color = statusColor(status);
 
@@ -636,9 +499,7 @@ class SupplierOrderCard extends StatelessWidget {
       duration: const Duration(milliseconds: 180),
       opacity: isBusy ? 0.62 : 1,
       child: Container(
-        margin: const EdgeInsets.only(
-          bottom: 14,
-        ),
+        margin: const EdgeInsets.only(bottom: 14),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
@@ -667,12 +528,7 @@ class SupplierOrderCard extends StatelessWidget {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(
-                14,
-                14,
-                14,
-                12,
-              ),
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -684,12 +540,10 @@ class SupplierOrderCard extends StatelessWidget {
                   const SizedBox(width: 11),
                   Expanded(
                     child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Expanded(
                               child: Text(
@@ -724,9 +578,7 @@ class SupplierOrderCard extends StatelessWidget {
                           children: [
                             Expanded(
                               child: Text(
-                                OrderHelpers.formatDateFromData(
-                                  data,
-                                ),
+                                OrderHelpers.formatDateFromData(data),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
@@ -752,17 +604,9 @@ class SupplierOrderCard extends StatelessWidget {
                 ],
               ),
             ),
-            Container(
-              height: 1,
-              color: const Color(0xFFE8EFF4),
-            ),
+            Container(height: 1, color: const Color(0xFFE8EFF4)),
             Padding(
-              padding: const EdgeInsets.fromLTRB(
-                14,
-                12,
-                14,
-                13,
-              ),
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 13),
               child: Column(
                 children: [
                   Row(
@@ -777,10 +621,8 @@ class SupplierOrderCard extends StatelessWidget {
                       metric(
                         icon: Icons.payments_outlined,
                         label: 'ORDER TOTAL',
-                        value:
-                            '₱${OrderHelpers.formatNumber(totalAmount)}',
-                        valueColor:
-                            const Color(0xFF0875D1),
+                        value: '₱${OrderHelpers.formatNumber(totalAmount)}',
+                        valueColor: const Color(0xFF0875D1),
                       ),
                       const SizedBox(width: 8),
                       metric(
@@ -801,9 +643,7 @@ class SupplierOrderCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: const Color(0xFFFFF6E9),
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: const Color(0xFFFFD9A6),
-                        ),
+                        border: Border.all(color: const Color(0xFFFFD9A6)),
                       ),
                       child: Row(
                         children: [
@@ -847,9 +687,7 @@ class SupplierOrderCard extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: color.withAlpha(10),
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: color.withAlpha(35),
-                          ),
+                          border: Border.all(color: color.withAlpha(35)),
                         ),
                         child: Row(
                           children: [
@@ -857,10 +695,8 @@ class SupplierOrderCard extends StatelessWidget {
                               delivered
                                   ? Icons.verified_rounded
                                   : cancelled
-                                      ? Icons
-                                          .assignment_return_outlined
-                                      : Icons
-                                          .info_outline_rounded,
+                                  ? Icons.assignment_return_outlined
+                                  : Icons.info_outline_rounded,
                               color: color,
                               size: 18,
                             ),
@@ -870,8 +706,8 @@ class SupplierOrderCard extends StatelessWidget {
                                 delivered
                                     ? 'COD payment recorded as paid upon delivery.'
                                     : cancelled
-                                        ? 'Order cancelled. Reserved stock restoration was processed.'
-                                        : paymentStatus,
+                                    ? 'Order cancelled. Reserved stock restoration was processed.'
+                                    : paymentStatus,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
@@ -885,10 +721,8 @@ class SupplierOrderCard extends StatelessWidget {
                             const SizedBox(width: 6),
                             Icon(
                               expanded
-                                  ? Icons
-                                      .keyboard_arrow_up_rounded
-                                  : Icons
-                                      .keyboard_arrow_down_rounded,
+                                  ? Icons.keyboard_arrow_up_rounded
+                                  : Icons.keyboard_arrow_down_rounded,
                               color: const Color(0xFF52677A),
                               size: 21,
                             ),
@@ -904,40 +738,29 @@ class SupplierOrderCard extends StatelessWidget {
                         : CrossFadeState.showFirst,
                     firstChild: const SizedBox.shrink(),
                     secondChild: Padding(
-                      padding: const EdgeInsets.only(
-                        top: 12,
-                      ),
+                      padding: const EdgeInsets.only(top: 12),
                       child: Column(
                         children: [
                           Container(
-                            padding: const EdgeInsets.fromLTRB(
-                              12,
-                              10,
-                              12,
-                              10,
-                            ),
+                            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
                             decoration: BoxDecoration(
                               color: const Color(0xFFF7FAFC),
-                              borderRadius:
-                                  BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(16),
                             ),
                             child: Column(
                               children: [
                                 detailRow(
-                                  icon:
-                                      Icons.person_outline_rounded,
+                                  icon: Icons.person_outline_rounded,
                                   label: 'Vendor',
                                   value: vendorName,
                                 ),
                                 detailRow(
-                                  icon:
-                                      Icons.phone_outlined,
+                                  icon: Icons.phone_outlined,
                                   label: 'Contact',
                                   value: vendorPhone,
                                 ),
                                 detailRow(
-                                  icon:
-                                      Icons.location_on_outlined,
+                                  icon: Icons.location_on_outlined,
                                   label: 'Location',
                                   value: vendorLocation,
                                 ),
@@ -946,19 +769,14 @@ class SupplierOrderCard extends StatelessWidget {
                                   SizedBox(
                                     width: double.infinity,
                                     height: 41,
-                                    child:
-                                        OutlinedButton.icon(
+                                    child: OutlinedButton.icon(
                                       onPressed: () {
                                         openDeliveryPin(
                                           context: context,
-                                          latitude:
-                                              deliveryLatitude,
-                                          longitude:
-                                              deliveryLongitude,
-                                          vendorName:
-                                              vendorName,
-                                          deliveryAddress:
-                                              vendorLocation,
+                                          latitude: deliveryLatitude,
+                                          longitude: deliveryLongitude,
+                                          vendorName: vendorName,
+                                          deliveryAddress: vendorLocation,
                                         );
                                       },
                                       icon: const Icon(
@@ -969,27 +787,18 @@ class SupplierOrderCard extends StatelessWidget {
                                         'View Delivery Pin',
                                         style: TextStyle(
                                           fontSize: 9.8,
-                                          fontWeight:
-                                              FontWeight.w900,
+                                          fontWeight: FontWeight.w900,
                                         ),
                                       ),
-                                      style: OutlinedButton
-                                          .styleFrom(
-                                        foregroundColor:
-                                            const Color(
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: const Color(
                                           0xFF146BFF,
                                         ),
-                                        side:
-                                            const BorderSide(
-                                          color: Color(
-                                            0xFF146BFF,
-                                          ),
+                                        side: const BorderSide(
+                                          color: Color(0xFF146BFF),
                                         ),
-                                        shape:
-                                            RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius
-                                                  .circular(
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
                                             13,
                                           ),
                                         ),
@@ -1007,9 +816,7 @@ class SupplierOrderCard extends StatelessWidget {
                                 icon: Icons.schedule_rounded,
                                 label: 'Pending',
                                 active: pending,
-                                complete: accepted ||
-                                    delivered ||
-                                    cancelled,
+                                complete: accepted || delivered || cancelled,
                               ),
                               Container(
                                 width: 24,
@@ -1019,8 +826,7 @@ class SupplierOrderCard extends StatelessWidget {
                                     : const Color(0xFFD8E3EA),
                               ),
                               progressStage(
-                                icon:
-                                    Icons.inventory_2_outlined,
+                                icon: Icons.inventory_2_outlined,
                                 label: 'Accepted',
                                 active: accepted,
                                 complete: delivered,
@@ -1033,8 +839,7 @@ class SupplierOrderCard extends StatelessWidget {
                                     : const Color(0xFFD8E3EA),
                               ),
                               progressStage(
-                                icon:
-                                    Icons.local_shipping_outlined,
+                                icon: Icons.local_shipping_outlined,
                                 label: 'Delivered',
                                 active: delivered,
                                 complete: delivered,
@@ -1052,16 +857,14 @@ class SupplierOrderCard extends StatelessWidget {
                         actionButton(
                           label: 'Decline',
                           icon: Icons.close_rounded,
-                          onPressed:
-                              isBusy ? null : onCancel,
+                          onPressed: isBusy ? null : onCancel,
                           primary: false,
                         ),
                         const SizedBox(width: 9),
                         actionButton(
                           label: 'Accept Order',
                           icon: Icons.check_rounded,
-                          onPressed:
-                              isBusy ? null : onAccept,
+                          onPressed: isBusy ? null : onAccept,
                           primary: true,
                         ),
                       ],
@@ -1073,17 +876,14 @@ class SupplierOrderCard extends StatelessWidget {
                         actionButton(
                           label: 'Cancel',
                           icon: Icons.close_rounded,
-                          onPressed:
-                              isBusy ? null : onCancel,
+                          onPressed: isBusy ? null : onCancel,
                           primary: false,
                         ),
                         const SizedBox(width: 9),
                         actionButton(
                           label: 'Confirm Delivery',
                           icon: Icons.local_shipping_rounded,
-                          onPressed: isBusy
-                              ? null
-                              : onMarkDelivered,
+                          onPressed: isBusy ? null : onMarkDelivered,
                           primary: true,
                           color: const Color(0xFF147D64),
                         ),
@@ -1094,9 +894,7 @@ class SupplierOrderCard extends StatelessWidget {
                     const SizedBox(height: 11),
                     const LinearProgressIndicator(
                       minHeight: 3,
-                      borderRadius: BorderRadius.all(
-                        Radius.circular(99),
-                      ),
+                      borderRadius: BorderRadius.all(Radius.circular(99)),
                       color: Color(0xFF146BFF),
                       backgroundColor: Color(0xFFEAF2F7),
                     ),

@@ -32,9 +32,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
   }
 
   @override
-  void didUpdateWidget(
-    covariant VendorOrderCard oldWidget,
-  ) {
+  void didUpdateWidget(covariant VendorOrderCard oldWidget) {
     super.didUpdateWidget(oldWidget);
 
     if (widget.initiallyExpanded &&
@@ -44,28 +42,16 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
     }
   }
 
-  String getString(
-    Map<String, dynamic> data,
-    String key,
-    String fallback,
-  ) {
-    return OrderHelpers.getStringValue(
-      data,
-      key,
-      fallback,
-    );
+  String getString(Map<String, dynamic> data, String key, String fallback) {
+    return OrderHelpers.getStringValue(data, key, fallback);
   }
 
-  bool isCompletedStatus(
-    String status,
-  ) {
+  bool isCompletedStatus(String status) {
     final value = status.toLowerCase();
     return value == 'completed' || value == 'delivered';
   }
 
-  bool isStoppedStatus(
-    String status,
-  ) {
+  bool isStoppedStatus(String status) {
     final value = status.toLowerCase();
 
     return value == 'cancelled' ||
@@ -74,9 +60,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
         value == 'refunded';
   }
 
-  String displayStatus(
-    String status,
-  ) {
+  String displayStatus(String status) {
     switch (status.toLowerCase()) {
       case 'pending':
         return 'Pending Confirmation';
@@ -98,9 +82,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
     }
   }
 
-  Color statusColor(
-    String status,
-  ) {
+  Color statusColor(String status) {
     switch (status.toLowerCase()) {
       case 'pending':
         return const Color(0xFFFF7A1A);
@@ -119,9 +101,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
     }
   }
 
-  IconData statusIcon(
-    String status,
-  ) {
+  IconData statusIcon(String status) {
     switch (status.toLowerCase()) {
       case 'pending':
         return Icons.schedule_rounded;
@@ -140,9 +120,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
     }
   }
 
-  String statusMessage(
-    String status,
-  ) {
+  String statusMessage(String status) {
     switch (status.toLowerCase()) {
       case 'pending':
         return 'Waiting for the supplier to accept your order.';
@@ -164,22 +142,11 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
     }
   }
 
-  String productImageUrl(
-    Map<String, dynamic> data,
-  ) {
-    const keys = [
-      'productImageUrl',
-      'imageUrl',
-      'fishImageUrl',
-      'photoUrl',
-    ];
+  String productImageUrl(Map<String, dynamic> data) {
+    const keys = ['productImageUrl', 'imageUrl', 'fishImageUrl', 'photoUrl'];
 
     for (final key in keys) {
-      final value = getString(
-        data,
-        key,
-        '',
-      );
+      final value = getString(data, key, '');
 
       if (value.isNotEmpty) {
         return value;
@@ -189,16 +156,11 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
     return '';
   }
 
-  bool hasNetworkImage(
-    String value,
-  ) {
-    return value.startsWith('http://') ||
-        value.startsWith('https://');
+  bool hasNetworkImage(String value) {
+    return value.startsWith('http://') || value.startsWith('https://');
   }
 
-  String formatMoney(
-    double value,
-  ) {
+  String formatMoney(double value) {
     final fixed = value.toStringAsFixed(0);
     final buffer = StringBuffer();
 
@@ -212,9 +174,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
     return buffer.toString();
   }
 
-  String formattedOrderDate(
-    Map<String, dynamic> data,
-  ) {
+  String formattedOrderDate(Map<String, dynamic> data) {
     final value = data['createdAt'];
 
     if (value is! Timestamp) {
@@ -241,10 +201,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
     return 'Placed ${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
-  String paymentDisplay(
-    String paymentStatus,
-    String orderStatus,
-  ) {
+  String paymentDisplay(String paymentStatus, String orderStatus) {
     final payment = paymentStatus.toLowerCase();
 
     if (payment == 'paid') {
@@ -260,9 +217,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
     return 'Unpaid';
   }
 
-  int progressIndex(
-    String status,
-  ) {
+  int progressIndex(String status) {
     switch (status.toLowerCase()) {
       case 'accepted':
         return 1;
@@ -275,31 +230,20 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
     }
   }
 
-  Widget statusChip(
-    String status,
-  ) {
+  Widget statusChip(String status) {
     final color = statusColor(status);
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 8,
-        vertical: 5,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
         color: color.withAlpha(18),
         borderRadius: BorderRadius.circular(99),
-        border: Border.all(
-          color: color.withAlpha(45),
-        ),
+        border: Border.all(color: color.withAlpha(45)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            statusIcon(status),
-            color: color,
-            size: 11,
-          ),
+          Icon(statusIcon(status), color: color, size: 11),
           const SizedBox(width: 4),
           Text(
             displayStatus(status),
@@ -314,18 +258,13 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
     );
   }
 
-  Widget productImage({
-    required String imageUrl,
-    required String emoji,
-  }) {
+  Widget productImage({required String imageUrl, required String emoji}) {
     final fallback = Container(
       color: const Color(0xFFE8F8FD),
       alignment: Alignment.center,
       child: Text(
         emoji.trim().isEmpty ? '🐟' : emoji,
-        style: const TextStyle(
-          fontSize: 25,
-        ),
+        style: const TextStyle(fontSize: 25),
       ),
     );
 
@@ -335,9 +274,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
       decoration: BoxDecoration(
         color: const Color(0xFFE8F8FD),
         borderRadius: BorderRadius.circular(17),
-        border: Border.all(
-          color: const Color(0xFFDDEBF3),
-        ),
+        border: Border.all(color: const Color(0xFFDDEBF3)),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
@@ -384,9 +321,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
     );
   }
 
-  Widget compactStatusBar(
-    String orderStatus,
-  ) {
+  Widget compactStatusBar(String orderStatus) {
     final color = statusColor(orderStatus);
 
     return Material(
@@ -394,23 +329,16 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
       borderRadius: BorderRadius.circular(15),
       child: InkWell(
         onTap: () {
-          setState(
-            () {
-              isExpanded = !isExpanded;
-            },
-          );
+          setState(() {
+            isExpanded = !isExpanded;
+          });
         },
         borderRadius: BorderRadius.circular(15),
         child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 11,
-            vertical: 9,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(15),
-            border: Border.all(
-              color: color.withAlpha(28),
-            ),
+            border: Border.all(color: color.withAlpha(28)),
           ),
           child: Row(
             children: [
@@ -449,9 +377,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
               ),
               const SizedBox(width: 8),
               AnimatedRotation(
-                duration: const Duration(
-                  milliseconds: 190,
-                ),
+                duration: const Duration(milliseconds: 190),
                 turns: isExpanded ? 0.5 : 0,
                 child: Icon(
                   Icons.keyboard_arrow_down_rounded,
@@ -470,28 +396,20 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
     required String paymentStatus,
     required String orderStatus,
   }) {
-    final paymentText = paymentDisplay(
-      paymentStatus,
-      orderStatus,
-    );
+    final paymentText = paymentDisplay(paymentStatus, orderStatus);
 
     final paymentColor = paymentText == 'Paid'
         ? const Color(0xFF2E7D32)
         : paymentText == 'Unpaid'
-            ? const Color(0xFFFF7A1A)
-            : const Color(0xFFD32F2F);
+        ? const Color(0xFFFF7A1A)
+        : const Color(0xFFD32F2F);
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 11,
-        vertical: 9,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FBFD),
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(
-          color: const Color(0xFFE3EDF3),
-        ),
+        border: Border.all(color: const Color(0xFFE3EDF3)),
       ),
       child: Row(
         children: [
@@ -535,10 +453,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
           ),
           const SizedBox(width: 8),
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 8,
-              vertical: 5,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
             decoration: BoxDecoration(
               color: paymentColor.withAlpha(18),
               borderRadius: BorderRadius.circular(99),
@@ -563,9 +478,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
     required bool reached,
     required bool current,
   }) {
-    final color = reached
-        ? const Color(0xFF0875D1)
-        : const Color(0xFFB8C8D4);
+    final color = reached ? const Color(0xFF0875D1) : const Color(0xFFB8C8D4);
 
     return Expanded(
       child: Column(
@@ -574,9 +487,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
             width: 26,
             height: 26,
             decoration: BoxDecoration(
-              color: reached
-                  ? color
-                  : const Color(0xFFEAF1F5),
+              color: reached ? color : const Color(0xFFEAF1F5),
               shape: BoxShape.circle,
               boxShadow: current
                   ? const [
@@ -590,9 +501,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
             ),
             child: Icon(
               icon,
-              color: reached
-                  ? Colors.white
-                  : const Color(0xFF9DAFBC),
+              color: reached ? Colors.white : const Color(0xFF9DAFBC),
               size: 13,
             ),
           ),
@@ -612,28 +521,20 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
     );
   }
 
-  Widget progressLine({
-    required bool reached,
-  }) {
+  Widget progressLine({required bool reached}) {
     return Expanded(
       child: Container(
         height: 2,
-        margin: const EdgeInsets.only(
-          bottom: 17,
-        ),
+        margin: const EdgeInsets.only(bottom: 17),
         decoration: BoxDecoration(
-          color: reached
-              ? const Color(0xFF72B8F1)
-              : const Color(0xFFD6E2EA),
+          color: reached ? const Color(0xFF72B8F1) : const Color(0xFFD6E2EA),
           borderRadius: BorderRadius.circular(99),
         ),
       ),
     );
   }
 
-  Widget compactProgress(
-    String status,
-  ) {
+  Widget compactProgress(String status) {
     final color = statusColor(status);
 
     if (isStoppedStatus(status)) {
@@ -642,17 +543,11 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
         decoration: BoxDecoration(
           color: color.withAlpha(10),
           borderRadius: BorderRadius.circular(15),
-          border: Border.all(
-            color: color.withAlpha(28),
-          ),
+          border: Border.all(color: color.withAlpha(28)),
         ),
         child: Row(
           children: [
-            Icon(
-              statusIcon(status),
-              color: color,
-              size: 17,
-            ),
+            Icon(statusIcon(status), color: color, size: 17),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -673,18 +568,11 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
     final index = progressIndex(status);
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(
-        10,
-        11,
-        10,
-        9,
-      ),
+      padding: const EdgeInsets.fromLTRB(10, 11, 10, 9),
       decoration: BoxDecoration(
         color: const Color(0xFFF3F9FD),
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(
-          color: const Color(0xFFDDEBF3),
-        ),
+        border: Border.all(color: const Color(0xFFDDEBF3)),
       ),
       child: Row(
         children: [
@@ -694,18 +582,14 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
             reached: index >= 0,
             current: index == 0,
           ),
-          progressLine(
-            reached: index >= 1,
-          ),
+          progressLine(reached: index >= 1),
           progressStep(
             label: 'Accepted',
             icon: Icons.check_rounded,
             reached: index >= 1,
             current: index == 1,
           ),
-          progressLine(
-            reached: index >= 2,
-          ),
+          progressLine(reached: index >= 2),
           progressStep(
             label: 'Completed',
             icon: Icons.task_alt_rounded,
@@ -717,9 +601,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
     );
   }
 
-  Widget stoppedDetails(
-    String orderStatus,
-  ) {
+  Widget stoppedDetails(String orderStatus) {
     final color = statusColor(orderStatus);
     final stateLabel = displayStatus(orderStatus);
 
@@ -729,9 +611,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
       decoration: BoxDecoration(
         color: color.withAlpha(8),
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(
-          color: color.withAlpha(28),
-        ),
+        border: Border.all(color: color.withAlpha(28)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -743,11 +623,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
               color: color.withAlpha(17),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(
-              statusIcon(orderStatus),
-              color: color,
-              size: 16,
-            ),
+            child: Icon(statusIcon(orderStatus), color: color, size: 16),
           ),
           const SizedBox(width: 9),
           Expanded(
@@ -780,25 +656,16 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
     );
   }
 
-  Widget actionArea(
-    String orderStatus,
-    bool reviewSubmitted,
-  ) {
+  Widget actionArea(String orderStatus, bool reviewSubmitted) {
     if (orderStatus.toLowerCase() == 'pending') {
       return Align(
         alignment: Alignment.centerRight,
         child: TextButton.icon(
           onPressed: widget.onCancelPendingOrder,
-          icon: const Icon(
-            Icons.cancel_outlined,
-            size: 14,
-          ),
+          icon: const Icon(Icons.cancel_outlined, size: 14),
           label: const Text(
             'Cancel order',
-            style: TextStyle(
-              fontSize: 10.2,
-              fontWeight: FontWeight.w900,
-            ),
+            style: TextStyle(fontSize: 10.2, fontWeight: FontWeight.w900),
           ),
           style: TextButton.styleFrom(
             foregroundColor: const Color(0xFFD32F2F),
@@ -821,16 +688,10 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
         height: 38,
         child: ElevatedButton.icon(
           onPressed: widget.onReviewOrder,
-          icon: const Icon(
-            Icons.star_rounded,
-            size: 17,
-          ),
+          icon: const Icon(Icons.star_rounded, size: 17),
           label: const Text(
             'Rate Supplier',
-            style: TextStyle(
-              fontSize: 10.8,
-              fontWeight: FontWeight.w900,
-            ),
+            style: TextStyle(fontSize: 10.8, fontWeight: FontWeight.w900),
           ),
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFFFFB703),
@@ -848,9 +709,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     final data = widget.document.data();
 
     final shortOrderId = widget.document.id.length > 8
@@ -858,66 +717,40 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
         : widget.document.id.toUpperCase();
     final orderId = 'Order #$shortOrderId';
 
-    final productName = getString(
-      data,
-      'productName',
-      'Fish Product',
-    );
+    final productName = getString(data, 'productName', 'Fish Product');
 
-    final supplierName = getString(
-      data,
-      'supplierName',
-      'Supplier',
-    );
+    final supplierName = getString(data, 'supplierName', 'Supplier');
 
-    final emoji = getString(
-      data,
-      'productEmoji',
-      '🐟',
-    );
+    final emoji = getString(data, 'productEmoji', '🐟');
 
     final imageUrl = productImageUrl(data);
 
-    final requestedQuantity =
-        OrderHelpers.getDoubleValue(
-      data,
-      'quantity',
-    );
-    final storedFulfilledQuantity =
-        OrderHelpers.getDoubleValue(
+    final requestedQuantity = OrderHelpers.getDoubleValue(data, 'quantity');
+    final storedFulfilledQuantity = OrderHelpers.getDoubleValue(
       data,
       'fulfilledQuantity',
     );
-    final quantity =
-        storedFulfilledQuantity > 0
-            ? storedFulfilledQuantity
-            : requestedQuantity;
+    final quantity = storedFulfilledQuantity > 0
+        ? storedFulfilledQuantity
+        : requestedQuantity;
     final partialFulfillment =
         data['partialFulfillment'] == true ||
-            (storedFulfilledQuantity > 0 &&
-                storedFulfilledQuantity <
-                    requestedQuantity);
+        (storedFulfilledQuantity > 0 &&
+            storedFulfilledQuantity < requestedQuantity);
 
-    final quantityUnit = getString(
-      data,
-      'quantityUnit',
-      'kilo',
-    );
+    final quantityUnit = getString(data, 'quantityUnit', 'kilo');
 
-    final originalTotalAmount =
-        OrderHelpers.getDoubleValue(
+    final originalTotalAmount = OrderHelpers.getDoubleValue(
       data,
       'totalAmount',
     );
-    final fulfilledTotalAmount =
-        OrderHelpers.getDoubleValue(
+    final fulfilledTotalAmount = OrderHelpers.getDoubleValue(
       data,
       'fulfilledTotalAmount',
     );
-    final totalAmount =
-        fulfilledTotalAmount > 0
-            ? fulfilledTotalAmount
-            : originalTotalAmount;
+    final totalAmount = fulfilledTotalAmount > 0
+        ? fulfilledTotalAmount
+        : originalTotalAmount;
 
     final paymentStatus = getString(
       data,
@@ -925,26 +758,20 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
       'To be paid on delivery',
     );
 
-    final orderStatus = getString(
-      data,
-      'orderStatus',
-      'Pending',
-    );
+    final orderStatus = getString(data, 'orderStatus', 'Pending');
 
     final reviewSubmitted = data['reviewSubmitted'] == true;
     final color = statusColor(orderStatus);
 
     return Container(
-      margin: const EdgeInsets.only(
-        bottom: 12,
-      ),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: widget.highlighted
               ? const Color(0xFF146BFF)
-                  : const Color(0xFFDCE9F1),
+              : const Color(0xFFDCE9F1),
           width: widget.highlighted ? 1.5 : 1,
         ),
         boxShadow: widget.highlighted
@@ -968,12 +795,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
         child: Column(
           children: [
             Container(
-              padding: const EdgeInsets.fromLTRB(
-                14,
-                12,
-                14,
-                11,
-              ),
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 11),
               color: Colors.white,
               child: Row(
                 children: [
@@ -1021,20 +843,12 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(
-                14,
-                11,
-                14,
-                12,
-              ),
+              padding: const EdgeInsets.fromLTRB(14, 11, 14, 12),
               child: Column(
                 children: [
                   Row(
                     children: [
-                      productImage(
-                        imageUrl: imageUrl,
-                        emoji: emoji,
-                      ),
+                      productImage(imageUrl: imageUrl, emoji: emoji),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
@@ -1091,8 +905,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
                           const SizedBox(height: 8),
                           compactValue(
                             label: 'Total',
-                            value:
-                                '₱${formatMoney(totalAmount)}',
+                            value: '₱${formatMoney(totalAmount)}',
                             valueColor: const Color(0xFF0875D1),
                           ),
                         ],
@@ -1129,15 +942,10 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
                   compactStatusBar(orderStatus),
                   if (orderStatus.toLowerCase() == 'pending') ...[
                     const SizedBox(height: 5),
-                    actionArea(
-                      orderStatus,
-                      reviewSubmitted,
-                    ),
+                    actionArea(orderStatus, reviewSubmitted),
                   ],
                   AnimatedSize(
-                    duration: const Duration(
-                      milliseconds: 230,
-                    ),
+                    duration: const Duration(milliseconds: 230),
                     curve: Curves.easeOutCubic,
                     alignment: Alignment.topCenter,
                     child: isExpanded
@@ -1156,10 +964,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
                                 if (isCompletedStatus(orderStatus) &&
                                     !reviewSubmitted) ...[
                                   const SizedBox(height: 9),
-                                  actionArea(
-                                    orderStatus,
-                                    reviewSubmitted,
-                                  ),
+                                  actionArea(orderStatus, reviewSubmitted),
                                 ],
                               ],
                             ],

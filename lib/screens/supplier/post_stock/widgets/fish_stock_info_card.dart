@@ -17,23 +17,15 @@ class FishStockInfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(
-        bottom: 2,
-      ),
+      margin: const EdgeInsets.only(bottom: 2),
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: listingReady
-              ? const [
-                  Color(0xFFE8F8F2),
-                  Color(0xFFEAF8FF),
-                ]
-              : const [
-                  Color(0xFFF2F7FB),
-                  Color(0xFFF6F9FB),
-                ],
+              ? const [Color(0xFFE8F8F2), Color(0xFFEAF8FF)]
+              : const [Color(0xFFF2F7FB), Color(0xFFF6F9FB)],
         ),
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
@@ -51,9 +43,7 @@ class FishStockInfoCard extends StatelessWidget {
                 width: 41,
                 height: 41,
                 decoration: BoxDecoration(
-                  color: listingReady
-                      ? const Color(0xFFDDF6EC)
-                      : Colors.white,
+                  color: listingReady ? const Color(0xFFDDF6EC) : Colors.white,
                   borderRadius: BorderRadius.circular(13),
                 ),
                 child: Icon(
@@ -69,13 +59,10 @@ class FishStockInfoCard extends StatelessWidget {
               const SizedBox(width: 11),
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      listingReady
-                          ? 'Ready to Publish'
-                          : 'Listing Readiness',
+                      listingReady ? 'Ready to Publish' : 'Listing Readiness',
                       style: const TextStyle(
                         color: Color(0xFF102C44),
                         fontSize: 14.5,
@@ -104,10 +91,7 @@ class FishStockInfoCard extends StatelessWidget {
             complete: productInformationComplete,
           ),
           const SizedBox(height: 8),
-          _ReadinessItem(
-            label: 'Product photo',
-            complete: photoComplete,
-          ),
+          _ReadinessItem(label: 'Product photo', complete: photoComplete),
           const SizedBox(height: 8),
           _ReadinessItem(
             label: 'Price, unit, stock, and alert',
@@ -116,12 +100,7 @@ class FishStockInfoCard extends StatelessWidget {
           const SizedBox(height: 11),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(
-              11,
-              10,
-              11,
-              10,
-            ),
+            padding: const EdgeInsets.fromLTRB(11, 10, 11, 10),
             decoration: BoxDecoration(
               color: Colors.white.withAlpha(205),
               borderRadius: BorderRadius.circular(14),
@@ -161,10 +140,7 @@ class FishStockInfoCard extends StatelessWidget {
 }
 
 class _ReadinessItem extends StatelessWidget {
-  const _ReadinessItem({
-    required this.label,
-    required this.complete,
-  });
+  const _ReadinessItem({required this.label, required this.complete});
 
   final String label;
   final bool complete;
@@ -177,9 +153,7 @@ class _ReadinessItem extends StatelessWidget {
           complete
               ? Icons.check_circle_rounded
               : Icons.radio_button_unchecked_rounded,
-          color: complete
-              ? const Color(0xFF1DBB8A)
-              : const Color(0xFF9AAEBC),
+          color: complete ? const Color(0xFF1DBB8A) : const Color(0xFF9AAEBC),
           size: 19,
         ),
         const SizedBox(width: 8),
@@ -191,17 +165,14 @@ class _ReadinessItem extends StatelessWidget {
                   ? const Color(0xFF102C44)
                   : const Color(0xFF7B8FA3),
               fontSize: 10.5,
-              fontWeight:
-                  complete ? FontWeight.w900 : FontWeight.w700,
+              fontWeight: complete ? FontWeight.w900 : FontWeight.w700,
             ),
           ),
         ),
         Text(
           complete ? 'Complete' : 'Required',
           style: TextStyle(
-            color: complete
-                ? const Color(0xFF147D64)
-                : const Color(0xFF8BA0B1),
+            color: complete ? const Color(0xFF147D64) : const Color(0xFF8BA0B1),
             fontSize: 8.6,
             fontWeight: FontWeight.w900,
           ),

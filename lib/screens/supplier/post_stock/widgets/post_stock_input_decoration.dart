@@ -50,11 +50,7 @@ InputDecoration postStockInputDecoration({
         color: const Color(0xFFE5F4FD),
         borderRadius: BorderRadius.circular(11),
       ),
-      child: Icon(
-        icon,
-        color: const Color(0xFF146BFF),
-        size: 20,
-      ),
+      child: Icon(icon, color: const Color(0xFF146BFF), size: 20),
     ),
     suffixIcon: suffixIcon,
     prefixStyle: const TextStyle(
@@ -69,39 +65,26 @@ InputDecoration postStockInputDecoration({
     ),
     filled: true,
     fillColor: const Color(0xFFF2F7FB),
-    contentPadding: const EdgeInsets.symmetric(
-      horizontal: 15,
-      vertical: 17,
-    ),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 17),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(18),
       borderSide: BorderSide.none,
     ),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(18),
-      borderSide: const BorderSide(
-        color: Color(0xFFE1EBF2),
-      ),
+      borderSide: const BorderSide(color: Color(0xFFE1EBF2)),
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(18),
-      borderSide: const BorderSide(
-        color: Color(0xFF146BFF),
-        width: 1.5,
-      ),
+      borderSide: const BorderSide(color: Color(0xFF146BFF), width: 1.5),
     ),
     errorBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(18),
-      borderSide: const BorderSide(
-        color: Color(0xFFD32F2F),
-      ),
+      borderSide: const BorderSide(color: Color(0xFFD32F2F)),
     ),
     focusedErrorBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(18),
-      borderSide: const BorderSide(
-        color: Color(0xFFD32F2F),
-        width: 1.5,
-      ),
+      borderSide: const BorderSide(color: Color(0xFFD32F2F), width: 1.5),
     ),
   );
 }

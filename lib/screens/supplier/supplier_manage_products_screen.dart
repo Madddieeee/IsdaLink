@@ -12,18 +12,10 @@ import 'package:isdalink/utils/order_helpers.dart';
 import 'package:isdalink/utils/app_error_message.dart';
 import 'package:isdalink/utils/stock_state.dart';
 
-enum ManageProductFilter {
-  all,
-  available,
-  lowStock,
-  outOfStock,
-  hidden,
-}
+enum ManageProductFilter { all, available, lowStock, outOfStock, hidden }
 
 class SupplierManageProductsScreen extends StatefulWidget {
-  const SupplierManageProductsScreen({
-    super.key,
-  });
+  const SupplierManageProductsScreen({super.key});
 
   @override
   State<SupplierManageProductsScreen> createState() =>
@@ -36,27 +28,21 @@ class _SupplierManageProductsScreenState
   final productService = const SupplierProductService();
   final busyProductIds = <String>{};
 
-  ManageProductFilter selectedFilter =
-      ManageProductFilter.all;
+  ManageProductFilter selectedFilter = ManageProductFilter.all;
   int streamRevision = 0;
 
-  User? get currentUser =>
-      FirebaseAuth.instance.currentUser;
+  User? get currentUser => FirebaseAuth.instance.currentUser;
 
   @override
   void initState() {
     super.initState();
 
-    searchController.addListener(
-      refreshSearch,
-    );
+    searchController.addListener(refreshSearch);
   }
 
   @override
   void dispose() {
-    searchController.removeListener(
-      refreshSearch,
-    );
+    searchController.removeListener(refreshSearch);
     searchController.dispose();
     super.dispose();
   }
@@ -83,27 +69,17 @@ class _SupplierManageProductsScreenState
     return fallback;
   }
 
-  bool isHidden(
-    Map<String, dynamic> data,
-  ) {
+  bool isHidden(Map<String, dynamic> data) {
     return StockState.isIntentionallyHidden(data);
   }
 
-  String filterStatus(
-    Map<String, dynamic> data,
-  ) {
+  String filterStatus(Map<String, dynamic> data) {
     if (isHidden(data)) {
       return 'hidden';
     }
 
-    final quantity = OrderHelpers.getDoubleValue(
-      data,
-      'quantity',
-    );
-    final lowStockLevel = OrderHelpers.getDoubleValue(
-      data,
-      'lowStockLevel',
-    );
+    final quantity = OrderHelpers.getDoubleValue(data, 'quantity');
+    final lowStockLevel = OrderHelpers.getDoubleValue(data, 'lowStockLevel');
 
     if (quantity <= 0) {
       return 'outOfStock';
@@ -116,65 +92,52 @@ class _SupplierManageProductsScreenState
     return 'available';
   }
 
-  List<QueryDocumentSnapshot<Map<String, dynamic>>>
-      filteredDocuments(
-    List<QueryDocumentSnapshot<Map<String, dynamic>>>
-        documents,
+  List<QueryDocumentSnapshot<Map<String, dynamic>>> filteredDocuments(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
   ) {
-    final query =
-        searchController.text.trim().toLowerCase();
+    final query = searchController.text.trim().toLowerCase();
 
-    return documents.where(
-      (
-        document,
-      ) {
-        final data = document.data();
-        final productName = OrderHelpers.getStringValue(
-          data,
-          'productName',
-          'Fish Product',
-        ).toLowerCase();
-        final category = OrderHelpers.getStringValue(
-          data,
-          'category',
-          'Fresh Fish',
-        ).toLowerCase();
-        final unit = OrderHelpers.getStringValue(
-          data,
-          'quantityUnit',
-          'kilo',
-        ).toLowerCase();
+    return documents.where((document) {
+      final data = document.data();
+      final productName = OrderHelpers.getStringValue(
+        data,
+        'productName',
+        'Fish Product',
+      ).toLowerCase();
+      final category = OrderHelpers.getStringValue(
+        data,
+        'category',
+        'Fresh Fish',
+      ).toLowerCase();
+      final unit = OrderHelpers.getStringValue(
+        data,
+        'quantityUnit',
+        'kilo',
+      ).toLowerCase();
 
-        final matchesSearch = query.isEmpty ||
-            productName.contains(query) ||
-            category.contains(query) ||
-            unit.contains(query);
+      final matchesSearch =
+          query.isEmpty ||
+          productName.contains(query) ||
+          category.contains(query) ||
+          unit.contains(query);
 
-        if (!matchesSearch) {
-          return false;
-        }
+      if (!matchesSearch) {
+        return false;
+      }
 
-        final status = filterStatus(data);
+      final status = filterStatus(data);
 
-        return switch (selectedFilter) {
-          ManageProductFilter.all => true,
-          ManageProductFilter.available =>
-            status == 'available',
-          ManageProductFilter.lowStock =>
-            status == 'lowStock',
-          ManageProductFilter.outOfStock =>
-            status == 'outOfStock',
-          ManageProductFilter.hidden =>
-            status == 'hidden',
-        };
-      },
-    ).toList();
+      return switch (selectedFilter) {
+        ManageProductFilter.all => true,
+        ManageProductFilter.available => status == 'available',
+        ManageProductFilter.lowStock => status == 'lowStock',
+        ManageProductFilter.outOfStock => status == 'outOfStock',
+        ManageProductFilter.hidden => status == 'hidden',
+      };
+    }).toList();
   }
 
-  void setBusy(
-    String documentId,
-    bool busy,
-  ) {
+  void setBusy(String documentId, bool busy) {
     setState(() {
       if (busy) {
         busyProductIds.add(documentId);
@@ -184,10 +147,7 @@ class _SupplierManageProductsScreenState
     });
   }
 
-  void showMessage(
-    String message, {
-    bool isError = false,
-  }) {
+  void showMessage(String message, {bool isError = false}) {
     if (!mounted) {
       return;
     }
@@ -199,12 +159,7 @@ class _SupplierManageProductsScreenState
       ..showSnackBar(
         SnackBar(
           behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.fromLTRB(
-            18,
-            0,
-            18,
-            18,
-          ),
+          margin: const EdgeInsets.fromLTRB(18, 0, 18, 18),
           backgroundColor: isError
               ? const Color(0xFFD94A45)
               : const Color(0xFF147D64),
@@ -283,7 +238,8 @@ class _SupplierManageProductsScreenState
       showMessage(
         AppErrorMessage.from(
           error,
-          fallback: 'Something went wrong while restocking this product. Please try again.',
+          fallback:
+              'Something went wrong while restocking this product. Please try again.',
           allowBusinessMessage: true,
         ),
         isError: true,
@@ -296,11 +252,9 @@ class _SupplierManageProductsScreenState
   }
 
   Future<void> editProduct(
-    QueryDocumentSnapshot<Map<String, dynamic>>
-        document,
+    QueryDocumentSnapshot<Map<String, dynamic>> document,
   ) async {
-    final input =
-        await ManageProductDialogs.showEditSheet(
+    final input = await ManageProductDialogs.showEditSheet(
       context: context,
       document: document,
     );
@@ -309,20 +263,12 @@ class _SupplierManageProductsScreenState
       return;
     }
 
-    setBusy(
-      document.id,
-      true,
-    );
+    setBusy(document.id, true);
 
     try {
-      await productService.updateProduct(
-        documentId: document.id,
-        input: input,
-      );
+      await productService.updateProduct(documentId: document.id, input: input);
 
-      showMessage(
-        'Product changes saved successfully.',
-      );
+      showMessage('Product changes saved successfully.');
     } on FirebaseException catch (error) {
       showMessage(
         AppErrorMessage.from(
@@ -335,24 +281,21 @@ class _SupplierManageProductsScreenState
       showMessage(
         AppErrorMessage.from(
           error,
-          fallback: 'Something went wrong while updating this product. Please try again.',
+          fallback:
+              'Something went wrong while updating this product. Please try again.',
           allowBusinessMessage: true,
         ),
         isError: true,
       );
     } finally {
       if (mounted) {
-        setBusy(
-          document.id,
-          false,
-        );
+        setBusy(document.id, false);
       }
     }
   }
 
   Future<void> toggleAvailability(
-    QueryDocumentSnapshot<Map<String, dynamic>>
-        document,
+    QueryDocumentSnapshot<Map<String, dynamic>> document,
   ) async {
     final data = document.data();
     final productName = OrderHelpers.getStringValue(
@@ -362,8 +305,7 @@ class _SupplierManageProductsScreenState
     );
     final currentlyHidden = isHidden(data);
 
-    final confirmed =
-        await ManageProductDialogs.showAvailabilityDialog(
+    final confirmed = await ManageProductDialogs.showAvailabilityDialog(
       context: context,
       productName: productName,
       currentlyHidden: currentlyHidden,
@@ -373,14 +315,10 @@ class _SupplierManageProductsScreenState
       return;
     }
 
-    setBusy(
-      document.id,
-      true,
-    );
+    setBusy(document.id, true);
 
     try {
-      final newStatus =
-          await productService.toggleAvailability(
+      final newStatus = await productService.toggleAvailability(
         documentId: document.id,
       );
 
@@ -401,24 +339,21 @@ class _SupplierManageProductsScreenState
       showMessage(
         AppErrorMessage.from(
           error,
-          fallback: 'Something went wrong while changing product visibility. Please try again.',
+          fallback:
+              'Something went wrong while changing product visibility. Please try again.',
           allowBusinessMessage: true,
         ),
         isError: true,
       );
     } finally {
       if (mounted) {
-        setBusy(
-          document.id,
-          false,
-        );
+        setBusy(document.id, false);
       }
     }
   }
 
   Future<void> archiveProduct(
-    QueryDocumentSnapshot<Map<String, dynamic>>
-        document,
+    QueryDocumentSnapshot<Map<String, dynamic>> document,
   ) async {
     final productName = OrderHelpers.getStringValue(
       document.data(),
@@ -426,8 +361,7 @@ class _SupplierManageProductsScreenState
       'Fish Product',
     );
 
-    final confirmed =
-        await ManageProductDialogs.showArchiveDialog(
+    final confirmed = await ManageProductDialogs.showArchiveDialog(
       context: context,
       productName: productName,
     );
@@ -436,19 +370,12 @@ class _SupplierManageProductsScreenState
       return;
     }
 
-    setBusy(
-      document.id,
-      true,
-    );
+    setBusy(document.id, true);
 
     try {
-      await productService.archiveProduct(
-        document.id,
-      );
+      await productService.archiveProduct(document.id);
 
-      showMessage(
-        '$productName was archived and hidden from vendors.',
-      );
+      showMessage('$productName was archived and hidden from vendors.');
     } on FirebaseException catch (error) {
       showMessage(
         AppErrorMessage.from(
@@ -461,17 +388,15 @@ class _SupplierManageProductsScreenState
       showMessage(
         AppErrorMessage.from(
           error,
-          fallback: 'Something went wrong while archiving this product. Please try again.',
+          fallback:
+              'Something went wrong while archiving this product. Please try again.',
           allowBusinessMessage: true,
         ),
         isError: true,
       );
     } finally {
       if (mounted) {
-        setBusy(
-          document.id,
-          false,
-        );
+        setBusy(document.id, false);
       }
     }
   }
@@ -480,9 +405,7 @@ class _SupplierManageProductsScreenState
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (
-          context,
-        ) {
+        builder: (context) {
           return const PostFishStockScreen();
         },
       ),
@@ -497,9 +420,7 @@ class _SupplierManageProductsScreenState
     });
   }
 
-  String filterLabel(
-    ManageProductFilter filter,
-  ) {
+  String filterLabel(ManageProductFilter filter) {
     return switch (filter) {
       ManageProductFilter.all => 'All',
       ManageProductFilter.available => 'Available',
@@ -509,35 +430,24 @@ class _SupplierManageProductsScreenState
     };
   }
 
-  IconData filterIcon(
-    ManageProductFilter filter,
-  ) {
+  IconData filterIcon(ManageProductFilter filter) {
     return switch (filter) {
-      ManageProductFilter.all =>
-        Icons.inventory_2_outlined,
-      ManageProductFilter.available =>
-        Icons.check_circle_outline_rounded,
-      ManageProductFilter.lowStock =>
-        Icons.warning_amber_rounded,
-      ManageProductFilter.outOfStock =>
-        Icons.remove_shopping_cart_outlined,
-      ManageProductFilter.hidden =>
-        Icons.visibility_off_outlined,
+      ManageProductFilter.all => Icons.inventory_2_outlined,
+      ManageProductFilter.available => Icons.check_circle_outline_rounded,
+      ManageProductFilter.lowStock => Icons.warning_amber_rounded,
+      ManageProductFilter.outOfStock => Icons.remove_shopping_cart_outlined,
+      ManageProductFilter.hidden => Icons.visibility_off_outlined,
     };
   }
 
   Widget controlsCard() {
     return Container(
-      margin: const EdgeInsets.only(
-        bottom: 15,
-      ),
+      margin: const EdgeInsets.only(bottom: 15),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(23),
-        border: Border.all(
-          color: const Color(0xFFE1EBF2),
-        ),
+        border: Border.all(color: const Color(0xFFE1EBF2)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x0D00152A),
@@ -567,17 +477,13 @@ class _SupplierManageProductsScreenState
                   : IconButton(
                       tooltip: 'Clear search',
                       onPressed: searchController.clear,
-                      icon: const Icon(
-                        Icons.close_rounded,
-                      ),
+                      icon: const Icon(Icons.close_rounded),
                     ),
               filled: true,
               fillColor: const Color(0xFFF2F7FB),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(17),
-                borderSide: const BorderSide(
-                  color: Color(0xFFE1EBF2),
-                ),
+                borderSide: const BorderSide(color: Color(0xFFE1EBF2)),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(17),
@@ -594,20 +500,12 @@ class _SupplierManageProductsScreenState
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: ManageProductFilter.values.length,
-              separatorBuilder: (
-                context,
-                index,
-              ) {
+              separatorBuilder: (context, index) {
                 return const SizedBox(width: 7);
               },
-              itemBuilder: (
-                context,
-                index,
-              ) {
-                final filter =
-                    ManageProductFilter.values[index];
-                final selected =
-                    selectedFilter == filter;
+              itemBuilder: (context, index) {
+                final filter = ManageProductFilter.values[index];
+                final selected = selectedFilter == filter;
 
                 return FilterChip(
                   selected: selected,
@@ -615,31 +513,23 @@ class _SupplierManageProductsScreenState
                   avatar: Icon(
                     filterIcon(filter),
                     size: 16,
-                    color: selected
-                        ? Colors.white
-                        : const Color(0xFF52677A),
+                    color: selected ? Colors.white : const Color(0xFF52677A),
                   ),
                   label: Text(
                     filterLabel(filter),
                     style: TextStyle(
-                      color: selected
-                          ? Colors.white
-                          : const Color(0xFF52677A),
+                      color: selected ? Colors.white : const Color(0xFF52677A),
                       fontSize: 9.8,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                  onSelected: (
-                    _,
-                  ) {
+                  onSelected: (_) {
                     setState(() {
                       selectedFilter = filter;
                     });
                   },
-                  backgroundColor:
-                      const Color(0xFFF2F7FB),
-                  selectedColor:
-                      const Color(0xFF146BFF),
+                  backgroundColor: const Color(0xFFF2F7FB),
+                  selectedColor: const Color(0xFF146BFF),
                   side: BorderSide(
                     color: selected
                         ? const Color(0xFF146BFF)
@@ -657,22 +547,14 @@ class _SupplierManageProductsScreenState
     );
   }
 
-  Widget listingTitle(
-    int count,
-  ) {
+  Widget listingTitle(int count) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        2,
-        0,
-        2,
-        12,
-      ),
+      padding: const EdgeInsets.fromLTRB(2, 0, 2, 12),
       child: Row(
         children: [
           const Expanded(
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Your Product Listings',
@@ -695,10 +577,7 @@ class _SupplierManageProductsScreenState
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 9,
-              vertical: 6,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
             decoration: BoxDecoration(
               color: const Color(0xFFEAF7FB),
               borderRadius: BorderRadius.circular(99),
@@ -718,23 +597,14 @@ class _SupplierManageProductsScreenState
   }
 
   Widget content({
-    required List<
-        QueryDocumentSnapshot<Map<String, dynamic>>>
-        documents,
+    required List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
   }) {
-    final stats = productService.calculateStats(
-      documents,
-    );
-    final visibleDocuments = filteredDocuments(
-      documents,
-    );
+    final stats = productService.calculateStats(documents);
+    final visibleDocuments = filteredDocuments(documents);
 
     return CustomScrollView(
-      key: ValueKey(
-        'manage-products-$streamRevision',
-      ),
-      keyboardDismissBehavior:
-          ScrollViewKeyboardDismissBehavior.onDrag,
+      key: ValueKey('manage-products-$streamRevision'),
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       slivers: [
         ManageProductsHeader(
           stats: stats,
@@ -743,54 +613,35 @@ class _SupplierManageProductsScreenState
           },
         ),
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(
-            16,
-            16,
-            16,
-            28,
-          ),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
           sliver: SliverList(
-            delegate: SliverChildListDelegate(
-              [
-                controlsCard(),
-                listingTitle(
-                  visibleDocuments.length,
-                ),
-                if (documents.isEmpty)
-                  ManageProductsEmptyCard(
-                    onPostStock: openPostStock,
-                  )
-                else if (visibleDocuments.isEmpty)
-                  ManageProductsFilteredEmptyCard(
-                    onClear: clearSearchAndFilters,
-                  )
-                else
-                  ...visibleDocuments.map(
-                    (
-                      document,
-                    ) {
-                      return ManageProductCard(
-                        document: document,
-                        isBusy: busyProductIds.contains(
-                          document.id,
-                        ),
-                        onRestock: () {
-                          restockProduct(document);
-                        },
-                        onEdit: () {
-                          editProduct(document);
-                        },
-                        onToggleAvailability: () {
-                          toggleAvailability(document);
-                        },
-                        onArchive: () {
-                          archiveProduct(document);
-                        },
-                      );
+            delegate: SliverChildListDelegate([
+              controlsCard(),
+              listingTitle(visibleDocuments.length),
+              if (documents.isEmpty)
+                ManageProductsEmptyCard(onPostStock: openPostStock)
+              else if (visibleDocuments.isEmpty)
+                ManageProductsFilteredEmptyCard(onClear: clearSearchAndFilters)
+              else
+                ...visibleDocuments.map((document) {
+                  return ManageProductCard(
+                    document: document,
+                    isBusy: busyProductIds.contains(document.id),
+                    onRestock: () {
+                      restockProduct(document);
                     },
-                  ),
-              ],
-            ),
+                    onEdit: () {
+                      editProduct(document);
+                    },
+                    onToggleAvailability: () {
+                      toggleAvailability(document);
+                    },
+                    onArchive: () {
+                      archiveProduct(document);
+                    },
+                  );
+                }),
+            ]),
           ),
         ),
       ],
@@ -814,15 +665,8 @@ class _SupplierManageProductsScreenState
           },
         ),
         const SliverPadding(
-          padding: EdgeInsets.fromLTRB(
-            16,
-            18,
-            16,
-            28,
-          ),
-          sliver: SliverToBoxAdapter(
-            child: ManageProductsLoadingCard(),
-          ),
+          padding: EdgeInsets.fromLTRB(16, 18, 16, 28),
+          sliver: SliverToBoxAdapter(child: ManageProductsLoadingCard()),
         ),
       ],
     );
@@ -845,12 +689,7 @@ class _SupplierManageProductsScreenState
           },
         ),
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(
-            16,
-            18,
-            16,
-            28,
-          ),
+          padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
           sliver: SliverToBoxAdapter(
             child: ManageProductsErrorCard(
               onRetry: () {
@@ -886,9 +725,7 @@ class _SupplierManageProductsScreenState
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     final user = currentUser;
 
     if (user == null) {
@@ -901,21 +738,14 @@ class _SupplierManageProductsScreenState
         statusBarIconBrightness: Brightness.light,
         statusBarBrightness: Brightness.dark,
         systemNavigationBarColor: Colors.white,
-        systemNavigationBarIconBrightness:
-            Brightness.dark,
+        systemNavigationBarIconBrightness: Brightness.dark,
       ),
       child: Scaffold(
         backgroundColor: const Color(0xFFF4F8FB),
-        body: StreamBuilder<
-            QuerySnapshot<Map<String, dynamic>>>(
+        body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
           key: ValueKey(streamRevision),
-          stream: productService.fishStocksStream(
-            user.uid,
-          ),
-          builder: (
-            context,
-            snapshot,
-          ) {
+          stream: productService.fishStocksStream(user.uid),
+          builder: (context, snapshot) {
             if (snapshot.hasError) {
               return errorBody();
             }
@@ -924,13 +754,9 @@ class _SupplierManageProductsScreenState
               return loadingBody();
             }
 
-            final documents = productService.sortStocks(
-              snapshot.data!.docs,
-            );
+            final documents = productService.sortStocks(snapshot.data!.docs);
 
-            return content(
-              documents: documents,
-            );
+            return content(documents: documents);
           },
         ),
       ),

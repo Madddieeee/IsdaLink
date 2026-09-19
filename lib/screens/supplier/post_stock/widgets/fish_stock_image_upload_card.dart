@@ -60,19 +60,12 @@ class FishStockImageUploadCard extends StatelessWidget {
                     fit: StackFit.expand,
                     children: [
                       if (hasLocalImage)
-                        Image.file(
-                          File(selectedImage!.path),
-                          fit: BoxFit.cover,
-                        )
+                        Image.file(File(selectedImage!.path), fit: BoxFit.cover)
                       else if (hasUploadedImage)
                         Image.network(
                           uploadedImageUrl,
                           fit: BoxFit.cover,
-                          errorBuilder: (
-                            context,
-                            error,
-                            stackTrace,
-                          ) {
+                          errorBuilder: (context, error, stackTrace) {
                             return const ProductImagePlaceholder();
                           },
                         )
@@ -84,14 +77,8 @@ class FishStockImageUploadCard extends StatelessWidget {
                             gradient: LinearGradient(
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.transparent,
-                                Color(0x7A001626),
-                              ],
-                              stops: [
-                                0.55,
-                                1.0,
-                              ],
+                              colors: [Colors.transparent, Color(0x7A001626)],
+                              stops: [0.55, 1.0],
                             ),
                           ),
                         ),
@@ -194,9 +181,7 @@ class FishStockImageUploadCard extends StatelessWidget {
                   ),
                   label: Text(
                     hasImage ? 'Change Photo' : 'Choose Photo',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                    ),
+                    style: const TextStyle(fontWeight: FontWeight.w900),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF146BFF),
@@ -215,18 +200,13 @@ class FishStockImageUploadCard extends StatelessWidget {
                   onPressed: isUploading ? null : onRemoveImage,
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFFD32F2F),
-                    side: const BorderSide(
-                      color: Color(0xFFF0B8B5),
-                    ),
+                    side: const BorderSide(color: Color(0xFFF0B8B5)),
                     minimumSize: const Size(48, 44),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: const Icon(
-                    Icons.delete_outline_rounded,
-                    size: 20,
-                  ),
+                  child: const Icon(Icons.delete_outline_rounded, size: 20),
                 ),
               ],
             ],
@@ -261,9 +241,7 @@ class FishStockImageUploadCard extends StatelessWidget {
 }
 
 class ProductImagePlaceholder extends StatelessWidget {
-  const ProductImagePlaceholder({
-    super.key,
-  });
+  const ProductImagePlaceholder({super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -37,23 +37,15 @@ class ManageProductCard extends StatelessWidget {
     return fallback;
   }
 
-  String formatNumber(
-    double value,
-  ) {
-    return value % 1 == 0
-        ? value.toStringAsFixed(0)
-        : value.toStringAsFixed(1);
+  String formatNumber(double value) {
+    return value % 1 == 0 ? value.toStringAsFixed(0) : value.toStringAsFixed(1);
   }
 
-  bool isArchived(
-    Map<String, dynamic> data,
-  ) {
+  bool isArchived(Map<String, dynamic> data) {
     return data['archived'] == true;
   }
 
-  bool isHidden(
-    Map<String, dynamic> data,
-  ) {
+  bool isHidden(Map<String, dynamic> data) {
     return StockState.isIntentionallyHidden(data);
   }
 
@@ -81,9 +73,7 @@ class ManageProductCard extends StatelessWidget {
     return 'Available';
   }
 
-  Color statusColor(
-    String status,
-  ) {
+  Color statusColor(String status) {
     return switch (status) {
       'Archived' => const Color(0xFF6B7280),
       'Hidden' => const Color(0xFF7B8FA3),
@@ -93,10 +83,7 @@ class ManageProductCard extends StatelessWidget {
     };
   }
 
-  Widget productImage({
-    required String imageUrl,
-    required bool hidden,
-  }) {
+  Widget productImage({required String imageUrl, required bool hidden}) {
     final placeholder = Container(
       color: const Color(0xFFEAF7FB),
       child: const Icon(
@@ -117,11 +104,7 @@ class ManageProductCard extends StatelessWidget {
             Image.network(
               imageUrl,
               fit: BoxFit.cover,
-              errorBuilder: (
-                context,
-                error,
-                stackTrace,
-              ) {
+              errorBuilder: (context, error, stackTrace) {
                 return placeholder;
               },
             ),
@@ -141,9 +124,7 @@ class ManageProductCard extends StatelessWidget {
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     final data = document.data();
 
     final productName = OrderHelpers.getStringValue(
@@ -156,31 +137,18 @@ class ManageProductCard extends StatelessWidget {
       'category',
       'Fresh Fish',
     );
-    final imageUrl = firstString(
-      data,
-      const [
-        'productImageUrl',
-        'imageUrl',
-      ],
-      fallback: '',
-    );
-    final price = OrderHelpers.getDoubleValue(
-      data,
-      'price',
-    );
-    final quantity = OrderHelpers.getDoubleValue(
-      data,
-      'quantity',
-    );
+    final imageUrl = firstString(data, const [
+      'productImageUrl',
+      'imageUrl',
+    ], fallback: '');
+    final price = OrderHelpers.getDoubleValue(data, 'price');
+    final quantity = OrderHelpers.getDoubleValue(data, 'quantity');
     final quantityUnit = OrderHelpers.getStringValue(
       data,
       'quantityUnit',
       'kilo',
     );
-    final lowStockLevel = OrderHelpers.getDoubleValue(
-      data,
-      'lowStockLevel',
-    );
+    final lowStockLevel = OrderHelpers.getDoubleValue(data, 'lowStockLevel');
     final storedPercentage = OrderHelpers.getDoubleValue(
       data,
       'lowStockPercentage',
@@ -193,8 +161,8 @@ class ManageProductCard extends StatelessWidget {
     final lowStockPercentage = storedPercentage > 0
         ? storedPercentage
         : referenceQuantity > 0
-            ? lowStockLevel / referenceQuantity * 100
-            : 20.0;
+        ? lowStockLevel / referenceQuantity * 100
+        : 20.0;
 
     final archived = isArchived(data);
     final hidden = isHidden(data);
@@ -210,17 +178,13 @@ class ManageProductCard extends StatelessWidget {
       duration: const Duration(milliseconds: 180),
       opacity: isBusy ? 0.60 : 1,
       child: Container(
-        margin: const EdgeInsets.only(
-          bottom: 14,
-        ),
+        margin: const EdgeInsets.only(bottom: 14),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: hidden
-                ? const Color(0xFFDDE5EB)
-                : const Color(0xFFE1EBF2),
+            color: hidden ? const Color(0xFFDDE5EB) : const Color(0xFFE1EBF2),
           ),
           boxShadow: const [
             BoxShadow(
@@ -238,20 +202,15 @@ class ManageProductCard extends StatelessWidget {
                 SizedBox(
                   width: 86,
                   height: 86,
-                  child: productImage(
-                    imageUrl: imageUrl,
-                    hidden: hidden,
-                  ),
+                  child: productImage(imageUrl: imageUrl, hidden: hidden),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
                             child: Text(
@@ -274,8 +233,7 @@ class ManageProductCard extends StatelessWidget {
                             ),
                             decoration: BoxDecoration(
                               color: currentColor.withAlpha(18),
-                              borderRadius:
-                                  BorderRadius.circular(99),
+                              borderRadius: BorderRadius.circular(99),
                             ),
                             child: Text(
                               currentStatus,
@@ -331,19 +289,16 @@ class ManageProductCard extends StatelessWidget {
                   child: _ProductMetric(
                     icon: Icons.inventory_2_outlined,
                     label: 'AVAILABLE',
-                    value:
-                        '${formatNumber(quantity)} $quantityUnit',
+                    value: '${formatNumber(quantity)} $quantityUnit',
                     valueColor: currentColor,
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: _ProductMetric(
-                    icon:
-                        Icons.notifications_active_outlined,
+                    icon: Icons.notifications_active_outlined,
                     label: 'ALERT AT',
-                    value:
-                        '${formatNumber(lowStockLevel)} $quantityUnit',
+                    value: '${formatNumber(lowStockLevel)} $quantityUnit',
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -351,8 +306,7 @@ class ManageProductCard extends StatelessWidget {
                   child: _ProductMetric(
                     icon: Icons.percent_rounded,
                     label: 'THRESHOLD',
-                    value:
-                        '${formatNumber(lowStockPercentage)}%',
+                    value: '${formatNumber(lowStockPercentage)}%',
                   ),
                 ),
               ],
@@ -364,23 +318,16 @@ class ManageProductCard extends StatelessWidget {
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: isBusy ? null : onRestock,
-                      icon: const Icon(
-                        Icons.add_box_outlined,
-                        size: 18,
-                      ),
+                      icon: const Icon(Icons.add_box_outlined, size: 18),
                       label: const Text(
                         'Add Stock',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w900,
-                        ),
+                        style: TextStyle(fontWeight: FontWeight.w900),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFE7F8F1),
                         foregroundColor: const Color(0xFF147D64),
-                        disabledBackgroundColor:
-                            const Color(0xFFEAF0F4),
-                        disabledForegroundColor:
-                            const Color(0xFF9AABB8),
+                        disabledBackgroundColor: const Color(0xFFEAF0F4),
+                        disabledForegroundColor: const Color(0xFF9AABB8),
                         minimumSize: const Size.fromHeight(44),
                         elevation: 0,
                         shape: RoundedRectangleBorder(
@@ -394,22 +341,15 @@ class ManageProductCard extends StatelessWidget {
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: isBusy ? null : onEdit,
-                    icon: const Icon(
-                      Icons.edit_outlined,
-                      size: 18,
-                    ),
+                    icon: const Icon(Icons.edit_outlined, size: 18),
                     label: const Text(
                       'Edit Product',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                      ),
+                      style: TextStyle(fontWeight: FontWeight.w900),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          const Color(0xFF146BFF),
+                      backgroundColor: const Color(0xFF146BFF),
                       foregroundColor: Colors.white,
-                      disabledBackgroundColor:
-                          const Color(0xFFDCE7EF),
+                      disabledBackgroundColor: const Color(0xFFDCE7EF),
                       minimumSize: const Size.fromHeight(44),
                       elevation: 0,
                       shape: RoundedRectangleBorder(
@@ -424,18 +364,14 @@ class ManageProductCard extends StatelessWidget {
                   tooltip: 'More product actions',
                   color: Colors.white,
                   surfaceTintColor: Colors.white,
-                  onSelected: (
-                    value,
-                  ) {
+                  onSelected: (value) {
                     if (value == 'visibility') {
                       onToggleAvailability();
                     } else if (value == 'archive') {
                       onArchive();
                     }
                   },
-                  itemBuilder: (
-                    context,
-                  ) {
+                  itemBuilder: (context) {
                     return [
                       PopupMenuItem<String>(
                         value: 'visibility',
@@ -455,8 +391,8 @@ class ManageProductCard extends StatelessWidget {
                               archived
                                   ? 'Restore Product'
                                   : hidden
-                                      ? 'Show Product'
-                                      : 'Hide Product',
+                                  ? 'Show Product'
+                                  : 'Hide Product',
                               style: TextStyle(
                                 color: hidden
                                     ? const Color(0xFF147D64)
@@ -501,9 +437,7 @@ class ManageProductCard extends StatelessWidget {
               const SizedBox(height: 10),
               const LinearProgressIndicator(
                 minHeight: 3,
-                borderRadius: BorderRadius.all(
-                  Radius.circular(99),
-                ),
+                borderRadius: BorderRadius.all(Radius.circular(99)),
                 color: Color(0xFF146BFF),
                 backgroundColor: Color(0xFFEAF2F7),
               ),
@@ -529,27 +463,16 @@ class _ProductMetric extends StatelessWidget {
   final Color valueColor;
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(
-        7,
-        9,
-        7,
-        9,
-      ),
+      padding: const EdgeInsets.fromLTRB(7, 9, 7, 9),
       decoration: BoxDecoration(
         color: const Color(0xFFF4F8FB),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
         children: [
-          Icon(
-            icon,
-            color: const Color(0xFF146BFF),
-            size: 17,
-          ),
+          Icon(icon, color: const Color(0xFF146BFF), size: 17),
           const SizedBox(height: 4),
           Text(
             label,

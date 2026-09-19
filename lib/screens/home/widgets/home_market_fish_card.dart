@@ -80,20 +80,21 @@ class HomeMarketFishCard extends StatelessWidget {
   }
 
   Widget _stockBadge() {
-    final lowStock = product.availableQuantity > 0 &&
+    final lowStock =
+        product.availableQuantity > 0 &&
         product.availableQuantity <= product.lowStockThreshold;
     final outOfStock = product.availableQuantity <= 0;
     final label = outOfStock
         ? 'OUT OF STOCK'
         : lowStock
-            ? 'LOW STOCK'
-            : 'AVAILABLE';
+        ? 'LOW STOCK'
+        : 'AVAILABLE';
 
     final background = outOfStock
         ? const Color(0xFFE45D5D)
         : lowStock
-            ? const Color(0xFFF2A33A)
-            : const Color(0xFF2DAA7A);
+        ? const Color(0xFFF2A33A)
+        : const Color(0xFF2DAA7A);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
@@ -154,10 +155,7 @@ class HomeMarketFishCard extends StatelessWidget {
         child: Ink(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: const Color(0xFFCBE5F0),
-              width: 1.15,
-            ),
+            border: Border.all(color: const Color(0xFFCBE5F0), width: 1.15),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x18002A43),
@@ -307,11 +305,8 @@ class HomeMarketFishCard extends StatelessWidget {
   }
 
   Widget _placeholder() => Container(
-        color: const Color(0xFFDDF3FC),
-        alignment: Alignment.center,
-        child: Text(
-          product.emoji,
-          style: const TextStyle(fontSize: 38),
-        ),
-      );
+    color: const Color(0xFFDDF3FC),
+    alignment: Alignment.center,
+    child: Text(product.emoji, style: const TextStyle(fontSize: 38)),
+  );
 }

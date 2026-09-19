@@ -43,19 +43,11 @@ class CloudinaryUploadService {
       'https://api.cloudinary.com/v1_1/${CloudinaryConfig.cloudName}/image/upload',
     );
 
-    final request = http.MultipartRequest(
-      'POST',
-      uri,
-    );
+    final request = http.MultipartRequest('POST', uri);
 
     request.fields['upload_preset'] = CloudinaryConfig.unsignedUploadPreset;
     request.fields['folder'] = folder;
-    request.files.add(
-      await http.MultipartFile.fromPath(
-        'file',
-        image.path,
-      ),
-    );
+    request.files.add(await http.MultipartFile.fromPath('file', image.path));
 
     final response = await request.send().timeout(uploadTimeout);
     final responseBody = await response.stream.bytesToString();
@@ -73,7 +65,9 @@ class CloudinaryUploadService {
       }
       decodedBody = decoded;
     } on FormatException {
-      throw Exception('Image upload returned an invalid response. Please try again.');
+      throw Exception(
+        'Image upload returned an invalid response. Please try again.',
+      );
     }
 
     final secureUrl = decodedBody['secure_url']?.toString().trim() ?? '';
@@ -82,7 +76,9 @@ class CloudinaryUploadService {
     if (secureUrl.isEmpty ||
         !secureUrl.startsWith('https://') ||
         (resourceType.isNotEmpty && resourceType != 'image')) {
-      throw Exception('Image upload finished but no valid image link was returned.');
+      throw Exception(
+        'Image upload finished but no valid image link was returned.',
+      );
     }
 
     return secureUrl;
@@ -104,7 +100,8 @@ class CloudinaryUploadService {
           (segments[1] == 'profile' || segments[1] == 'cover');
     }
 
-    final verificationPrefix = '${CloudinaryConfig.supplierVerificationFolder}/';
+    final verificationPrefix =
+        '${CloudinaryConfig.supplierVerificationFolder}/';
     if (!normalized.startsWith(verificationPrefix)) {
       return false;
     }

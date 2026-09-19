@@ -29,10 +29,7 @@ class HomeBottomNav extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           margin: const EdgeInsets.symmetric(horizontal: 3),
-          padding: const EdgeInsets.symmetric(
-            vertical: 7,
-            horizontal: 4,
-          ),
+          padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 4),
           decoration: BoxDecoration(
             color: active ? const Color(0xFFEDF9FD) : Colors.transparent,
             borderRadius: BorderRadius.circular(16),
@@ -66,10 +63,7 @@ class HomeBottomNav extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: const Color(0xFFFF4D4D),
                           borderRadius: BorderRadius.circular(99),
-                          border: Border.all(
-                            color: Colors.white,
-                            width: 1.4,
-                          ),
+                          border: Border.all(color: Colors.white, width: 1.4),
                         ),
                         child: Text(
                           badgeCount > 9 ? '9+' : '$badgeCount',
@@ -104,19 +98,12 @@ class HomeBottomNav extends StatelessWidget {
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(9, 7, 9, 7),
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: Color(0xFFE7F0F5),
-            width: 0.8,
-          ),
-        ),
+        border: Border(top: BorderSide(color: Color(0xFFE7F0F5), width: 0.8)),
         boxShadow: [
           BoxShadow(
             color: Color(0x14000000),

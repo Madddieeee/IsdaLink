@@ -24,9 +24,7 @@ class CheckoutCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(23),
-        border: Border.all(
-          color: const Color(0xFFE0EBF2),
-        ),
+        border: Border.all(color: const Color(0xFFE0EBF2)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x0E00152A),
@@ -66,11 +64,7 @@ class CheckoutSectionTitle extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           child: leading == null
-              ? Icon(
-                  icon,
-                  color: const Color(0xFF0875D1),
-                  size: 18,
-                )
+              ? Icon(icon, color: const Color(0xFF0875D1), size: 18)
               : ClipRRect(
                   borderRadius: BorderRadius.circular(11),
                   child: leading,
@@ -154,11 +148,7 @@ class BuyerDetailsCard extends StatelessWidget {
           color: const Color(0xFFE8F8FD),
           borderRadius: BorderRadius.circular(11),
         ),
-        child: Icon(
-          icon,
-          color: const Color(0xFF0875D1),
-          size: 17,
-        ),
+        child: Icon(icon, color: const Color(0xFF0875D1), size: 17),
       ),
       filled: true,
       fillColor: const Color(0xFFF7FAFC),
@@ -166,16 +156,11 @@ class BuyerDetailsCard extends StatelessWidget {
       contentPadding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(15),
-        borderSide: const BorderSide(
-          color: Color(0xFFE0EBF2),
-        ),
+        borderSide: const BorderSide(color: Color(0xFFE0EBF2)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(15),
-        borderSide: const BorderSide(
-          color: Color(0xFF12A9D1),
-          width: 1.3,
-        ),
+        borderSide: const BorderSide(color: Color(0xFF12A9D1), width: 1.3),
       ),
     );
   }
@@ -278,10 +263,7 @@ class BuyerDetailsCard extends StatelessWidget {
                             color: Colors.white,
                           ),
                         )
-                      : const Icon(
-                          Icons.save_outlined,
-                          size: 17,
-                        ),
+                      : const Icon(Icons.save_outlined, size: 17),
                   label: Text(
                     isSaving ? 'Saving...' : 'Save Delivery Information',
                     style: const TextStyle(
@@ -422,9 +404,7 @@ class BuyerDetailsCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: const Color(0xFFFFF5E8),
                   borderRadius: BorderRadius.circular(13),
-                  border: Border.all(
-                    color: const Color(0xFFFFE0B8),
-                  ),
+                  border: Border.all(color: const Color(0xFFFFE0B8)),
                 ),
                 child: Text(
                   errorMessage,
@@ -466,14 +446,12 @@ class ProductOrderCard extends StatelessWidget {
 
   bool get hasProductImage {
     final imageUrl = product.imageUrl.trim();
-    return imageUrl.startsWith('http://') ||
-        imageUrl.startsWith('https://');
+    return imageUrl.startsWith('http://') || imageUrl.startsWith('https://');
   }
 
   bool get hasSupplierImage {
     final imageUrl = supplierImageUrl.trim();
-    return imageUrl.startsWith('http://') ||
-        imageUrl.startsWith('https://');
+    return imageUrl.startsWith('http://') || imageUrl.startsWith('https://');
   }
 
   Widget supplierImage() {
@@ -511,7 +489,10 @@ class ProductOrderCard extends StatelessWidget {
   String formatPrice(double value) {
     final raw = value % 1 == 0
         ? value.toStringAsFixed(0)
-        : value.toStringAsFixed(2).replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
+        : value
+              .toStringAsFixed(2)
+              .replaceFirst(RegExp(r'0+$'), '')
+              .replaceFirst(RegExp(r'\.$'), '');
     final parts = raw.split('.');
     final whole = parts.first;
     final grouped = StringBuffer();
@@ -521,7 +502,9 @@ class ProductOrderCard extends StatelessWidget {
       }
       grouped.write(whole[index]);
     }
-    return parts.length > 1 ? '${grouped.toString()}.${parts[1]}' : grouped.toString();
+    return parts.length > 1
+        ? '${grouped.toString()}.${parts[1]}'
+        : grouped.toString();
   }
 
   String get cleanPriceUnit {
@@ -563,9 +546,7 @@ class ProductOrderCard extends StatelessWidget {
     required bool enabled,
   }) {
     return Material(
-      color: enabled
-          ? const Color(0xFFE8F8FD)
-          : const Color(0xFFF0F3F5),
+      color: enabled ? const Color(0xFFE8F8FD) : const Color(0xFFF0F3F5),
       borderRadius: BorderRadius.circular(11),
       child: InkWell(
         onTap: enabled ? onTap : null,
@@ -584,9 +565,7 @@ class ProductOrderCard extends StatelessWidget {
           child: Icon(
             icon,
             size: 18,
-            color: enabled
-                ? const Color(0xFF0875D1)
-                : const Color(0xFFA6B2BC),
+            color: enabled ? const Color(0xFF0875D1) : const Color(0xFFA6B2BC),
           ),
         ),
       ),
@@ -617,9 +596,7 @@ class ProductOrderCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: const Color(0xFFE8F8FD),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: const Color(0xFFD8EAF3),
-                  ),
+                  border: Border.all(color: const Color(0xFFD8EAF3)),
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(11),
@@ -651,9 +628,7 @@ class ProductOrderCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: const Color(0xFFF3F7FA),
                   borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: const Color(0xFFE0EBF2),
-                  ),
+                  border: Border.all(color: const Color(0xFFE0EBF2)),
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(17),
@@ -735,9 +710,7 @@ class ProductOrderCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0xFFF5FAFD),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: const Color(0xFFE0EBF2),
-              ),
+              border: Border.all(color: const Color(0xFFE0EBF2)),
             ),
             child: Row(
               children: [
@@ -763,7 +736,8 @@ class ProductOrderCard extends StatelessWidget {
                               ? const Color(0xFF16845E)
                               : const Color(0xFF7B8FA3),
                           fontSize: 8.8,
-                          fontWeight: quantity >= product.availableQuantity.floor()
+                          fontWeight:
+                              quantity >= product.availableQuantity.floor()
                               ? FontWeight.w800
                               : FontWeight.w600,
                         ),
@@ -788,9 +762,7 @@ class ProductOrderCard extends StatelessWidget {
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: const Color(0xFFDCE8EF),
-                        ),
+                        border: Border.all(color: const Color(0xFFDCE8EF)),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -854,7 +826,10 @@ class PaymentDetailsCard extends StatelessWidget {
   String formatPrice(double value) {
     final raw = value % 1 == 0
         ? value.toStringAsFixed(0)
-        : value.toStringAsFixed(2).replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
+        : value
+              .toStringAsFixed(2)
+              .replaceFirst(RegExp(r'0+$'), '')
+              .replaceFirst(RegExp(r'\.$'), '');
     final parts = raw.split('.');
     final whole = parts.first;
     final grouped = StringBuffer();
@@ -864,7 +839,9 @@ class PaymentDetailsCard extends StatelessWidget {
       }
       grouped.write(whole[index]);
     }
-    return parts.length > 1 ? '${grouped.toString()}.${parts[1]}' : grouped.toString();
+    return parts.length > 1
+        ? '${grouped.toString()}.${parts[1]}'
+        : grouped.toString();
   }
 
   String get cleanPriceUnit {
@@ -895,9 +872,7 @@ class PaymentDetailsCard extends StatelessWidget {
                     ? const Color(0xFF102C44)
                     : const Color(0xFF62798B),
                 fontSize: strong ? 12 : 10.5,
-                fontWeight: strong
-                    ? FontWeight.w900
-                    : FontWeight.w700,
+                fontWeight: strong ? FontWeight.w900 : FontWeight.w700,
               ),
             ),
           ),
@@ -905,9 +880,7 @@ class PaymentDetailsCard extends StatelessWidget {
           Text(
             value,
             style: TextStyle(
-              color: strong
-                  ? const Color(0xFF0875D1)
-                  : const Color(0xFF102C44),
+              color: strong ? const Color(0xFF0875D1) : const Color(0xFF102C44),
               fontSize: strong ? 16 : 11,
               fontWeight: FontWeight.w900,
             ),
@@ -941,14 +914,8 @@ class PaymentDetailsCard extends StatelessWidget {
             label: 'Merchandise subtotal',
             value: '₱${formatPrice(totalAmount)}',
           ),
-          summaryRow(
-            label: 'Payment method',
-            value: 'Cash on Delivery',
-          ),
-          const Divider(
-            height: 22,
-            color: Color(0xFFE0EBF2),
-          ),
+          summaryRow(label: 'Payment method', value: 'Cash on Delivery'),
+          const Divider(height: 22, color: Color(0xFFE0EBF2)),
           summaryRow(
             label: 'Total payment',
             value: '₱${formatPrice(totalAmount)}',
@@ -961,9 +928,7 @@ class PaymentDetailsCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0xFFEFF8FD),
               borderRadius: BorderRadius.circular(15),
-              border: Border.all(
-                color: const Color(0xFFD8ECF6),
-              ),
+              border: Border.all(color: const Color(0xFFD8ECF6)),
             ),
             child: const Row(
               crossAxisAlignment: CrossAxisAlignment.start,

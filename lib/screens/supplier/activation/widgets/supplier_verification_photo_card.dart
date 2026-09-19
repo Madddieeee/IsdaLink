@@ -54,9 +54,7 @@ class SupplierVerificationPhotoCard extends StatelessWidget {
         color: const Color(0xFFF8FBFD),
         borderRadius: BorderRadius.circular(19),
         border: Border.all(
-          color: ready
-              ? const Color(0xFF77D7B7)
-              : const Color(0xFFE1EBF2),
+          color: ready ? const Color(0xFF77D7B7) : const Color(0xFFE1EBF2),
         ),
       ),
       child: Column(
@@ -118,8 +116,8 @@ class SupplierVerificationPhotoCard extends StatelessWidget {
                             uploading
                                 ? 'Uploading'
                                 : ready
-                                    ? 'Ready'
-                                    : 'Required',
+                                ? 'Ready'
+                                : 'Required',
                             style: TextStyle(
                               color: ready
                                   ? const Color(0xFF147D64)
@@ -155,9 +153,7 @@ class SupplierVerificationPhotoCard extends StatelessWidget {
                 child: ElevatedButton.icon(
                   onPressed: uploading ? null : onUpload,
                   icon: Icon(
-                    ready
-                        ? Icons.change_circle_outlined
-                        : Icons.upload_rounded,
+                    ready ? Icons.change_circle_outlined : Icons.upload_rounded,
                     size: 18,
                   ),
                   label: Text(

@@ -9,10 +9,7 @@ class SupplierNotificationService {
   ) {
     return FirebaseFirestore.instance
         .collection('notifications')
-        .where(
-          'supplierId',
-          isEqualTo: supplierId,
-        )
+        .where('supplierId', isEqualTo: supplierId)
         .snapshots();
   }
 
@@ -21,46 +18,35 @@ class SupplierNotificationService {
     String type,
   ) {
     final normalizedType = type.trim().toLowerCase();
-    final notifications = documents.where(
-      (document) {
-        final data = document.data();
-        final notificationType = OrderHelpers.getStringValue(
-          data,
-          'type',
-          '',
-        ).toLowerCase();
+    final notifications = documents.where((document) {
+      final data = document.data();
+      final notificationType = OrderHelpers.getStringValue(
+        data,
+        'type',
+        '',
+      ).toLowerCase();
 
-        return notificationType == normalizedType &&
-            data['isRead'] != true;
-      },
-    ).toList();
+      return notificationType == normalizedType && data['isRead'] != true;
+    }).toList();
 
     notifications.sort(
-      (a, b) => createdAtMillis(b).compareTo(
-        createdAtMillis(a),
-      ),
+      (a, b) => createdAtMillis(b).compareTo(createdAtMillis(a)),
     );
 
     return notifications;
   }
 
   List<QueryDocumentSnapshot<Map<String, dynamic>>>
-      unreadProfileChangeNotifications(
+  unreadProfileChangeNotifications(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
   ) {
-    return unreadByType(
-      documents,
-      'supplier_profile_change',
-    );
+    return unreadByType(documents, 'supplier_profile_change');
   }
 
   List<QueryDocumentSnapshot<Map<String, dynamic>>> unreadStockNotifications(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
   ) {
-    return unreadByType(
-      documents,
-      'stock_alert',
-    );
+    return unreadByType(documents, 'stock_alert');
   }
 
   Future<void> markNotificationsRead(
@@ -73,21 +59,16 @@ class SupplierNotificationService {
     final batch = FirebaseFirestore.instance.batch();
 
     for (final notification in notifications) {
-      batch.update(
-        notification.reference,
-        {
-          'isRead': true,
-          'readAt': FieldValue.serverTimestamp(),
-        },
-      );
+      batch.update(notification.reference, {
+        'isRead': true,
+        'readAt': FieldValue.serverTimestamp(),
+      });
     }
 
     await batch.commit();
   }
 
-  int createdAtMillis(
-    QueryDocumentSnapshot<Map<String, dynamic>> document,
-  ) {
+  int createdAtMillis(QueryDocumentSnapshot<Map<String, dynamic>> document) {
     final value = document.data()['createdAt'];
 
     if (value is Timestamp) {

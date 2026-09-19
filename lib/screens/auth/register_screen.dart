@@ -7,9 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:isdalink/screens/home/home_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({
-    super.key,
-  });
+  const RegisterScreen({super.key});
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -231,7 +229,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? selectedCity;
   String? registrationError;
 
-
   List<String> get availableCities {
     final values = locationsByProvince[selectedProvince];
 
@@ -239,28 +236,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return const [];
     }
 
-    return List<String>.from(values)..sort(
-        (a, b) => a.toLowerCase().compareTo(
-              b.toLowerCase(),
-            ),
-      );
+    return List<String>.from(values)
+      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
   }
 
   List<String> get cityPickerOptions => availableCities;
 
   bool get hasMinimumLength => passwordController.text.length >= 8;
 
-  bool get hasLetter => RegExp(
-        r'[A-Za-z]',
-      ).hasMatch(
-        passwordController.text,
-      );
+  bool get hasLetter => RegExp(r'[A-Za-z]').hasMatch(passwordController.text);
 
-  bool get hasNumber => RegExp(
-        r'\d',
-      ).hasMatch(
-        passwordController.text,
-      );
+  bool get hasNumber => RegExp(r'\d').hasMatch(passwordController.text);
 
   String? get provinceDisplayValue => selectedProvince;
 
@@ -300,22 +286,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void initState() {
     super.initState();
 
-    passwordController.addListener(
-      handlePasswordChanged,
-    );
-    confirmPasswordController.addListener(
-      handleConfirmPasswordChanged,
-    );
+    passwordController.addListener(handlePasswordChanged);
+    confirmPasswordController.addListener(handleConfirmPasswordChanged);
   }
 
   @override
   void dispose() {
-    passwordController.removeListener(
-      handlePasswordChanged,
-    );
-    confirmPasswordController.removeListener(
-      handleConfirmPasswordChanged,
-    );
+    passwordController.removeListener(handlePasswordChanged);
+    confirmPasswordController.removeListener(handleConfirmPasswordChanged);
 
     fullNameController.dispose();
     emailController.dispose();
@@ -354,9 +332,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
   }
 
-  void fieldChanged(
-    String field,
-  ) {
+  void fieldChanged(String field) {
     if (!mounted) {
       return;
     }
@@ -367,36 +343,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
   }
 
-  String collapseSpaces(
-    String value,
-  ) {
-    return value.trim().replaceAll(
-          RegExp(r'\s+'),
-          ' ',
-        );
+  String collapseSpaces(String value) {
+    return value.trim().replaceAll(RegExp(r'\s+'), ' ');
   }
 
-  String normalizeEmail(
-    String value,
-  ) {
+  String normalizeEmail(String value) {
     return value.trim().toLowerCase();
   }
 
-  String phoneDigits(
-    String value,
-  ) {
-    return value.replaceAll(
-      RegExp(r'[^0-9]'),
-      '',
-    );
+  String phoneDigits(String value) {
+    return value.replaceAll(RegExp(r'[^0-9]'), '');
   }
 
-  String normalizePhilippinePhone(
-    String value,
-  ) {
-    final digits = phoneDigits(
-      value,
-    );
+  String normalizePhilippinePhone(String value) {
+    final digits = phoneDigits(value);
 
     if (digits.startsWith('09') && digits.length == 11) {
       return '+63${digits.substring(1)}';
@@ -413,12 +373,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return value.trim();
   }
 
-  String? validateFullName(
-    String? value,
-  ) {
-    final fullName = collapseSpaces(
-      value ?? '',
-    );
+  String? validateFullName(String? value) {
+    final fullName = collapseSpaces(value ?? '');
 
     if (fullName.isEmpty) {
       return 'Enter your full name.';
@@ -428,9 +384,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return 'Enter at least 2 characters.';
     }
 
-    final namePattern = RegExp(
-      r"^[A-Za-zÀ-ÖØ-öø-ÿÑñ.' -]+$",
-    );
+    final namePattern = RegExp(r"^[A-Za-zÀ-ÖØ-öø-ÿÑñ.' -]+$");
 
     if (!namePattern.hasMatch(fullName)) {
       return 'Use letters, spaces, hyphens, or apostrophes only.';
@@ -439,20 +393,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return null;
   }
 
-  String? validateEmail(
-    String? value,
-  ) {
-    final email = normalizeEmail(
-      value ?? '',
-    );
+  String? validateEmail(String? value) {
+    final email = normalizeEmail(value ?? '');
 
     if (email.isEmpty) {
       return 'Enter your email address.';
     }
 
-    final emailPattern = RegExp(
-      r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
-    );
+    final emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
     if (!emailPattern.hasMatch(email)) {
       return 'Enter a valid email address.';
@@ -461,38 +409,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return null;
   }
 
-  String? validatePhone(
-    String? value,
-  ) {
+  String? validatePhone(String? value) {
     final input = (value ?? '').trim();
 
     if (input.isEmpty) {
       return 'Enter your phone number.';
     }
 
-    final digits = phoneDigits(
-      input,
-    );
+    final digits = phoneDigits(input);
 
-    final isLocalFormat =
-        digits.startsWith('09') && digits.length == 11;
-    final isShortLocalFormat =
-        digits.startsWith('9') && digits.length == 10;
+    final isLocalFormat = digits.startsWith('09') && digits.length == 11;
+    final isShortLocalFormat = digits.startsWith('9') && digits.length == 10;
     final isInternationalFormat =
         digits.startsWith('639') && digits.length == 12;
 
-    if (!isLocalFormat &&
-        !isShortLocalFormat &&
-        !isInternationalFormat) {
+    if (!isLocalFormat && !isShortLocalFormat && !isInternationalFormat) {
       return 'Use 09XXXXXXXXX or +639XXXXXXXXX.';
     }
 
     return null;
   }
 
-  String? validateProvince(
-    String? value,
-  ) {
+  String? validateProvince(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'Select your province.';
     }
@@ -504,9 +442,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return null;
   }
 
-  String? validateCity(
-    String? value,
-  ) {
+  String? validateCity(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'Select your city or municipality.';
     }
@@ -522,9 +458,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return null;
   }
 
-  String? validatePassword(
-    String? value,
-  ) {
+  String? validatePassword(String? value) {
     final password = value ?? '';
 
     if (password.isEmpty) {
@@ -550,9 +484,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return null;
   }
 
-  String? validateConfirmPassword(
-    String? value,
-  ) {
+  String? validateConfirmPassword(String? value) {
     final confirmPassword = value ?? '';
 
     if (confirmPassword.isEmpty) {
@@ -566,9 +498,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return null;
   }
 
-  bool fieldIsValid(
-    String field,
-  ) {
+  bool fieldIsValid(String field) {
     if (!touchedFields.contains(field)) {
       return false;
     }
@@ -586,10 +516,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       case 'city':
         return validateCity(selectedCity) == null;
       case 'confirmPassword':
-        return validateConfirmPassword(
-              confirmPasswordController.text,
-            ) ==
-            null;
+        return validateConfirmPassword(confirmPasswordController.text) == null;
       default:
         return false;
     }
@@ -626,10 +553,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    if (validateConfirmPassword(
-          confirmPasswordController.text,
-        ) !=
-        null) {
+    if (validateConfirmPassword(confirmPasswordController.text) != null) {
       confirmPasswordFocusNode.requestFocus();
     }
   }
@@ -649,334 +573,303 @@ class _RegisterScreenState extends State<RegisterScreen> {
       useSafeArea: true,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black.withAlpha(180),
-      builder: (
-        sheetContext,
-      ) {
+      builder: (sheetContext) {
         return _LocationPickerSearchHost(
-          builder: (
-            context,
-            searchController,
-            searchFocusNode,
-          ) {
+          builder: (context, searchController, searchFocusNode) {
             return StatefulBuilder(
-              builder: (
-                context,
-                setSheetState,
-              ) {
-            final query = searchController.text.trim().toLowerCase();
-            final filteredOptions = options.where(
-              (option) {
-                if (query.isEmpty) {
-                  return true;
-                }
+              builder: (context, setSheetState) {
+                final query = searchController.text.trim().toLowerCase();
+                final filteredOptions = options.where((option) {
+                  if (query.isEmpty) {
+                    return true;
+                  }
 
-                return option.toLowerCase().contains(query);
-              },
-            ).toList();
+                  return option.toLowerCase().contains(query);
+                }).toList();
 
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
-              ),
-              child: Container(
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(sheetContext).size.height * 0.80,
-                ),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF0B2435),
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(28),
+                return Padding(
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Color(0x7A000000),
-                      blurRadius: 34,
-                      offset: Offset(0, -12),
+                  child: Container(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(sheetContext).size.height * 0.80,
                     ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(height: 10),
-                    Container(
-                      width: 42,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF7790A2),
-                        borderRadius: BorderRadius.circular(99),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF0B2435),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(28),
                       ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        20,
-                        16,
-                        12,
-                        14,
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF146BFF).withAlpha(38),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Icon(
-                              icon,
-                              color: const Color(0xFF89CAFF),
-                              size: 23,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  title,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  subtitle,
-                                  style: const TextStyle(
-                                    color: Color(0xFF9EB5C5),
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          IconButton(
-                            tooltip: 'Close',
-                            onPressed: () {
-                              searchFocusNode.unfocus();
-                              Navigator.pop(
-                                sheetContext,
-                              );
-                            },
-                            icon: const Icon(
-                              Icons.close_rounded,
-                              color: Color(0xFFD5E4EF),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (searchable)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                          18,
-                          0,
-                          18,
-                          13,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Color(0x7A000000),
+                          blurRadius: 34,
+                          offset: Offset(0, -12),
                         ),
-                        child: TextField(
-                          controller: searchController,
-                          focusNode: searchFocusNode,
-                          autofocus: false,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          textInputAction: TextInputAction.search,
-                          onChanged: (_) {
-                            setSheetState(() {});
-                          },
-                          decoration: InputDecoration(
-                            hintText: 'Search city or municipality',
-                            hintStyle: const TextStyle(
-                              color: Color(0xFF7F98AA),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            prefixIcon: const Icon(
-                              Icons.search_rounded,
-                              color: Color(0xFF8DB7D3),
-                            ),
-                            suffixIcon: searchController.text.isEmpty
-                                ? null
-                                : IconButton(
-                                    tooltip: 'Clear search',
-                                    onPressed: () {
-                                      searchController.clear();
-                                      setSheetState(() {});
-                                    },
-                                    icon: const Icon(
-                                      Icons.close_rounded,
-                                      color: Color(0xFFA9BFCD),
-                                    ),
-                                  ),
-                            filled: true,
-                            fillColor: const Color(0xFF071C2A),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 15,
-                              vertical: 14,
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(15),
-                              borderSide: const BorderSide(
-                                color: Color(0x3D8DB7D3),
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: const BorderSide(
-                                color: Color(0xFF32A9FF),
-                                width: 1.5,
-                              ),
-                            ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(height: 10),
+                        Container(
+                          width: 42,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF7790A2),
+                            borderRadius: BorderRadius.circular(99),
                           ),
                         ),
-                      ),
-                    Divider(
-                      height: 1,
-                      color: Colors.white.withAlpha(16),
-                    ),
-                    Flexible(
-                      child: filteredOptions.isEmpty
-                          ? const Padding(
-                              padding: EdgeInsets.all(28),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.search_off_rounded,
-                                    color: Color(0xFF7892A5),
-                                    size: 38,
-                                  ),
-                                  SizedBox(height: 10),
-                                  Text(
-                                    'No matching location found.',
-                                    style: TextStyle(
-                                      color: Color(0xFFA9BFCD),
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 16, 12, 14),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF146BFF).withAlpha(38),
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: Icon(
+                                  icon,
+                                  color: const Color(0xFF89CAFF),
+                                  size: 23,
+                                ),
                               ),
-                            )
-                          : ListView.separated(
-                              shrinkWrap: true,
-                              padding: const EdgeInsets.fromLTRB(
-                                12,
-                                8,
-                                12,
-                                20,
-                              ),
-                              itemCount: filteredOptions.length,
-                              separatorBuilder: (
-                                context,
-                                index,
-                              ) {
-                                return const SizedBox(height: 3);
-                              },
-                              itemBuilder: (
-                                context,
-                                index,
-                              ) {
-                                final option = filteredOptions[index];
-                                final isSelected = option == selectedValue;
-
-                                return Material(
-                                  color: Colors.transparent,
-                                  child: InkWell(
-                                    onTap: () {
-                                      searchFocusNode.unfocus();
-                                      Navigator.pop(
-                                        sheetContext,
-                                        option,
-                                      );
-                                    },
-                                    borderRadius: BorderRadius.circular(15),
-                                    child: AnimatedContainer(
-                                      duration:
-                                          const Duration(milliseconds: 170),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 14,
-                                        vertical: 14,
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      title,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.w900,
                                       ),
-                                      decoration: BoxDecoration(
-                                        color: isSelected
-                                            ? const Color(0xFF0A5162)
-                                            : Colors.transparent,
-                                        borderRadius: BorderRadius.circular(15),
-                                        border: Border.all(
-                                          color: isSelected
-                                              ? const Color(0xFF29BDE3)
-                                              : Colors.transparent,
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      subtitle,
+                                      style: const TextStyle(
+                                        color: Color(0xFF9EB5C5),
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                tooltip: 'Close',
+                                onPressed: () {
+                                  searchFocusNode.unfocus();
+                                  Navigator.pop(sheetContext);
+                                },
+                                icon: const Icon(
+                                  Icons.close_rounded,
+                                  color: Color(0xFFD5E4EF),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (searchable)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(18, 0, 18, 13),
+                            child: TextField(
+                              controller: searchController,
+                              focusNode: searchFocusNode,
+                              autofocus: false,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              textInputAction: TextInputAction.search,
+                              onChanged: (_) {
+                                setSheetState(() {});
+                              },
+                              decoration: InputDecoration(
+                                hintText: 'Search city or municipality',
+                                hintStyle: const TextStyle(
+                                  color: Color(0xFF7F98AA),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                prefixIcon: const Icon(
+                                  Icons.search_rounded,
+                                  color: Color(0xFF8DB7D3),
+                                ),
+                                suffixIcon: searchController.text.isEmpty
+                                    ? null
+                                    : IconButton(
+                                        tooltip: 'Clear search',
+                                        onPressed: () {
+                                          searchController.clear();
+                                          setSheetState(() {});
+                                        },
+                                        icon: const Icon(
+                                          Icons.close_rounded,
+                                          color: Color(0xFFA9BFCD),
                                         ),
                                       ),
-                                      child: Row(
-                                        children: [
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  option,
-                                                  style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 12.5,
-                                                    fontWeight: isSelected
-                                                        ? FontWeight.w900
-                                                        : FontWeight.w700,
-                                                  ),
-                                                ),
-                                                if (optionSubtitleBuilder !=
-                                                    null) ...[
-                                                  const SizedBox(height: 3),
-                                                  Text(
-                                                    optionSubtitleBuilder(
-                                                      option,
-                                                    ),
-                                                    style: const TextStyle(
-                                                      color:
-                                                          Color(0xFF88A2B4),
-                                                      fontSize: 9.5,
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ],
+                                filled: true,
+                                fillColor: const Color(0xFF071C2A),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 15,
+                                  vertical: 14,
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                  borderSide: const BorderSide(
+                                    color: Color(0x3D8DB7D3),
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xFF32A9FF),
+                                    width: 1.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        Divider(height: 1, color: Colors.white.withAlpha(16)),
+                        Flexible(
+                          child: filteredOptions.isEmpty
+                              ? const Padding(
+                                  padding: EdgeInsets.all(28),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.search_off_rounded,
+                                        color: Color(0xFF7892A5),
+                                        size: 38,
+                                      ),
+                                      SizedBox(height: 10),
+                                      Text(
+                                        'No matching location found.',
+                                        style: TextStyle(
+                                          color: Color(0xFFA9BFCD),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : ListView.separated(
+                                  shrinkWrap: true,
+                                  padding: const EdgeInsets.fromLTRB(
+                                    12,
+                                    8,
+                                    12,
+                                    20,
+                                  ),
+                                  itemCount: filteredOptions.length,
+                                  separatorBuilder: (context, index) {
+                                    return const SizedBox(height: 3);
+                                  },
+                                  itemBuilder: (context, index) {
+                                    final option = filteredOptions[index];
+                                    final isSelected = option == selectedValue;
+
+                                    return Material(
+                                      color: Colors.transparent,
+                                      child: InkWell(
+                                        onTap: () {
+                                          searchFocusNode.unfocus();
+                                          Navigator.pop(sheetContext, option);
+                                        },
+                                        borderRadius: BorderRadius.circular(15),
+                                        child: AnimatedContainer(
+                                          duration: const Duration(
+                                            milliseconds: 170,
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 14,
+                                            vertical: 14,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: isSelected
+                                                ? const Color(0xFF0A5162)
+                                                : Colors.transparent,
+                                            borderRadius: BorderRadius.circular(
+                                              15,
+                                            ),
+                                            border: Border.all(
+                                              color: isSelected
+                                                  ? const Color(0xFF29BDE3)
+                                                  : Colors.transparent,
                                             ),
                                           ),
-                                          if (isSelected)
-                                            const Icon(
-                                              Icons.check_circle_rounded,
-                                              color: Color(0xFF42D59B),
-                                              size: 20,
-                                            )
-                                          else
-                                            const Icon(
-                                              Icons.chevron_right_rounded,
-                                              color: Color(0xFF718A9C),
-                                              size: 20,
-                                            ),
-                                        ],
+                                          child: Row(
+                                            children: [
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      option,
+                                                      style: TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 12.5,
+                                                        fontWeight: isSelected
+                                                            ? FontWeight.w900
+                                                            : FontWeight.w700,
+                                                      ),
+                                                    ),
+                                                    if (optionSubtitleBuilder !=
+                                                        null) ...[
+                                                      const SizedBox(height: 3),
+                                                      Text(
+                                                        optionSubtitleBuilder(
+                                                          option,
+                                                        ),
+                                                        style: const TextStyle(
+                                                          color: Color(
+                                                            0xFF88A2B4,
+                                                          ),
+                                                          fontSize: 9.5,
+                                                          fontWeight:
+                                                              FontWeight.w700,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ],
+                                                ),
+                                              ),
+                                              if (isSelected)
+                                                const Icon(
+                                                  Icons.check_circle_rounded,
+                                                  color: Color(0xFF42D59B),
+                                                  size: 20,
+                                                )
+                                              else
+                                                const Icon(
+                                                  Icons.chevron_right_rounded,
+                                                  color: Color(0xFF718A9C),
+                                                  size: 20,
+                                                ),
+                                            ],
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
+                                    );
+                                  },
+                                ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-              );
-            },
+                  ),
+                );
+              },
             );
           },
         );
@@ -997,9 +890,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       options: provinces,
       icon: Icons.map_outlined,
       selectedValue: selectedProvince,
-      optionSubtitleBuilder: (
-        option,
-      ) {
+      optionSubtitleBuilder: (option) {
         final localityCount = locationsByProvince[option]?.length ?? 0;
 
         return '$localityCount cities and municipalities available';
@@ -1078,34 +969,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
       context: context,
       barrierDismissible: false,
       barrierColor: Colors.black.withAlpha(190),
-      builder: (
-        dialogContext,
-      ) {
+      builder: (dialogContext) {
         return Dialog(
           backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 22,
-          ),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 22),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(26),
             child: BackdropFilter(
-              filter: ui.ImageFilter.blur(
-                sigmaX: 10,
-                sigmaY: 10,
-              ),
+              filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
               child: Container(
-                padding: const EdgeInsets.fromLTRB(
-                  18,
-                  18,
-                  18,
-                  17,
-                ),
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 17),
                 decoration: BoxDecoration(
                   color: const Color(0xF20A2334),
                   borderRadius: BorderRadius.circular(26),
-                  border: Border.all(
-                    color: const Color(0x4D7EC9FF),
-                  ),
+                  border: Border.all(color: const Color(0x4D7EC9FF)),
                   boxShadow: const [
                     BoxShadow(
                       color: Color(0x7A000000),
@@ -1120,25 +997,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   children: [
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.fromLTRB(
-                        14,
-                        14,
-                        14,
-                        14,
-                      ),
+                      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [
-                            Color(0xFF0D5D88),
-                            Color(0xFF124BD9),
-                          ],
+                          colors: [Color(0xFF0D5D88), Color(0xFF124BD9)],
                         ),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Colors.white.withAlpha(28),
-                        ),
+                        border: Border.all(color: Colors.white.withAlpha(28)),
                       ),
                       child: Row(
                         children: [
@@ -1196,9 +1063,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       decoration: BoxDecoration(
                         color: const Color(0xA3071B2A),
                         borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: Colors.white.withAlpha(18),
-                        ),
+                        border: Border.all(color: Colors.white.withAlpha(18)),
                       ),
                       child: Column(
                         children: [
@@ -1230,18 +1095,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: 12),
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.fromLTRB(
-                        12,
-                        10,
-                        12,
-                        10,
-                      ),
+                      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
                       decoration: BoxDecoration(
                         color: const Color(0x261C9BEA),
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: const Color(0x4D58B9F2),
-                        ),
+                        border: Border.all(color: const Color(0x4D58B9F2)),
                       ),
                       child: const Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1272,30 +1130,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         Expanded(
                           child: OutlinedButton.icon(
                             onPressed: () {
-                              Navigator.pop(
-                                dialogContext,
-                                false,
-                              );
+                              Navigator.pop(dialogContext, false);
                             },
                             style: OutlinedButton.styleFrom(
                               foregroundColor: const Color(0xFFD4E3ED),
-                              side: const BorderSide(
-                                color: Color(0x667FB3D4),
-                              ),
+                              side: const BorderSide(color: Color(0x667FB3D4)),
                               minimumSize: const Size.fromHeight(50),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                               ),
                             ),
-                            icon: const Icon(
-                              Icons.edit_outlined,
-                              size: 18,
-                            ),
+                            icon: const Icon(Icons.edit_outlined, size: 18),
                             label: const Text(
                               'Review',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w900,
-                              ),
+                              style: TextStyle(fontWeight: FontWeight.w900),
                             ),
                           ),
                         ),
@@ -1303,10 +1151,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         Expanded(
                           child: ElevatedButton.icon(
                             onPressed: () {
-                              Navigator.pop(
-                                dialogContext,
-                                true,
-                              );
+                              Navigator.pop(dialogContext, true);
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF176FFF),
@@ -1318,15 +1163,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 borderRadius: BorderRadius.circular(16),
                               ),
                             ),
-                            icon: const Icon(
-                              Icons.check_rounded,
-                              size: 19,
-                            ),
+                            icon: const Icon(Icons.check_rounded, size: 19),
                             label: const Text(
                               'Create',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w900,
-                              ),
+                              style: TextStyle(fontWeight: FontWeight.w900),
                             ),
                           ),
                         ),
@@ -1354,9 +1194,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(
-            vertical: 11,
-          ),
+          padding: const EdgeInsets.symmetric(vertical: 11),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1381,9 +1219,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               SizedBox(
                 width: 54,
                 child: Padding(
-                  padding: const EdgeInsets.only(
-                    top: 6,
-                  ),
+                  padding: const EdgeInsets.only(top: 6),
                   child: Text(
                     label,
                     style: const TextStyle(
@@ -1396,16 +1232,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.only(
-                    top: 5,
-                  ),
+                  padding: const EdgeInsets.only(top: 5),
                   child: Text(
                     value,
                     textAlign: TextAlign.right,
                     style: TextStyle(
-                      color: highlight
-                          ? const Color(0xFFD8FFF1)
-                          : Colors.white,
+                      color: highlight ? const Color(0xFFD8FFF1) : Colors.white,
                       fontSize: 11.5,
                       height: 1.35,
                       fontWeight: FontWeight.w900,
@@ -1416,20 +1248,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ],
           ),
         ),
-        if (showDivider)
-          Divider(
-            height: 1,
-            color: Colors.white.withAlpha(16),
-          ),
+        if (showDivider) Divider(height: 1, color: Colors.white.withAlpha(16)),
       ],
     );
   }
 
   Future<void> showRegistrationSuccess() async {
-    final navigator = Navigator.of(
-      context,
-      rootNavigator: true,
-    );
+    final navigator = Navigator.of(context, rootNavigator: true);
 
     showDialog<void>(
       context: context,
@@ -1439,22 +1264,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
           canPop: false,
           child: Dialog(
             backgroundColor: Colors.transparent,
-            insetPadding: const EdgeInsets.symmetric(
-              horizontal: 56,
-            ),
+            insetPadding: const EdgeInsets.symmetric(horizontal: 56),
             child: Container(
-              padding: const EdgeInsets.fromLTRB(
-                22,
-                23,
-                22,
-                22,
-              ),
+              padding: const EdgeInsets.fromLTRB(22, 23, 22, 22),
               decoration: BoxDecoration(
                 color: const Color(0xFF0B2435),
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: Colors.white.withAlpha(25),
-                ),
+                border: Border.all(color: Colors.white.withAlpha(25)),
                 boxShadow: const [
                   BoxShadow(
                     color: Color(0x66000000),
@@ -1498,9 +1314,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       },
     );
 
-    await Future<void>.delayed(
-      const Duration(milliseconds: 900),
-    );
+    await Future<void>.delayed(const Duration(milliseconds: 900));
 
     if (mounted && navigator.canPop()) {
       navigator.pop();
@@ -1526,15 +1340,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    final fullName = collapseSpaces(
-      fullNameController.text,
-    );
-    final email = normalizeEmail(
-      emailController.text,
-    );
-    final phone = normalizePhilippinePhone(
-      phoneController.text,
-    );
+    final fullName = collapseSpaces(fullNameController.text);
+    final email = normalizeEmail(emailController.text);
+    final phone = normalizePhilippinePhone(phoneController.text);
     final province = selectedProvince!;
     final administrativeArea = selectedProvince!;
     final city = selectedCity!;
@@ -1563,11 +1371,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     User? createdUser;
 
     try {
-      final credential =
-          await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      final credential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(email: email, password: password);
 
       createdUser = credential.user;
 
@@ -1578,34 +1383,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
         return;
       }
 
-      await createdUser.updateDisplayName(
-        fullName,
-      );
+      await createdUser.updateDisplayName(fullName);
 
       await FirebaseFirestore.instance
           .collection('users')
           .doc(createdUser.uid)
           .set({
-        'uid': createdUser.uid,
-        'name': fullName,
-        'email': email,
-        'phone': phone,
-        'role': 'vendor',
-        'accountType': 'vendor',
-        'supplierStatus': 'not_applicable',
-        'region': 'Caraga Region',
-        'province': province,
-        'provinceCode': provinceCode,
-        'administrativeArea': administrativeArea,
-        'administrativeAreaType': 'province',
-        'cityMunicipality': city,
-        'cityMunicipalityCode': localityCode,
-        'cityMunicipalityType': localityType,
-        'isHighlyUrbanizedCity': false,
-        'location': location,
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+            'uid': createdUser.uid,
+            'name': fullName,
+            'email': email,
+            'phone': phone,
+            'role': 'vendor',
+            'accountType': 'vendor',
+            'supplierStatus': 'not_applicable',
+            'region': 'Caraga Region',
+            'province': province,
+            'provinceCode': provinceCode,
+            'administrativeArea': administrativeArea,
+            'administrativeAreaType': 'province',
+            'cityMunicipality': city,
+            'cityMunicipalityCode': localityCode,
+            'cityMunicipalityType': localityType,
+            'isHighlyUrbanizedCity': false,
+            'location': location,
+            'createdAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
 
       if (!mounted) {
         return;
@@ -1619,9 +1422,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(
-          builder: (_) => const HomeScreen(),
-        ),
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
         (route) => false,
       );
     } on FirebaseAuthException catch (error) {
@@ -1633,11 +1434,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         }
       }
 
-      setRegistrationError(
-        authenticationErrorMessage(
-          error,
-        ),
-      );
+      setRegistrationError(authenticationErrorMessage(error));
     } catch (_) {
       if (createdUser != null) {
         try {
@@ -1647,9 +1444,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         }
       }
 
-      setRegistrationError(
-        'Unable to finish registration. Please try again.',
-      );
+      setRegistrationError('Unable to finish registration. Please try again.');
     } finally {
       if (mounted) {
         setState(() {
@@ -1659,9 +1454,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  String authenticationErrorMessage(
-    FirebaseAuthException error,
-  ) {
+  String authenticationErrorMessage(FirebaseAuthException error) {
     switch (error.code) {
       case 'email-already-in-use':
         return 'An account already exists with this email.';
@@ -1680,9 +1473,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  void setRegistrationError(
-    String message,
-  ) {
+  void setRegistrationError(String message) {
     if (!mounted) {
       return;
     }
@@ -1700,7 +1491,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }) {
     const radius = 16.0;
 
-    final effectiveSuffixIcon = suffixIcon ??
+    final effectiveSuffixIcon =
+        suffixIcon ??
         (isValid
             ? const Icon(
                 Icons.check_circle_rounded,
@@ -1724,18 +1516,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
         color: Color(0xFF83C8FF),
         fontWeight: FontWeight.w900,
       ),
-      prefixIcon: Icon(
-        icon,
-        color: const Color(0xFFC5D6E2),
-        size: 21,
-      ),
+      prefixIcon: Icon(icon, color: const Color(0xFFC5D6E2), size: 21),
       suffixIcon: effectiveSuffixIcon,
       filled: true,
       fillColor: const Color(0xE60A2638),
-      contentPadding: const EdgeInsets.symmetric(
-        vertical: 17,
-        horizontal: 16,
-      ),
+      contentPadding: const EdgeInsets.symmetric(vertical: 17, horizontal: 16),
       errorMaxLines: 2,
       errorStyle: const TextStyle(
         color: Color(0xFFFFA199),
@@ -1744,36 +1529,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(radius),
-        borderSide: BorderSide(
-          color: enabledBorderColor,
-        ),
+        borderSide: BorderSide(color: enabledBorderColor),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(radius),
-        borderSide: const BorderSide(
-          color: Color(0xFF32A9FF),
-          width: 1.7,
-        ),
+        borderSide: const BorderSide(color: Color(0xFF32A9FF), width: 1.7),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(radius),
-        borderSide: const BorderSide(
-          color: Color(0xFFFF756B),
-          width: 1.2,
-        ),
+        borderSide: const BorderSide(color: Color(0xFFFF756B), width: 1.2),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(radius),
-        borderSide: const BorderSide(
-          color: Color(0xFFFF8B82),
-          width: 1.7,
-        ),
+        borderSide: const BorderSide(color: Color(0xFFFF8B82), width: 1.7),
       ),
       disabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(radius),
-        borderSide: const BorderSide(
-          color: Color(0x337FB3D4),
-        ),
+        borderSide: const BorderSide(color: Color(0x337FB3D4)),
       ),
     );
   }
@@ -1786,15 +1558,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF1596FF),
-            Color(0xFF155BFF),
-          ],
+          colors: [Color(0xFF1596FF), Color(0xFF155BFF)],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.white.withAlpha(42),
-        ),
+        border: Border.all(color: Colors.white.withAlpha(42)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x73146BFF),
@@ -1803,29 +1570,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ],
       ),
-      child: const Icon(
-        Icons.set_meal_rounded,
-        color: Colors.white,
-        size: 29,
-      ),
+      child: const Icon(Icons.set_meal_rounded, color: Colors.white, size: 29),
     );
   }
 
   Widget buildVendorAccountCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(
-        13,
-        12,
-        13,
-        12,
-      ),
+      padding: const EdgeInsets.fromLTRB(13, 12, 13, 12),
       decoration: BoxDecoration(
         color: const Color(0xC20A2638),
         borderRadius: BorderRadius.circular(19),
-        border: Border.all(
-          color: Colors.white.withAlpha(26),
-        ),
+        border: Border.all(color: Colors.white.withAlpha(26)),
       ),
       child: Row(
         children: [
@@ -1896,15 +1652,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
       autovalidateMode: submitted
           ? AutovalidateMode.onUserInteraction
           : AutovalidateMode.disabled,
-      builder: (
-        field,
-      ) {
+      builder: (field) {
         final hasError = field.hasError;
         final borderColor = hasError
             ? const Color(0xFFFF756B)
             : isValid
-                ? const Color(0xFF42D59B)
-                : const Color(0xFF32A9FF);
+            ? const Color(0xFF42D59B)
+            : const Color(0xFF32A9FF);
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1912,15 +1666,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
             Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: enabled
-                    ? onTap
-                    : null,
+                onTap: enabled ? onTap : null,
                 borderRadius: BorderRadius.circular(18),
                 child: Ink(
                   height: 58,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
                   decoration: BoxDecoration(
                     color: enabled
                         ? const Color(0xE60A2638)
@@ -1928,9 +1678,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
                       color: borderColor,
-                      width: hasError || isValid
-                          ? 1.6
-                          : 1.35,
+                      width: hasError || isValid ? 1.6 : 1.35,
                     ),
                     boxShadow: isValid
                         ? const [
@@ -1958,8 +1706,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           color: isValid
                               ? const Color(0xFF62E3B2)
                               : enabled
-                                  ? const Color(0xFFC5D6E2)
-                                  : const Color(0xFF6F8798),
+                              ? const Color(0xFFC5D6E2)
+                              : const Color(0xFF6F8798),
                           size: 19,
                         ),
                       ),
@@ -1974,9 +1722,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   : Alignment.bottomLeft,
                               child: Padding(
                                 padding: EdgeInsets.only(
-                                  bottom: visibleValue == null
-                                      ? 0
-                                      : 8,
+                                  bottom: visibleValue == null ? 0 : 8,
                                 ),
                                 child: Text(
                                   visibleValue ?? label,
@@ -1986,11 +1732,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     color: visibleValue == null
                                         ? const Color(0xFFB8CBD9)
                                         : visibleValue == 'Not required'
-                                            ? const Color(0xFFB8CBD9)
-                                            : Colors.white,
-                                    fontSize: visibleValue == null
-                                        ? 13
-                                        : 12.5,
+                                        ? const Color(0xFFB8CBD9)
+                                        : Colors.white,
+                                    fontSize: visibleValue == null ? 13 : 12.5,
                                     fontWeight: visibleValue == null
                                         ? FontWeight.w700
                                         : FontWeight.w900,
@@ -2040,12 +1784,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
             if (helperText != null && !hasError)
               Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  12,
-                  6,
-                  8,
-                  0,
-                ),
+                padding: const EdgeInsets.fromLTRB(12, 6, 8, 0),
                 child: Text(
                   helperText,
                   style: const TextStyle(
@@ -2058,12 +1797,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
             if (hasError)
               Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  12,
-                  6,
-                  8,
-                  0,
-                ),
+                padding: const EdgeInsets.fromLTRB(12, 6, 8, 0),
                 child: Text(
                   field.errorText!,
                   style: const TextStyle(
@@ -2095,10 +1829,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF0E7FB3),
-                Color(0xFF145BFF),
-              ],
+              colors: [Color(0xFF0E7FB3), Color(0xFF145BFF)],
             ),
             borderRadius: BorderRadius.circular(12),
             boxShadow: const [
@@ -2109,11 +1840,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
             ],
           ),
-          child: Icon(
-            icon,
-            color: Colors.white,
-            size: 19,
-          ),
+          child: Icon(icon, color: Colors.white, size: 19),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -2142,16 +1869,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
         Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 9,
-            vertical: 5,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
           decoration: BoxDecoration(
             color: const Color(0x26146BFF),
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: const Color(0x40146BFF),
-            ),
+            border: Border.all(color: const Color(0x40146BFF)),
           ),
           child: Text(
             'STEP $step',
@@ -2169,16 +1891,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Widget buildFormDivider() {
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        vertical: 17,
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 17),
       child: Row(
         children: [
           Expanded(
-            child: Divider(
-              height: 1,
-              color: Colors.white.withAlpha(17),
-            ),
+            child: Divider(height: 1, color: Colors.white.withAlpha(17)),
           ),
           const SizedBox(width: 9),
           Container(
@@ -2191,10 +1908,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
           const SizedBox(width: 9),
           Expanded(
-            child: Divider(
-              height: 1,
-              color: Colors.white.withAlpha(17),
-            ),
+            child: Divider(height: 1, color: Colors.white.withAlpha(17)),
           ),
         ],
       ),
@@ -2209,18 +1923,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 220),
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(
-        12,
-        11,
-        12,
-        11,
-      ),
+      padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
       decoration: BoxDecoration(
         color: const Color(0x2442D59B),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0x7042D59B),
-        ),
+        border: Border.all(color: const Color(0x7042D59B)),
       ),
       child: Row(
         children: [
@@ -2285,18 +1992,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget buildRegistrationPrivacyNote() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(
-        12,
-        10,
-        12,
-        10,
-      ),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       decoration: BoxDecoration(
         color: const Color(0x1F1C9BEA),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: const Color(0x3D58B9F2),
-        ),
+        border: Border.all(color: const Color(0x3D58B9F2)),
       ),
       child: const Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2323,26 +2023,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget requirementChip({
-    required bool isMet,
-    required String label,
-  }) {
+  Widget requirementChip({required bool isMet, required String label}) {
     return Expanded(
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(
-          horizontal: 7,
-          vertical: 8,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 8),
         decoration: BoxDecoration(
-          color: isMet
-              ? const Color(0x2442D59B)
-              : const Color(0x2B587286),
+          color: isMet ? const Color(0x2442D59B) : const Color(0x2B587286),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isMet
-                ? const Color(0x8042D59B)
-                : const Color(0x335D7890),
+            color: isMet ? const Color(0x8042D59B) : const Color(0x335D7890),
           ),
         ),
         child: Row(
@@ -2352,9 +2042,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               isMet
                   ? Icons.check_circle_rounded
                   : Icons.radio_button_unchecked_rounded,
-              color: isMet
-                  ? const Color(0xFF42D59B)
-                  : const Color(0xFF7892A5),
+              color: isMet ? const Color(0xFF42D59B) : const Color(0xFF7892A5),
               size: 15,
             ),
             const SizedBox(width: 5),
@@ -2381,35 +2069,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget buildPasswordRequirements() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(
-        11,
-        10,
-        11,
-        10,
-      ),
+      padding: const EdgeInsets.fromLTRB(11, 10, 11, 10),
       decoration: BoxDecoration(
         color: const Color(0xB3071C2B),
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(
-          color: Colors.white.withAlpha(18),
-        ),
+        border: Border.all(color: Colors.white.withAlpha(18)),
       ),
       child: Row(
         children: [
-          requirementChip(
-            isMet: hasMinimumLength,
-            label: '8+ chars',
-          ),
+          requirementChip(isMet: hasMinimumLength, label: '8+ chars'),
           const SizedBox(width: 7),
-          requirementChip(
-            isMet: hasLetter,
-            label: 'Letter',
-          ),
+          requirementChip(isMet: hasLetter, label: 'Letter'),
           const SizedBox(width: 7),
-          requirementChip(
-            isMet: hasNumber,
-            label: 'Number',
-          ),
+          requirementChip(isMet: hasNumber, label: 'Number'),
         ],
       ),
     );
@@ -2421,25 +2093,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
       child: registrationError == null
           ? const SizedBox.shrink()
           : Container(
-              key: ValueKey(
-                registrationError,
-              ),
+              key: ValueKey(registrationError),
               width: double.infinity,
-              margin: const EdgeInsets.only(
-                bottom: 14,
-              ),
-              padding: const EdgeInsets.fromLTRB(
-                12,
-                11,
-                12,
-                11,
-              ),
+              margin: const EdgeInsets.only(bottom: 14),
+              padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
               decoration: BoxDecoration(
                 color: const Color(0x36FF6B61),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: const Color(0x8CFF7A70),
-                ),
+                border: Border.all(color: const Color(0x8CFF7A70)),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2495,14 +2156,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               textCapitalization: TextCapitalization.words,
               textInputAction: TextInputAction.next,
-              autofillHints: const [
-                AutofillHints.name,
-              ],
+              autofillHints: const [AutofillHints.name],
               validator: validateFullName,
               onChanged: (_) {
-                fieldChanged(
-                  'fullName',
-                );
+                fieldChanged('fullName');
               },
               onFieldSubmitted: (_) {
                 emailFocusNode.requestFocus();
@@ -2510,9 +2167,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               decoration: inputStyle(
                 label: 'Full Name',
                 icon: Icons.person_outline_rounded,
-                isValid: fieldIsValid(
-                  'fullName',
-                ),
+                isValid: fieldIsValid('fullName'),
               ),
             ),
             const SizedBox(height: 13),
@@ -2527,16 +2182,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,
-              autofillHints: const [
-                AutofillHints.email,
-              ],
+              autofillHints: const [AutofillHints.email],
               autocorrect: false,
               enableSuggestions: false,
               validator: validateEmail,
               onChanged: (_) {
-                fieldChanged(
-                  'email',
-                );
+                fieldChanged('email');
               },
               onFieldSubmitted: (_) {
                 phoneFocusNode.requestFocus();
@@ -2544,9 +2195,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               decoration: inputStyle(
                 label: 'Email Address',
                 icon: Icons.email_outlined,
-                isValid: fieldIsValid(
-                  'email',
-                ),
+                isValid: fieldIsValid('email'),
               ),
             ),
             const SizedBox(height: 13),
@@ -2561,45 +2210,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               keyboardType: TextInputType.phone,
               textInputAction: TextInputAction.next,
-              autofillHints: const [
-                AutofillHints.telephoneNumber,
-              ],
+              autofillHints: const [AutofillHints.telephoneNumber],
               inputFormatters: [
-                FilteringTextInputFormatter.allow(
-                  RegExp(r'[0-9+\s-]'),
-                ),
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9+\s-]')),
                 LengthLimitingTextInputFormatter(16),
               ],
               validator: validatePhone,
               onChanged: (_) {
-                fieldChanged(
-                  'phone',
-                );
+                fieldChanged('phone');
               },
               onFieldSubmitted: (_) {
                 showProvincePicker();
               },
-              decoration: inputStyle(
-                label: 'Phone Number',
-                icon: Icons.phone_outlined,
-                isValid: fieldIsValid(
-                  'phone',
-                ),
-              ).copyWith(
-                helperText: 'Example: 09171234567',
-                helperStyle: const TextStyle(
-                  color: Color(0xFF829AAC),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              decoration:
+                  inputStyle(
+                    label: 'Phone Number',
+                    icon: Icons.phone_outlined,
+                    isValid: fieldIsValid('phone'),
+                  ).copyWith(
+                    helperText: 'Example: 09171234567',
+                    helperStyle: const TextStyle(
+                      color: Color(0xFF829AAC),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
             ),
             buildFormDivider(),
             buildSectionHeader(
               step: 2,
               icon: Icons.location_on_outlined,
               title: 'Location in Caraga',
-              subtitle: 'Choose your province and city or municipality for your profile.',
+              subtitle:
+                  'Choose your province and city or municipality for your profile.',
             ),
             const SizedBox(height: 13),
             buildPickerField(
@@ -2625,8 +2268,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
               helperText: selectedProvince == null
                   ? 'Select a province first.'
                   : selectedCity == null
-                      ? 'Tap to search all locations in $selectedProvince.'
-                      : '$selectedLocalityType in $selectedProvince.',
+                  ? 'Tap to search all locations in $selectedProvince.'
+                  : '$selectedLocalityType in $selectedProvince.',
               enabled: selectedProvince != null,
             ),
             if (locationPreview.isNotEmpty) ...[
@@ -2652,9 +2295,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               obscureText: obscurePassword,
               textInputAction: TextInputAction.next,
-              autofillHints: const [
-                AutofillHints.newPassword,
-              ],
+              autofillHints: const [AutofillHints.newPassword],
               autocorrect: false,
               enableSuggestions: false,
               validator: validatePassword,
@@ -2665,9 +2306,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 label: 'Password',
                 icon: Icons.lock_outline_rounded,
                 suffixIcon: IconButton(
-                  tooltip: obscurePassword
-                      ? 'Show password'
-                      : 'Hide password',
+                  tooltip: obscurePassword ? 'Show password' : 'Hide password',
                   onPressed: isLoading
                       ? null
                       : () {
@@ -2698,9 +2337,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               obscureText: obscureConfirmPassword,
               textInputAction: TextInputAction.done,
-              autofillHints: const [
-                AutofillHints.newPassword,
-              ],
+              autofillHints: const [AutofillHints.newPassword],
               autocorrect: false,
               enableSuggestions: false,
               validator: validateConfirmPassword,
@@ -2718,8 +2355,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ? null
                       : () {
                           setState(() {
-                            obscureConfirmPassword =
-                                !obscureConfirmPassword;
+                            obscureConfirmPassword = !obscureConfirmPassword;
                           });
                         },
                   icon: Icon(
@@ -2738,9 +2374,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               width: double.infinity,
               height: 53,
               child: ElevatedButton(
-                onPressed: isLoading
-                    ? null
-                    : createAccount,
+                onPressed: isLoading ? null : createAccount,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF176FFF),
                   foregroundColor: Colors.white,
@@ -2784,10 +2418,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ),
                           ),
                           SizedBox(width: 8),
-                          Icon(
-                            Icons.arrow_forward_rounded,
-                            size: 19,
-                          ),
+                          Icon(Icons.arrow_forward_rounded, size: 19),
                         ],
                       ),
               ),
@@ -2801,25 +2432,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget buildTopBar() {
     return ClipRect(
       child: BackdropFilter(
-        filter: ui.ImageFilter.blur(
-          sigmaX: 14,
-          sigmaY: 14,
-        ),
+        filter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: Container(
-          padding: const EdgeInsets.fromLTRB(
-            18,
-            6,
-            18,
-            8,
-          ),
+          padding: const EdgeInsets.fromLTRB(18, 6, 18, 8),
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                Color(0xD6074263),
-                Color(0xB5073450),
-              ],
+              colors: [Color(0xD6074263), Color(0xB5073450)],
             ),
             boxShadow: [
               BoxShadow(
@@ -2846,9 +2466,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white.withAlpha(28),
                       shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withAlpha(24),
-                      ),
+                      border: Border.all(color: Colors.white.withAlpha(24)),
                     ),
                     child: const Icon(
                       Icons.arrow_back_rounded,
@@ -2880,9 +2498,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -2908,9 +2524,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ),
               const Positioned.fill(
-                child: ColoredBox(
-                  color: Color(0xD0061A2A),
-                ),
+                child: ColoredBox(color: Color(0xD0061A2A)),
               ),
               const Positioned.fill(
                 child: DecoratedBox(
@@ -2923,11 +2537,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         Color(0xEA061725),
                         Color(0xFF020712),
                       ],
-                      stops: [
-                        0.0,
-                        0.50,
-                        1.0,
-                      ],
+                      stops: [0.0, 0.50, 1.0],
                     ),
                   ),
                 ),
@@ -2940,12 +2550,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       child: SingleChildScrollView(
                         keyboardDismissBehavior:
                             ScrollViewKeyboardDismissBehavior.onDrag,
-                        padding: const EdgeInsets.fromLTRB(
-                          24,
-                          16,
-                          24,
-                          32,
-                        ),
+                        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
                         child: Column(
                           children: [
                             buildLogo(),
@@ -3046,8 +2651,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                           Navigator.pop(context);
                                         },
                                   style: TextButton.styleFrom(
-                                    foregroundColor:
-                                        const Color(0xFF91CDFF),
+                                    foregroundColor: const Color(0xFF91CDFF),
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 2,
                                       vertical: 4,
@@ -3082,23 +2686,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
 }
 
 class _LocationPickerSearchHost extends StatefulWidget {
-  const _LocationPickerSearchHost({
-    required this.builder,
-  });
+  const _LocationPickerSearchHost({required this.builder});
 
   final Widget Function(
     BuildContext context,
     TextEditingController searchController,
     FocusNode searchFocusNode,
-  ) builder;
+  )
+  builder;
 
   @override
   State<_LocationPickerSearchHost> createState() =>
       _LocationPickerSearchHostState();
 }
 
-class _LocationPickerSearchHostState
-    extends State<_LocationPickerSearchHost> {
+class _LocationPickerSearchHostState extends State<_LocationPickerSearchHost> {
   final searchController = TextEditingController();
   final searchFocusNode = FocusNode();
 
@@ -3111,10 +2713,6 @@ class _LocationPickerSearchHostState
 
   @override
   Widget build(BuildContext context) {
-    return widget.builder(
-      context,
-      searchController,
-      searchFocusNode,
-    );
+    return widget.builder(context, searchController, searchFocusNode);
   }
 }

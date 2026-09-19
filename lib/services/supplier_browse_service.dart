@@ -56,11 +56,7 @@ class SupplierBrowseService {
     return fallback;
   }
 
-  int getIntValue(
-    Map<String, dynamic> data,
-    String key,
-    int fallback,
-  ) {
+  int getIntValue(Map<String, dynamic> data, String key, int fallback) {
     final value = data[key];
 
     if (value is int) {
@@ -78,10 +74,7 @@ class SupplierBrowseService {
     return fallback;
   }
 
-  bool getBoolValue(
-    Map<String, dynamic> data,
-    String key,
-  ) {
+  bool getBoolValue(Map<String, dynamic> data, String key) {
     final value = data[key];
 
     if (value is bool) {
@@ -104,9 +97,7 @@ class SupplierBrowseService {
     return false;
   }
 
-  DateTime? getDateTimeValue(
-    dynamic value,
-  ) {
+  DateTime? getDateTimeValue(dynamic value) {
     if (value is Timestamp) {
       return value.toDate();
     }
@@ -154,9 +145,7 @@ class SupplierBrowseService {
     return null;
   }
 
-  Map<String, dynamic>? nestedApplication(
-    Map<String, dynamic> data,
-  ) {
+  Map<String, dynamic>? nestedApplication(Map<String, dynamic> data) {
     final value = data['supplierApplication'];
 
     if (value is Map<String, dynamic>) {
@@ -186,95 +175,68 @@ class SupplierBrowseService {
     return fallback;
   }
 
-  String supplierNameFromProfile(
-    Map<String, dynamic> data,
-  ) {
+  String supplierNameFromProfile(Map<String, dynamic> data) {
     final application = nestedApplication(data);
 
-    final directName = firstAvailableText(
-      data,
-      const [
-        'supplierName',
-        'storeName',
-        'businessName',
-        'shopName',
-        'name',
-      ],
-    );
+    final directName = firstAvailableText(data, const [
+      'supplierName',
+      'storeName',
+      'businessName',
+      'shopName',
+      'name',
+    ]);
 
     if (directName.isNotEmpty) {
       return directName;
     }
 
     if (application != null) {
-      return firstAvailableText(
-        application,
-        const [
-          'supplierName',
-          'storeName',
-          'businessName',
-          'shopName',
-        ],
-        fallback: 'Registered Supplier',
-      );
+      return firstAvailableText(application, const [
+        'supplierName',
+        'storeName',
+        'businessName',
+        'shopName',
+      ], fallback: 'Registered Supplier');
     }
 
     return 'Registered Supplier';
   }
 
-  String supplierLocationFromProfile(
-    Map<String, dynamic> data,
-  ) {
+  String supplierLocationFromProfile(Map<String, dynamic> data) {
     final application = nestedApplication(data);
 
-    final directLocation = firstAvailableText(
-      data,
-      const [
-        'storeLocation',
-        'location',
-        'businessAddress',
-        'storeAddress',
-        'address',
-        'serviceArea',
-      ],
-    );
+    final directLocation = firstAvailableText(data, const [
+      'storeLocation',
+      'location',
+      'businessAddress',
+      'storeAddress',
+      'address',
+      'serviceArea',
+    ]);
 
     if (directLocation.isNotEmpty) {
       return directLocation;
     }
 
     if (application != null) {
-      return firstAvailableText(
-        application,
-        const [
-          'location',
-          'storeLocation',
-          'businessAddress',
-          'storeAddress',
-          'address',
-          'serviceArea',
-        ],
-        fallback: 'Caraga Region',
-      );
+      return firstAvailableText(application, const [
+        'location',
+        'storeLocation',
+        'businessAddress',
+        'storeAddress',
+        'address',
+        'serviceArea',
+      ], fallback: 'Caraga Region');
     }
 
     return 'Caraga Region';
   }
 
-  String profileImageFromProfile(
-    Map<String, dynamic> data,
-  ) {
-    return firstAvailableText(
-      data,
-      const [
-        'profileImageUrl',
-      ],
-    );
+  String profileImageFromProfile(Map<String, dynamic> data) {
+    return firstAvailableText(data, const ['profileImageUrl']);
   }
 
-  String coverImageFromProfile(
-    Map<String, dynamic> data,
-  ) {
+  String coverImageFromProfile(Map<String, dynamic> data) {
     // Legacy supplier records may contain a copied verification/profile image
     // in coverImageUrl. Only show a cover after the shop owner explicitly
     // chooses one from View My Shop.
@@ -282,17 +244,10 @@ class SupplierBrowseService {
       return '';
     }
 
-    return firstAvailableText(
-      data,
-      const [
-        'coverImageUrl',
-      ],
-    );
+    return firstAvailableText(data, const ['coverImageUrl']);
   }
 
-  double ratingFromProfile(
-    Map<String, dynamic> data,
-  ) {
+  double ratingFromProfile(Map<String, dynamic> data) {
     final primary = getDoubleValue(data, 'rating', -1);
 
     if (primary >= 0) {
@@ -304,9 +259,7 @@ class SupplierBrowseService {
     return average.clamp(0, 5).toDouble();
   }
 
-  int reviewCountFromProfile(
-    Map<String, dynamic> data,
-  ) {
+  int reviewCountFromProfile(Map<String, dynamic> data) {
     final reviews = getIntValue(data, 'reviews', -1);
 
     if (reviews >= 0) {
@@ -322,72 +275,53 @@ class SupplierBrowseService {
     return getIntValue(data, 'totalReviews', 0);
   }
 
-  Supplier supplierFromProfile(
-    Map<String, dynamic> data,
-  ) {
+  Supplier supplierFromProfile(Map<String, dynamic> data) {
     final application = nestedApplication(data);
 
-    final directDescription = firstAvailableText(
-      data,
-      const [
-        'description',
-        'storeDescription',
-        'businessDescription',
-      ],
-    );
+    final directDescription = firstAvailableText(data, const [
+      'description',
+      'storeDescription',
+      'businessDescription',
+    ]);
 
     final applicationDescription = application == null
         ? ''
-        : firstAvailableText(
-            application,
-            const [
-              'description',
-              'storeDescription',
-              'businessDescription',
-            ],
-          );
+        : firstAvailableText(application, const [
+            'description',
+            'storeDescription',
+            'businessDescription',
+          ]);
 
     return Supplier(
       name: supplierNameFromProfile(data),
       location: supplierLocationFromProfile(data),
       contactNumber: firstAvailableText(
         data,
-        const [
-          'phone',
-          'contactNumber',
-          'mobileNumber',
-        ],
+        const ['phone', 'contactNumber', 'mobileNumber'],
         fallback: application == null
             ? 'No contact number'
-            : firstAvailableText(
-                application,
-                const [
-                  'phone',
-                  'contactNumber',
-                  'mobileNumber',
-                ],
-                fallback: 'No contact number',
-              ),
+            : firstAvailableText(application, const [
+                'phone',
+                'contactNumber',
+                'mobileNumber',
+              ], fallback: 'No contact number'),
       ),
       description: directDescription.isNotEmpty
           ? directDescription
           : applicationDescription.isNotEmpty
-              ? applicationDescription
-              : 'Verified fish supplier serving vendors through IsdaLink.',
+          ? applicationDescription
+          : 'Verified fish supplier serving vendors through IsdaLink.',
       rating: ratingFromProfile(data),
       reviews: reviewCountFromProfile(data),
       products: const <FishProduct>[],
       profileImageUrl: profileImageFromProfile(data),
       coverImageUrl: coverImageFromProfile(data),
-      accountCreatedAt: firstAvailableDateTime(
-        data,
-        const [
-          'accountCreatedAt',
-          'userCreatedAt',
-          'registeredAt',
-          'createdAt',
-        ],
-      ),
+      accountCreatedAt: firstAvailableDateTime(data, const [
+        'accountCreatedAt',
+        'userCreatedAt',
+        'registeredAt',
+        'createdAt',
+      ]),
     );
   }
 
@@ -396,11 +330,7 @@ class SupplierBrowseService {
   ) {
     final data = document.data();
 
-    final status = getStringValue(
-      data,
-      'status',
-      '',
-    ).toLowerCase();
+    final status = getStringValue(data, 'status', '').toLowerCase();
 
     final verificationStatus = getStringValue(
       data,
@@ -422,34 +352,34 @@ class SupplierBrowseService {
   ) {
     final approved = documents.where(isApprovedSupplier).toList();
 
-    approved.sort(
-      (first, second) {
-        final firstSupplier = supplierFromProfile(first.data());
-        final secondSupplier = supplierFromProfile(second.data());
+    approved.sort((first, second) {
+      final firstSupplier = supplierFromProfile(first.data());
+      final secondSupplier = supplierFromProfile(second.data());
 
-        if (firstSupplier.isNewSupplier != secondSupplier.isNewSupplier) {
-          return firstSupplier.isNewSupplier ? -1 : 1;
-        }
+      if (firstSupplier.isNewSupplier != secondSupplier.isNewSupplier) {
+        return firstSupplier.isNewSupplier ? -1 : 1;
+      }
 
-        final ratingComparison =
-            secondSupplier.rating.compareTo(firstSupplier.rating);
+      final ratingComparison = secondSupplier.rating.compareTo(
+        firstSupplier.rating,
+      );
 
-        if (ratingComparison != 0) {
-          return ratingComparison;
-        }
+      if (ratingComparison != 0) {
+        return ratingComparison;
+      }
 
-        final reviewComparison =
-            secondSupplier.reviews.compareTo(firstSupplier.reviews);
+      final reviewComparison = secondSupplier.reviews.compareTo(
+        firstSupplier.reviews,
+      );
 
-        if (reviewComparison != 0) {
-          return reviewComparison;
-        }
+      if (reviewComparison != 0) {
+        return reviewComparison;
+      }
 
-        return firstSupplier.name
-            .toLowerCase()
-            .compareTo(secondSupplier.name.toLowerCase());
-      },
-    );
+      return firstSupplier.name.toLowerCase().compareTo(
+        secondSupplier.name.toLowerCase(),
+      );
+    });
 
     return approved;
   }
@@ -464,29 +394,23 @@ class SupplierBrowseService {
       return documents;
     }
 
-    return documents.where(
-      (document) {
-        final data = document.data();
-        final supplier = supplierFromProfile(data);
-        final ownerName = getStringValue(data, 'ownerName', '');
-        final serviceArea = getStringValue(data, 'serviceArea', '');
-        final paymentMethod = getStringValue(
-          data,
-          'paymentMethod',
-          'COD',
-        );
+    return documents.where((document) {
+      final data = document.data();
+      final supplier = supplierFromProfile(data);
+      final ownerName = getStringValue(data, 'ownerName', '');
+      final serviceArea = getStringValue(data, 'serviceArea', '');
+      final paymentMethod = getStringValue(data, 'paymentMethod', 'COD');
 
-        final newStatusMatch =
-            supplier.isNewSupplier && 'new supplier'.contains(searchText);
+      final newStatusMatch =
+          supplier.isNewSupplier && 'new supplier'.contains(searchText);
 
-        return supplier.name.toLowerCase().contains(searchText) ||
-            supplier.location.toLowerCase().contains(searchText) ||
-            supplier.description.toLowerCase().contains(searchText) ||
-            ownerName.toLowerCase().contains(searchText) ||
-            serviceArea.toLowerCase().contains(searchText) ||
-            paymentMethod.toLowerCase().contains(searchText) ||
-            newStatusMatch;
-      },
-    ).toList();
+      return supplier.name.toLowerCase().contains(searchText) ||
+          supplier.location.toLowerCase().contains(searchText) ||
+          supplier.description.toLowerCase().contains(searchText) ||
+          ownerName.toLowerCase().contains(searchText) ||
+          serviceArea.toLowerCase().contains(searchText) ||
+          paymentMethod.toLowerCase().contains(searchText) ||
+          newStatusMatch;
+    }).toList();
   }
 }

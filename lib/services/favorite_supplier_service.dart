@@ -2,11 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class FavoriteSupplierService {
-  FavoriteSupplierService({
-    FirebaseFirestore? firestore,
-    FirebaseAuth? auth,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _auth = auth ?? FirebaseAuth.instance;
+  FavoriteSupplierService({FirebaseFirestore? firestore, FirebaseAuth? auth})
+    : _firestore = firestore ?? FirebaseFirestore.instance,
+      _auth = auth ?? FirebaseAuth.instance;
 
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
@@ -52,10 +50,9 @@ class FavoriteSupplierService {
       return Stream.value(false);
     }
 
-    return _favoritesCollection(userId)
-        .doc(cleanSupplierId)
-        .snapshots()
-        .map((snapshot) => snapshot.exists);
+    return _favoritesCollection(
+      userId,
+    ).doc(cleanSupplierId).snapshots().map((snapshot) => snapshot.exists);
   }
 
   Future<void> setFavorite({
@@ -95,9 +92,6 @@ class FavoriteSupplierService {
     required String supplierId,
     required bool currentlyFavorite,
   }) {
-    return setFavorite(
-      supplierId: supplierId,
-      isFavorite: !currentlyFavorite,
-    );
+    return setFavorite(supplierId: supplierId, isFavorite: !currentlyFavorite);
   }
 }

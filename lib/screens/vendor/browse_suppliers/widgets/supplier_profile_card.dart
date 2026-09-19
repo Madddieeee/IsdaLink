@@ -88,7 +88,8 @@ class SupplierProfileCard extends StatelessWidget {
                     ),
                   );
                 },
-                errorBuilder: (_, _, _) => SupplierInitial(initial: storeInitial),
+                errorBuilder: (_, _, _) =>
+                    SupplierInitial(initial: storeInitial),
               )
             : SupplierInitial(initial: storeInitial),
       ),
@@ -131,7 +132,11 @@ class SupplierProfileCard extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.auto_awesome_rounded, color: Color(0xFFE58A1F), size: 10),
+          const Icon(
+            Icons.auto_awesome_rounded,
+            color: Color(0xFFE58A1F),
+            size: 10,
+          ),
           const SizedBox(width: 3),
           Text(
             'NEW · ${remaining}D',
@@ -169,8 +174,12 @@ class SupplierProfileCard extends StatelessWidget {
                       ),
                     )
                   : Icon(
-                      isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                      color: isFavorite ? const Color(0xFFE94C72) : const Color(0xFF7690A2),
+                      isFavorite
+                          ? Icons.favorite_rounded
+                          : Icons.favorite_border_rounded,
+                      color: isFavorite
+                          ? const Color(0xFFE94C72)
+                          : const Color(0xFF7690A2),
                       size: 18,
                     ),
             ),
@@ -238,7 +247,11 @@ class SupplierProfileCard extends StatelessWidget {
                       const SizedBox(height: 5),
                       Row(
                         children: [
-                          const Icon(Icons.location_on_rounded, color: Color(0xFF7B8FA3), size: 13),
+                          const Icon(
+                            Icons.location_on_rounded,
+                            color: Color(0xFF7B8FA3),
+                            size: 13,
+                          ),
                           const SizedBox(width: 3),
                           Expanded(
                             child: Text(
@@ -258,7 +271,9 @@ class SupplierProfileCard extends StatelessWidget {
                       Row(
                         children: [
                           Icon(
-                            supplier.reviews > 0 ? Icons.star_rounded : Icons.star_border_rounded,
+                            supplier.reviews > 0
+                                ? Icons.star_rounded
+                                : Icons.star_border_rounded,
                             color: supplier.reviews > 0
                                 ? const Color(0xFFFFB703)
                                 : const Color(0xFF92A4B1),
@@ -283,7 +298,11 @@ class SupplierProfileCard extends StatelessWidget {
                             margin: const EdgeInsets.symmetric(horizontal: 7),
                             color: const Color(0xFFDDE7ED),
                           ),
-                          const Icon(Icons.inventory_2_outlined, color: Color(0xFF087AC0), size: 12),
+                          const Icon(
+                            Icons.inventory_2_outlined,
+                            color: Color(0xFF087AC0),
+                            size: 12,
+                          ),
                           const SizedBox(width: 3),
                           Text(
                             '$availableListingCount listing${availableListingCount == 1 ? '' : 's'}',
@@ -302,7 +321,10 @@ class SupplierProfileCard extends StatelessWidget {
                           if (supplier.isNewSupplier) const SizedBox(width: 6),
                           if (ownStore)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFE8F8F3),
                                 borderRadius: BorderRadius.circular(99),
@@ -326,7 +348,11 @@ class SupplierProfileCard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 2),
-                          const Icon(Icons.arrow_forward_rounded, color: Color(0xFF087AC0), size: 14),
+                          const Icon(
+                            Icons.arrow_forward_rounded,
+                            color: Color(0xFF087AC0),
+                            size: 14,
+                          ),
                         ],
                       ),
                     ],
@@ -346,10 +372,7 @@ class SupplierProfileCard extends StatelessWidget {
 }
 
 class SupplierInitial extends StatelessWidget {
-  const SupplierInitial({
-    super.key,
-    required this.initial,
-  });
+  const SupplierInitial({super.key, required this.initial});
 
   final String initial;
 

@@ -11,10 +11,7 @@ import 'package:isdalink/utils/order_helpers.dart';
 import 'package:isdalink/utils/app_error_message.dart';
 
 class MyOrdersScreen extends StatefulWidget {
-  const MyOrdersScreen({
-    super.key,
-    this.initialOrderId = '',
-  });
+  const MyOrdersScreen({super.key, this.initialOrderId = ''});
 
   final String initialOrderId;
 
@@ -28,9 +25,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
 
   String selectedFilter = 'All';
 
-  String statusOf(
-    QueryDocumentSnapshot<Map<String, dynamic>> document,
-  ) {
+  String statusOf(QueryDocumentSnapshot<Map<String, dynamic>> document) {
     return OrderHelpers.getStringValue(
       document.data(),
       'orderStatus',
@@ -38,16 +33,12 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     );
   }
 
-  bool isCompletedStatus(
-    String status,
-  ) {
+  bool isCompletedStatus(String status) {
     final value = status.toLowerCase();
     return value == 'completed' || value == 'delivered';
   }
 
-  bool isCancelledStatus(
-    String status,
-  ) {
+  bool isCancelledStatus(String status) {
     final value = status.toLowerCase();
     return value == 'cancelled' ||
         value == 'rejected' ||
@@ -55,9 +46,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
         value == 'refunded';
   }
 
-  bool isActiveStatus(
-    String status,
-  ) {
+  bool isActiveStatus(String status) {
     final value = status.toLowerCase();
     return value == 'pending' || value == 'accepted';
   }
@@ -71,25 +60,23 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     if (filter == 'all') {
       result = [...documents];
     } else {
-      result = documents.where(
-        (document) {
-          final status = statusOf(document);
+      result = documents.where((document) {
+        final status = statusOf(document);
 
-          if (filter == 'active') {
-            return isActiveStatus(status);
-          }
+        if (filter == 'active') {
+          return isActiveStatus(status);
+        }
 
-          if (filter == 'completed') {
-            return isCompletedStatus(status);
-          }
+        if (filter == 'completed') {
+          return isCompletedStatus(status);
+        }
 
-          if (filter == 'cancelled') {
-            return isCancelledStatus(status);
-          }
+        if (filter == 'cancelled') {
+          return isCancelledStatus(status);
+        }
 
-          return status.toLowerCase() == filter;
-        },
-      ).toList();
+        return status.toLowerCase() == filter;
+      }).toList();
     }
 
     final initialOrderId = widget.initialOrderId.trim();
@@ -126,14 +113,10 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     }
   }
 
-  void selectFilter(
-    String filter,
-  ) {
-    setState(
-      () {
-        selectedFilter = filter;
-      },
-    );
+  void selectFilter(String filter) {
+    setState(() {
+      selectedFilter = filter;
+    });
   }
 
   Future<void> cancelPendingOrder(
@@ -142,10 +125,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
-      showMessage(
-        'Please log in first to cancel an order.',
-        isError: true,
-      );
+      showMessage('Please log in first to cancel an order.', isError: true);
       return;
     }
 
@@ -157,10 +137,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     );
 
     if (currentStatus.toLowerCase() != 'pending') {
-      showMessage(
-        'Only pending orders can be cancelled.',
-        isError: true,
-      );
+      showMessage('Only pending orders can be cancelled.', isError: true);
       return;
     }
 
@@ -178,24 +155,9 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(26),
           ),
-          titlePadding: const EdgeInsets.fromLTRB(
-            22,
-            22,
-            22,
-            0,
-          ),
-          contentPadding: const EdgeInsets.fromLTRB(
-            22,
-            14,
-            22,
-            4,
-          ),
-          actionsPadding: const EdgeInsets.fromLTRB(
-            18,
-            8,
-            18,
-            18,
-          ),
+          titlePadding: const EdgeInsets.fromLTRB(22, 22, 22, 0),
+          contentPadding: const EdgeInsets.fromLTRB(22, 14, 22, 4),
+          actionsPadding: const EdgeInsets.fromLTRB(18, 8, 18, 18),
           title: const Row(
             children: [
               _DialogIcon(
@@ -227,22 +189,14 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(
-                dialogContext,
-                false,
-              ),
+              onPressed: () => Navigator.pop(dialogContext, false),
               child: const Text(
                 'Keep Order',
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w800),
               ),
             ),
             ElevatedButton(
-              onPressed: () => Navigator.pop(
-                dialogContext,
-                true,
-              ),
+              onPressed: () => Navigator.pop(dialogContext, true),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFD32F2F),
                 foregroundColor: Colors.white,
@@ -253,9 +207,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
               ),
               child: const Text(
                 'Cancel Order',
-                style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w900),
               ),
             ),
           ],
@@ -268,18 +220,13 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     }
 
     try {
-      await orderService.cancelPendingOrder(
-        user: user,
-        document: document,
-      );
+      await orderService.cancelPendingOrder(user: user, document: document);
 
       if (!mounted) {
         return;
       }
 
-      showMessage(
-        'Order cancelled. The deducted stock was restored.',
-      );
+      showMessage('Order cancelled. The deducted stock was restored.');
     } catch (error) {
       if (!mounted) {
         return;
@@ -296,9 +243,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     }
   }
 
-  int reviewRatingOf(
-    Map<String, dynamic> data,
-  ) {
+  int reviewRatingOf(Map<String, dynamic> data) {
     final value = data['reviewRating'];
 
     if (value is int) {
@@ -319,9 +264,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     return 0;
   }
 
-  String ratingLabel(
-    int rating,
-  ) {
+  String ratingLabel(int rating) {
     return switch (rating) {
       1 => 'Poor',
       2 => 'Fair',
@@ -338,10 +281,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
-      showMessage(
-        'Please log in first to manage your review.',
-        isError: true,
-      );
+      showMessage('Please log in first to manage your review.', isError: true);
       return;
     }
 
@@ -362,11 +302,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     final isEditing = data['reviewSubmitted'] == true;
     final initialRating = isEditing ? reviewRatingOf(data) : 0;
     final initialComment = isEditing
-        ? OrderHelpers.getStringValue(
-            data,
-            'reviewComment',
-            '',
-          )
+        ? OrderHelpers.getStringValue(data, 'reviewComment', '')
         : '';
 
     final result = await showReviewDialog(
@@ -382,10 +318,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     }
 
     try {
-      final input = ReviewInput(
-        rating: result.rating,
-        comment: result.comment,
-      );
+      final input = ReviewInput(rating: result.rating, comment: result.comment);
 
       if (isEditing) {
         await reviewService.updateOrderReview(
@@ -446,10 +379,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
       barrierColor: Colors.black.withAlpha(150),
       builder: (sheetContext) {
         return StatefulBuilder(
-          builder: (
-            context,
-            setSheetState,
-          ) {
+          builder: (context, setSheetState) {
             final canSubmit = selectedRating >= 1 && selectedRating <= 5;
 
             return AnimatedPadding(
@@ -464,17 +394,10 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                 ),
                 decoration: const BoxDecoration(
                   color: Color(0xFFF8FBFD),
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(30),
-                  ),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
                 ),
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(
-                    18,
-                    10,
-                    18,
-                    20,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(18, 10, 18, 20),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -499,10 +422,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                               gradient: const LinearGradient(
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
-                                colors: [
-                                  Color(0xFF0875D1),
-                                  Color(0xFF12B6D6),
-                                ],
+                                colors: [Color(0xFF0875D1), Color(0xFF12B6D6)],
                               ),
                               borderRadius: BorderRadius.circular(15),
                             ),
@@ -562,15 +482,10 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                           gradient: const LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
-                            colors: [
-                              Color(0xFFEAF7FB),
-                              Color(0xFFF1F8FF),
-                            ],
+                            colors: [Color(0xFFEAF7FB), Color(0xFFF1F8FF)],
                           ),
                           borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                            color: const Color(0xFFD5EAF4),
-                          ),
+                          border: Border.all(color: const Color(0xFFD5EAF4)),
                         ),
                         child: Row(
                           children: [
@@ -664,36 +579,31 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                       const SizedBox(height: 4),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(
-                          5,
-                          (index) {
-                            final value = index + 1;
-                            final selected = value <= selectedRating;
+                        children: List.generate(5, (index) {
+                          final value = index + 1;
+                          final selected = value <= selectedRating;
 
-                            return IconButton(
-                              tooltip: '$value star${value == 1 ? '' : 's'}',
-                              visualDensity: VisualDensity.compact,
-                              onPressed: () {
-                                setSheetState(
-                                  () {
-                                    selectedRating = value;
-                                  },
-                                );
-                              },
-                              icon: AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 150),
-                                child: Icon(
-                                  selected
-                                      ? Icons.star_rounded
-                                      : Icons.star_border_rounded,
-                                  key: ValueKey<bool>(selected),
-                                  color: const Color(0xFFFFB703),
-                                  size: 35,
-                                ),
+                          return IconButton(
+                            tooltip: '$value star${value == 1 ? '' : 's'}',
+                            visualDensity: VisualDensity.compact,
+                            onPressed: () {
+                              setSheetState(() {
+                                selectedRating = value;
+                              });
+                            },
+                            icon: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 150),
+                              child: Icon(
+                                selected
+                                    ? Icons.star_rounded
+                                    : Icons.star_border_rounded,
+                                key: ValueKey<bool>(selected),
+                                color: const Color(0xFFFFB703),
+                                size: 35,
                               ),
-                            );
-                          },
-                        ),
+                            ),
+                          );
+                        }),
                       ),
                       const SizedBox(height: 6),
                       Center(
@@ -801,9 +711,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                               ),
                               child: const Text(
                                 'Cancel',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w900,
-                                ),
+                                style: TextStyle(fontWeight: FontWeight.w900),
                               ),
                             ),
                           ),
@@ -832,19 +740,21 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                                 isEditing
                                     ? 'Save Changes'
                                     : selectedRating == 0
-                                        ? 'Select a Rating'
-                                        : 'Submit Review',
+                                    ? 'Select a Rating'
+                                    : 'Submit Review',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w900,
                                 ),
                               ),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF0875D1),
-                                disabledBackgroundColor:
-                                    const Color(0xFFDCE7EF),
+                                disabledBackgroundColor: const Color(
+                                  0xFFDCE7EF,
+                                ),
                                 foregroundColor: Colors.white,
-                                disabledForegroundColor:
-                                    const Color(0xFF7B8FA3),
+                                disabledForegroundColor: const Color(
+                                  0xFF7B8FA3,
+                                ),
                                 elevation: canSubmit ? 3 : 0,
                                 minimumSize: const Size.fromHeight(50),
                                 shape: RoundedRectangleBorder(
@@ -866,38 +776,20 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     );
   }
 
-  Widget reviewEditPanel(
-    QueryDocumentSnapshot<Map<String, dynamic>> document,
-  ) {
+  Widget reviewEditPanel(QueryDocumentSnapshot<Map<String, dynamic>> document) {
     final data = document.data();
     final rating = reviewRatingOf(data);
-    final comment = OrderHelpers.getStringValue(
-      data,
-      'reviewComment',
-      '',
-    );
+    final comment = OrderHelpers.getStringValue(data, 'reviewComment', '');
 
     return Transform.translate(
       offset: const Offset(0, -10),
       child: Container(
-        margin: const EdgeInsets.fromLTRB(
-          7,
-          0,
-          7,
-          4,
-        ),
-        padding: const EdgeInsets.fromLTRB(
-          11,
-          9,
-          9,
-          9,
-        ),
+        margin: const EdgeInsets.fromLTRB(7, 0, 7, 4),
+        padding: const EdgeInsets.fromLTRB(11, 9, 9, 9),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: const Color(0xFFDCE9F1),
-          ),
+          border: Border.all(color: const Color(0xFFDCE9F1)),
         ),
         child: Row(
           children: [
@@ -960,16 +852,10 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
             ),
             TextButton.icon(
               onPressed: () => reviewCompletedOrder(document),
-              icon: const Icon(
-                Icons.edit_outlined,
-                size: 16,
-              ),
+              icon: const Icon(Icons.edit_outlined, size: 16),
               label: const Text(
                 'Edit',
-                style: TextStyle(
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w900,
-                ),
+                style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w900),
               ),
               style: TextButton.styleFrom(
                 foregroundColor: const Color(0xFF0875D1),
@@ -982,10 +868,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     );
   }
 
-  void showMessage(
-    String message, {
-    bool isError = false,
-  }) {
+  void showMessage(String message, {bool isError = false}) {
     if (!mounted) {
       return;
     }
@@ -1001,9 +884,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     );
   }
 
-  Widget header({
-    required BuildContext context,
-  }) {
+  Widget header({required BuildContext context}) {
     final topPadding = MediaQuery.paddingOf(context).top;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -1017,125 +898,112 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-              Image.asset(
-                'assets/images/order_center_caraga_header.png',
-                fit: BoxFit.cover,
-                alignment: Alignment.center,
-                errorBuilder: (_, _, _) => const DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xFF06355F),
-                        Color(0xFF0875D1),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const DecoratedBox(
+            Image.asset(
+              'assets/images/order_center_caraga_header.png',
+              fit: BoxFit.cover,
+              alignment: Alignment.center,
+              errorBuilder: (_, _, _) => const DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0x5C001E38),
-                      Color(0xC900294A),
-                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF06355F), Color(0xFF0875D1)],
                   ),
                 ),
               ),
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  18,
-                  topPadding + 10,
-                  18,
-                  38,
+            ),
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0x5C001E38), Color(0xC900294A)],
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        _HeaderActionButton(
-                          icon: Icons.arrow_back_rounded,
-                          tooltip: 'Back',
-                          onTap: () => Navigator.maybePop(context),
-                        ),
-                        const Spacer(),
-                        SizedBox(
-                          height: 40,
-                          child: Center(
-                            child: ColorFiltered(
-                              colorFilter: const ColorFilter.mode(
-                                Colors.white,
-                                BlendMode.srcIn,
-                              ),
-                              child: Image.asset(
-                                'assets/images/isdalink_logo.png',
-                                width: 92,
-                                height: 31,
-                                fit: BoxFit.contain,
-                                errorBuilder: (_, _, _) =>
-                                    const SizedBox.shrink(),
-                              ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(18, topPadding + 10, 18, 38),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      _HeaderActionButton(
+                        icon: Icons.arrow_back_rounded,
+                        tooltip: 'Back',
+                        onTap: () => Navigator.maybePop(context),
+                      ),
+                      const Spacer(),
+                      SizedBox(
+                        height: 40,
+                        child: Center(
+                          child: ColorFiltered(
+                            colorFilter: const ColorFilter.mode(
+                              Colors.white,
+                              BlendMode.srcIn,
+                            ),
+                            child: Image.asset(
+                              'assets/images/isdalink_logo.png',
+                              width: 92,
+                              height: 31,
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, _, _) =>
+                                  const SizedBox.shrink(),
                             ),
                           ),
                         ),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  const Text(
+                    'MY ORDERS',
+                    style: TextStyle(
+                      color: Color(0xFFD7EEFA),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.8,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  const Text(
+                    'Order Center',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 29,
+                      height: 1,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.7,
+                      shadows: [
+                        Shadow(
+                          color: Color(0x6600182B),
+                          blurRadius: 10,
+                          offset: Offset(0, 2),
+                        ),
                       ],
                     ),
-                    const Spacer(),
-                    const Text(
-                      'MY ORDERS',
-                      style: TextStyle(
-                        color: Color(0xFFD7EEFA),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.8,
-                      ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Track your Cash on Delivery orders.',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Color(0xFFF1FAFF),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
                     ),
-                    const SizedBox(height: 5),
-                    const Text(
-                      'Order Center',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 29,
-                        height: 1,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.7,
-                        shadows: [
-                          Shadow(
-                            color: Color(0x6600182B),
-                            blurRadius: 10,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'Track your Cash on Delivery orders.',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: Color(0xFFF1FAFF),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget orderCenterPage({
-    required List<Widget> children,
-  }) {
+  Widget orderCenterPage({required List<Widget> children}) {
     final headerHeight = MediaQuery.paddingOf(context).top + 178;
     final minimumSheetHeight =
         MediaQuery.sizeOf(context).height - headerHeight + 26;
@@ -1145,27 +1013,16 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
       children: [
         Stack(
           children: [
-            header(
-              context: context,
-            ),
+            header(context: context),
             Padding(
-              padding: EdgeInsets.only(
-                top: headerHeight - 26,
-              ),
+              padding: EdgeInsets.only(top: headerHeight - 26),
               child: Container(
                 clipBehavior: Clip.antiAlias,
-                constraints: BoxConstraints(
-                  minHeight: minimumSheetHeight,
-                ),
-                padding: const EdgeInsets.only(
-                  top: 8,
-                  bottom: 28,
-                ),
+                constraints: BoxConstraints(minHeight: minimumSheetHeight),
+                padding: const EdgeInsets.only(top: 8, bottom: 28),
                 decoration: const BoxDecoration(
                   color: Color(0xFFF4F8FB),
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(32),
-                  ),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
                   boxShadow: [
                     BoxShadow(
                       color: Color(0x1900213D),
@@ -1174,9 +1031,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                     ),
                   ],
                 ),
-                child: Column(
-                  children: children,
-                ),
+                child: Column(children: children),
               ),
             ),
           ],
@@ -1185,9 +1040,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     );
   }
 
-  Widget listHeading(
-    int visibleCount,
-  ) {
+  Widget listHeading(int visibleCount) {
     final title = switch (selectedFilter.toLowerCase()) {
       'all' => 'Your Orders',
       'active' => 'Active Orders',
@@ -1251,9 +1104,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(23),
-        border: Border.all(
-          color: const Color(0xFFE0EDF4),
-        ),
+        border: Border.all(color: const Color(0xFFE0EDF4)),
       ),
       child: Column(
         children: [
@@ -1329,17 +1180,13 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     );
   }
 
-  Widget errorCard(
-    Object error,
-  ) {
+  Widget errorCard(Object error) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: const Color(0xFFFFD6D6),
-        ),
+        border: Border.all(color: const Color(0xFFFFD6D6)),
       ),
       child: Text(
         AppErrorMessage.from(
@@ -1370,51 +1217,37 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
           onFilterSelected: selectFilter,
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(
-            16,
-            11,
-            16,
-            0,
-          ),
+          padding: const EdgeInsets.fromLTRB(16, 11, 16, 0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              OrderNotificationPanel(
-                vendorId: vendorId,
-                service: orderService,
-              ),
+              OrderNotificationPanel(vendorId: vendorId, service: orderService),
               listHeading(orders.length),
               const SizedBox(height: 11),
               if (orders.isEmpty)
                 emptyOrdersCard()
               else
-                ...orders.map(
-                  (document) {
-                    final reviewSubmitted =
-                        document.data()['reviewSubmitted'] == true;
+                ...orders.map((document) {
+                  final reviewSubmitted =
+                      document.data()['reviewSubmitted'] == true;
 
-                    return Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        VendorOrderCard(
-                          document: document,
-                          initiallyExpanded: document.id ==
-                              widget.initialOrderId.trim(),
-                          highlighted: document.id ==
-                              widget.initialOrderId.trim(),
-                          onCancelPendingOrder: () => cancelPendingOrder(
-                            document,
-                          ),
-                          onReviewOrder: () => reviewCompletedOrder(
-                            document,
-                          ),
-                        ),
-                        if (reviewSubmitted)
-                          reviewEditPanel(document),
-                      ],
-                    );
-                  },
-                ),
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      VendorOrderCard(
+                        document: document,
+                        initiallyExpanded:
+                            document.id == widget.initialOrderId.trim(),
+                        highlighted:
+                            document.id == widget.initialOrderId.trim(),
+                        onCancelPendingOrder: () =>
+                            cancelPendingOrder(document),
+                        onReviewOrder: () => reviewCompletedOrder(document),
+                      ),
+                      if (reviewSubmitted) reviewEditPanel(document),
+                    ],
+                  );
+                }),
             ],
           ),
         ),
@@ -1433,9 +1266,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     );
   }
 
-  Widget errorBody(
-    Object error,
-  ) {
+  Widget errorBody(Object error) {
     return orderCenterPage(
       children: [
         Padding(
@@ -1447,45 +1278,32 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
       return Scaffold(
         backgroundColor: const Color(0xFFF4F8FB),
-        body: errorBody(
-          'Please log in first to view your orders.',
-        ),
+        body: errorBody('Please log in first to view your orders.'),
       );
     }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F8FB),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream: orderService.ordersStream(
-          user.uid,
-        ),
+        stream: orderService.ordersStream(user.uid),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return errorBody(
-              snapshot.error!,
-            );
+            return errorBody(snapshot.error!);
           }
 
           if (!snapshot.hasData) {
             return loadingBody();
           }
 
-          final documents = OrderHelpers.sortDocuments(
-            snapshot.data!.docs,
-          );
+          final documents = OrderHelpers.sortDocuments(snapshot.data!.docs);
 
-          return loadedBody(
-            vendorId: user.uid,
-            documents: documents,
-          );
+          return loadedBody(vendorId: user.uid, documents: documents);
         },
       ),
     );
@@ -1493,28 +1311,20 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
 }
 
 class ReviewDialogResult {
-  const ReviewDialogResult({
-    required this.rating,
-    required this.comment,
-  });
+  const ReviewDialogResult({required this.rating, required this.comment});
 
   final int rating;
   final String comment;
 }
 
 class _DialogIcon extends StatelessWidget {
-  const _DialogIcon({
-    required this.icon,
-    required this.color,
-  });
+  const _DialogIcon({required this.icon, required this.color});
 
   final IconData icon;
   final Color color;
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Container(
       width: 38,
       height: 38,
@@ -1522,11 +1332,7 @@ class _DialogIcon extends StatelessWidget {
         color: color.withAlpha(18),
         borderRadius: BorderRadius.circular(13),
       ),
-      child: Icon(
-        icon,
-        color: color,
-        size: 20,
-      ),
+      child: Icon(icon, color: color, size: 20),
     );
   }
 }
@@ -1543,9 +1349,7 @@ class _HeaderActionButton extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Tooltip(
       message: tooltip,
       child: Material(
@@ -1560,15 +1364,9 @@ class _HeaderActionButton extends StatelessWidget {
             height: 40,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(13),
-              border: Border.all(
-                color: Colors.white.withAlpha(38),
-              ),
+              border: Border.all(color: Colors.white.withAlpha(38)),
             ),
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: 21,
-            ),
+            child: Icon(icon, color: Colors.white, size: 21),
           ),
         ),
       ),
@@ -1576,32 +1374,23 @@ class _HeaderActionButton extends StatelessWidget {
   }
 }
 
+// Kept for the compact-header variant used during responsive experiments.
+// ignore: unused_element
 class _CodBadge extends StatelessWidget {
   const _CodBadge();
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 8,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white.withAlpha(24),
         borderRadius: BorderRadius.circular(99),
-        border: Border.all(
-          color: Colors.white.withAlpha(38),
-        ),
+        border: Border.all(color: Colors.white.withAlpha(38)),
       ),
       child: const Row(
         children: [
-          Icon(
-            Icons.payments_outlined,
-            color: Color(0xFFE9FDFF),
-            size: 14,
-          ),
+          Icon(Icons.payments_outlined, color: Color(0xFFE9FDFF), size: 14),
           SizedBox(width: 5),
           Text(
             'COD',
@@ -1617,6 +1406,8 @@ class _CodBadge extends StatelessWidget {
   }
 }
 
+// Kept for the expanded-header variant used on larger layouts.
+// ignore: unused_element
 class _OrdersOverviewPanel extends StatelessWidget {
   const _OrdersOverviewPanel({
     required this.active,
@@ -1635,27 +1426,15 @@ class _OrdersOverviewPanel extends StatelessWidget {
   final VoidCallback onTotalTap;
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(
-        10,
-        9,
-        10,
-        9,
-      ),
+      padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            Colors.white.withAlpha(34),
-            Colors.white.withAlpha(17),
-          ],
+          colors: [Colors.white.withAlpha(34), Colors.white.withAlpha(17)],
         ),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: Colors.white.withAlpha(42),
-        ),
+        border: Border.all(color: Colors.white.withAlpha(42)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withAlpha(19),
@@ -1735,15 +1514,11 @@ class _OverviewDivider extends StatelessWidget {
   const _OverviewDivider();
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Container(
       width: 1,
       height: 35,
-      margin: const EdgeInsets.symmetric(
-        horizontal: 3,
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 3),
       color: Colors.white.withAlpha(39),
     );
   }
@@ -1765,9 +1540,7 @@ class _OverviewMetric extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Material(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(15),
@@ -1776,10 +1549,7 @@ class _OverviewMetric extends StatelessWidget {
         borderRadius: BorderRadius.circular(15),
         splashColor: Colors.white.withAlpha(23),
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 5,
-            vertical: 4,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
           child: Row(
             children: [
               Container(
@@ -1788,15 +1558,9 @@ class _OverviewMetric extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: accentColor.withAlpha(32),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: accentColor.withAlpha(70),
-                  ),
+                  border: Border.all(color: accentColor.withAlpha(70)),
                 ),
-                child: Icon(
-                  icon,
-                  color: accentColor,
-                  size: 15,
-                ),
+                child: Icon(icon, color: accentColor, size: 15),
               ),
               const SizedBox(width: 7),
               Expanded(

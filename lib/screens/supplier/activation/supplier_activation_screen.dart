@@ -49,8 +49,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
 
   final activationService = const SupplierActivationService();
   final uploadService = const CloudinaryUploadService();
-  final verificationStorageService =
-      const SupplierVerificationStorageService();
+  final verificationStorageService = const SupplierVerificationStorageService();
   final imagePicker = ImagePicker();
   final scrollController = ScrollController();
 
@@ -79,16 +78,16 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
   String baselineFingerprint = '';
 
   List<TextEditingController> get controllers => [
-        ownerNameController,
-        ownerAddressController,
-        emailController,
-        contactNumberController,
-        businessNameController,
-        storeAddressController,
-        primaryMarketAreaController,
-        storeDescriptionController,
-        businessPermitNumberController,
-      ];
+    ownerNameController,
+    ownerAddressController,
+    emailController,
+    contactNumberController,
+    businessNameController,
+    storeAddressController,
+    primaryMarketAreaController,
+    storeDescriptionController,
+    businessPermitNumberController,
+  ];
 
   int get enabledUnitCount =>
       [kiloUnit, tabUnit, iceboxUnit].where((value) => value).length;
@@ -146,14 +145,9 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
       !uploadsInProgress;
 
   bool get reviewDetailsComplete =>
-      ownerComplete &&
-      storeComplete &&
-      unitComplete &&
-      verificationComplete;
+      ownerComplete && storeComplete && unitComplete && verificationComplete;
 
-  bool get reviewComplete =>
-      reviewDetailsComplete &&
-      confirmedAccuracy;
+  bool get reviewComplete => reviewDetailsComplete && confirmedAccuracy;
 
   bool get currentStepComplete {
     return switch (currentStep) {
@@ -177,19 +171,19 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
   }
 
   String get fingerprint => <String>[
-        for (final controller in controllers) controller.text.trim(),
-        selectedProvince ?? '',
-        selectedLocality ?? '',
-        storeLatitude?.toStringAsFixed(6) ?? '',
-        storeLongitude?.toStringAsFixed(6) ?? '',
-        kiloUnit.toString(),
-        tabUnit.toString(),
-        iceboxUnit.toString(),
-        permitImageUrl,
-        permitStoragePath,
-        storeImageUrl,
-        confirmedAccuracy.toString(),
-      ].join('|');
+    for (final controller in controllers) controller.text.trim(),
+    selectedProvince ?? '',
+    selectedLocality ?? '',
+    storeLatitude?.toStringAsFixed(6) ?? '',
+    storeLongitude?.toStringAsFixed(6) ?? '',
+    kiloUnit.toString(),
+    tabUnit.toString(),
+    iceboxUnit.toString(),
+    permitImageUrl,
+    permitStoragePath,
+    storeImageUrl,
+    confirmedAccuracy.toString(),
+  ].join('|');
 
   bool get hasUnsavedChanges =>
       !applicationSubmitted &&
@@ -245,11 +239,13 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
         return;
       }
 
-      final supplierStatus = activationService.getStringValue(
-        data,
-        'supplierStatus',
-        activationService.getStringValue(data, 'status', 'not_applicable'),
-      ).toLowerCase();
+      final supplierStatus = activationService
+          .getStringValue(
+            data,
+            'supplierStatus',
+            activationService.getStringValue(data, 'status', 'not_applicable'),
+          )
+          .toLowerCase();
 
       applicationSubmitted = supplierStatus == 'pending';
 
@@ -282,64 +278,75 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
         'businessName',
         activationService.getStringValue(data, 'storeName', ''),
       );
-      storeAddressController.text =
-          activationService.getStringValue(data, 'storeAddress', '');
+      storeAddressController.text = activationService.getStringValue(
+        data,
+        'storeAddress',
+        '',
+      );
       primaryMarketAreaController.text = activationService.getStringValue(
         data,
         'primaryMarketArea',
         activationService.getStringValue(data, 'serviceArea', ''),
       );
-      storeDescriptionController.text =
-          activationService.getStringValue(data, 'description', '');
+      storeDescriptionController.text = activationService.getStringValue(
+        data,
+        'description',
+        '',
+      );
       businessPermitNumberController.text = activationService.getStringValue(
         data,
         'businessPermitNumber',
         '',
       );
-      permitImageUrl =
-          activationService.getStringValue(data, 'businessPermitUrl', '');
+      permitImageUrl = activationService.getStringValue(
+        data,
+        'businessPermitUrl',
+        '',
+      );
       permitStoragePath = activationService.getStringValue(
         data,
         'businessPermitStoragePath',
         '',
       );
-      storeImageUrl =
-          activationService.getStringValue(data, 'storePhotoUrl', '');
+      storeImageUrl = activationService.getStringValue(
+        data,
+        'storePhotoUrl',
+        '',
+      );
 
       final savedLatitude = data['storeLatitude'];
       final savedLongitude = data['storeLongitude'];
 
       storeLatitude = savedLatitude is num
           ? savedLatitude.toDouble()
-          : double.tryParse(
-              savedLatitude?.toString() ?? '',
-            );
+          : double.tryParse(savedLatitude?.toString() ?? '');
       storeLongitude = savedLongitude is num
           ? savedLongitude.toDouble()
-          : double.tryParse(
-              savedLongitude?.toString() ?? '',
-            );
+          : double.tryParse(savedLongitude?.toString() ?? '');
 
-      final savedProvince =
-          activationService.getStringValue(data, 'storeProvince', '');
+      final savedProvince = activationService.getStringValue(
+        data,
+        'storeProvince',
+        '',
+      );
       final savedLocality = activationService.getStringValue(
         data,
         'storeCityMunicipality',
         '',
       );
 
-      selectedProvince = SupplierCaragaLocations.byProvince
-              .containsKey(savedProvince)
+      selectedProvince =
+          SupplierCaragaLocations.byProvince.containsKey(savedProvince)
           ? savedProvince
           : null;
 
-      if (savedLocality == 'City of Butuan' ||
-          savedLocality == 'Butuan City') {
+      if (savedLocality == 'City of Butuan' || savedLocality == 'Butuan City') {
         selectedProvince = 'Agusan del Norte';
         selectedLocality = 'Butuan City';
       } else if (selectedProvince != null &&
-          SupplierCaragaLocations.localitiesFor(selectedProvince)
-              .contains(savedLocality)) {
+          SupplierCaragaLocations.localitiesFor(
+            selectedProvince,
+          ).contains(savedLocality)) {
         selectedLocality = savedLocality;
       }
 
@@ -428,10 +435,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
-                            colors: [
-                              Color(0xFF073B5C),
-                              Color(0xFF0A6FA4),
-                            ],
+                            colors: [Color(0xFF073B5C), Color(0xFF0A6FA4)],
                           ),
                         ),
                         child: Column(
@@ -508,7 +512,12 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                             const SizedBox(height: 10),
                             Container(
                               width: double.infinity,
-                              padding: const EdgeInsets.fromLTRB(16, 15, 16, 15),
+                              padding: const EdgeInsets.fromLTRB(
+                                16,
+                                15,
+                                16,
+                                15,
+                              ),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFFFF7F5),
                                 borderRadius: BorderRadius.circular(17),
@@ -571,10 +580,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                                     borderRadius: BorderRadius.circular(16),
                                   ),
                                 ),
-                                icon: const Icon(
-                                  Icons.edit_rounded,
-                                  size: 19,
-                                ),
+                                icon: const Icon(Icons.edit_rounded, size: 19),
                                 label: const Text(
                                   'Update Application',
                                   style: TextStyle(
@@ -733,10 +739,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
     });
   }
 
-  Future<void> handlePopInvoked(
-    bool didPop,
-    Object? result,
-  ) async {
+  Future<void> handlePopInvoked(bool didPop, Object? result) async {
     if (didPop) {
       return;
     }
@@ -804,9 +807,11 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
   String incompleteMessage() {
     return switch (currentStep) {
       0 => 'Complete the valid owner and contact details before continuing.',
-      1 => 'Complete the structured Caraga store location, business-location pin, and store details.',
+      1 =>
+        'Complete the structured Caraga store location, business-location pin, and store details.',
       2 => 'Select at least one supported selling unit.',
-      3 => 'Enter the matching permit number and upload both verification photos.',
+      3 =>
+        'Enter the matching permit number and upload both verification photos.',
       _ => 'Review the details and confirm their accuracy before submitting.',
     };
   }
@@ -830,13 +835,13 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
     }
 
     setState(() {
-      final provinceChanged =
-          selectedProvince != value;
+      final provinceChanged = selectedProvince != value;
 
       selectedProvince = value;
 
-      if (!SupplierCaragaLocations.localitiesFor(value)
-          .contains(selectedLocality)) {
+      if (!SupplierCaragaLocations.localitiesFor(
+        value,
+      ).contains(selectedLocality)) {
         selectedLocality = null;
       }
 
@@ -884,8 +889,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
     }
 
     setState(() {
-      final localityChanged =
-          selectedLocality != value;
+      final localityChanged = selectedLocality != value;
 
       selectedLocality = value;
 
@@ -901,8 +905,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
   }
 
   Future<void> selectBusinessLocationPin() async {
-    if (selectedProvince == null ||
-        selectedLocality == null) {
+    if (selectedProvince == null || selectedLocality == null) {
       showMessage(
         'Select the store province and city or municipality before placing the business-location pin.',
         isError: true,
@@ -912,15 +915,11 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
 
     FocusScope.of(context).unfocus();
 
-    final result =
-        await Navigator.of(context)
-            .push<CaragaLocationResult>(
+    final result = await Navigator.of(context).push<CaragaLocationResult>(
       MaterialPageRoute(
-        builder: (_) =>
-            CaragaLocationPickerScreen(
+        builder: (_) => CaragaLocationPickerScreen(
           title: 'Business Location Pin',
-          subtitle:
-              '$selectedLocality, $selectedProvince',
+          subtitle: '$selectedLocality, $selectedProvince',
           province: selectedProvince,
           locality: selectedLocality,
           initialLatitude: storeLatitude,
@@ -938,9 +937,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
       storeLongitude = result.longitude;
     });
 
-    showMessage(
-      'Business location pin saved.',
-    );
+    showMessage('Business location pin saved.');
   }
 
   Future<ImageSource?> chooseImageSource() {
@@ -982,10 +979,8 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () => Navigator.pop(
-                          sheetContext,
-                          ImageSource.camera,
-                        ),
+                        onPressed: () =>
+                            Navigator.pop(sheetContext, ImageSource.camera),
                         icon: const Icon(Icons.camera_alt_outlined),
                         label: const Text('Camera'),
                       ),
@@ -993,10 +988,8 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () => Navigator.pop(
-                          sheetContext,
-                          ImageSource.gallery,
-                        ),
+                        onPressed: () =>
+                            Navigator.pop(sheetContext, ImageSource.gallery),
                         icon: const Icon(Icons.photo_library_outlined),
                         label: const Text('Gallery'),
                       ),
@@ -1058,8 +1051,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
             )
           : await uploadService.uploadImage(
               image,
-              folder:
-                  'isdalink/supplier_verification/${user.uid}/stores',
+              folder: 'isdalink/supplier_verification/${user.uid}/stores',
             );
 
       if (!mounted) {
@@ -1085,7 +1077,8 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
       showMessage(
         AppErrorMessage.from(
           error,
-          fallback: 'The verification photo could not be uploaded. Please try again.',
+          fallback:
+              'The verification photo could not be uploaded. Please try again.',
           allowBusinessMessage: true,
         ),
         isError: true,
@@ -1146,8 +1139,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
           primaryMarketArea: primaryMarketAreaController.text.trim(),
           storeDescription: storeDescriptionController.text.trim(),
           supportedUnits: supportedUnits,
-          businessPermitNumber:
-              businessPermitNumberController.text.trim(),
+          businessPermitNumber: businessPermitNumberController.text.trim(),
           businessPermitUrl: permitImageUrl,
           businessPermitStoragePath: permitStoragePath,
           storePhotoUrl: storeImageUrl,
@@ -1169,7 +1161,8 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
       showMessage(
         AppErrorMessage.from(
           error,
-          fallback: 'The supplier application could not be submitted. Please try again.',
+          fallback:
+              'The supplier application could not be submitted. Please try again.',
           allowBusinessMessage: true,
         ),
         isError: true,
@@ -1218,9 +1211,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
       suffixIcon: valid || locked
           ? Icon(
               locked ? Icons.lock_outline_rounded : Icons.check_circle_rounded,
-              color: locked
-                  ? const Color(0xFF8BA0B1)
-                  : const Color(0xFF1DBB8A),
+              color: locked ? const Color(0xFF8BA0B1) : const Color(0xFF1DBB8A),
               size: 19,
             )
           : null,
@@ -1230,9 +1221,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(19),
         borderSide: BorderSide(
-          color: valid
-              ? const Color(0xFF77D7B7)
-              : const Color(0xFFE5EEF6),
+          color: valid ? const Color(0xFF77D7B7) : const Color(0xFFE5EEF6),
           width: valid ? 1.25 : 1,
         ),
       ),
@@ -1290,7 +1279,8 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
               decoration: fieldDecoration(
                 label: 'Complete Owner Address',
                 icon: Icons.home_outlined,
-                helperText: 'Include street or barangay and city or municipality.',
+                helperText:
+                    'Include street or barangay and city or municipality.',
                 valid: ownerAddressController.text.trim().length >= 5,
               ),
             ),
@@ -1398,22 +1388,18 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(13),
               decoration: BoxDecoration(
-                color: storeLatitude != null &&
-                        storeLongitude != null
+                color: storeLatitude != null && storeLongitude != null
                     ? const Color(0xFFE8F8F2)
                     : const Color(0xFFF2F7FF),
-                borderRadius:
-                    BorderRadius.circular(19),
+                borderRadius: BorderRadius.circular(19),
                 border: Border.all(
-                  color: storeLatitude != null &&
-                          storeLongitude != null
+                  color: storeLatitude != null && storeLongitude != null
                       ? const Color(0xFF77D7B7)
                       : const Color(0xFFD4E2FF),
                 ),
               ),
               child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
@@ -1422,50 +1408,37 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                         height: 35,
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius:
-                              BorderRadius.circular(
-                            12,
-                          ),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(
-                          storeLatitude != null &&
-                                  storeLongitude !=
-                                      null
-                              ? Icons
-                                  .location_on_rounded
-                              : Icons
-                                  .add_location_alt_outlined,
-                          color:
-                              const Color(0xFF146BFF),
+                          storeLatitude != null && storeLongitude != null
+                              ? Icons.location_on_rounded
+                              : Icons.add_location_alt_outlined,
+                          color: const Color(0xFF146BFF),
                           size: 20,
                         ),
                       ),
                       const SizedBox(width: 9),
                       const Expanded(
                         child: Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               'Business Location Pin',
                               style: TextStyle(
-                                color:
-                                    Color(0xFF102C44),
+                                color: Color(0xFF102C44),
                                 fontSize: 11.4,
-                                fontWeight:
-                                    FontWeight.w900,
+                                fontWeight: FontWeight.w900,
                               ),
                             ),
                             SizedBox(height: 2),
                             Text(
                               'Pin the physical store as a reference for vendors and admin review.',
                               style: TextStyle(
-                                color:
-                                    Color(0xFF657C8E),
+                                color: Color(0xFF657C8E),
                                 fontSize: 8.9,
                                 height: 1.3,
-                                fontWeight:
-                                    FontWeight.w600,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],
@@ -1476,52 +1449,36 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                   const SizedBox(height: 10),
                   Container(
                     width: double.infinity,
-                    padding:
-                        const EdgeInsets.symmetric(
+                    padding: const EdgeInsets.symmetric(
                       horizontal: 10,
                       vertical: 9,
                     ),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius:
-                          BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                     child: Row(
                       children: [
                         Icon(
-                          storeLatitude != null &&
-                                  storeLongitude !=
-                                      null
-                              ? Icons
-                                  .check_circle_rounded
-                              : Icons
-                                  .location_searching_rounded,
-                          color: storeLatitude != null &&
-                                  storeLongitude !=
-                                      null
-                              ? const Color(
-                                  0xFF147D64,
-                                )
-                              : const Color(
-                                  0xFF7B8FA3,
-                                ),
+                          storeLatitude != null && storeLongitude != null
+                              ? Icons.check_circle_rounded
+                              : Icons.location_searching_rounded,
+                          color: storeLatitude != null && storeLongitude != null
+                              ? const Color(0xFF147D64)
+                              : const Color(0xFF7B8FA3),
                           size: 17,
                         ),
                         const SizedBox(width: 7),
                         Expanded(
                           child: Text(
-                            storeLatitude != null &&
-                                    storeLongitude !=
-                                        null
+                            storeLatitude != null && storeLongitude != null
                                 ? '${storeLatitude!.toStringAsFixed(6)}, '
-                                    '${storeLongitude!.toStringAsFixed(6)}'
+                                      '${storeLongitude!.toStringAsFixed(6)}'
                                 : 'No business-location pin selected.',
                             style: const TextStyle(
-                              color:
-                                  Color(0xFF52677A),
+                              color: Color(0xFF52677A),
                               fontSize: 9.2,
-                              fontWeight:
-                                  FontWeight.w800,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
                         ),
@@ -1533,42 +1490,27 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                     width: double.infinity,
                     height: 45,
                     child: OutlinedButton.icon(
-                      onPressed:
-                          selectBusinessLocationPin,
+                      onPressed: selectBusinessLocationPin,
                       icon: Icon(
-                        storeLatitude != null &&
-                                storeLongitude !=
-                                    null
+                        storeLatitude != null && storeLongitude != null
                             ? Icons.edit_location_alt_outlined
                             : Icons.map_outlined,
                         size: 18,
                       ),
                       label: Text(
-                        storeLatitude != null &&
-                                storeLongitude !=
-                                    null
+                        storeLatitude != null && storeLongitude != null
                             ? 'Update Map Pin'
                             : 'Choose on Caraga Map',
                         style: const TextStyle(
                           fontSize: 10.2,
-                          fontWeight:
-                              FontWeight.w900,
+                          fontWeight: FontWeight.w900,
                         ),
                       ),
-                      style:
-                          OutlinedButton.styleFrom(
-                        foregroundColor:
-                            const Color(0xFF146BFF),
-                        side: const BorderSide(
-                          color:
-                              Color(0xFF146BFF),
-                        ),
-                        shape:
-                            RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(
-                            14,
-                          ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF146BFF),
+                        side: const BorderSide(color: Color(0xFF146BFF)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
                         ),
                       ),
                     ),
@@ -1644,7 +1586,8 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
         SupplierActivationSectionCard(
           icon: Icons.verified_user_outlined,
           title: 'Verification Requirements',
-          subtitle: 'Permit number, permit photo, and verification store photo.',
+          subtitle:
+              'Permit number, permit photo, and verification store photo.',
           children: [
             Container(
               padding: const EdgeInsets.all(12),
@@ -1689,9 +1632,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                 icon: Icons.confirmation_number_outlined,
                 helperText:
                     'Use the exact letters, numbers, and hyphens shown on the permit.',
-                valid: isValidPermitNumber(
-                  businessPermitNumberController.text,
-                ),
+                valid: isValidPermitNumber(businessPermitNumberController.text),
               ),
             ),
             gap(),
@@ -1801,14 +1742,16 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
           icon: Icons.storefront_outlined,
           onEdit: () => editStep(1),
           rows: [
-            SupplierReviewRow(label: 'Store', value: businessNameController.text),
+            SupplierReviewRow(
+              label: 'Store',
+              value: businessNameController.text,
+            ),
             SupplierReviewRow(label: 'Location', value: formattedStoreLocation),
             SupplierReviewRow(
               label: 'Map Pin',
-              value: storeLatitude != null &&
-                      storeLongitude != null
+              value: storeLatitude != null && storeLongitude != null
                   ? '${storeLatitude!.toStringAsFixed(6)}, '
-                      '${storeLongitude!.toStringAsFixed(6)}'
+                        '${storeLongitude!.toStringAsFixed(6)}'
                   : '',
             ),
             SupplierReviewRow(
@@ -2059,7 +2002,8 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
       );
     }
 
-    final canContinue = currentStepComplete &&
+    final canContinue =
+        currentStepComplete &&
         !isLoadingProfile &&
         !isSubmitting &&
         !uploadsInProgress;
@@ -2109,8 +2053,8 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                   : Icon(
                       isLastStep
                           ? reviewDetailsComplete && !confirmedAccuracy
-                              ? Icons.fact_check_outlined
-                              : Icons.send_rounded
+                                ? Icons.fact_check_outlined
+                                : Icons.send_rounded
                           : Icons.arrow_forward_rounded,
                       size: 19,
                     ),
@@ -2118,14 +2062,12 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                 isSubmitting
                     ? 'Submitting...'
                     : canContinue
-                        ? isLastStep
-                            ? 'Submit Application'
-                            : 'Continue'
-                        : isLastStep &&
-                                reviewDetailsComplete &&
-                                !confirmedAccuracy
-                            ? 'Confirm Accuracy to Submit'
-                            : 'Complete Required Details',
+                    ? isLastStep
+                          ? 'Submit Application'
+                          : 'Continue'
+                    : isLastStep && reviewDetailsComplete && !confirmedAccuracy
+                    ? 'Confirm Accuracy to Submit'
+                    : 'Complete Required Details',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
@@ -2169,8 +2111,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
           backgroundColor: const Color(0xFFF4F8FB),
           body: CustomScrollView(
             controller: scrollController,
-            keyboardDismissBehavior:
-                ScrollViewKeyboardDismissBehavior.onDrag,
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             slivers: [
               SupplierActivationHeader(
                 currentStep: currentStep,

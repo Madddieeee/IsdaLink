@@ -46,9 +46,7 @@ class SupplierActivationHeader extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white.withAlpha(30),
             shape: BoxShape.circle,
-            border: Border.all(
-              color: Colors.white.withAlpha(28),
-            ),
+            border: Border.all(color: Colors.white.withAlpha(28)),
           ),
           child: const Icon(
             Icons.arrow_back_rounded,
@@ -62,16 +60,11 @@ class SupplierActivationHeader extends StatelessWidget {
 
   Widget stepBadge() {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 7,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
         color: Colors.white.withAlpha(28),
         borderRadius: BorderRadius.circular(99),
-        border: Border.all(
-          color: Colors.white.withAlpha(30),
-        ),
+        border: Border.all(color: Colors.white.withAlpha(30)),
       ),
       child: Text(
         stepLabel,
@@ -95,11 +88,7 @@ class SupplierActivationHeader extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            icon,
-            color: Colors.white,
-            size: 17,
-          ),
+          Icon(icon, color: Colors.white, size: 17),
           const SizedBox(height: 4),
           Text(
             label,
@@ -134,9 +123,7 @@ class SupplierActivationHeader extends StatelessWidget {
     return Container(
       width: 1,
       height: 36,
-      margin: const EdgeInsets.symmetric(
-        horizontal: 4,
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 4),
       color: Colors.white.withAlpha(28),
     );
   }
@@ -187,16 +174,11 @@ class SupplierActivationHeader extends StatelessWidget {
         child: Container(
           width: double.infinity,
           height: 64,
-          padding: const EdgeInsets.symmetric(
-            horizontal: 9,
-            vertical: 8,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
           decoration: BoxDecoration(
             color: Colors.white.withAlpha(27),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: Colors.white.withAlpha(31),
-            ),
+            border: Border.all(color: Colors.white.withAlpha(31)),
           ),
           child: Row(
             children: [
@@ -225,9 +207,7 @@ class SupplierActivationHeader extends StatelessWidget {
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     final topPadding = MediaQuery.paddingOf(context).top;
 
     return SliverAppBar(
@@ -241,11 +221,7 @@ class SupplierActivationHeader extends StatelessWidget {
       foregroundColor: Colors.white,
       leadingWidth: 60,
       leading: Padding(
-        padding: const EdgeInsets.only(
-          left: 14,
-          top: 8,
-          bottom: 8,
-        ),
+        padding: const EdgeInsets.only(left: 14, top: 8, bottom: 8),
         child: backButton(),
       ),
       titleSpacing: 6,
@@ -262,19 +238,12 @@ class SupplierActivationHeader extends StatelessWidget {
       ),
       actions: [
         Padding(
-          padding: const EdgeInsets.only(
-            right: 15,
-          ),
-          child: Center(
-            child: stepBadge(),
-          ),
+          padding: const EdgeInsets.only(right: 15),
+          child: Center(child: stepBadge()),
         ),
       ],
       flexibleSpace: LayoutBuilder(
-        builder: (
-          context,
-          constraints,
-        ) {
+        builder: (context, constraints) {
           final collapsedHeight = topPadding + 62;
           final expandedHeight = topPadding + 244;
           final range = expandedHeight - collapsedHeight;
@@ -282,14 +251,16 @@ class SupplierActivationHeader extends StatelessWidget {
           final expansion = range <= 0
               ? 0.0
               : ((constraints.maxHeight - collapsedHeight) / range)
-                  .clamp(0.0, 1.0)
-                  .toDouble();
+                    .clamp(0.0, 1.0)
+                    .toDouble();
 
-          final copyVisibility =
-              ((expansion - 0.52) / 0.30).clamp(0.0, 1.0).toDouble();
+          final copyVisibility = ((expansion - 0.52) / 0.30)
+              .clamp(0.0, 1.0)
+              .toDouble();
 
-          final summaryVisibility =
-              ((expansion - 0.72) / 0.20).clamp(0.0, 1.0).toDouble();
+          final summaryVisibility = ((expansion - 0.72) / 0.20)
+              .clamp(0.0, 1.0)
+              .toDouble();
 
           return ClipRRect(
             borderRadius: const BorderRadius.vertical(
@@ -305,11 +276,7 @@ class SupplierActivationHeader extends StatelessWidget {
                     Color(0xFF075FAE),
                     Color(0xFF146BFF),
                   ],
-                  stops: [
-                    0.0,
-                    0.55,
-                    1.0,
-                  ],
+                  stops: [0.0, 0.55, 1.0],
                 ),
               ),
               child: Stack(
@@ -317,9 +284,7 @@ class SupplierActivationHeader extends StatelessWidget {
                 children: [
                   const Positioned.fill(
                     child: IgnorePointer(
-                      child: CustomPaint(
-                        painter: _SupplierHeaderPainter(),
-                      ),
+                      child: CustomPaint(painter: _SupplierHeaderPainter()),
                     ),
                   ),
                   Positioned(
@@ -342,9 +307,7 @@ class SupplierActivationHeader extends StatelessWidget {
         },
       ),
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          bottom: Radius.circular(29),
-        ),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(29)),
       ),
     );
   }
@@ -354,12 +317,8 @@ class _SupplierHeaderPainter extends CustomPainter {
   const _SupplierHeaderPainter();
 
   @override
-  void paint(
-    Canvas canvas,
-    Size size,
-  ) {
-    final fillPaint = Paint()
-      ..color = Colors.white.withAlpha(10);
+  void paint(Canvas canvas, Size size) {
+    final fillPaint = Paint()..color = Colors.white.withAlpha(10);
 
     final borderPaint = Paint()
       ..style = PaintingStyle.stroke
@@ -367,60 +326,36 @@ class _SupplierHeaderPainter extends CustomPainter {
       ..color = Colors.white.withAlpha(20);
 
     canvas.drawCircle(
-      Offset(
-        size.width * 0.89,
-        size.height * 0.12,
-      ),
+      Offset(size.width * 0.89, size.height * 0.12),
       size.width * 0.25,
       fillPaint,
     );
 
     canvas.drawCircle(
-      Offset(
-        size.width * 0.85,
-        size.height * 0.27,
-      ),
+      Offset(size.width * 0.85, size.height * 0.27),
       size.width * 0.18,
       borderPaint,
     );
 
     canvas.drawCircle(
-      Offset(
-        size.width * 0.74,
-        size.height * 0.47,
-      ),
+      Offset(size.width * 0.74, size.height * 0.47),
       size.width * 0.1,
       borderPaint,
     );
 
-    final accentPaint = Paint()
-      ..color = Colors.white.withAlpha(8);
+    final accentPaint = Paint()..color = Colors.white.withAlpha(8);
 
     final accentPath = Path()
-      ..moveTo(
-        size.width * 0.58,
-        size.height,
-      )
-      ..lineTo(
-        size.width,
-        size.height * 0.50,
-      )
-      ..lineTo(
-        size.width,
-        size.height,
-      )
+      ..moveTo(size.width * 0.58, size.height)
+      ..lineTo(size.width, size.height * 0.50)
+      ..lineTo(size.width, size.height)
       ..close();
 
-    canvas.drawPath(
-      accentPath,
-      accentPaint,
-    );
+    canvas.drawPath(accentPath, accentPaint);
   }
 
   @override
-  bool shouldRepaint(
-    covariant _SupplierHeaderPainter oldDelegate,
-  ) {
+  bool shouldRepaint(covariant _SupplierHeaderPainter oldDelegate) {
     return false;
   }
 }

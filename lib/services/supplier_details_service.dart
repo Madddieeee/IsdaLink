@@ -42,10 +42,7 @@ class SupplierDetailsService {
     return text.isEmpty ? fallback : text;
   }
 
-  double getDoubleValue(
-    Map<String, dynamic> data,
-    String key,
-  ) {
+  double getDoubleValue(Map<String, dynamic> data, String key) {
     final value = data[key];
 
     if (value is int) {
@@ -63,9 +60,7 @@ class SupplierDetailsService {
     return 0;
   }
 
-  DateTime? getDateTimeValue(
-    dynamic value,
-  ) {
+  DateTime? getDateTimeValue(dynamic value) {
     if (value is Timestamp) {
       return value.toDate();
     }
@@ -81,15 +76,8 @@ class SupplierDetailsService {
     return null;
   }
 
-  String productImageUrl(
-    Map<String, dynamic> data,
-  ) {
-    const keys = [
-      'productImageUrl',
-      'imageUrl',
-      'photoUrl',
-      'fishImageUrl',
-    ];
+  String productImageUrl(Map<String, dynamic> data) {
+    const keys = ['productImageUrl', 'imageUrl', 'photoUrl', 'fishImageUrl'];
 
     for (final key in keys) {
       final value = getStringValue(data, key, '');
@@ -108,11 +96,7 @@ class SupplierDetailsService {
     required String? supplierId,
   }) {
     final selectedId = supplierId?.trim() ?? '';
-    final stockSupplierId = getStringValue(
-      data,
-      'supplierId',
-      '',
-    ).trim();
+    final stockSupplierId = getStringValue(data, 'supplierId', '').trim();
 
     if (selectedId.isNotEmpty && stockSupplierId == selectedId) {
       return true;
@@ -127,33 +111,21 @@ class SupplierDetailsService {
     return stockSupplierName == supplier.name.trim().toLowerCase();
   }
 
-  bool isArchivedStock(
-    Map<String, dynamic> data,
-  ) {
-    final status = getStringValue(
-      data,
-      'status',
-      'available',
-    ).toLowerCase();
+  bool isArchivedStock(Map<String, dynamic> data) {
+    final status = getStringValue(data, 'status', 'available').toLowerCase();
 
     return status == 'deleted' || status == 'archived';
   }
 
-  bool isOrderableStock(
-    Map<String, dynamic> data,
-  ) {
+  bool isOrderableStock(Map<String, dynamic> data) {
     return StockState.isMarketplaceOrderable(data);
   }
 
-  bool isLimitedStock(
-    Map<String, dynamic> data,
-  ) {
+  bool isLimitedStock(Map<String, dynamic> data) {
     final quantity = getDoubleValue(data, 'quantity');
     final lowStockLevel = getDoubleValue(data, 'lowStockLevel');
 
-    return quantity > 0 &&
-        lowStockLevel > 0 &&
-        quantity <= lowStockLevel;
+    return quantity > 0 && lowStockLevel > 0 && quantity <= lowStockLevel;
   }
 
   List<QueryDocumentSnapshot<Map<String, dynamic>>> filterSupplierStocks({
@@ -161,26 +133,24 @@ class SupplierDetailsService {
     required Supplier supplier,
     required String? supplierId,
   }) {
-    return documents.where(
-      (document) {
-        final data = document.data();
+    return documents.where((document) {
+      final data = document.data();
 
-        return matchesSelectedSupplier(
-              data: data,
-              supplier: supplier,
-              supplierId: supplierId,
-            ) &&
-            !isArchivedStock(data);
-      },
-    ).toList();
+      return matchesSelectedSupplier(
+            data: data,
+            supplier: supplier,
+            supplierId: supplierId,
+          ) &&
+          !isArchivedStock(data);
+    }).toList();
   }
 
   List<QueryDocumentSnapshot<Map<String, dynamic>>> orderableStocks(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
   ) {
-    return documents.where(
-      (document) => isOrderableStock(document.data()),
-    ).toList();
+    return documents
+        .where((document) => isOrderableStock(document.data()))
+        .toList();
   }
 
   List<String> availableUnits(
@@ -200,11 +170,7 @@ class SupplierDetailsService {
       }
     }
 
-    const preferredOrder = [
-      'kilo',
-      'icebox',
-      'tab',
-    ];
+    const preferredOrder = ['kilo', 'icebox', 'tab'];
 
     final ordered = <String>[];
 
@@ -214,9 +180,7 @@ class SupplierDetailsService {
       }
     }
 
-    ordered.addAll(
-      units.toList()..sort(),
-    );
+    ordered.addAll(units.toList()..sort());
 
     return ordered;
   }
@@ -230,107 +194,86 @@ class SupplierDetailsService {
     final normalizedQuery = query.trim().toLowerCase();
     final normalizedUnit = selectedUnit.trim().toLowerCase();
 
-    final filtered = documents.where(
-      (document) {
-        final data = document.data();
+    final filtered = documents.where((document) {
+      final data = document.data();
 
-        final productName = getStringValue(
-          data,
-          'productName',
-          '',
-        ).toLowerCase();
+      final productName = getStringValue(data, 'productName', '').toLowerCase();
 
-        final category = getStringValue(
-          data,
-          'category',
-          '',
-        ).toLowerCase();
+      final category = getStringValue(data, 'category', '').toLowerCase();
 
-        final description = getStringValue(
-          data,
-          'description',
-          '',
-        ).toLowerCase();
+      final description = getStringValue(data, 'description', '').toLowerCase();
 
-        final quantityUnit = getStringValue(
-          data,
-          'quantityUnit',
-          'kilo',
-        ).toLowerCase();
+      final quantityUnit = getStringValue(
+        data,
+        'quantityUnit',
+        'kilo',
+      ).toLowerCase();
 
-        final matchesQuery = normalizedQuery.isEmpty ||
-            SearchMatcher.matches(
-              query: normalizedQuery,
-              values: [
-                productName,
-                category,
-                description,
-                quantityUnit,
-              ],
-            );
+      final matchesQuery =
+          normalizedQuery.isEmpty ||
+          SearchMatcher.matches(
+            query: normalizedQuery,
+            values: [productName, category, description, quantityUnit],
+          );
 
-        final matchesUnit = normalizedUnit == 'all' ||
-            quantityUnit == normalizedUnit;
+      final matchesUnit =
+          normalizedUnit == 'all' || quantityUnit == normalizedUnit;
 
-        return matchesQuery && matchesUnit;
-      },
-    ).toList();
+      return matchesQuery && matchesUnit;
+    }).toList();
 
-    filtered.sort(
-      (first, second) {
-        final firstData = first.data();
-        final secondData = second.data();
+    filtered.sort((first, second) {
+      final firstData = first.data();
+      final secondData = second.data();
 
-        switch (sortMode) {
-          case 'price_low':
-            return getDoubleValue(firstData, 'price').compareTo(
-              getDoubleValue(secondData, 'price'),
-            );
-          case 'price_high':
-            return getDoubleValue(secondData, 'price').compareTo(
-              getDoubleValue(firstData, 'price'),
-            );
-          case 'stock_high':
-            return getDoubleValue(secondData, 'quantity').compareTo(
-              getDoubleValue(firstData, 'quantity'),
-            );
-          case 'name':
-            return getStringValue(
-              firstData,
-              'productName',
-              '',
-            ).toLowerCase().compareTo(
-                  getStringValue(
-                    secondData,
-                    'productName',
-                    '',
-                  ).toLowerCase(),
-                );
-          case 'latest':
-          default:
-            final firstDate = getDateTimeValue(
-              firstData['restockedAt'] ?? firstData['createdAt'],
-            );
-            final secondDate = getDateTimeValue(
-              secondData['restockedAt'] ?? secondData['createdAt'],
-            );
+      switch (sortMode) {
+        case 'price_low':
+          return getDoubleValue(
+            firstData,
+            'price',
+          ).compareTo(getDoubleValue(secondData, 'price'));
+        case 'price_high':
+          return getDoubleValue(
+            secondData,
+            'price',
+          ).compareTo(getDoubleValue(firstData, 'price'));
+        case 'stock_high':
+          return getDoubleValue(
+            secondData,
+            'quantity',
+          ).compareTo(getDoubleValue(firstData, 'quantity'));
+        case 'name':
+          return getStringValue(
+            firstData,
+            'productName',
+            '',
+          ).toLowerCase().compareTo(
+            getStringValue(secondData, 'productName', '').toLowerCase(),
+          );
+        case 'latest':
+        default:
+          final firstDate = getDateTimeValue(
+            firstData['restockedAt'] ?? firstData['createdAt'],
+          );
+          final secondDate = getDateTimeValue(
+            secondData['restockedAt'] ?? secondData['createdAt'],
+          );
 
-            if (firstDate == null && secondDate == null) {
-              return 0;
-            }
+          if (firstDate == null && secondDate == null) {
+            return 0;
+          }
 
-            if (firstDate == null) {
-              return 1;
-            }
+          if (firstDate == null) {
+            return 1;
+          }
 
-            if (secondDate == null) {
-              return -1;
-            }
+          if (secondDate == null) {
+            return -1;
+          }
 
-            return secondDate.compareTo(firstDate);
-        }
-      },
-    );
+          return secondDate.compareTo(firstDate);
+      }
+    });
 
     return filtered;
   }
@@ -365,66 +308,35 @@ class SupplierDetailsService {
     return 'Available';
   }
 
-  FishProduct fishProductFromFirestore(
-    Map<String, dynamic> data,
-  ) {
+  FishProduct fishProductFromFirestore(Map<String, dynamic> data) {
     return FishProduct(
-      name: getStringValue(
-        data,
-        'productName',
-        'Fish Product',
-      ),
-      category: getStringValue(
-        data,
-        'category',
-        'Fresh Fish',
-      ),
+      name: getStringValue(data, 'productName', 'Fish Product'),
+      category: getStringValue(data, 'category', 'Fresh Fish'),
       description: getStringValue(
         data,
         'description',
         'Fresh fish stock available for COD ordering.',
       ),
-      emoji: getStringValue(
-        data,
-        'emoji',
-        '🐟',
-      ),
+      emoji: getStringValue(data, 'emoji', '🐟'),
       imageUrl: productImageUrl(data),
-      price: getDoubleValue(
-        data,
-        'price',
-      ),
-      priceUnit: getStringValue(
-        data,
-        'priceUnit',
-        'per kilo',
-      ),
-      availableQuantity: getDoubleValue(
-        data,
-        'quantity',
-      ),
-      quantityUnit: getStringValue(
-        data,
-        'quantityUnit',
-        'kilo',
-      ),
-      lowStockThreshold: getDoubleValue(
-        data,
-        'lowStockLevel',
-      ),
+      price: getDoubleValue(data, 'price'),
+      priceUnit: getStringValue(data, 'priceUnit', 'per kilo'),
+      availableQuantity: getDoubleValue(data, 'quantity'),
+      quantityUnit: getStringValue(data, 'quantityUnit', 'kilo'),
+      lowStockThreshold: getDoubleValue(data, 'lowStockLevel'),
     );
   }
 
   SupplierDetailsStats calculateStats(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
   ) {
-    final available = documents.where(
-      (document) => isOrderableStock(document.data()),
-    ).toList();
+    final available = documents
+        .where((document) => isOrderableStock(document.data()))
+        .toList();
 
-    final limited = available.where(
-      (document) => isLimitedStock(document.data()),
-    ).length;
+    final limited = available
+        .where((document) => isLimitedStock(document.data()))
+        .length;
 
     return SupplierDetailsStats(
       totalListings: documents.length,

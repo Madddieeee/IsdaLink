@@ -9,17 +9,10 @@ import 'package:isdalink/services/home_stock_service.dart';
 import 'package:isdalink/services/supplier_browse_service.dart';
 import 'package:isdalink/utils/app_error_message.dart';
 
-enum _SupplierSortOption {
-  recommended,
-  newest,
-  highestRated,
-  mostAvailable,
-}
+enum _SupplierSortOption { recommended, newest, highestRated, mostAvailable }
 
 class BrowseSuppliersScreen extends StatefulWidget {
-  const BrowseSuppliersScreen({
-    super.key,
-  });
+  const BrowseSuppliersScreen({super.key});
 
   @override
   State<BrowseSuppliersScreen> createState() => _BrowseSuppliersScreenState();
@@ -53,10 +46,8 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => SupplierDetailsScreen(
-          supplier: supplier,
-          supplierId: supplierId,
-        ),
+        builder: (_) =>
+            SupplierDetailsScreen(supplier: supplier, supplierId: supplierId),
       ),
     );
   }
@@ -125,8 +116,6 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
     }
   }
 
-
-
   String get sortLabel {
     return switch (sortOption) {
       _SupplierSortOption.recommended => 'Recommended',
@@ -165,7 +154,10 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
               onTap: () => Navigator.pop(sheetContext, value),
               borderRadius: BorderRadius.circular(16),
               child: Ink(
-                padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 13,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: isSelected ? const Color(0xFFEAF7FC) : Colors.white,
                   borderRadius: BorderRadius.circular(16),
@@ -326,9 +318,7 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
     });
   }
 
-  Widget supplierModeSelector({
-    required int favoriteCount,
-  }) {
+  Widget supplierModeSelector({required int favoriteCount}) {
     Widget option({
       required bool selected,
       required IconData icon,
@@ -396,9 +386,7 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFFEAF2F7),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: const Color(0xFFDCE8F0),
-        ),
+        border: Border.all(color: const Color(0xFFDCE8F0)),
       ),
       child: Row(
         children: [
@@ -482,10 +470,7 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
                   showFavoritesOnly = false;
                 });
               },
-              icon: const Icon(
-                Icons.storefront_rounded,
-                size: 17,
-              ),
+              icon: const Icon(Icons.storefront_rounded, size: 17),
               label: const Text('Browse Suppliers'),
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFF087AC0),
@@ -516,8 +501,12 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
     required Set<String> favoriteSupplierIds,
   }) {
     final approvedDocuments = supplierService.approvedSuppliers(documents);
-    final approvedSupplierIds = approvedDocuments.map((document) => document.id).toSet();
-    final activeFavoriteIds = favoriteSupplierIds.intersection(approvedSupplierIds);
+    final approvedSupplierIds = approvedDocuments
+        .map((document) => document.id)
+        .toSet();
+    final activeFavoriteIds = favoriteSupplierIds.intersection(
+      approvedSupplierIds,
+    );
 
     final availableStockDocuments = stockDocuments
         .where(stockService.isAvailableStock)
@@ -547,11 +536,11 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
     if (normalizedQuery.isNotEmpty) {
       for (final stock in availableStockDocuments) {
         final data = stock.data();
-        final searchable = [
-          data['productName'],
-          data['fishName'],
-          data['category'],
-        ].whereType<Object>().map((value) => value.toString().toLowerCase()).join(' ');
+        final searchable =
+            [data['productName'], data['fishName'], data['category']]
+                .whereType<Object>()
+                .map((value) => value.toString().toLowerCase())
+                .join(' ');
 
         if (searchable.contains(normalizedQuery)) {
           final supplierId = (data['supplierId'] ?? '').toString().trim();
@@ -562,7 +551,9 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
       }
     }
 
-    final searchedIds = baseSearchedDocuments.map((document) => document.id).toSet();
+    final searchedIds = baseSearchedDocuments
+        .map((document) => document.id)
+        .toSet();
     final searchedDocuments = normalizedQuery.isEmpty
         ? approvedDocuments
         : approvedDocuments.where((document) {
@@ -572,8 +563,8 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
 
     final filteredDocuments = showFavoritesOnly
         ? searchedDocuments
-            .where((document) => activeFavoriteIds.contains(document.id))
-            .toList()
+              .where((document) => activeFavoriteIds.contains(document.id))
+              .toList()
         : searchedDocuments;
 
     final displayedDocuments = [...filteredDocuments];
@@ -581,14 +572,18 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
       final firstSupplier = supplierService.supplierFromProfile(first.data());
       final secondSupplier = supplierService.supplierFromProfile(second.data());
 
-      int nameFallback() => firstSupplier.name
-          .toLowerCase()
-          .compareTo(secondSupplier.name.toLowerCase());
+      int nameFallback() => firstSupplier.name.toLowerCase().compareTo(
+        secondSupplier.name.toLowerCase(),
+      );
 
       switch (sortOption) {
         case _SupplierSortOption.recommended:
-          final firstIndex = approvedDocuments.indexWhere((item) => item.id == first.id);
-          final secondIndex = approvedDocuments.indexWhere((item) => item.id == second.id);
+          final firstIndex = approvedDocuments.indexWhere(
+            (item) => item.id == first.id,
+          );
+          final secondIndex = approvedDocuments.indexWhere(
+            (item) => item.id == second.id,
+          );
           return firstIndex.compareTo(secondIndex);
         case _SupplierSortOption.newest:
           final firstDate = firstSupplier.accountCreatedAt;
@@ -599,16 +594,22 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
           final dateComparison = secondDate.compareTo(firstDate);
           return dateComparison != 0 ? dateComparison : nameFallback();
         case _SupplierSortOption.highestRated:
-          final ratingComparison = secondSupplier.rating.compareTo(firstSupplier.rating);
+          final ratingComparison = secondSupplier.rating.compareTo(
+            firstSupplier.rating,
+          );
           if (ratingComparison != 0) return ratingComparison;
-          final reviewComparison = secondSupplier.reviews.compareTo(firstSupplier.reviews);
+          final reviewComparison = secondSupplier.reviews.compareTo(
+            firstSupplier.reviews,
+          );
           return reviewComparison != 0 ? reviewComparison : nameFallback();
         case _SupplierSortOption.mostAvailable:
           final firstCount = availableCountsBySupplier[first.id] ?? 0;
           final secondCount = availableCountsBySupplier[second.id] ?? 0;
           final countComparison = secondCount.compareTo(firstCount);
           if (countComparison != 0) return countComparison;
-          final ratingComparison = secondSupplier.rating.compareTo(firstSupplier.rating);
+          final ratingComparison = secondSupplier.rating.compareTo(
+            firstSupplier.rating,
+          );
           return ratingComparison != 0 ? ratingComparison : nameFallback();
       }
     });
@@ -629,9 +630,7 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
               favoriteCount: activeFavoriteIds.length,
             ),
           ),
-          Expanded(
-            child: favoritesEmptyBody(),
-          ),
+          Expanded(child: favoritesEmptyBody()),
         ],
       );
     }
@@ -663,9 +662,7 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
       children: [
-        supplierModeSelector(
-          favoriteCount: activeFavoriteIds.length,
-        ),
+        supplierModeSelector(favoriteCount: activeFavoriteIds.length),
         const SizedBox(height: 17),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -675,13 +672,14 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    normalizedQuery.isNotEmpty && fishMatchedSupplierIds.isNotEmpty
+                    normalizedQuery.isNotEmpty &&
+                            fishMatchedSupplierIds.isNotEmpty
                         ? 'Suppliers selling “${searchQuery.trim()}”'
                         : normalizedQuery.isNotEmpty
-                            ? 'Results for “${searchQuery.trim()}”'
-                            : showFavoritesOnly
-                                ? 'Favorite Suppliers'
-                                : 'All Suppliers',
+                        ? 'Results for “${searchQuery.trim()}”'
+                        : showFavoritesOnly
+                        ? 'Favorite Suppliers'
+                        : 'All Suppliers',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -697,8 +695,8 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
                     normalizedQuery.isNotEmpty
                         ? '${displayedDocuments.length} matching supplier${displayedDocuments.length == 1 ? '' : 's'} found.'
                         : showFavoritesOnly
-                            ? '${displayedDocuments.length} saved supplier${displayedDocuments.length == 1 ? '' : 's'} ready to revisit.'
-                            : '${displayedDocuments.length} verified supplier${displayedDocuments.length == 1 ? '' : 's'} across Caraga.',
+                        ? '${displayedDocuments.length} saved supplier${displayedDocuments.length == 1 ? '' : 's'} ready to revisit.'
+                        : '${displayedDocuments.length} verified supplier${displayedDocuments.length == 1 ? '' : 's'} across Caraga.',
                     style: const TextStyle(
                       color: Color(0xFF7B8FA3),
                       fontSize: 10.8,
@@ -715,7 +713,10 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
                 onTap: showSortSheet,
                 borderRadius: BorderRadius.circular(13),
                 child: Ink(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFEAF7FC),
                     borderRadius: BorderRadius.circular(13),
@@ -752,19 +753,17 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
           final data = document.data();
           final supplier = supplierService.supplierFromProfile(data);
           final isFavorite = activeFavoriteIds.contains(document.id);
-          final availableListingCount = availableCountsBySupplier[document.id] ?? 0;
+          final availableListingCount =
+              availableCountsBySupplier[document.id] ?? 0;
           final currentUid = favoriteService.currentUserId?.trim() ?? '';
           final supplierIds = <String>{
             document.id.trim(),
-            for (final key in const [
-              'supplierId',
-              'userId',
-              'uid',
-            ])
+            for (final key in const ['supplierId', 'userId', 'uid'])
               if ((data[key] ?? '').toString().trim().isNotEmpty)
                 (data[key] ?? '').toString().trim(),
           };
-          final ownStore = currentUid.isNotEmpty && supplierIds.contains(currentUid);
+          final ownStore =
+              currentUid.isNotEmpty && supplierIds.contains(currentUid);
 
           return SupplierProfileCard(
             supplier: supplier,
@@ -795,8 +794,12 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
         stream: supplierService.suppliersStream,
         builder: (context, supplierSnapshot) {
           final documents = supplierSnapshot.data?.docs ?? [];
-          final approvedDocuments = supplierService.approvedSuppliers(documents);
-          final approvedSupplierIds = approvedDocuments.map((document) => document.id).toSet();
+          final approvedDocuments = supplierService.approvedSuppliers(
+            documents,
+          );
+          final approvedSupplierIds = approvedDocuments
+              .map((document) => document.id)
+              .toSet();
           final approvedCount = approvedDocuments.length;
 
           return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
@@ -807,8 +810,9 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
                 if (!stockService.isAvailableStock(document)) {
                   return false;
                 }
-                final supplierId =
-                    (document.data()['supplierId'] ?? '').toString().trim();
+                final supplierId = (document.data()['supplierId'] ?? '')
+                    .toString()
+                    .trim();
                 return approvedSupplierIds.contains(supplierId);
               }).length;
 
@@ -840,7 +844,8 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
                           );
                         }
 
-                        if (!supplierSnapshot.hasData || !stockSnapshot.hasData) {
+                        if (!supplierSnapshot.hasData ||
+                            !stockSnapshot.hasData) {
                           return const BrowseSuppliersLoadingBody();
                         }
 

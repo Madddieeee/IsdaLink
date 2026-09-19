@@ -1,10 +1,8 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SearchHistoryService {
-  SearchHistoryService({
-    String? userId,
-    this.maxItems = 8,
-  }) : _storageKey = _keyFor(userId);
+  SearchHistoryService({String? userId, this.maxItems = 8})
+    : _storageKey = _keyFor(userId);
 
   final String _storageKey;
   final int maxItems;
@@ -31,9 +29,7 @@ class SearchHistoryService {
     }
 
     final current = await load();
-    current.removeWhere(
-      (item) => item.toLowerCase() == clean.toLowerCase(),
-    );
+    current.removeWhere((item) => item.toLowerCase() == clean.toLowerCase());
     current.insert(0, clean);
 
     final updated = current.take(maxItems).toList();
@@ -46,9 +42,7 @@ class SearchHistoryService {
   Future<List<String>> remove(String value) async {
     final clean = value.trim();
     final current = await load();
-    current.removeWhere(
-      (item) => item.toLowerCase() == clean.toLowerCase(),
-    );
+    current.removeWhere((item) => item.toLowerCase() == clean.toLowerCase());
 
     final preferences = await SharedPreferences.getInstance();
     await preferences.setStringList(_storageKey, current);

@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 class PlaceOrderHeader extends StatelessWidget {
   const PlaceOrderHeader({super.key});
 
-  static const String _waveHeaderAsset =
-      'assets/images/productdetailwave.png';
+  static const String _waveHeaderAsset = 'assets/images/productdetailwave.png';
   static const double _contentHeight = 112;
 
   @override
@@ -152,11 +151,7 @@ class _HeaderBackButton extends StatelessWidget {
         child: const SizedBox(
           width: 44,
           height: 44,
-          child: Icon(
-            Icons.arrow_back_rounded,
-            color: Colors.white,
-            size: 25,
-          ),
+          child: Icon(Icons.arrow_back_rounded, color: Colors.white, size: 25),
         ),
       ),
     );

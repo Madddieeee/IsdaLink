@@ -22,12 +22,8 @@ class ManageProductDialogs {
       useSafeArea: true,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black.withAlpha(165),
-      builder: (
-        context,
-      ) {
-        return _EditProductSheet(
-          data: document.data(),
-        );
+      builder: (context) {
+        return _EditProductSheet(data: document.data());
       },
     );
   }
@@ -55,23 +51,14 @@ class ManageProductDialogs {
   }) async {
     final result = await showDialog<bool>(
       context: context,
-      builder: (
-        dialogContext,
-      ) {
+      builder: (dialogContext) {
         final action = currentlyHidden ? 'show' : 'hide';
 
         return Dialog(
           backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 25,
-          ),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 25),
           child: Container(
-            padding: const EdgeInsets.fromLTRB(
-              20,
-              21,
-              20,
-              18,
-            ),
+            padding: const EdgeInsets.fromLTRB(20, 21, 20, 18),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(25),
@@ -107,9 +94,7 @@ class ManageProductDialogs {
                 ),
                 const SizedBox(height: 13),
                 Text(
-                  currentlyHidden
-                      ? 'Show this product?'
-                      : 'Hide this product?',
+                  currentlyHidden ? 'Show this product?' : 'Hide this product?',
                   style: const TextStyle(
                     color: Color(0xFF102C44),
                     fontSize: 17,
@@ -135,17 +120,11 @@ class ManageProductDialogs {
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () {
-                          Navigator.pop(
-                            dialogContext,
-                            false,
-                          );
+                          Navigator.pop(dialogContext, false);
                         },
                         style: OutlinedButton.styleFrom(
-                          foregroundColor:
-                              const Color(0xFF52677A),
-                          side: const BorderSide(
-                            color: Color(0xFFB9CBD7),
-                          ),
+                          foregroundColor: const Color(0xFF52677A),
+                          side: const BorderSide(color: Color(0xFFB9CBD7)),
                           minimumSize: const Size.fromHeight(47),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(15),
@@ -153,9 +132,7 @@ class ManageProductDialogs {
                         ),
                         child: const Text(
                           'Cancel',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w900,
-                          ),
+                          style: TextStyle(fontWeight: FontWeight.w900),
                         ),
                       ),
                     ),
@@ -163,10 +140,7 @@ class ManageProductDialogs {
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
-                          Navigator.pop(
-                            dialogContext,
-                            true,
-                          );
+                          Navigator.pop(dialogContext, true);
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: currentlyHidden
@@ -181,9 +155,7 @@ class ManageProductDialogs {
                         ),
                         child: Text(
                           '${action[0].toUpperCase()}${action.substring(1)}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w900,
-                          ),
+                          style: const TextStyle(fontWeight: FontWeight.w900),
                         ),
                       ),
                     ),
@@ -205,21 +177,12 @@ class ManageProductDialogs {
   }) async {
     final result = await showDialog<bool>(
       context: context,
-      builder: (
-        dialogContext,
-      ) {
+      builder: (dialogContext) {
         return Dialog(
           backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 25,
-          ),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 25),
           child: Container(
-            padding: const EdgeInsets.fromLTRB(
-              20,
-              21,
-              20,
-              18,
-            ),
+            padding: const EdgeInsets.fromLTRB(20, 21, 20, 18),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(25),
@@ -273,17 +236,11 @@ class ManageProductDialogs {
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () {
-                          Navigator.pop(
-                            dialogContext,
-                            false,
-                          );
+                          Navigator.pop(dialogContext, false);
                         },
                         style: OutlinedButton.styleFrom(
-                          foregroundColor:
-                              const Color(0xFF52677A),
-                          side: const BorderSide(
-                            color: Color(0xFFB9CBD7),
-                          ),
+                          foregroundColor: const Color(0xFF52677A),
+                          side: const BorderSide(color: Color(0xFFB9CBD7)),
                           minimumSize: const Size.fromHeight(47),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(15),
@@ -291,9 +248,7 @@ class ManageProductDialogs {
                         ),
                         child: const Text(
                           'Keep Active',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w900,
-                          ),
+                          style: TextStyle(fontWeight: FontWeight.w900),
                         ),
                       ),
                     ),
@@ -301,14 +256,10 @@ class ManageProductDialogs {
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
-                          Navigator.pop(
-                            dialogContext,
-                            true,
-                          );
+                          Navigator.pop(dialogContext, true);
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              const Color(0xFFB86500),
+                          backgroundColor: const Color(0xFFB86500),
                           foregroundColor: Colors.white,
                           minimumSize: const Size.fromHeight(47),
                           elevation: 0,
@@ -318,9 +269,7 @@ class ManageProductDialogs {
                         ),
                         child: const Text(
                           'Archive',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w900,
-                          ),
+                          style: TextStyle(fontWeight: FontWeight.w900),
                         ),
                       ),
                     ),
@@ -338,37 +287,28 @@ class ManageProductDialogs {
 }
 
 class _RestockProductSheet extends StatefulWidget {
-  const _RestockProductSheet({
-    required this.data,
-  });
+  const _RestockProductSheet({required this.data});
 
   final Map<String, dynamic> data;
 
   @override
-  State<_RestockProductSheet> createState() =>
-      _RestockProductSheetState();
+  State<_RestockProductSheet> createState() => _RestockProductSheetState();
 }
 
 class _RestockProductSheetState extends State<_RestockProductSheet> {
   final formKey = GlobalKey<FormState>();
   final quantityController = TextEditingController();
 
-  String get productName => OrderHelpers.getStringValue(
-        widget.data,
-        'productName',
-        'Fish Product',
-      );
+  String get productName =>
+      OrderHelpers.getStringValue(widget.data, 'productName', 'Fish Product');
 
-  String get quantityUnit => OrderHelpers.getStringValue(
-        widget.data,
-        'quantityUnit',
-        'kilo',
-      );
+  String get quantityUnit =>
+      OrderHelpers.getStringValue(widget.data, 'quantityUnit', 'kilo');
 
   double get currentQuantity => OrderHelpers.getDoubleValue(
-        widget.data,
-        'quantity',
-      ).clamp(0, double.infinity).toDouble();
+    widget.data,
+    'quantity',
+  ).clamp(0, double.infinity).toDouble();
 
   double get quantityToAdd =>
       double.tryParse(quantityController.text.trim()) ?? 0;
@@ -445,9 +385,7 @@ class _RestockProductSheetState extends State<_RestockProductSheet> {
     final selected = quantityToAdd == value;
 
     return Material(
-      color: selected
-          ? const Color(0xFF0875D1)
-          : const Color(0xFFF0F7FD),
+      color: selected ? const Color(0xFF0875D1) : const Color(0xFFF0F7FD),
       borderRadius: BorderRadius.circular(99),
       child: InkWell(
         onTap: () => chooseQuickAmount(value),
@@ -521,10 +459,7 @@ class _RestockProductSheetState extends State<_RestockProductSheet> {
                           gradient: const LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
-                            colors: [
-                              Color(0xFF0B5FA5),
-                              Color(0xFF13A5D8),
-                            ],
+                            colors: [Color(0xFF0B5FA5), Color(0xFF13A5D8)],
                           ),
                           borderRadius: BorderRadius.circular(15),
                         ),
@@ -579,10 +514,7 @@ class _RestockProductSheetState extends State<_RestockProductSheet> {
                       gradient: const LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [
-                          Color(0xFFEAF6FF),
-                          Color(0xFFECFAF8),
-                        ],
+                        colors: [Color(0xFFEAF6FF), Color(0xFFECFAF8)],
                       ),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: const Color(0xFFC9E1EF)),
@@ -665,9 +597,7 @@ class _RestockProductSheetState extends State<_RestockProductSheet> {
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(18),
-                        borderSide: const BorderSide(
-                          color: Color(0xFFC9DDEA),
-                        ),
+                        borderSide: const BorderSide(color: Color(0xFFC9DDEA)),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(18),
@@ -734,22 +664,18 @@ class _RestockProductSheetState extends State<_RestockProductSheet> {
 }
 
 class _EditProductSheet extends StatefulWidget {
-  const _EditProductSheet({
-    required this.data,
-  });
+  const _EditProductSheet({required this.data});
 
   final Map<String, dynamic> data;
 
   @override
-  State<_EditProductSheet> createState() =>
-      _EditProductSheetState();
+  State<_EditProductSheet> createState() => _EditProductSheetState();
 }
 
 class _EditProductSheetState extends State<_EditProductSheet> {
   final formKey = GlobalKey<FormState>();
   final imagePicker = ImagePicker();
-  final cloudinaryUploadService =
-      const CloudinaryUploadService();
+  final cloudinaryUploadService = const CloudinaryUploadService();
 
   late final TextEditingController productNameController;
   late final TextEditingController descriptionController;
@@ -763,11 +689,7 @@ class _EditProductSheetState extends State<_EditProductSheet> {
     'Aquaculture Fish',
     'Bulk Fish Supply',
   ];
-  final units = const [
-    'kilo',
-    'tab',
-    'icebox',
-  ];
+  final units = const ['kilo', 'tab', 'icebox'];
 
   late String selectedCategory;
   late String selectedUnit;
@@ -778,10 +700,7 @@ class _EditProductSheetState extends State<_EditProductSheet> {
   bool isSaving = false;
   String? imageError;
 
-  String firstString(
-    List<String> keys, {
-    required String fallback,
-  }) {
+  String firstString(List<String> keys, {required String fallback}) {
     for (final key in keys) {
       final value = widget.data[key]?.toString().trim() ?? '';
 
@@ -793,21 +712,12 @@ class _EditProductSheetState extends State<_EditProductSheet> {
     return fallback;
   }
 
-  double dataDouble(
-    String key,
-  ) {
-    return OrderHelpers.getDoubleValue(
-      widget.data,
-      key,
-    );
+  double dataDouble(String key) {
+    return OrderHelpers.getDoubleValue(widget.data, key);
   }
 
-  String formatInput(
-    double value,
-  ) {
-    return value % 1 == 0
-        ? value.toStringAsFixed(0)
-        : value.toStringAsFixed(1);
+  String formatInput(double value) {
+    return value % 1 == 0 ? value.toStringAsFixed(0) : value.toStringAsFixed(1);
   }
 
   @override
@@ -815,57 +725,26 @@ class _EditProductSheetState extends State<_EditProductSheet> {
     super.initState();
 
     productNameController = TextEditingController(
-      text: firstString(
-        const [
-          'productName',
-        ],
-        fallback: '',
-      ),
+      text: firstString(const ['productName'], fallback: ''),
     );
     descriptionController = TextEditingController(
-      text: firstString(
-        const [
-          'description',
-        ],
-        fallback: '',
-      ),
+      text: firstString(const ['description'], fallback: ''),
     );
     priceController = TextEditingController(
-      text: formatInput(
-        dataDouble('price'),
-      ),
+      text: formatInput(dataDouble('price')),
     );
     quantityController = TextEditingController(
-      text: formatInput(
-        dataDouble('quantity'),
-      ),
+      text: formatInput(dataDouble('quantity')),
     );
 
-    selectedCategory = firstString(
-      const [
-        'category',
-      ],
-      fallback: 'Fresh Fish',
-    );
-    selectedUnit = firstString(
-      const [
-        'quantityUnit',
-      ],
-      fallback: 'kilo',
-    );
-    imageUrl = firstString(
-      const [
-        'productImageUrl',
-        'imageUrl',
-      ],
-      fallback: '',
-    );
+    selectedCategory = firstString(const ['category'], fallback: 'Fresh Fish');
+    selectedUnit = firstString(const ['quantityUnit'], fallback: 'kilo');
+    imageUrl = firstString(const ['productImageUrl', 'imageUrl'], fallback: '');
 
     var percentage = dataDouble('lowStockPercentage');
 
     if (percentage <= 0) {
-      final referenceQuantity =
-          dataDouble('referenceStockQuantity');
+      final referenceQuantity = dataDouble('referenceStockQuantity');
       final lowStockLevel = dataDouble('lowStockLevel');
 
       percentage = referenceQuantity > 0
@@ -873,9 +752,7 @@ class _EditProductSheetState extends State<_EditProductSheet> {
           : 20;
     }
 
-    percentageController = TextEditingController(
-      text: formatInput(percentage),
-    );
+    percentageController = TextEditingController(text: formatInput(percentage));
 
     customPercentage = !const [
       '10',
@@ -896,17 +773,11 @@ class _EditProductSheetState extends State<_EditProductSheet> {
   }
 
   double get quantity {
-    return double.tryParse(
-          quantityController.text.trim(),
-        ) ??
-        0;
+    return double.tryParse(quantityController.text.trim()) ?? 0;
   }
 
   double get percentage {
-    return double.tryParse(
-          percentageController.text.trim(),
-        ) ??
-        0;
+    return double.tryParse(percentageController.text.trim()) ?? 0;
   }
 
   double get calculatedAlert {
@@ -914,9 +785,7 @@ class _EditProductSheetState extends State<_EditProductSheet> {
       return 0;
     }
 
-    return quantity *
-        percentage.clamp(1, 100).toDouble() /
-        100;
+    return quantity * percentage.clamp(1, 100).toDouble() / 100;
   }
 
   bool get hasImage {
@@ -957,47 +826,30 @@ class _EditProductSheetState extends State<_EditProductSheet> {
           color: const Color(0xFFE5F4FD),
           borderRadius: BorderRadius.circular(11),
         ),
-        child: Icon(
-          icon,
-          color: const Color(0xFF146BFF),
-          size: 20,
-        ),
+        child: Icon(icon, color: const Color(0xFF146BFF), size: 20),
       ),
       filled: true,
       fillColor: const Color(0xFFF2F7FB),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 15,
-        vertical: 17,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 17),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
         borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(
-          color: Color(0xFFE1EBF2),
-        ),
+        borderSide: const BorderSide(color: Color(0xFFE1EBF2)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(
-          color: Color(0xFF146BFF),
-          width: 1.5,
-        ),
+        borderSide: const BorderSide(color: Color(0xFF146BFF), width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(
-          color: Color(0xFFD94A45),
-        ),
+        borderSide: const BorderSide(color: Color(0xFFD94A45)),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(
-          color: Color(0xFFD94A45),
-          width: 1.5,
-        ),
+        borderSide: const BorderSide(color: Color(0xFFD94A45), width: 1.5),
       ),
     );
   }
@@ -1023,17 +875,11 @@ class _EditProductSheetState extends State<_EditProductSheet> {
         imageError = null;
       });
     } catch (_) {
-      showMessage(
-        'Unable to open the image gallery.',
-        isError: true,
-      );
+      showMessage('Unable to open the image gallery.', isError: true);
     }
   }
 
-  void showMessage(
-    String message, {
-    bool isError = false,
-  }) {
+  void showMessage(String message, {bool isError = false}) {
     final messenger = ScaffoldMessenger.of(context);
 
     messenger
@@ -1041,12 +887,7 @@ class _EditProductSheetState extends State<_EditProductSheet> {
       ..showSnackBar(
         SnackBar(
           behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.fromLTRB(
-            18,
-            0,
-            18,
-            18,
-          ),
+          margin: const EdgeInsets.fromLTRB(18, 0, 18, 18),
           backgroundColor: isError
               ? const Color(0xFFB86500)
               : const Color(0xFF147D64),
@@ -1068,9 +909,7 @@ class _EditProductSheetState extends State<_EditProductSheet> {
     FocusScope.of(context).unfocus();
 
     setState(() {
-      imageError = hasImage
-          ? null
-          : 'Add a product photo before saving.';
+      imageError = hasImage ? null : 'Add a product photo before saving.';
     });
 
     final valid = formKey.currentState?.validate() ?? false;
@@ -1088,8 +927,7 @@ class _EditProductSheetState extends State<_EditProductSheet> {
       final image = selectedImage;
 
       if (image != null) {
-        finalImageUrl =
-            await cloudinaryUploadService.uploadImage(
+        finalImageUrl = await cloudinaryUploadService.uploadImage(
           image,
           folder: 'isdalink/fish_stocks',
         );
@@ -1102,22 +940,14 @@ class _EditProductSheetState extends State<_EditProductSheet> {
       Navigator.pop(
         context,
         SupplierProductUpdateInput(
-          productName:
-              productNameController.text.trim(),
-          description:
-              descriptionController.text.trim(),
+          productName: productNameController.text.trim(),
+          description: descriptionController.text.trim(),
           category: selectedCategory,
           unit: selectedUnit,
           imageUrl: finalImageUrl,
-          price: double.parse(
-            priceController.text.trim(),
-          ),
-          quantity: double.parse(
-            quantityController.text.trim(),
-          ),
-          lowStockPercentage: double.parse(
-            percentageController.text.trim(),
-          ),
+          price: double.parse(priceController.text.trim()),
+          quantity: double.parse(quantityController.text.trim()),
+          lowStockPercentage: double.parse(percentageController.text.trim()),
         ),
       );
     } catch (error) {
@@ -1142,19 +972,12 @@ class _EditProductSheetState extends State<_EditProductSheet> {
     Widget image;
 
     if (selectedImage != null) {
-      image = Image.file(
-        File(selectedImage!.path),
-        fit: BoxFit.cover,
-      );
+      image = Image.file(File(selectedImage!.path), fit: BoxFit.cover);
     } else if (imageUrl.isNotEmpty) {
       image = Image.network(
         imageUrl,
         fit: BoxFit.cover,
-        errorBuilder: (
-          context,
-          error,
-          stackTrace,
-        ) {
+        errorBuilder: (context, error, stackTrace) {
           return const _PhotoPlaceholder();
         },
       );
@@ -1194,14 +1017,8 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                           gradient: LinearGradient(
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Color(0x7400182A),
-                            ],
-                            stops: [
-                              0.56,
-                              1.0,
-                            ],
+                            colors: [Colors.transparent, Color(0x7400182A)],
+                            stops: [0.56, 1.0],
                           ),
                         ),
                       ),
@@ -1251,21 +1068,14 @@ class _EditProductSheetState extends State<_EditProductSheet> {
           height: 43,
           child: OutlinedButton.icon(
             onPressed: isSaving ? null : pickImage,
-            icon: const Icon(
-              Icons.photo_library_outlined,
-              size: 18,
-            ),
+            icon: const Icon(Icons.photo_library_outlined, size: 18),
             label: Text(
               hasImage ? 'Change Product Photo' : 'Choose Product Photo',
-              style: const TextStyle(
-                fontWeight: FontWeight.w900,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w900),
             ),
             style: OutlinedButton.styleFrom(
               foregroundColor: const Color(0xFF146BFF),
-              side: const BorderSide(
-                color: Color(0xFF9BD6FF),
-              ),
+              side: const BorderSide(color: Color(0xFF9BD6FF)),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
               ),
@@ -1283,21 +1093,13 @@ class _EditProductSheetState extends State<_EditProductSheet> {
       spacing: 7,
       runSpacing: 7,
       children: [
-        for (final value in const [
-          '10',
-          '20',
-          '25',
-          '30',
-        ])
+        for (final value in const ['10', '20', '25', '30'])
           _PercentageChoice(
-            label:
-                value == '20' ? '20% Recommended' : '$value%',
-            selected:
-                !customPercentage && current == value,
+            label: value == '20' ? '20% Recommended' : '$value%',
+            selected: !customPercentage && current == value,
             onTap: () {
               percentageController.text = value;
-              percentageController.selection =
-                  TextSelection.collapsed(
+              percentageController.selection = TextSelection.collapsed(
                 offset: value.length,
               );
 
@@ -1320,23 +1122,16 @@ class _EditProductSheetState extends State<_EditProductSheet> {
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.viewInsetsOf(context).bottom,
-      ),
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: Container(
         constraints: BoxConstraints(
-          maxHeight:
-              MediaQuery.sizeOf(context).height * 0.94,
+          maxHeight: MediaQuery.sizeOf(context).height * 0.94,
         ),
         decoration: const BoxDecoration(
           color: Color(0xFFF7FAFC),
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(30),
-          ),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
           boxShadow: [
             BoxShadow(
               color: Color(0x55000000),
@@ -1357,12 +1152,7 @@ class _EditProductSheetState extends State<_EditProductSheet> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(
-                18,
-                14,
-                10,
-                13,
-              ),
+              padding: const EdgeInsets.fromLTRB(18, 14, 10, 13),
               child: Row(
                 children: [
                   Container(
@@ -1381,8 +1171,7 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                   const SizedBox(width: 11),
                   const Expanded(
                     child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Edit Product',
@@ -1419,36 +1208,23 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                 ],
               ),
             ),
-            Divider(
-              height: 1,
-              color: Colors.black.withAlpha(15),
-            ),
+            Divider(height: 1, color: Colors.black.withAlpha(15)),
             Expanded(
               child: Form(
                 key: formKey,
                 child: ListView(
                   keyboardDismissBehavior:
                       ScrollViewKeyboardDismissBehavior.onDrag,
-                  padding: const EdgeInsets.fromLTRB(
-                    18,
-                    16,
-                    18,
-                    22,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(18, 16, 18, 22),
                   children: [
                     photoPreview(),
                     const SizedBox(height: 14),
                     TextFormField(
                       controller: productNameController,
                       enabled: !isSaving,
-                      textCapitalization:
-                          TextCapitalization.words,
-                      inputFormatters: [
-                        LengthLimitingTextInputFormatter(60),
-                      ],
-                      validator: (
-                        value,
-                      ) {
+                      textCapitalization: TextCapitalization.words,
+                      inputFormatters: [LengthLimitingTextInputFormatter(60)],
+                      validator: (value) {
                         final text = value?.trim() ?? '';
 
                         if (text.length < 2) {
@@ -1470,21 +1246,15 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                         label: 'Category',
                         icon: Icons.category_outlined,
                       ),
-                      items: categories.map(
-                        (
-                          category,
-                        ) {
-                          return DropdownMenuItem<String>(
-                            value: category,
-                            child: Text(category),
-                          );
-                        },
-                      ).toList(),
+                      items: categories.map((category) {
+                        return DropdownMenuItem<String>(
+                          value: category,
+                          child: Text(category),
+                        );
+                      }).toList(),
                       onChanged: isSaving
                           ? null
-                          : (
-                              value,
-                            ) {
+                          : (value) {
                               if (value != null) {
                                 setState(() {
                                   selectedCategory = value;
@@ -1498,14 +1268,9 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                       enabled: !isSaving,
                       minLines: 2,
                       maxLines: 3,
-                      textCapitalization:
-                          TextCapitalization.sentences,
-                      inputFormatters: [
-                        LengthLimitingTextInputFormatter(240),
-                      ],
-                      validator: (
-                        value,
-                      ) {
+                      textCapitalization: TextCapitalization.sentences,
+                      inputFormatters: [LengthLimitingTextInputFormatter(240)],
+                      validator: (value) {
                         if ((value?.trim().length ?? 0) < 8) {
                           return 'Add a description with at least 8 characters.';
                         }
@@ -1515,22 +1280,18 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                       decoration: inputDecoration(
                         label: 'Description',
                         icon: Icons.description_outlined,
-                        helperText:
-                            'Freshness, size, or handling details.',
+                        helperText: 'Freshness, size, or handling details.',
                       ),
                     ),
                     const SizedBox(height: 11),
                     Row(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
                           child: TextFormField(
                             controller: priceController,
                             enabled: !isSaving,
-                            keyboardType:
-                                const TextInputType
-                                    .numberWithOptions(
+                            keyboardType: const TextInputType.numberWithOptions(
                               decimal: true,
                             ),
                             inputFormatters: [
@@ -1538,9 +1299,7 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                                 RegExp(r'^\d*\.?\d{0,2}'),
                               ),
                             ],
-                            validator: (
-                              value,
-                            ) {
+                            validator: (value) {
                               final price = double.tryParse(
                                 value?.trim() ?? '',
                               );
@@ -1560,29 +1319,22 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                         ),
                         const SizedBox(width: 10),
                         Expanded(
-                          child:
-                              DropdownButtonFormField<String>(
+                          child: DropdownButtonFormField<String>(
                             initialValue: selectedUnit,
                             isExpanded: true,
                             decoration: inputDecoration(
                               label: 'Selling unit',
                               icon: Icons.scale_outlined,
                             ),
-                            items: units.map(
-                              (
-                                unit,
-                              ) {
-                                return DropdownMenuItem<String>(
-                                  value: unit,
-                                  child: Text('per $unit'),
-                                );
-                              },
-                            ).toList(),
+                            items: units.map((unit) {
+                              return DropdownMenuItem<String>(
+                                value: unit,
+                                child: Text('per $unit'),
+                              );
+                            }).toList(),
                             onChanged: isSaving
                                 ? null
-                                : (
-                                    value,
-                                  ) {
+                                : (value) {
                                     if (value != null) {
                                       setState(() {
                                         selectedUnit = value;
@@ -1597,8 +1349,7 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                     TextFormField(
                       controller: quantityController,
                       enabled: !isSaving,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(
+                      keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
                       inputFormatters: [
@@ -1606,17 +1357,11 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                           RegExp(r'^\d*\.?\d{0,2}'),
                         ),
                       ],
-                      onChanged: (
-                        _,
-                      ) {
+                      onChanged: (_) {
                         setState(() {});
                       },
-                      validator: (
-                        value,
-                      ) {
-                        final quantity = double.tryParse(
-                          value?.trim() ?? '',
-                        );
+                      validator: (value) {
+                        final quantity = double.tryParse(value?.trim() ?? '');
 
                         if (quantity == null || quantity < 0) {
                           return 'Enter a valid stock quantity.';
@@ -1637,26 +1382,20 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                         gradient: const LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [
-                            Color(0xFFEAF8FF),
-                            Color(0xFFEAFBF5),
-                          ],
+                          colors: [Color(0xFFEAF8FF), Color(0xFFEAFBF5)],
                         ),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color:
-                              const Color(0xFF75CFEA).withAlpha(88),
+                          color: const Color(0xFF75CFEA).withAlpha(88),
                         ),
                       ),
                       child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Row(
                             children: [
                               Icon(
-                                Icons
-                                    .notifications_active_outlined,
+                                Icons.notifications_active_outlined,
                                 color: Color(0xFFFF7A1A),
                                 size: 21,
                               ),
@@ -1687,30 +1426,23 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                           if (customPercentage) ...[
                             const SizedBox(height: 11),
                             TextFormField(
-                              controller:
-                                  percentageController,
+                              controller: percentageController,
                               enabled: !isSaving,
                               keyboardType:
-                                  const TextInputType
-                                      .numberWithOptions(
-                                decimal: true,
-                              ),
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
                               autofocus: true,
                               inputFormatters: [
                                 FilteringTextInputFormatter.allow(
                                   RegExp(r'^\d*\.?\d{0,1}'),
                                 ),
                               ],
-                              onChanged: (
-                                _,
-                              ) {
+                              onChanged: (_) {
                                 setState(() {});
                               },
-                              validator: (
-                                value,
-                              ) {
-                                final valueNumber =
-                                    double.tryParse(
+                              validator: (value) {
+                                final valueNumber = double.tryParse(
                                   value?.trim() ?? '',
                                 );
 
@@ -1723,8 +1455,7 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                                 return null;
                               },
                               decoration: inputDecoration(
-                                label:
-                                    'Custom alert percentage',
+                                label: 'Custom alert percentage',
                                 icon: Icons.percent_rounded,
                                 suffixText: '%',
                               ),
@@ -1733,16 +1464,10 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                           const SizedBox(height: 11),
                           Container(
                             width: double.infinity,
-                            padding: const EdgeInsets.fromLTRB(
-                              12,
-                              11,
-                              12,
-                              11,
-                            ),
+                            padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
                             decoration: BoxDecoration(
                               color: Colors.white.withAlpha(210),
-                              borderRadius:
-                                  BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(16),
                               border: Border.all(
                                 color: const Color(0xFFDDEAF1),
                               ),
@@ -1753,18 +1478,14 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                                   width: 39,
                                   height: 39,
                                   decoration: BoxDecoration(
-                                    color: quantity >= 0 &&
-                                            percentage > 0
+                                    color: quantity >= 0 && percentage > 0
                                         ? const Color(0xFFE7F8F1)
                                         : const Color(0xFFFFF2E8),
-                                    borderRadius:
-                                        BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Icon(
-                                    Icons
-                                        .notifications_active_rounded,
-                                    color: quantity >= 0 &&
-                                            percentage > 0
+                                    Icons.notifications_active_rounded,
+                                    color: quantity >= 0 && percentage > 0
                                         ? const Color(0xFF147D64)
                                         : const Color(0xFFFF7A1A),
                                     size: 21,
@@ -1779,34 +1500,28 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                                       const Text(
                                         'CALCULATED ALERT LEVEL',
                                         style: TextStyle(
-                                          color:
-                                              Color(0xFF7B8FA3),
+                                          color: Color(0xFF7B8FA3),
                                           fontSize: 8.4,
                                           letterSpacing: 0.5,
-                                          fontWeight:
-                                              FontWeight.w900,
+                                          fontWeight: FontWeight.w900,
                                         ),
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
                                         '${formatInput(calculatedAlert)} $selectedUnit',
                                         style: const TextStyle(
-                                          color:
-                                              Color(0xFF102C44),
+                                          color: Color(0xFF102C44),
                                           fontSize: 13,
-                                          fontWeight:
-                                              FontWeight.w900,
+                                          fontWeight: FontWeight.w900,
                                         ),
                                       ),
                                       const SizedBox(height: 3),
                                       const Text(
                                         'The alert threshold updates automatically.',
                                         style: TextStyle(
-                                          color:
-                                              Color(0xFF657C8E),
+                                          color: Color(0xFF657C8E),
                                           fontSize: 9.3,
-                                          fontWeight:
-                                              FontWeight.w600,
+                                          fontWeight: FontWeight.w600,
                                         ),
                                       ),
                                     ],
@@ -1823,12 +1538,7 @@ class _EditProductSheetState extends State<_EditProductSheet> {
               ),
             ),
             Container(
-              padding: const EdgeInsets.fromLTRB(
-                18,
-                10,
-                18,
-                15,
-              ),
+              padding: const EdgeInsets.fromLTRB(18, 10, 18, 15),
               decoration: const BoxDecoration(
                 color: Colors.white,
                 boxShadow: [
@@ -1855,31 +1565,22 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                               color: Colors.white,
                             ),
                           )
-                        : const Icon(
-                            Icons.save_rounded,
-                            size: 20,
-                          ),
+                        : const Icon(Icons.save_rounded, size: 20),
                     label: Text(
-                      isSaving
-                          ? 'Saving Changes...'
-                          : 'Save Product Changes',
+                      isSaving ? 'Saving Changes...' : 'Save Product Changes',
                       style: const TextStyle(
                         fontSize: 14.2,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          const Color(0xFF146BFF),
+                      backgroundColor: const Color(0xFF146BFF),
                       foregroundColor: Colors.white,
-                      disabledBackgroundColor:
-                          const Color(0xFF7397B8),
+                      disabledBackgroundColor: const Color(0xFF7397B8),
                       elevation: isSaving ? 0 : 6,
-                      shadowColor:
-                          const Color(0x55146BFF),
+                      shadowColor: const Color(0x55146BFF),
                       shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
                   ),
@@ -1897,9 +1598,7 @@ class _PhotoPlaceholder extends StatelessWidget {
   const _PhotoPlaceholder();
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Container(
       color: const Color(0xFFEAF7FB),
       alignment: Alignment.center,
@@ -1938,9 +1637,7 @@ class _PercentageChoice extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -1948,10 +1645,7 @@ class _PercentageChoice extends StatelessWidget {
         borderRadius: BorderRadius.circular(99),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
-          padding: const EdgeInsets.symmetric(
-            horizontal: 11,
-            vertical: 8,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
           decoration: BoxDecoration(
             color: selected
                 ? const Color(0xFF146BFF)
@@ -1966,9 +1660,7 @@ class _PercentageChoice extends StatelessWidget {
           child: Text(
             label,
             style: TextStyle(
-              color: selected
-                  ? Colors.white
-                  : const Color(0xFF52677A),
+              color: selected ? Colors.white : const Color(0xFF52677A),
               fontSize: 9.2,
               fontWeight: FontWeight.w900,
             ),

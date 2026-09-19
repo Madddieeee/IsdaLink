@@ -1,22 +1,16 @@
 import 'package:flutter/material.dart';
 
 class SupplierDetailsLoadingCard extends StatelessWidget {
-  const SupplierDetailsLoadingCard({
-    super.key,
-  });
+  const SupplierDetailsLoadingCard({super.key});
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(23),
-        border: Border.all(
-          color: const Color(0xFFE0EEF5),
-        ),
+        border: Border.all(color: const Color(0xFFE0EEF5)),
       ),
       child: const Row(
         children: [
@@ -63,8 +57,7 @@ class SupplierDetailsEmptyCard extends StatelessWidget {
   const SupplierDetailsEmptyCard({
     super.key,
     this.title = 'No fish available right now',
-    this.subtitle =
-        'This supplier has no active fish listings at the moment.',
+    this.subtitle = 'This supplier has no active fish listings at the moment.',
     this.icon = Icons.inventory_2_outlined,
   });
 
@@ -73,18 +66,14 @@ class SupplierDetailsEmptyCard extends StatelessWidget {
   final IconData icon;
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(23),
-        border: Border.all(
-          color: const Color(0xFFE0EEF5),
-        ),
+        border: Border.all(color: const Color(0xFFE0EEF5)),
       ),
       child: Column(
         children: [
@@ -95,11 +84,7 @@ class SupplierDetailsEmptyCard extends StatelessWidget {
               color: const Color(0xFFE8F8FD),
               borderRadius: BorderRadius.circular(18),
             ),
-            child: Icon(
-              icon,
-              color: const Color(0xFF087AC0),
-              size: 28,
-            ),
+            child: Icon(icon, color: const Color(0xFF087AC0), size: 28),
           ),
           const SizedBox(height: 12),
           Text(
@@ -128,25 +113,18 @@ class SupplierDetailsEmptyCard extends StatelessWidget {
 }
 
 class SupplierDetailsErrorCard extends StatelessWidget {
-  const SupplierDetailsErrorCard({
-    super.key,
-    required this.message,
-  });
+  const SupplierDetailsErrorCard({super.key, required this.message});
 
   final String message;
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(23),
-        border: Border.all(
-          color: const Color(0xFFFFD7D7),
-        ),
+        border: Border.all(color: const Color(0xFFFFD7D7)),
       ),
       child: Row(
         children: [

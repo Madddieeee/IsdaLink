@@ -23,10 +23,7 @@ class RecentFishCard extends StatelessWidget {
   final String activityLabel;
   final bool showActivityTime;
 
-  String cleanText({
-    required String value,
-    required String fallback,
-  }) {
+  String cleanText({required String value, required String fallback}) {
     final text = value.trim();
 
     if (text.isEmpty) {
@@ -114,9 +111,7 @@ class RecentFishCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
-        color: isRestocked
-            ? const Color(0xFF16835F)
-            : const Color(0xFF0A73D8),
+        color: isRestocked ? const Color(0xFF16835F) : const Color(0xFF0A73D8),
         borderRadius: BorderRadius.circular(99),
         boxShadow: const [
           BoxShadow(
@@ -160,21 +155,13 @@ class RecentFishCard extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                Color(0x00000000),
-                Color(0x08000000),
-                Color(0x28001529),
-              ],
+              colors: [Color(0x00000000), Color(0x08000000), Color(0x28001529)],
               stops: [0.48, 0.72, 1],
             ),
           ),
         ),
         if (badgeLabel.trim().isNotEmpty)
-          Positioned(
-            left: 9,
-            top: 9,
-            child: arrivalBadge(),
-          ),
+          Positioned(left: 9, top: 9, child: arrivalBadge()),
       ],
     );
   }
@@ -199,10 +186,7 @@ class RecentFishCard extends StatelessWidget {
       height: isWide ? 23 : 20,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(
-          color: const Color(0xFF9EDCF2),
-          width: 1.2,
-        ),
+        border: Border.all(color: const Color(0xFF9EDCF2), width: 1.2),
       ),
       clipBehavior: Clip.antiAlias,
       child: hasNetworkImage(imageUrl)
@@ -244,16 +228,12 @@ class RecentFishCard extends StatelessWidget {
     final stockText = product.availableQuantity <= 0
         ? 'Out of stock'
         : product.availableQuantity <= product.lowStockThreshold
-            ? 'Only $quantity ${product.quantityUnit} left'
-            : '$quantity ${product.quantityUnit} available';
+        ? 'Only $quantity ${product.quantityUnit} left'
+        : '$quantity ${product.quantityUnit} available';
 
     return Row(
       children: [
-        Icon(
-          Icons.circle,
-          color: product.stockColor,
-          size: 7,
-        ),
+        Icon(Icons.circle, color: product.stockColor, size: 7),
         const SizedBox(width: 4),
         Expanded(
           child: Text(
@@ -293,10 +273,7 @@ class RecentFishCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFFFFFFF),
-            Color(0xFFF3FAFE),
-          ],
+          colors: [Color(0xFFFFFFFF), Color(0xFFF3FAFE)],
         ),
       ),
       child: Padding(
@@ -337,9 +314,7 @@ class RecentFishCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: const Color(0xFFEAF8FD),
                     borderRadius: BorderRadius.circular(9),
-                    border: Border.all(
-                      color: const Color(0xFFD8EEF6),
-                    ),
+                    border: Border.all(color: const Color(0xFFD8EEF6)),
                   ),
                   child: RichText(
                     text: TextSpan(
@@ -402,10 +377,7 @@ class RecentFishCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: const Color(0xFFD7E8F1),
-              width: 0.9,
-            ),
+            border: Border.all(color: const Color(0xFFD7E8F1), width: 0.9),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x12002842),
@@ -421,10 +393,7 @@ class RecentFishCard extends StatelessWidget {
                 height: 2,
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [
-                      Color(0xFF0A73D8),
-                      Color(0xFF16BBD2),
-                    ],
+                    colors: [Color(0xFF0A73D8), Color(0xFF16BBD2)],
                   ),
                 ),
               ),
@@ -441,10 +410,7 @@ class RecentFishCard extends StatelessWidget {
 }
 
 class FishEmojiFallback extends StatelessWidget {
-  const FishEmojiFallback({
-    super.key,
-    required this.emoji,
-  });
+  const FishEmojiFallback({super.key, required this.emoji});
 
   final String emoji;
 
@@ -455,10 +421,7 @@ class FishEmojiFallback extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFE6F9FF),
-            Color(0xFFBFEAF5),
-          ],
+          colors: [Color(0xFFE6F9FF), Color(0xFFBFEAF5)],
         ),
       ),
       alignment: Alignment.center,

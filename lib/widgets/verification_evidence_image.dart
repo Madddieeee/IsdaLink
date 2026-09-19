@@ -26,8 +26,7 @@ class VerificationEvidenceImage extends StatefulWidget {
       _VerificationEvidenceImageState();
 }
 
-class _VerificationEvidenceImageState
-    extends State<VerificationEvidenceImage> {
+class _VerificationEvidenceImageState extends State<VerificationEvidenceImage> {
   final storageService = const SupplierVerificationStorageService();
   Future<Uint8List?>? evidenceFuture;
 
@@ -56,9 +55,7 @@ class _VerificationEvidenceImageState
   @override
   Widget build(BuildContext context) {
     if (!widget.hasEvidence) {
-      return const _EvidencePlaceholder(
-        icon: Icons.image_outlined,
-      );
+      return const _EvidencePlaceholder(icon: Icons.image_outlined);
     }
 
     if (evidenceFuture == null) {
@@ -94,9 +91,7 @@ class _VerificationEvidenceImageState
     final url = widget.legacyUrl.trim();
 
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      return const _EvidencePlaceholder(
-        icon: Icons.lock_outline_rounded,
-      );
+      return const _EvidencePlaceholder(icon: Icons.lock_outline_rounded);
     }
 
     return _AspectAwareEvidenceImage(
@@ -123,8 +118,7 @@ class _AspectAwareEvidenceImage extends StatefulWidget {
       _AspectAwareEvidenceImageState();
 }
 
-class _AspectAwareEvidenceImageState
-    extends State<_AspectAwareEvidenceImage> {
+class _AspectAwareEvidenceImageState extends State<_AspectAwareEvidenceImage> {
   ImageStream? imageStream;
   ImageStreamListener? imageListener;
   double? lastAspectRatio;
@@ -157,19 +151,14 @@ class _AspectAwareEvidenceImageState
       imageStream!.removeListener(imageListener!);
     }
 
-    final nextListener = ImageStreamListener(
-      handleImage,
-    );
+    final nextListener = ImageStreamListener(handleImage);
 
     imageStream = nextStream;
     imageListener = nextListener;
     imageStream!.addListener(nextListener);
   }
 
-  void handleImage(
-    ImageInfo imageInfo,
-    bool synchronousCall,
-  ) {
+  void handleImage(ImageInfo imageInfo, bool synchronousCall) {
     final image = imageInfo.image;
     final aspectRatio = image.width / image.height;
 
@@ -211,18 +200,14 @@ class _AspectAwareEvidenceImageState
           loading: true,
         );
       },
-      errorBuilder: (_, _, _) => const _EvidencePlaceholder(
-        icon: Icons.broken_image_outlined,
-      ),
+      errorBuilder: (_, _, _) =>
+          const _EvidencePlaceholder(icon: Icons.broken_image_outlined),
     );
   }
 }
 
 class _EvidencePlaceholder extends StatelessWidget {
-  const _EvidencePlaceholder({
-    required this.icon,
-    this.loading = false,
-  });
+  const _EvidencePlaceholder({required this.icon, this.loading = false});
 
   final IconData icon;
   final bool loading;
@@ -260,10 +245,7 @@ Future<void> showVerificationEvidenceViewer(
       return StatefulBuilder(
         builder: (context, setDialogState) {
           final screenSize = MediaQuery.sizeOf(context);
-          final dialogWidth = math.min(
-            screenSize.width - 28,
-            720.0,
-          );
+          final dialogWidth = math.min(screenSize.width - 28, 720.0);
           final maximumImageHeight = screenSize.height * 0.74;
           final naturalImageHeight = imageAspectRatio == null
               ? dialogWidth * 0.72
@@ -328,10 +310,7 @@ Future<void> showVerificationEvidenceViewer(
                       ),
                     ),
                   ),
-                  const Divider(
-                    height: 1,
-                    color: Color(0xFFDDE8EF),
-                  ),
+                  const Divider(height: 1, color: Color(0xFFDDE8EF)),
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 220),
                     curve: Curves.easeOutCubic,

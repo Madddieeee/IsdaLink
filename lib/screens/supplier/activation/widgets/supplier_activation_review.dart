@@ -66,10 +66,7 @@ class SupplierReviewSection extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           ...rows,
-          if (images.isNotEmpty) ...[
-            const SizedBox(height: 5),
-            ...images,
-          ],
+          if (images.isNotEmpty) ...[const SizedBox(height: 5), ...images],
         ],
       ),
     );

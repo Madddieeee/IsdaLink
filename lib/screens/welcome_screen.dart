@@ -107,7 +107,9 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF146BFF).withValues(alpha: 0.45),
+                            color: const Color(
+                              0xFF146BFF,
+                            ).withValues(alpha: 0.45),
                             blurRadius: 28,
                             spreadRadius: 1,
                             offset: const Offset(0, 10),

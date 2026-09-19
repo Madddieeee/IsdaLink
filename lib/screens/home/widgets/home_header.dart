@@ -24,108 +24,106 @@ class HomeHeader extends StatelessWidget {
     final compact = screenWidth <= 400;
 
     return SizedBox(
-        height: compact ? 260 : 276,
-        child: DecoratedBox(
-          decoration: const BoxDecoration(
-            color: Color(0xFF063A61),
-          ),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              Positioned.fill(
-                child: Image.asset(
-                  'assets/images/home_header_boat.png',
-                  fit: BoxFit.cover,
-                  alignment: const Alignment(0.60, -0.10),
-                ),
+      height: compact ? 260 : 276,
+      child: DecoratedBox(
+        decoration: const BoxDecoration(color: Color(0xFF063A61)),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Positioned.fill(
+              child: Image.asset(
+                'assets/images/home_header_boat.png',
+                fit: BoxFit.cover,
+                alignment: const Alignment(0.60, -0.10),
               ),
+            ),
 
-              // Darken the left side only so the boat stays visible while
-              // the hero text remains readable, like the approved reference.
-              const Positioned.fill(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                      stops: [0.0, 0.43, 0.74, 1.0],
-                      colors: [
-                        Color(0xE8063559),
-                        Color(0xB7085680),
-                        Color(0x580A7199),
-                        Color(0x180A7199),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              // Small curved light brand area, instead of a full-width pale
-              // strip. This keeps the top much closer to the reference.
-              Positioned(
-                top: 0,
-                left: 0,
-                child: IgnorePointer(
-                  child: ClipPath(
-                    clipper: _TopBrandWaveClipper(),
-                    child: Container(
-                      width: screenWidth * (compact ? 0.58 : 0.56),
-                      height: compact ? 100 : 106,
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Color(0xFFF9FDFF),
-                            Color(0xFFEAF8FE),
-                            Color(0xD7D8F2FC),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              Positioned(
-                top: compact ? 106 : 112,
-                left: compact ? 26 : 32,
-                child: const _HeaderMessageText(),
-              ),
-
-              SafeArea(
-                bottom: false,
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    compact ? 14 : 18,
-                    8,
-                    compact ? 14 : 18,
-                    30,
-                  ),
-                  child: Stack(
-                    children: [
-                      Align(
-                        alignment: Alignment.topCenter,
-                        child: _TopBrandRow(
-                          compact: compact,
-                          screenWidth: screenWidth,
-                          onProfileTap: onProfileTap,
-                        ),
-                      ),
-                      Align(
-                        alignment: Alignment.bottomCenter,
-                        child: _HeaderSearch(
-                          onTap: onSearchTap,
-                          compact: compact,
-                        ),
-                      ),
+            // Darken the left side only so the boat stays visible while
+            // the hero text remains readable, like the approved reference.
+            const Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    stops: [0.0, 0.43, 0.74, 1.0],
+                    colors: [
+                      Color(0xE8063559),
+                      Color(0xB7085680),
+                      Color(0x580A7199),
+                      Color(0x180A7199),
                     ],
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+
+            // Small curved light brand area, instead of a full-width pale
+            // strip. This keeps the top much closer to the reference.
+            Positioned(
+              top: 0,
+              left: 0,
+              child: IgnorePointer(
+                child: ClipPath(
+                  clipper: _TopBrandWaveClipper(),
+                  child: Container(
+                    width: screenWidth * (compact ? 0.58 : 0.56),
+                    height: compact ? 100 : 106,
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xFFF9FDFF),
+                          Color(0xFFEAF8FE),
+                          Color(0xD7D8F2FC),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            Positioned(
+              top: compact ? 106 : 112,
+              left: compact ? 26 : 32,
+              child: const _HeaderMessageText(),
+            ),
+
+            SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  compact ? 14 : 18,
+                  8,
+                  compact ? 14 : 18,
+                  30,
+                ),
+                child: Stack(
+                  children: [
+                    Align(
+                      alignment: Alignment.topCenter,
+                      child: _TopBrandRow(
+                        compact: compact,
+                        screenWidth: screenWidth,
+                        onProfileTap: onProfileTap,
+                      ),
+                    ),
+                    Align(
+                      alignment: Alignment.bottomCenter,
+                      child: _HeaderSearch(
+                        onTap: onSearchTap,
+                        compact: compact,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
+      ),
     );
   }
 }
@@ -161,35 +159,35 @@ class _TopBrandRow extends StatelessWidget {
               offset: const Offset(-12, 0),
               child: Center(
                 child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: compact ? 146 : 158,
-                    height: compact ? 42 : 46,
-                    child: Image.asset(
-                      'assets/images/isdalink_logo.png',
-                      fit: BoxFit.contain,
-                      alignment: Alignment.center,
-                      filterQuality: FilterQuality.high,
-                    ),
-                  ),
-                  Transform.translate(
-                    offset: const Offset(0, -2),
-                    child: Text(
-                      'Fresh Tides, Better Tomorrow',
-                      maxLines: 1,
-                      softWrap: false,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: const Color(0xFF174A70),
-                        fontSize: compact ? 7.4 : 8.0,
-                        height: 1.0,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.05,
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: compact ? 146 : 158,
+                      height: compact ? 42 : 46,
+                      child: Image.asset(
+                        'assets/images/isdalink_logo.png',
+                        fit: BoxFit.contain,
+                        alignment: Alignment.center,
+                        filterQuality: FilterQuality.high,
                       ),
                     ),
-                  ),
+                    Transform.translate(
+                      offset: const Offset(0, -2),
+                      child: Text(
+                        'Fresh Tides, Better Tomorrow',
+                        maxLines: 1,
+                        softWrap: false,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: const Color(0xFF174A70),
+                          fontSize: compact ? 7.4 : 8.0,
+                          height: 1.0,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.05,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -263,9 +261,7 @@ class _HeaderMessageText extends StatelessWidget {
           const SizedBox(
             width: 106,
             height: 12,
-            child: CustomPaint(
-              painter: _MessageUnderlinePainter(),
-            ),
+            child: CustomPaint(painter: _MessageUnderlinePainter()),
           ),
         ],
       ),
@@ -311,9 +307,7 @@ class _MessageUnderlinePainter extends CustomPainter {
 }
 
 class _RegionLabel extends StatelessWidget {
-  const _RegionLabel({
-    required this.compact,
-  });
+  const _RegionLabel({required this.compact});
 
   final bool compact;
 
@@ -405,10 +399,7 @@ class _HeaderActionButton extends StatelessWidget {
 }
 
 class _HeaderSearch extends StatelessWidget {
-  const _HeaderSearch({
-    required this.onTap,
-    required this.compact,
-  });
+  const _HeaderSearch({required this.onTap, required this.compact});
 
   final VoidCallback onTap;
   final bool compact;
@@ -429,9 +420,7 @@ class _HeaderSearch extends StatelessWidget {
           width: double.infinity,
           height: searchHeight,
           child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: compact ? 16 : 18,
-            ),
+            padding: EdgeInsets.symmetric(horizontal: compact ? 16 : 18),
             child: Row(
               children: [
                 Icon(

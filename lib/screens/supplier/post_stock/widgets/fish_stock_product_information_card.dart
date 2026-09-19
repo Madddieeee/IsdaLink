@@ -38,9 +38,7 @@ class FishStockProductInformationCard extends StatelessWidget {
             controller: productNameController,
             textCapitalization: TextCapitalization.words,
             textInputAction: TextInputAction.next,
-            inputFormatters: [
-              LengthLimitingTextInputFormatter(60),
-            ],
+            inputFormatters: [LengthLimitingTextInputFormatter(60)],
             onChanged: (_) => onPreviewChanged(),
             style: const TextStyle(
               color: Color(0xFF102C44),
@@ -72,17 +70,12 @@ class FishStockProductInformationCard extends StatelessWidget {
               fontSize: 13,
               fontWeight: FontWeight.w800,
             ),
-            items: categories.map(
-              (category) {
-                return DropdownMenuItem<String>(
-                  value: category,
-                  child: Text(
-                    category,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                );
-              },
-            ).toList(),
+            items: categories.map((category) {
+              return DropdownMenuItem<String>(
+                value: category,
+                child: Text(category, overflow: TextOverflow.ellipsis),
+              );
+            }).toList(),
             onChanged: (value) {
               if (value != null) {
                 onCategoryChanged(value);
@@ -96,9 +89,7 @@ class FishStockProductInformationCard extends StatelessWidget {
             textInputAction: TextInputAction.newline,
             minLines: 2,
             maxLines: 3,
-            inputFormatters: [
-              LengthLimitingTextInputFormatter(240),
-            ],
+            inputFormatters: [LengthLimitingTextInputFormatter(240)],
             onChanged: (_) => onPreviewChanged(),
             style: const TextStyle(
               color: Color(0xFF102C44),

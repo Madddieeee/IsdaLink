@@ -21,9 +21,7 @@ class OrderFilterSelector extends StatelessWidget {
     'Cancelled',
   ];
 
-  String statusOf(
-    QueryDocumentSnapshot<Map<String, dynamic>> document,
-  ) {
+  String statusOf(QueryDocumentSnapshot<Map<String, dynamic>> document) {
     return OrderHelpers.getStringValue(
       document.data(),
       'orderStatus',
@@ -127,10 +125,7 @@ class OrderFilterSelector extends StatelessWidget {
     );
   }
 
-  Widget activeStatusButton({
-    required String filter,
-    required String label,
-  }) {
+  Widget activeStatusButton({required String filter, required String label}) {
     final selected = selectedFilter == filter;
 
     return Expanded(
@@ -195,9 +190,7 @@ class OrderFilterSelector extends StatelessWidget {
           children: [
             Row(
               children: [
-                for (var index = 0;
-                    index < primaryFilters.length;
-                    index++) ...[
+                for (var index = 0; index < primaryFilters.length; index++) ...[
                   primarySegment(primaryFilters[index]),
                   if (index < primaryFilters.length - 1)
                     Container(

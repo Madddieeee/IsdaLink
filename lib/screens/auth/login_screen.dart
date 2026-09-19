@@ -9,9 +9,7 @@ import 'package:isdalink/screens/auth/register_screen.dart';
 import 'package:isdalink/screens/home/home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({
-    super.key,
-  });
+  const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -39,22 +37,14 @@ class _LoginScreenState extends State<LoginScreen> {
   void initState() {
     super.initState();
 
-    emailController.addListener(
-      clearAuthenticationError,
-    );
-    passwordController.addListener(
-      clearAuthenticationError,
-    );
+    emailController.addListener(clearAuthenticationError);
+    passwordController.addListener(clearAuthenticationError);
   }
 
   @override
   void dispose() {
-    emailController.removeListener(
-      clearAuthenticationError,
-    );
-    passwordController.removeListener(
-      clearAuthenticationError,
-    );
+    emailController.removeListener(clearAuthenticationError);
+    passwordController.removeListener(clearAuthenticationError);
 
     emailController.dispose();
     passwordController.dispose();
@@ -72,26 +62,18 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  String normalizeEmail(
-    String value,
-  ) {
+  String normalizeEmail(String value) {
     return value.trim().toLowerCase();
   }
 
-  String? validateEmail(
-    String? value,
-  ) {
-    final email = normalizeEmail(
-      value ?? '',
-    );
+  String? validateEmail(String? value) {
+    final email = normalizeEmail(value ?? '');
 
     if (email.isEmpty) {
       return 'Enter your email address.';
     }
 
-    final emailPattern = RegExp(
-      r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
-    );
+    final emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
     if (!emailPattern.hasMatch(email)) {
       return 'Enter a valid email address.';
@@ -100,9 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return null;
   }
 
-  String? validatePassword(
-    String? value,
-  ) {
+  String? validatePassword(String? value) {
     if ((value ?? '').isEmpty) {
       return 'Enter your password.';
     }
@@ -124,9 +104,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void openRegistration() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => const RegisterScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const RegisterScreen()),
     );
   }
 
@@ -149,9 +127,7 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    final email = normalizeEmail(
-      emailController.text,
-    );
+    final email = normalizeEmail(emailController.text);
     final password = passwordController.text;
 
     setState(() {
@@ -159,8 +135,7 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final credential =
-          await FirebaseAuth.instance.signInWithEmailAndPassword(
+      final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
@@ -168,9 +143,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final user = credential.user;
 
       if (user == null) {
-        setAuthenticationError(
-          'Unable to sign in. Please try again.',
-        );
+        setAuthenticationError('Unable to sign in. Please try again.');
         return;
       }
 
@@ -195,19 +168,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(
-          builder: (_) => destination,
-        ),
+        MaterialPageRoute(builder: (_) => destination),
         (route) => false,
       );
     } on FirebaseAuthException catch (error) {
-      final message = authenticationErrorMessage(
-        error,
-      );
+      final message = authenticationErrorMessage(error);
 
-      setAuthenticationError(
-        message,
-      );
+      setAuthenticationError(message);
 
       if (error.code == 'invalid-credential' ||
           error.code == 'wrong-password' ||
@@ -216,9 +183,7 @@ class _LoginScreenState extends State<LoginScreen> {
         passwordFocusNode.requestFocus();
       }
     } catch (_) {
-      setAuthenticationError(
-        'Unable to sign in right now. Please try again.',
-      );
+      setAuthenticationError('Unable to sign in right now. Please try again.');
     } finally {
       if (mounted) {
         setState(() {
@@ -235,9 +200,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     FocusScope.of(context).unfocus();
 
-    final emailError = validateEmail(
-      emailController.text,
-    );
+    final emailError = validateEmail(emailController.text);
 
     if (emailError != null) {
       setState(() {
@@ -247,9 +210,7 @@ class _LoginScreenState extends State<LoginScreen> {
       formKey.currentState?.validate();
       emailFocusNode.requestFocus();
 
-      setAuthenticationError(
-        emailError,
-      );
+      setAuthenticationError(emailError);
       return;
     }
 
@@ -260,24 +221,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       await FirebaseAuth.instance.sendPasswordResetEmail(
-        email: normalizeEmail(
-          emailController.text,
-        ),
+        email: normalizeEmail(emailController.text),
       );
 
-      showMessage(
-        'Password reset instructions were sent to your email.',
-      );
+      showMessage('Password reset instructions were sent to your email.');
     } on FirebaseAuthException catch (error) {
-      setAuthenticationError(
-        authenticationErrorMessage(
-          error,
-        ),
-      );
+      setAuthenticationError(authenticationErrorMessage(error));
     } catch (_) {
-      setAuthenticationError(
-        'Unable to send the reset email right now.',
-      );
+      setAuthenticationError('Unable to send the reset email right now.');
     } finally {
       if (mounted) {
         setState(() {
@@ -287,9 +238,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  String authenticationErrorMessage(
-    FirebaseAuthException error,
-  ) {
+  String authenticationErrorMessage(FirebaseAuthException error) {
     switch (error.code) {
       case 'invalid-email':
         return 'Enter a valid email address.';
@@ -310,9 +259,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void setAuthenticationError(
-    String message,
-  ) {
+  void setAuthenticationError(String message) {
     if (!mounted) {
       return;
     }
@@ -322,9 +269,7 @@ class _LoginScreenState extends State<LoginScreen> {
     });
   }
 
-  void showMessage(
-    String message,
-  ) {
+  void showMessage(String message) {
     if (!mounted) {
       return;
     }
@@ -336,12 +281,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ..showSnackBar(
         SnackBar(
           behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.fromLTRB(
-            18,
-            0,
-            18,
-            18,
-          ),
+          margin: const EdgeInsets.fromLTRB(18, 0, 18, 18),
           backgroundColor: const Color(0xFF147D64),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
@@ -387,18 +327,11 @@ class _LoginScreenState extends State<LoginScreen> {
         color: Color(0xFF83C8FF),
         fontWeight: FontWeight.w900,
       ),
-      prefixIcon: Icon(
-        icon,
-        color: const Color(0xFFC5D6E2),
-        size: 21,
-      ),
+      prefixIcon: Icon(icon, color: const Color(0xFFC5D6E2), size: 21),
       suffixIcon: suffixIcon,
       filled: true,
       fillColor: const Color(0xE60A2638),
-      contentPadding: const EdgeInsets.symmetric(
-        vertical: 17,
-        horizontal: 16,
-      ),
+      contentPadding: const EdgeInsets.symmetric(vertical: 17, horizontal: 16),
       errorMaxLines: 2,
       errorStyle: const TextStyle(
         color: Color(0xFFFFA199),
@@ -407,36 +340,23 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(radius),
-        borderSide: const BorderSide(
-          color: Color(0x557FB3D4),
-        ),
+        borderSide: const BorderSide(color: Color(0x557FB3D4)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(radius),
-        borderSide: const BorderSide(
-          color: Color(0xFF32A9FF),
-          width: 1.7,
-        ),
+        borderSide: const BorderSide(color: Color(0xFF32A9FF), width: 1.7),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(radius),
-        borderSide: const BorderSide(
-          color: Color(0xFFFF756B),
-          width: 1.2,
-        ),
+        borderSide: const BorderSide(color: Color(0xFFFF756B), width: 1.2),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(radius),
-        borderSide: const BorderSide(
-          color: Color(0xFFFF8B82),
-          width: 1.7,
-        ),
+        borderSide: const BorderSide(color: Color(0xFFFF8B82), width: 1.7),
       ),
       disabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(radius),
-        borderSide: const BorderSide(
-          color: Color(0x337FB3D4),
-        ),
+        borderSide: const BorderSide(color: Color(0x337FB3D4)),
       ),
     );
   }
@@ -449,15 +369,10 @@ class _LoginScreenState extends State<LoginScreen> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF1596FF),
-            Color(0xFF155BFF),
-          ],
+          colors: [Color(0xFF1596FF), Color(0xFF155BFF)],
         ),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: Colors.white.withAlpha(44),
-        ),
+        border: Border.all(color: Colors.white.withAlpha(44)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x73146BFF),
@@ -466,11 +381,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ],
       ),
-      child: const Icon(
-        Icons.set_meal_rounded,
-        color: Colors.white,
-        size: 34,
-      ),
+      child: const Icon(Icons.set_meal_rounded, color: Colors.white, size: 34),
     );
   }
 
@@ -480,25 +391,14 @@ class _LoginScreenState extends State<LoginScreen> {
       child: authenticationError == null
           ? const SizedBox.shrink()
           : Container(
-              key: ValueKey(
-                authenticationError,
-              ),
+              key: ValueKey(authenticationError),
               width: double.infinity,
-              margin: const EdgeInsets.only(
-                bottom: 14,
-              ),
-              padding: const EdgeInsets.fromLTRB(
-                12,
-                11,
-                12,
-                11,
-              ),
+              margin: const EdgeInsets.only(bottom: 14),
+              padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
               decoration: BoxDecoration(
                 color: const Color(0x36FF6B61),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: const Color(0x8CFF7A70),
-                ),
+                border: Border.all(color: const Color(0x8CFF7A70)),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -530,24 +430,14 @@ class _LoginScreenState extends State<LoginScreen> {
     return ClipRRect(
       borderRadius: BorderRadius.circular(25),
       child: BackdropFilter(
-        filter: ui.ImageFilter.blur(
-          sigmaX: 8,
-          sigmaY: 8,
-        ),
+        filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(
-            16,
-            18,
-            16,
-            16,
-          ),
+          padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
           decoration: BoxDecoration(
             color: const Color(0xD4081C2A),
             borderRadius: BorderRadius.circular(25),
-            border: Border.all(
-              color: Colors.white.withAlpha(30),
-            ),
+            border: Border.all(color: Colors.white.withAlpha(30)),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x47000000),
@@ -603,9 +493,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     obscureText: obscurePassword,
                     textInputAction: TextInputAction.done,
-                    autofillHints: const [
-                      AutofillHints.password,
-                    ],
+                    autofillHints: const [AutofillHints.password],
                     autocorrect: false,
                     enableSuggestions: false,
                     validator: validatePassword,
@@ -639,9 +527,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: isBusy
-                          ? null
-                          : resetPassword,
+                      onPressed: isBusy ? null : resetPassword,
                       style: TextButton.styleFrom(
                         foregroundColor: const Color(0xFF91CDFF),
                         padding: const EdgeInsets.symmetric(
@@ -665,9 +551,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     width: double.infinity,
                     height: 53,
                     child: ElevatedButton(
-                      onPressed: isBusy
-                          ? null
-                          : login,
+                      onPressed: isBusy ? null : login,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF176FFF),
                         foregroundColor: Colors.white,
@@ -719,9 +603,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -747,9 +629,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const Positioned.fill(
-                child: ColoredBox(
-                  color: Color(0xC9061A2A),
-                ),
+                child: ColoredBox(color: Color(0xC9061A2A)),
               ),
               const Positioned.fill(
                 child: DecoratedBox(
@@ -762,11 +642,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         Color(0xE5061725),
                         Color(0xFF020712),
                       ],
-                      stops: [
-                        0.0,
-                        0.58,
-                        1.0,
-                      ],
+                      stops: [0.0, 0.58, 1.0],
                     ),
                   ),
                 ),
@@ -788,19 +664,11 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               SafeArea(
                 child: LayoutBuilder(
-                  builder: (
-                    context,
-                    constraints,
-                  ) {
+                  builder: (context, constraints) {
                     return SingleChildScrollView(
                       keyboardDismissBehavior:
                           ScrollViewKeyboardDismissBehavior.onDrag,
-                      padding: const EdgeInsets.fromLTRB(
-                        24,
-                        22,
-                        24,
-                        24,
-                      ),
+                      padding: const EdgeInsets.fromLTRB(24, 22, 24, 24),
                       child: ConstrainedBox(
                         constraints: BoxConstraints(
                           minHeight: constraints.maxHeight - 46,
@@ -855,12 +723,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 ),
                                 TextButton(
-                                  onPressed: isBusy
-                                      ? null
-                                      : openRegistration,
+                                  onPressed: isBusy ? null : openRegistration,
                                   style: TextButton.styleFrom(
-                                    foregroundColor:
-                                        const Color(0xFF91CDFF),
+                                    foregroundColor: const Color(0xFF91CDFF),
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 2,
                                       vertical: 4,

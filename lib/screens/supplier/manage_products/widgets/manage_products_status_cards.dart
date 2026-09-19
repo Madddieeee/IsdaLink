@@ -1,30 +1,18 @@
 import 'package:flutter/material.dart';
 
 class ManageProductsEmptyCard extends StatelessWidget {
-  const ManageProductsEmptyCard({
-    super.key,
-    required this.onPostStock,
-  });
+  const ManageProductsEmptyCard({super.key, required this.onPostStock});
 
   final VoidCallback onPostStock;
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(
-        20,
-        22,
-        20,
-        20,
-      ),
+      padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(25),
-        border: Border.all(
-          color: const Color(0xFFE1EBF2),
-        ),
+        border: Border.all(color: const Color(0xFFE1EBF2)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x0F00152A),
@@ -75,15 +63,10 @@ class ManageProductsEmptyCard extends StatelessWidget {
             height: 47,
             child: ElevatedButton.icon(
               onPressed: onPostStock,
-              icon: const Icon(
-                Icons.add_box_outlined,
-                size: 19,
-              ),
+              icon: const Icon(Icons.add_box_outlined, size: 19),
               label: const Text(
                 'Post Fish Stock',
-                style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w900),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF146BFF),
@@ -102,30 +85,18 @@ class ManageProductsEmptyCard extends StatelessWidget {
 }
 
 class ManageProductsFilteredEmptyCard extends StatelessWidget {
-  const ManageProductsFilteredEmptyCard({
-    super.key,
-    required this.onClear,
-  });
+  const ManageProductsFilteredEmptyCard({super.key, required this.onClear});
 
   final VoidCallback onClear;
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(
-        18,
-        20,
-        18,
-        18,
-      ),
+      padding: const EdgeInsets.fromLTRB(18, 20, 18, 18),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(23),
-        border: Border.all(
-          color: const Color(0xFFE1EBF2),
-        ),
+        border: Border.all(color: const Color(0xFFE1EBF2)),
       ),
       child: Column(
         children: [
@@ -156,15 +127,10 @@ class ManageProductsFilteredEmptyCard extends StatelessWidget {
           const SizedBox(height: 12),
           TextButton.icon(
             onPressed: onClear,
-            icon: const Icon(
-              Icons.filter_alt_off_outlined,
-              size: 18,
-            ),
+            icon: const Icon(Icons.filter_alt_off_outlined, size: 18),
             label: const Text(
               'Clear Search and Filters',
-              style: TextStyle(
-                fontWeight: FontWeight.w900,
-              ),
+              style: TextStyle(fontWeight: FontWeight.w900),
             ),
           ),
         ],
@@ -174,22 +140,16 @@ class ManageProductsFilteredEmptyCard extends StatelessWidget {
 }
 
 class ManageProductsLoadingCard extends StatelessWidget {
-  const ManageProductsLoadingCard({
-    super.key,
-  });
+  const ManageProductsLoadingCard({super.key});
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(23),
-        border: Border.all(
-          color: const Color(0xFFE1EBF2),
-        ),
+        border: Border.all(color: const Color(0xFFE1EBF2)),
       ),
       child: const Row(
         children: [
@@ -219,30 +179,18 @@ class ManageProductsLoadingCard extends StatelessWidget {
 }
 
 class ManageProductsErrorCard extends StatelessWidget {
-  const ManageProductsErrorCard({
-    super.key,
-    required this.onRetry,
-  });
+  const ManageProductsErrorCard({super.key, required this.onRetry});
 
   final VoidCallback onRetry;
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(
-        18,
-        20,
-        18,
-        18,
-      ),
+      padding: const EdgeInsets.fromLTRB(18, 20, 18, 18),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(23),
-        border: Border.all(
-          color: const Color(0xFFF2C7C5),
-        ),
+        border: Border.all(color: const Color(0xFFF2C7C5)),
       ),
       child: Column(
         children: [
@@ -274,15 +222,10 @@ class ManageProductsErrorCard extends StatelessWidget {
           const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: onRetry,
-            icon: const Icon(
-              Icons.refresh_rounded,
-              size: 18,
-            ),
+            icon: const Icon(Icons.refresh_rounded, size: 18),
             label: const Text(
               'Try Again',
-              style: TextStyle(
-                fontWeight: FontWeight.w900,
-              ),
+              style: TextStyle(fontWeight: FontWeight.w900),
             ),
           ),
         ],

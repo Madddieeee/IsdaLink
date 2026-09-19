@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 
 class PostStockHeader extends StatelessWidget {
-  const PostStockHeader({
-    super.key,
-    required this.onBack,
-  });
+  const PostStockHeader({super.key, required this.onBack});
 
   final VoidCallback onBack;
 
@@ -21,11 +18,7 @@ class PostStockHeader extends StatelessWidget {
       foregroundColor: Colors.white,
       leadingWidth: 58,
       leading: Padding(
-        padding: const EdgeInsets.only(
-          left: 14,
-          top: 8,
-          bottom: 8,
-        ),
+        padding: const EdgeInsets.only(left: 14, top: 8, bottom: 8),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
@@ -35,9 +28,7 @@ class PostStockHeader extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white.withAlpha(32),
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white.withAlpha(27),
-                ),
+                border: Border.all(color: Colors.white.withAlpha(27)),
               ),
               child: const Icon(
                 Icons.arrow_back_rounded,
@@ -65,16 +56,8 @@ class PostStockHeader extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF063B66),
-                Color(0xFF075FAE),
-                Color(0xFF146BFF),
-              ],
-              stops: [
-                0.0,
-                0.55,
-                1.0,
-              ],
+              colors: [Color(0xFF063B66), Color(0xFF075FAE), Color(0xFF146BFF)],
+              stops: [0.0, 0.55, 1.0],
             ),
           ),
           child: Stack(
@@ -88,9 +71,7 @@ class PostStockHeader extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: Colors.white.withAlpha(9),
-                    border: Border.all(
-                      color: Colors.white.withAlpha(18),
-                    ),
+                    border: Border.all(color: Colors.white.withAlpha(18)),
                   ),
                 ),
               ),
@@ -102,9 +83,7 @@ class PostStockHeader extends StatelessWidget {
                   height: 82,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withAlpha(18),
-                    ),
+                    border: Border.all(color: Colors.white.withAlpha(18)),
                   ),
                 ),
               ),
@@ -149,9 +128,7 @@ class PostStockHeader extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: Colors.white.withAlpha(29),
                         borderRadius: BorderRadius.circular(19),
-                        border: Border.all(
-                          color: Colors.white.withAlpha(31),
-                        ),
+                        border: Border.all(color: Colors.white.withAlpha(31)),
                       ),
                       child: const Row(
                         children: [
@@ -165,8 +142,7 @@ class PostStockHeader extends StatelessWidget {
                           _HeaderDivider(),
                           Expanded(
                             child: _HeaderFeature(
-                              icon:
-                                  Icons.notifications_active_outlined,
+                              icon: Icons.notifications_active_outlined,
                               label: 'STOCK ALERT',
                               value: 'Automatic',
                             ),
@@ -190,9 +166,7 @@ class PostStockHeader extends StatelessWidget {
         ),
       ),
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          bottom: Radius.circular(30),
-        ),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
       ),
     );
   }
@@ -213,11 +187,7 @@ class _HeaderFeature extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(
-          icon,
-          color: Colors.white,
-          size: 17,
-        ),
+        Icon(icon, color: Colors.white, size: 17),
         const SizedBox(height: 4),
         Text(
           label,
@@ -254,9 +224,7 @@ class _HeaderDivider extends StatelessWidget {
     return Container(
       width: 1,
       height: 36,
-      margin: const EdgeInsets.symmetric(
-        horizontal: 4,
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 4),
       color: Colors.white.withAlpha(28),
     );
   }

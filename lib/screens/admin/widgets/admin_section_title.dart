@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
-class AdminSectionTitle
-    extends
-        StatelessWidget {
+class AdminSectionTitle extends StatelessWidget {
   const AdminSectionTitle({
     super.key,
     required this.title,
@@ -15,9 +13,7 @@ class AdminSectionTitle
   final IconData icon;
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -25,27 +21,12 @@ class AdminSectionTitle
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            color:
-                const Color(
-                  0xFF146BFF,
-                ).withAlpha(
-                  24,
-                ),
-            borderRadius: BorderRadius.circular(
-              12,
-            ),
+            color: const Color(0xFF146BFF).withAlpha(24),
+            borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(
-            icon,
-            color: const Color(
-              0xFF146BFF,
-            ),
-            size: 20,
-          ),
+          child: Icon(icon, color: const Color(0xFF146BFF), size: 20),
         ),
-        const SizedBox(
-          width: 10,
-        ),
+        const SizedBox(width: 10),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -53,22 +34,16 @@ class AdminSectionTitle
               Text(
                 title,
                 style: const TextStyle(
-                  color: Color(
-                    0xFF102C44,
-                  ),
+                  color: Color(0xFF102C44),
                   fontSize: 19,
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              const SizedBox(
-                height: 3,
-              ),
+              const SizedBox(height: 3),
               Text(
                 subtitle,
                 style: const TextStyle(
-                  color: Color(
-                    0xFF7B8FA3,
-                  ),
+                  color: Color(0xFF7B8FA3),
                   fontSize: 12,
                   height: 1.35,
                 ),

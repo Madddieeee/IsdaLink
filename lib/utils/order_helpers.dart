@@ -2,40 +2,24 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 class OrderHelpers {
-  static Color statusColor(
-    String status,
-  ) {
+  static Color statusColor(String status) {
     switch (status.toLowerCase()) {
       case 'all':
-        return const Color(
-          0xFF102C44,
-        );
+        return const Color(0xFF102C44);
       case 'pending':
-        return const Color(
-          0xFFFF7A1A,
-        );
+        return const Color(0xFFFF7A1A);
       case 'accepted':
-        return const Color(
-          0xFF146BFF,
-        );
+        return const Color(0xFF146BFF);
       case 'delivered':
-        return const Color(
-          0xFF2E7D32,
-        );
+        return const Color(0xFF2E7D32);
       case 'cancelled':
-        return const Color(
-          0xFFD32F2F,
-        );
+        return const Color(0xFFD32F2F);
       default:
-        return const Color(
-          0xFF7B8FA3,
-        );
+        return const Color(0xFF7B8FA3);
     }
   }
 
-  static IconData statusIcon(
-    String status,
-  ) {
+  static IconData statusIcon(String status) {
     switch (status.toLowerCase()) {
       case 'all':
         return Icons.list_alt;
@@ -52,9 +36,7 @@ class OrderHelpers {
     }
   }
 
-  static String filterDescription(
-    String status,
-  ) {
+  static String filterDescription(String status) {
     switch (status.toLowerCase()) {
       case 'all':
         return 'All COD order records from your account.';
@@ -72,18 +54,13 @@ class OrderHelpers {
   }
 
   static String getStringValue(
-    Map<
-      String,
-      dynamic
-    >
-    data,
+    Map<String, dynamic> data,
     String key,
     String fallback,
   ) {
     final value = data[key];
 
-    if (value ==
-        null) {
+    if (value == null) {
       return fallback;
     }
 
@@ -96,64 +73,36 @@ class OrderHelpers {
     return text;
   }
 
-  static double getDoubleValue(
-    Map<
-      String,
-      dynamic
-    >
-    data,
-    String key,
-  ) {
+  static double getDoubleValue(Map<String, dynamic> data, String key) {
     final value = data[key];
 
-    if (value
-        is int) {
+    if (value is int) {
       return value.toDouble();
     }
 
-    if (value
-        is double) {
+    if (value is double) {
       return value;
     }
 
-    if (value
-        is String) {
-      return double.tryParse(
-            value,
-          ) ??
-          0;
+    if (value is String) {
+      return double.tryParse(value) ?? 0;
     }
 
     return 0;
   }
 
-  static String formatNumber(
-    double value,
-  ) {
-    if (value %
-            1 ==
-        0) {
-      return value.toStringAsFixed(
-        0,
-      );
+  static String formatNumber(double value) {
+    if (value % 1 == 0) {
+      return value.toStringAsFixed(0);
     }
 
-    return value.toStringAsFixed(
-      2,
-    );
+    return value.toStringAsFixed(2);
   }
 
-  static String formatDateFromData(
-    Map<
-      String,
-      dynamic
-    >
-    data,
-  ) {
+  static String formatDateFromData(Map<String, dynamic> data) {
     final value = data['createdAt'];
 
-    if (value
-        is Timestamp) {
+    if (value is Timestamp) {
       final date = value.toDate();
       return '${date.month}/${date.day}/${date.year}';
     }
@@ -162,135 +111,64 @@ class OrderHelpers {
   }
 
   static int createdAtMillis(
-    QueryDocumentSnapshot<
-      Map<
-        String,
-        dynamic
-      >
-    >
-    document,
+    QueryDocumentSnapshot<Map<String, dynamic>> document,
   ) {
     final value = document.data()['createdAt'];
 
-    if (value
-        is Timestamp) {
+    if (value is Timestamp) {
       return value.millisecondsSinceEpoch;
     }
 
     return 0;
   }
 
-  static List<
-    QueryDocumentSnapshot<
-      Map<
-        String,
-        dynamic
-      >
-    >
-  >
-  sortDocuments(
-    List<
-      QueryDocumentSnapshot<
-        Map<
-          String,
-          dynamic
-        >
-      >
-    >
-    documents,
+  static List<QueryDocumentSnapshot<Map<String, dynamic>>> sortDocuments(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
   ) {
-    final sortedDocuments = [
-      ...documents,
-    ];
+    final sortedDocuments = [...documents];
 
     sortedDocuments.sort(
-      (
-        a,
-        b,
-      ) =>
-          createdAtMillis(
-            b,
-          ).compareTo(
-            createdAtMillis(
-              a,
-            ),
-          ),
+      (a, b) => createdAtMillis(b).compareTo(createdAtMillis(a)),
     );
 
     return sortedDocuments;
   }
 
   static int countByStatus(
-    List<
-      QueryDocumentSnapshot<
-        Map<
-          String,
-          dynamic
-        >
-      >
-    >
-    documents,
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
     String status,
   ) {
-    if (status.toLowerCase() ==
-        'all') {
+    if (status.toLowerCase() == 'all') {
       return documents.length;
     }
 
-    return documents.where(
-      (
-        document,
-      ) {
-        final orderStatus = getStringValue(
-          document.data(),
-          'orderStatus',
-          'Pending',
-        );
+    return documents.where((document) {
+      final orderStatus = getStringValue(
+        document.data(),
+        'orderStatus',
+        'Pending',
+      );
 
-        return orderStatus.toLowerCase() ==
-            status.toLowerCase();
-      },
-    ).length;
+      return orderStatus.toLowerCase() == status.toLowerCase();
+    }).length;
   }
 
-  static List<
-    QueryDocumentSnapshot<
-      Map<
-        String,
-        dynamic
-      >
-    >
-  >
-  filterOrders({
-    required List<
-      QueryDocumentSnapshot<
-        Map<
-          String,
-          dynamic
-        >
-      >
-    >
-    documents,
+  static List<QueryDocumentSnapshot<Map<String, dynamic>>> filterOrders({
+    required List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
     required String selectedFilter,
   }) {
-    if (selectedFilter.toLowerCase() ==
-        'all') {
+    if (selectedFilter.toLowerCase() == 'all') {
       return documents;
     }
 
-    return documents.where(
-      (
-        document,
-      ) {
-        final orderStatus = getStringValue(
-          document.data(),
-          'orderStatus',
-          'Pending',
-        );
+    return documents.where((document) {
+      final orderStatus = getStringValue(
+        document.data(),
+        'orderStatus',
+        'Pending',
+      );
 
-        return orderStatus.toLowerCase() ==
-            selectedFilter.toLowerCase();
-      },
-    ).toList();
+      return orderStatus.toLowerCase() == selectedFilter.toLowerCase();
+    }).toList();
   }
 }

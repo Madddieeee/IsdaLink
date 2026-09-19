@@ -26,8 +26,8 @@ class NotificationNavigationService {
     final subjectId = _value(data, 'subjectId');
     final notificationId = _value(data, 'notificationId');
     final unreadCount = int.tryParse(_value(data, 'unreadCount')) ?? 1;
-    final grouped = _value(data, 'grouped').toLowerCase() == 'true' ||
-        unreadCount > 1;
+    final grouped =
+        _value(data, 'grouped').toLowerCase() == 'true' || unreadCount > 1;
 
     Widget? destination;
 
@@ -38,9 +38,7 @@ class NotificationNavigationService {
         );
         break;
       case 'order_status':
-        destination = MyOrdersScreen(
-          initialOrderId: grouped ? '' : orderId,
-        );
+        destination = MyOrdersScreen(initialOrderId: grouped ? '' : orderId);
         break;
       case 'stock_alert':
         destination = const SupplierManageProductsScreen();
@@ -51,9 +49,7 @@ class NotificationNavigationService {
       case 'admin_supplier_change_request':
         destination = subjectId.isEmpty
             ? const AdminDashboardScreen()
-            : SupplierChangeRequestReviewScreen(
-                supplierId: subjectId,
-              );
+            : SupplierChangeRequestReviewScreen(supplierId: subjectId);
         break;
       case 'supplier_profile_change':
         destination = const SupplierProfileScreen();
@@ -61,9 +57,7 @@ class NotificationNavigationService {
       case 'supplier_application_status':
         destination = status == 'approved'
             ? const SupplierProfileScreen()
-            : SupplierActivationScreen(
-                rejectionNotificationId: notificationId,
-              );
+            : SupplierActivationScreen(rejectionNotificationId: notificationId);
         break;
     }
 
@@ -71,19 +65,12 @@ class NotificationNavigationService {
       return false;
     }
 
-    navigator.push(
-      MaterialPageRoute<void>(
-        builder: (_) => destination!,
-      ),
-    );
+    navigator.push(MaterialPageRoute<void>(builder: (_) => destination!));
 
     return true;
   }
 
-  static String _value(
-    Map<String, dynamic> data,
-    String key,
-  ) {
+  static String _value(Map<String, dynamic> data, String key) {
     return data[key]?.toString().trim() ?? '';
   }
 }

@@ -39,8 +39,7 @@ class SupplierProductUpdateInput {
   final double lowStockPercentage;
 
   double get lowStockLevel {
-    final safePercentage =
-        lowStockPercentage.clamp(1, 100).toDouble();
+    final safePercentage = lowStockPercentage.clamp(1, 100).toDouble();
 
     return quantity * safePercentage / 100;
   }
@@ -57,34 +56,21 @@ class SupplierProductService {
   ) {
     return FirebaseFirestore.instance
         .collection('fishStocks')
-        .where(
-          'supplierId',
-          isEqualTo: supplierId,
-        )
+        .where('supplierId', isEqualTo: supplierId)
         .snapshots();
   }
 
-  bool isHidden(
-    Map<String, dynamic> data,
-  ) {
+  bool isHidden(Map<String, dynamic> data) {
     return StockState.isIntentionallyHidden(data);
   }
 
-  String calculatedStockStatus(
-    Map<String, dynamic> data,
-  ) {
+  String calculatedStockStatus(Map<String, dynamic> data) {
     if (isHidden(data)) {
       return 'hidden';
     }
 
-    final quantity = OrderHelpers.getDoubleValue(
-      data,
-      'quantity',
-    );
-    final lowStockLevel = OrderHelpers.getDoubleValue(
-      data,
-      'lowStockLevel',
-    );
+    final quantity = OrderHelpers.getDoubleValue(data, 'quantity');
+    final lowStockLevel = OrderHelpers.getDoubleValue(data, 'lowStockLevel');
 
     if (quantity <= 0) {
       return 'outOfStock';
@@ -100,53 +86,44 @@ class SupplierProductService {
   List<QueryDocumentSnapshot<Map<String, dynamic>>> sortStocks(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
   ) {
-    final sortedDocuments = [
-      ...documents,
-    ];
+    final sortedDocuments = [...documents];
 
-    sortedDocuments.sort(
-      (
-        first,
+    sortedDocuments.sort((first, second) {
+      final firstData = first.data();
+      final secondData = second.data();
+
+      final firstHidden = isHidden(firstData);
+      final secondHidden = isHidden(secondData);
+
+      if (firstHidden != secondHidden) {
+        return firstHidden ? 1 : -1;
+      }
+
+      final firstStatus = calculatedStockStatus(firstData);
+      final secondStatus = calculatedStockStatus(secondData);
+
+      final firstPriority = switch (firstStatus) {
+        'outOfStock' => 0,
+        'lowStock' => 1,
+        'available' => 2,
+        _ => 3,
+      };
+
+      final secondPriority = switch (secondStatus) {
+        'outOfStock' => 0,
+        'lowStock' => 1,
+        'available' => 2,
+        _ => 3,
+      };
+
+      if (firstPriority != secondPriority) {
+        return firstPriority.compareTo(secondPriority);
+      }
+
+      return OrderHelpers.createdAtMillis(
         second,
-      ) {
-        final firstData = first.data();
-        final secondData = second.data();
-
-        final firstHidden = isHidden(firstData);
-        final secondHidden = isHidden(secondData);
-
-        if (firstHidden != secondHidden) {
-          return firstHidden ? 1 : -1;
-        }
-
-        final firstStatus = calculatedStockStatus(firstData);
-        final secondStatus = calculatedStockStatus(secondData);
-
-        final firstPriority = switch (firstStatus) {
-          'outOfStock' => 0,
-          'lowStock' => 1,
-          'available' => 2,
-          _ => 3,
-        };
-
-        final secondPriority = switch (secondStatus) {
-          'outOfStock' => 0,
-          'lowStock' => 1,
-          'available' => 2,
-          _ => 3,
-        };
-
-        if (firstPriority != secondPriority) {
-          return firstPriority.compareTo(secondPriority);
-        }
-
-        return OrderHelpers.createdAtMillis(
-          second,
-        ).compareTo(
-          OrderHelpers.createdAtMillis(first),
-        );
-      },
-    );
+      ).compareTo(OrderHelpers.createdAtMillis(first));
+    });
 
     return sortedDocuments;
   }
@@ -169,8 +146,7 @@ class SupplierProductService {
 
       activeProducts++;
 
-      if (stockStatus == 'lowStock' ||
-          stockStatus == 'outOfStock') {
+      if (stockStatus == 'lowStock' || stockStatus == 'outOfStock') {
         stockAlertCount++;
       }
     }
@@ -199,91 +175,85 @@ class SupplierProductService {
         .collection('fishStocks')
         .doc(documentId);
 
-    return FirebaseFirestore.instance.runTransaction<double>(
-      (transaction) async {
-        final snapshot = await transaction.get(reference);
+    return FirebaseFirestore.instance.runTransaction<double>((
+      transaction,
+    ) async {
+      final snapshot = await transaction.get(reference);
 
-        if (!snapshot.exists) {
-          throw Exception('This fish listing no longer exists.');
-        }
+      if (!snapshot.exists) {
+        throw Exception('This fish listing no longer exists.');
+      }
 
-        final currentData = snapshot.data() ?? <String, dynamic>{};
+      final currentData = snapshot.data() ?? <String, dynamic>{};
 
-        if (isHidden(currentData) || currentData['archived'] == true) {
-          throw StateError(
-            'Show or restore this listing before restocking it.',
-          );
-        }
+      if (isHidden(currentData) || currentData['archived'] == true) {
+        throw StateError('Show or restore this listing before restocking it.');
+      }
 
-        final currentQuantity = OrderHelpers.getDoubleValue(
+      final currentQuantity = OrderHelpers.getDoubleValue(
+        currentData,
+        'quantity',
+      ).clamp(0, double.infinity).toDouble();
+      final nextQuantity = currentQuantity + quantityToAdd;
+      var lowStockPercentage = OrderHelpers.getDoubleValue(
+        currentData,
+        'lowStockPercentage',
+      );
+
+      if (lowStockPercentage <= 0) {
+        final referenceQuantity = OrderHelpers.getDoubleValue(
           currentData,
-          'quantity',
-        ).clamp(0, double.infinity).toDouble();
-        final nextQuantity = currentQuantity + quantityToAdd;
-        var lowStockPercentage = OrderHelpers.getDoubleValue(
+          'referenceStockQuantity',
+        );
+        final savedLowStockLevel = OrderHelpers.getDoubleValue(
           currentData,
-          'lowStockPercentage',
+          'lowStockLevel',
         );
 
-        if (lowStockPercentage <= 0) {
-          final referenceQuantity = OrderHelpers.getDoubleValue(
-            currentData,
-            'referenceStockQuantity',
-          );
-          final savedLowStockLevel = OrderHelpers.getDoubleValue(
-            currentData,
-            'lowStockLevel',
-          );
+        lowStockPercentage = referenceQuantity > 0
+            ? savedLowStockLevel / referenceQuantity * 100
+            : 20;
+      }
 
-          lowStockPercentage = referenceQuantity > 0
-              ? savedLowStockLevel / referenceQuantity * 100
-              : 20;
-        }
+      final safePercentage = lowStockPercentage.clamp(1, 100).toDouble();
+      final lowStockLevel = nextQuantity * safePercentage / 100;
+      final stockTransition = stockNotificationService.transitionFor(
+        stockData: currentData,
+        nextQuantity: nextQuantity,
+        lowStockLevelOverride: lowStockLevel,
+        hiddenOverride: false,
+      );
+      final stockStatus = StockState.calculatedStockStatus(
+        currentData,
+        quantityOverride: nextQuantity,
+        lowStockLevelOverride: lowStockLevel,
+        hiddenOverride: false,
+      );
 
-        final safePercentage =
-            lowStockPercentage.clamp(1, 100).toDouble();
-        final lowStockLevel = nextQuantity * safePercentage / 100;
-        final stockTransition = stockNotificationService.transitionFor(
-          stockData: currentData,
-          nextQuantity: nextQuantity,
-          lowStockLevelOverride: lowStockLevel,
-          hiddenOverride: false,
-        );
-        final stockStatus = StockState.calculatedStockStatus(
-          currentData,
-          quantityOverride: nextQuantity,
-          lowStockLevelOverride: lowStockLevel,
-          hiddenOverride: false,
-        );
+      transaction.update(reference, {
+        'quantity': nextQuantity,
+        'referenceStockQuantity': nextQuantity,
+        'lowStockPercentage': safePercentage,
+        'lowStockLevel': lowStockLevel,
+        'status': 'available',
+        'isActive': true,
+        'stockStatus': stockStatus,
+        'restockedAt': FieldValue.serverTimestamp(),
+        ...stockTransition.markerFields(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
 
-        transaction.update(
-          reference,
-          {
-            'quantity': nextQuantity,
-            'referenceStockQuantity': nextQuantity,
-            'lowStockPercentage': safePercentage,
-            'lowStockLevel': lowStockLevel,
-            'status': 'available',
-            'isActive': true,
-            'stockStatus': stockStatus,
-            'restockedAt': FieldValue.serverTimestamp(),
-            ...stockTransition.markerFields(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
-        );
+      stockNotificationService.createNotificationInTransaction(
+        transaction: transaction,
+        stockReference: reference,
+        stockData: currentData,
+        nextQuantity: nextQuantity,
+        transition: stockTransition,
+        lowStockLevelOverride: lowStockLevel,
+      );
 
-        stockNotificationService.createNotificationInTransaction(
-          transaction: transaction,
-          stockReference: reference,
-          stockData: currentData,
-          nextQuantity: nextQuantity,
-          transition: stockTransition,
-          lowStockLevelOverride: lowStockLevel,
-        );
-
-        return nextQuantity;
-      },
-    );
+      return nextQuantity;
+    });
   }
 
   Future<void> updateProduct({
@@ -294,86 +264,74 @@ class SupplierProductService {
         .collection('fishStocks')
         .doc(documentId);
 
-    await FirebaseFirestore.instance.runTransaction(
-      (transaction) async {
-        final snapshot = await transaction.get(reference);
+    await FirebaseFirestore.instance.runTransaction((transaction) async {
+      final snapshot = await transaction.get(reference);
 
-        if (!snapshot.exists) {
-          throw Exception(
-            'This fish listing no longer exists.',
-          );
-        }
+      if (!snapshot.exists) {
+        throw Exception('This fish listing no longer exists.');
+      }
 
-        final currentData =
-            snapshot.data() ?? <String, dynamic>{};
+      final currentData = snapshot.data() ?? <String, dynamic>{};
 
-        final hidden = isHidden(currentData);
-        final lowStockLevel = input.lowStockLevel;
+      final hidden = isHidden(currentData);
+      final lowStockLevel = input.lowStockLevel;
 
-        final stockTransition = stockNotificationService.transitionFor(
-          stockData: currentData,
-          nextQuantity: input.quantity,
-          lowStockLevelOverride: lowStockLevel,
-          hiddenOverride: hidden,
-        );
+      final stockTransition = stockNotificationService.transitionFor(
+        stockData: currentData,
+        nextQuantity: input.quantity,
+        lowStockLevelOverride: lowStockLevel,
+        hiddenOverride: hidden,
+      );
 
-        final stockStatus = StockState.calculatedStockStatus(
-          currentData,
-          quantityOverride: input.quantity,
-          lowStockLevelOverride: lowStockLevel,
-          hiddenOverride: hidden,
-        );
-        final previousQuantity = OrderHelpers.getDoubleValue(
-          currentData,
-          'quantity',
-        );
-        final wasRestocked = !hidden && input.quantity > previousQuantity;
+      final stockStatus = StockState.calculatedStockStatus(
+        currentData,
+        quantityOverride: input.quantity,
+        lowStockLevelOverride: lowStockLevel,
+        hiddenOverride: hidden,
+      );
+      final previousQuantity = OrderHelpers.getDoubleValue(
+        currentData,
+        'quantity',
+      );
+      final wasRestocked = !hidden && input.quantity > previousQuantity;
 
-        transaction.update(
-          reference,
-          {
-            'productName': input.productName.trim(),
-            'description': input.description.trim(),
-            'category': input.category,
-            'imageUrl': input.imageUrl,
-            'productImageUrl': input.imageUrl,
-            'price': input.price,
-            'priceUnit': 'per ${input.unit}',
-            'quantity': input.quantity,
-            'quantityUnit': input.unit,
-            'referenceStockQuantity': input.quantity,
-            'lowStockPercentage':
-                input.lowStockPercentage.clamp(1, 100).toDouble(),
-            'lowStockLevel': lowStockLevel,
-            'lowStockAlertEnabled': true,
-            'lowStockNotificationEnabled': true,
-            'status': hidden ? 'unavailable' : 'available',
-            'isActive': !hidden,
-            'stockStatus': stockStatus,
-            if (wasRestocked)
-              'restockedAt': FieldValue.serverTimestamp(),
-            ...stockTransition.markerFields(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
-        );
+      transaction.update(reference, {
+        'productName': input.productName.trim(),
+        'description': input.description.trim(),
+        'category': input.category,
+        'imageUrl': input.imageUrl,
+        'productImageUrl': input.imageUrl,
+        'price': input.price,
+        'priceUnit': 'per ${input.unit}',
+        'quantity': input.quantity,
+        'quantityUnit': input.unit,
+        'referenceStockQuantity': input.quantity,
+        'lowStockPercentage': input.lowStockPercentage.clamp(1, 100).toDouble(),
+        'lowStockLevel': lowStockLevel,
+        'lowStockAlertEnabled': true,
+        'lowStockNotificationEnabled': true,
+        'status': hidden ? 'unavailable' : 'available',
+        'isActive': !hidden,
+        'stockStatus': stockStatus,
+        if (wasRestocked) 'restockedAt': FieldValue.serverTimestamp(),
+        ...stockTransition.markerFields(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
 
-        stockNotificationService.createNotificationInTransaction(
-          transaction: transaction,
-          stockReference: reference,
-          stockData: currentData,
-          nextQuantity: input.quantity,
-          transition: stockTransition,
-          productNameOverride: input.productName,
-          quantityUnitOverride: input.unit,
-          lowStockLevelOverride: lowStockLevel,
-        );
-      },
-    );
+      stockNotificationService.createNotificationInTransaction(
+        transaction: transaction,
+        stockReference: reference,
+        stockData: currentData,
+        nextQuantity: input.quantity,
+        transition: stockTransition,
+        productNameOverride: input.productName,
+        quantityUnitOverride: input.unit,
+        lowStockLevelOverride: lowStockLevel,
+      );
+    });
   }
 
-  Future<String> toggleAvailability({
-    required String documentId,
-  }) async {
+  Future<String> toggleAvailability({required String documentId}) async {
     final reference = FirebaseFirestore.instance
         .collection('fishStocks')
         .doc(documentId);
@@ -386,14 +344,10 @@ class SupplierProductService {
     final newStatus = makeActive ? 'available' : 'unavailable';
 
     await reference.update({
-      ...StockState.fieldsForVisibility(
-        data,
-        active: makeActive,
-      ),
+      ...StockState.fieldsForVisibility(data, active: makeActive),
       if (makeActive && data['archived'] == true) ...{
         'archived': false,
-        'restoredFromArchiveAt':
-            FieldValue.serverTimestamp(),
+        'restoredFromArchiveAt': FieldValue.serverTimestamp(),
       },
       'updatedAt': FieldValue.serverTimestamp(),
     });
@@ -401,9 +355,7 @@ class SupplierProductService {
     return newStatus;
   }
 
-  Future<void> archiveProduct(
-    String documentId,
-  ) async {
+  Future<void> archiveProduct(String documentId) async {
     final reference = FirebaseFirestore.instance
         .collection('fishStocks')
         .doc(documentId);
@@ -411,24 +363,16 @@ class SupplierProductService {
     final snapshot = await reference.get();
 
     if (!snapshot.exists) {
-      throw Exception(
-        'This fish listing no longer exists.',
-      );
+      throw Exception('This fish listing no longer exists.');
     }
 
-    final data =
-        snapshot.data() ?? <String, dynamic>{};
+    final data = snapshot.data() ?? <String, dynamic>{};
 
     await reference.update({
-      ...StockState.fieldsForVisibility(
-        data,
-        active: false,
-      ),
+      ...StockState.fieldsForVisibility(data, active: false),
       'archived': true,
-      'archivedAt':
-          FieldValue.serverTimestamp(),
-      'updatedAt':
-          FieldValue.serverTimestamp(),
+      'archivedAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
     });
   }
 }

@@ -9,37 +9,27 @@ class SupplierOrdersHeader extends StatelessWidget {
     required this.onBack,
   });
 
-  final List<QueryDocumentSnapshot<Map<String, dynamic>>>
-      documents;
+  final List<QueryDocumentSnapshot<Map<String, dynamic>>> documents;
   final VoidCallback onBack;
 
-  int countStatus(
-    String target,
-  ) {
-    return documents.where(
-      (
-        document,
-      ) {
-        final status = OrderHelpers.getStringValue(
-          document.data(),
-          'orderStatus',
-          'Pending',
-        ).toLowerCase();
+  int countStatus(String target) {
+    return documents.where((document) {
+      final status = OrderHelpers.getStringValue(
+        document.data(),
+        'orderStatus',
+        'Pending',
+      ).toLowerCase();
 
-        if (target == 'delivered') {
-          return status == 'delivered' ||
-              status == 'completed';
-        }
+      if (target == 'delivered') {
+        return status == 'delivered' || status == 'completed';
+      }
 
-        return status == target;
-      },
-    ).length;
+      return status == target;
+    }).length;
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     final pendingCount = countStatus('pending');
     final acceptedCount = countStatus('accepted');
     final deliveredCount = countStatus('delivered');
@@ -55,11 +45,7 @@ class SupplierOrdersHeader extends StatelessWidget {
       foregroundColor: Colors.white,
       leadingWidth: 58,
       leading: Padding(
-        padding: const EdgeInsets.only(
-          left: 14,
-          top: 8,
-          bottom: 8,
-        ),
+        padding: const EdgeInsets.only(left: 14, top: 8, bottom: 8),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
@@ -69,9 +55,7 @@ class SupplierOrdersHeader extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white.withAlpha(32),
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white.withAlpha(27),
-                ),
+                border: Border.all(color: Colors.white.withAlpha(27)),
               ),
               child: const Icon(
                 Icons.arrow_back_rounded,
@@ -99,16 +83,8 @@ class SupplierOrdersHeader extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF063B66),
-                Color(0xFF075FAE),
-                Color(0xFF146BFF),
-              ],
-              stops: [
-                0.0,
-                0.55,
-                1.0,
-              ],
+              colors: [Color(0xFF063B66), Color(0xFF075FAE), Color(0xFF146BFF)],
+              stops: [0.0, 0.55, 1.0],
             ),
           ),
           child: Stack(
@@ -122,9 +98,7 @@ class SupplierOrdersHeader extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: Colors.white.withAlpha(9),
-                    border: Border.all(
-                      color: Colors.white.withAlpha(18),
-                    ),
+                    border: Border.all(color: Colors.white.withAlpha(18)),
                   ),
                 ),
               ),
@@ -136,9 +110,7 @@ class SupplierOrdersHeader extends StatelessWidget {
                   height: 82,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withAlpha(18),
-                    ),
+                    border: Border.all(color: Colors.white.withAlpha(18)),
                   ),
                 ),
               ),
@@ -161,8 +133,7 @@ class SupplierOrdersHeader extends StatelessWidget {
                           ),
                           decoration: BoxDecoration(
                             color: Colors.white.withAlpha(26),
-                            borderRadius:
-                                BorderRadius.circular(99),
+                            borderRadius: BorderRadius.circular(99),
                             border: Border.all(
                               color: Colors.white.withAlpha(30),
                             ),
@@ -221,15 +192,13 @@ class SupplierOrdersHeader extends StatelessWidget {
                         ),
                         const SizedBox(width: 9),
                         _HeaderMetric(
-                          icon:
-                              Icons.inventory_2_outlined,
+                          icon: Icons.inventory_2_outlined,
                           value: '$acceptedCount',
                           label: 'Accepted',
                         ),
                         const SizedBox(width: 9),
                         _HeaderMetric(
-                          icon:
-                              Icons.local_shipping_outlined,
+                          icon: Icons.local_shipping_outlined,
                           value: '$deliveredCount',
                           label: 'Delivered',
                         ),
@@ -243,9 +212,7 @@ class SupplierOrdersHeader extends StatelessWidget {
         ),
       ),
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          bottom: Radius.circular(30),
-        ),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
       ),
     );
   }
@@ -263,33 +230,20 @@ class _HeaderMetric extends StatelessWidget {
   final String label;
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        constraints: const BoxConstraints(
-          minHeight: 60,
-        ),
-        padding: const EdgeInsets.symmetric(
-          horizontal: 7,
-          vertical: 8,
-        ),
+        constraints: const BoxConstraints(minHeight: 60),
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 8),
         decoration: BoxDecoration(
           color: Colors.white.withAlpha(27),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Colors.white.withAlpha(32),
-          ),
+          border: Border.all(color: Colors.white.withAlpha(32)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              color: Colors.white,
-              size: 17,
-            ),
+            Icon(icon, color: Colors.white, size: 17),
             const SizedBox(height: 4),
             Text(
               value,

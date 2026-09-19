@@ -10,49 +10,36 @@ import 'package:isdalink/screens/welcome_screen.dart';
 import 'package:isdalink/services/push_notification_service.dart';
 
 class AuthGate extends StatelessWidget {
-  const AuthGate({
-    super.key,
-  });
+  const AuthGate({super.key});
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       initialData: FirebaseAuth.instance.currentUser,
-      builder: (
-        context,
-        snapshot,
-      ) {
+      builder: (context, snapshot) {
         final user = snapshot.data;
 
         if (user == null) {
           return const WelcomeScreen();
         }
 
-        return _SignedInDestination(
-          user: user,
-        );
+        return _SignedInDestination(user: user);
       },
     );
   }
 }
 
 class _SignedInDestination extends StatefulWidget {
-  const _SignedInDestination({
-    required this.user,
-  });
+  const _SignedInDestination({required this.user});
 
   final User user;
 
   @override
-  State<_SignedInDestination> createState() =>
-      _SignedInDestinationState();
+  State<_SignedInDestination> createState() => _SignedInDestinationState();
 }
 
-class _SignedInDestinationState
-    extends State<_SignedInDestination> {
+class _SignedInDestinationState extends State<_SignedInDestination> {
   late Future<String> _roleFuture;
 
   @override
@@ -62,12 +49,8 @@ class _SignedInDestinationState
   }
 
   @override
-  void didUpdateWidget(
-    covariant _SignedInDestination oldWidget,
-  ) {
-    super.didUpdateWidget(
-      oldWidget,
-    );
+  void didUpdateWidget(covariant _SignedInDestination oldWidget) {
+    super.didUpdateWidget(oldWidget);
 
     if (oldWidget.user.uid != widget.user.uid) {
       _roleFuture = _loadRole();
@@ -82,10 +65,7 @@ class _SignedInDestinationState
 
     final userData = userDocument.data();
 
-    return (userData?['role'] ?? 'vendor')
-        .toString()
-        .trim()
-        .toLowerCase();
+    return (userData?['role'] ?? 'vendor').toString().trim().toLowerCase();
   }
 
   void retry() {
@@ -99,25 +79,16 @@ class _SignedInDestinationState
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return FutureBuilder<String>(
       future: _roleFuture,
-      builder: (
-        context,
-        snapshot,
-      ) {
-        if (snapshot.connectionState !=
-            ConnectionState.done) {
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
           return const _SessionLoadingScreen();
         }
 
         if (snapshot.hasError) {
-          return _SessionErrorScreen(
-            onRetry: retry,
-            onLogout: logout,
-          );
+          return _SessionErrorScreen(onRetry: retry, onLogout: logout);
         }
 
         final role = snapshot.data ?? 'vendor';
@@ -136,8 +107,7 @@ class _SessionLoadingScreen extends StatefulWidget {
   const _SessionLoadingScreen();
 
   @override
-  State<_SessionLoadingScreen> createState() =>
-      _SessionLoadingScreenState();
+  State<_SessionLoadingScreen> createState() => _SessionLoadingScreenState();
 }
 
 class _SessionLoadingScreenState extends State<_SessionLoadingScreen>
@@ -192,15 +162,10 @@ class _SessionLoadingScreenState extends State<_SessionLoadingScreen>
           return Stack(
             fit: StackFit.expand,
             children: [
-              _CinematicMarketBackground(
-                scene: scene,
-                pulse: pulse,
-              ),
+              _CinematicMarketBackground(scene: scene, pulse: pulse),
               IgnorePointer(
                 child: CustomPaint(
-                  painter: _GlassAtmospherePainter(
-                    progress: scene,
-                  ),
+                  painter: _GlassAtmospherePainter(progress: scene),
                 ),
               ),
               SafeArea(
@@ -212,8 +177,8 @@ class _SessionLoadingScreenState extends State<_SessionLoadingScreen>
                       children: [
                         Positioned(
                           right: 30,
-                          top: height * 0.12 +
-                              math.sin(scene * math.pi * 2) * 5,
+                          top:
+                              height * 0.12 + math.sin(scene * math.pi * 2) * 5,
                           child: const _FloatingLens(
                             diameter: 68,
                             opacity: 0.10,
@@ -221,8 +186,8 @@ class _SessionLoadingScreenState extends State<_SessionLoadingScreen>
                         ),
                         Positioned(
                           left: 28,
-                          bottom: height * 0.18 +
-                              math.cos(scene * math.pi * 2) * 6,
+                          bottom:
+                              height * 0.18 + math.cos(scene * math.pi * 2) * 6,
                           child: const _FloatingLens(
                             diameter: 34,
                             opacity: 0.08,
@@ -231,19 +196,13 @@ class _SessionLoadingScreenState extends State<_SessionLoadingScreen>
                         Align(
                           alignment: const Alignment(0, -0.10),
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
                             child: ConstrainedBox(
-                              constraints: const BoxConstraints(
-                                maxWidth: 360,
-                              ),
+                              constraints: const BoxConstraints(maxWidth: 360),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  _HeroMirrorBubble(
-                                    pulse: pulse,
-                                  ),
+                                  _HeroMirrorBubble(pulse: pulse),
                                   const SizedBox(height: 19),
                                   const Text(
                                     'IsdaLink',
@@ -289,17 +248,13 @@ class _SessionLoadingScreenState extends State<_SessionLoadingScreen>
                               Icon(
                                 Icons.lock_outline_rounded,
                                 size: 12.5,
-                                color: Colors.white.withValues(
-                                  alpha: 0.36,
-                                ),
+                                color: Colors.white.withValues(alpha: 0.36),
                               ),
                               const SizedBox(width: 7),
                               Text(
                                 'Secure account session',
                                 style: TextStyle(
-                                  color: Colors.white.withValues(
-                                    alpha: 0.38,
-                                  ),
+                                  color: Colors.white.withValues(alpha: 0.38),
                                   fontSize: 10.6,
                                   fontWeight: FontWeight.w600,
                                   letterSpacing: 0.24,
@@ -322,10 +277,7 @@ class _SessionLoadingScreenState extends State<_SessionLoadingScreen>
 }
 
 class _CinematicMarketBackground extends StatelessWidget {
-  const _CinematicMarketBackground({
-    required this.scene,
-    required this.pulse,
-  });
+  const _CinematicMarketBackground({required this.scene, required this.pulse});
 
   final double scene;
   final double pulse;
@@ -342,17 +294,11 @@ class _CinematicMarketBackground extends StatelessWidget {
               math.sin(scene * math.pi * 2) * 5,
               math.cos(scene * math.pi * 2) * 3,
             ),
-            child: Image.asset(
-              'assets/images/login_bg.jpg',
-              fit: BoxFit.cover,
-            ),
+            child: Image.asset('assets/images/login_bg.jpg', fit: BoxFit.cover),
           ),
         ),
         BackdropFilter(
-          filter: ImageFilter.blur(
-            sigmaX: 1.6,
-            sigmaY: 1.6,
-          ),
+          filter: ImageFilter.blur(sigmaX: 1.6, sigmaY: 1.6),
           child: const SizedBox.expand(),
         ),
         const DecoratedBox(
@@ -360,16 +306,8 @@ class _CinematicMarketBackground extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                Color(0xD90A1D2C),
-                Color(0xB9082B3D),
-                Color(0xE3094558),
-              ],
-              stops: [
-                0.0,
-                0.46,
-                1.0,
-              ],
+              colors: [Color(0xD90A1D2C), Color(0xB9082B3D), Color(0xE3094558)],
+              stops: [0.0, 0.46, 1.0],
             ),
           ),
         ),
@@ -404,9 +342,7 @@ class _CinematicMarketBackground extends StatelessWidget {
 }
 
 class _HeroMirrorBubble extends StatelessWidget {
-  const _HeroMirrorBubble({
-    required this.pulse,
-  });
+  const _HeroMirrorBubble({required this.pulse});
 
   final double pulse;
 
@@ -425,9 +361,9 @@ class _HeroMirrorBubble extends StatelessWidget {
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  const Color(0xFF9BE8FF).withValues(
-                    alpha: 0.11 + pulse * 0.035,
-                  ),
+                  const Color(
+                    0xFF9BE8FF,
+                  ).withValues(alpha: 0.11 + pulse * 0.035),
                   Colors.transparent,
                 ],
               ),
@@ -435,10 +371,7 @@ class _HeroMirrorBubble extends StatelessWidget {
           ),
           ClipOval(
             child: BackdropFilter(
-              filter: ImageFilter.blur(
-                sigmaX: 20,
-                sigmaY: 20,
-              ),
+              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
               child: Container(
                 width: 106,
                 height: 106,
@@ -449,9 +382,7 @@ class _HeroMirrorBubble extends StatelessWidget {
                     end: Alignment.bottomRight,
                     colors: [
                       Colors.white.withValues(alpha: 0.19),
-                      const Color(0xFFB8EEFF).withValues(
-                        alpha: 0.08,
-                      ),
+                      const Color(0xFFB8EEFF).withValues(alpha: 0.08),
                       Colors.white.withValues(alpha: 0.045),
                     ],
                   ),
@@ -461,9 +392,9 @@ class _HeroMirrorBubble extends StatelessWidget {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF44C9FF).withValues(
-                        alpha: 0.15 + pulse * 0.05,
-                      ),
+                      color: const Color(
+                        0xFF44C9FF,
+                      ).withValues(alpha: 0.15 + pulse * 0.05),
                       blurRadius: 30,
                       spreadRadius: 2,
                     ),
@@ -505,9 +436,9 @@ class _HeroMirrorBubble extends StatelessWidget {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF3ABFFF).withValues(
-                                alpha: 0.25 + pulse * 0.08,
-                              ),
+                              color: const Color(
+                                0xFF3ABFFF,
+                              ).withValues(alpha: 0.25 + pulse * 0.08),
                               blurRadius: 20,
                               spreadRadius: 1,
                             ),
@@ -547,10 +478,7 @@ class _HeroMirrorBubble extends StatelessWidget {
 }
 
 class _CompactMirrorSession extends StatelessWidget {
-  const _CompactMirrorSession({
-    required this.progress,
-    required this.pulse,
-  });
+  const _CompactMirrorSession({required this.progress, required this.pulse});
 
   final double progress;
   final double pulse;
@@ -560,19 +488,13 @@ class _CompactMirrorSession extends StatelessWidget {
     return SizedBox(
       width: 70,
       height: 70,
-      child: _OrbitFishReload(
-        progress: progress,
-        pulse: pulse,
-      ),
+      child: _OrbitFishReload(progress: progress, pulse: pulse),
     );
   }
 }
 
 class _OrbitFishReload extends StatelessWidget {
-  const _OrbitFishReload({
-    required this.progress,
-    required this.pulse,
-  });
+  const _OrbitFishReload({required this.progress, required this.pulse});
 
   final double progress;
   final double pulse;
@@ -594,9 +516,7 @@ class _OrbitFishReload extends StatelessWidget {
               opacity: 0.94,
               child: CustomPaint(
                 size: const Size(18, 12),
-                painter: _MiniOrbitFishPainter(
-                  shimmer: pulse,
-                ),
+                painter: _MiniOrbitFishPainter(shimmer: pulse),
               ),
             ),
           ),
@@ -607,9 +527,7 @@ class _OrbitFishReload extends StatelessWidget {
 }
 
 class _MiniOrbitFishPainter extends CustomPainter {
-  const _MiniOrbitFishPainter({
-    required this.shimmer,
-  });
+  const _MiniOrbitFishPainter({required this.shimmer});
 
   final double shimmer;
 
@@ -650,10 +568,7 @@ class _MiniOrbitFishPainter extends CustomPainter {
       tail,
       Paint()
         ..shader = const LinearGradient(
-          colors: [
-            Color(0x806ADAF6),
-            Color(0xD0D4F8FF),
-          ],
+          colors: [Color(0x806ADAF6), Color(0xD0D4F8FF)],
         ).createShader(Offset.zero & size),
     );
 
@@ -663,11 +578,7 @@ class _MiniOrbitFishPainter extends CustomPainter {
         ..shader = const LinearGradient(
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
-          colors: [
-            Color(0x9970DDF6),
-            Color(0xD7E3FBFF),
-            Color(0xFFFFFFFF),
-          ],
+          colors: [Color(0x9970DDF6), Color(0xD7E3FBFF), Color(0xFFFFFFFF)],
         ).createShader(Offset.zero & size),
     );
 
@@ -708,10 +619,7 @@ class _MiniOrbitFishPainter extends CustomPainter {
 }
 
 class _FloatingLens extends StatelessWidget {
-  const _FloatingLens({
-    required this.diameter,
-    required this.opacity,
-  });
+  const _FloatingLens({required this.diameter, required this.opacity});
 
   final double diameter;
   final double opacity;
@@ -720,10 +628,7 @@ class _FloatingLens extends StatelessWidget {
   Widget build(BuildContext context) {
     return ClipOval(
       child: BackdropFilter(
-        filter: ImageFilter.blur(
-          sigmaX: 8,
-          sigmaY: 8,
-        ),
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
         child: Container(
           width: diameter,
           height: diameter,
@@ -770,9 +675,7 @@ class _FloatingLens extends StatelessWidget {
 }
 
 class _GlassAtmospherePainter extends CustomPainter {
-  const _GlassAtmospherePainter({
-    required this.progress,
-  });
+  const _GlassAtmospherePainter({required this.progress});
 
   final double progress;
 
@@ -782,23 +685,14 @@ class _GlassAtmospherePainter extends CustomPainter {
       ..color = Colors.white.withValues(alpha: 0.085);
 
     for (var i = 0; i < 13; i++) {
-      final x =
-          ((i * 83.0) + progress * 31) % size.width;
-      final y =
-          ((i * 127.0) - progress * 43) % size.height;
+      final x = ((i * 83.0) + progress * 31) % size.width;
+      final y = ((i * 127.0) - progress * 43) % size.height;
 
-      canvas.drawCircle(
-        Offset(x, y),
-        i % 4 == 0 ? 1.15 : 0.65,
-        particlePaint,
-      );
+      canvas.drawCircle(Offset(x, y), i % 4 == 0 ? 1.15 : 0.65, particlePaint);
     }
 
     final glowRect = Rect.fromCenter(
-      center: Offset(
-        size.width * 0.78,
-        size.height * 0.88,
-      ),
+      center: Offset(size.width * 0.78, size.height * 0.88),
       width: size.width * 0.70,
       height: size.width * 0.70,
     );
@@ -808,8 +702,7 @@ class _GlassAtmospherePainter extends CustomPainter {
       Paint()
         ..shader = RadialGradient(
           colors: [
-            const Color(0xFF64D8F1)
-                .withValues(alpha: 0.045),
+            const Color(0xFF64D8F1).withValues(alpha: 0.045),
             Colors.transparent,
           ],
         ).createShader(glowRect),
@@ -817,149 +710,82 @@ class _GlassAtmospherePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(
-    covariant _GlassAtmospherePainter oldDelegate,
-  ) {
+  bool shouldRepaint(covariant _GlassAtmospherePainter oldDelegate) {
     return oldDelegate.progress != progress;
   }
 }
 
-class _SessionErrorScreen
-    extends StatelessWidget {
-  const _SessionErrorScreen({
-    required this.onRetry,
-    required this.onLogout,
-  });
+class _SessionErrorScreen extends StatelessWidget {
+  const _SessionErrorScreen({required this.onRetry, required this.onLogout});
 
   final VoidCallback onRetry;
-  final Future<void> Function()
-      onLogout;
+  final Future<void> Function() onLogout;
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(
-        0xFFF5F9FD,
-      ),
+      backgroundColor: const Color(0xFFF5F9FD),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding:
-                const EdgeInsets.all(
-              28,
-            ),
+            padding: const EdgeInsets.all(28),
             child: ConstrainedBox(
-              constraints:
-                  const BoxConstraints(
-                maxWidth: 420,
-              ),
+              constraints: const BoxConstraints(maxWidth: 420),
               child: Container(
-                padding:
-                    const EdgeInsets.all(
-                  26,
-                ),
-                decoration:
-                    BoxDecoration(
+                padding: const EdgeInsets.all(26),
+                decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius:
-                      BorderRadius.circular(
-                    24,
-                  ),
-                  border: Border.all(
-                    color: const Color(
-                      0xFFDCE7F0,
-                    ),
-                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: const Color(0xFFDCE7F0)),
                   boxShadow: [
                     BoxShadow(
-                      color:
-                          Colors.black.withValues(
-                        alpha: 0.06,
-                      ),
+                      color: Colors.black.withValues(alpha: 0.06),
                       blurRadius: 24,
-                      offset:
-                          const Offset(
-                        0,
-                        10,
-                      ),
+                      offset: const Offset(0, 10),
                     ),
                   ],
                 ),
                 child: Column(
-                  mainAxisSize:
-                      MainAxisSize.min,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const _BrandMark(
-                      compact: true,
-                    ),
-                    const SizedBox(
-                      height: 20,
-                    ),
+                    const _BrandMark(compact: true),
+                    const SizedBox(height: 20),
                     const Text(
                       'Unable to open your saved session',
-                      textAlign:
-                          TextAlign.center,
+                      textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Color(
-                          0xFF102C44,
-                        ),
+                        color: Color(0xFF102C44),
                         fontSize: 20,
-                        fontWeight:
-                            FontWeight.w800,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(
-                      height: 10,
-                    ),
+                    const SizedBox(height: 10),
                     const Text(
                       'Check your internet connection, then try again. Your account remains signed in.',
-                      textAlign:
-                          TextAlign.center,
+                      textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Color(
-                          0xFF6F8497,
-                        ),
+                        color: Color(0xFF6F8497),
                         fontSize: 14,
                         height: 1.5,
                       ),
                     ),
-                    const SizedBox(
-                      height: 24,
-                    ),
+                    const SizedBox(height: 24),
                     SizedBox(
-                      width:
-                          double.infinity,
-                      child:
-                          FilledButton.icon(
-                        onPressed:
-                            onRetry,
-                        icon: const Icon(
-                          Icons.refresh_rounded,
-                        ),
-                        label:
-                            const Text(
-                          'Try Again',
-                        ),
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: onRetry,
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: const Text('Try Again'),
                       ),
                     ),
-                    const SizedBox(
-                      height: 10,
-                    ),
+                    const SizedBox(height: 10),
                     SizedBox(
-                      width:
-                          double.infinity,
-                      child:
-                          TextButton(
-                        onPressed:
-                            () async {
+                      width: double.infinity,
+                      child: TextButton(
+                        onPressed: () async {
                           await onLogout();
                         },
-                        child:
-                            const Text(
-                          'Log Out',
-                        ),
+                        child: const Text('Log Out'),
                       ),
                     ),
                   ],
@@ -973,38 +799,23 @@ class _SessionErrorScreen
   }
 }
 
-class _BrandMark
-    extends StatelessWidget {
-  const _BrandMark({
-    this.compact = false,
-  });
+class _BrandMark extends StatelessWidget {
+  const _BrandMark({this.compact = false});
 
   final bool compact;
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
-    final size =
-        compact ? 58.0 : 72.0;
+  Widget build(BuildContext context) {
+    final size = compact ? 58.0 : 72.0;
 
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: const Color(
-          0xFF146BFF,
-        ),
-        borderRadius:
-            BorderRadius.circular(
-          compact ? 17 : 20,
-        ),
+        color: const Color(0xFF146BFF),
+        borderRadius: BorderRadius.circular(compact ? 17 : 20),
       ),
-      child: Icon(
-        Icons.set_meal,
-        color: Colors.white,
-        size: compact ? 30 : 40,
-      ),
+      child: Icon(Icons.set_meal, color: Colors.white, size: compact ? 30 : 40),
     );
   }
 }

@@ -11,9 +11,7 @@ import 'package:isdalink/services/supplier_browse_service.dart';
 import 'package:isdalink/utils/app_error_message.dart';
 import 'package:isdalink/utils/order_helpers.dart';
 
-class RecentFishPosts
-    extends
-        StatelessWidget {
+class RecentFishPosts extends StatelessWidget {
   const RecentFishPosts({
     super.key,
     required this.onProductTap,
@@ -31,39 +29,27 @@ class RecentFishPosts
 
   HomeStockService get stockService => const HomeStockService();
 
-  Widget supplierUnavailableCard(
-    BuildContext context,
-  ) {
+  Widget supplierUnavailableCard(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text(
-              'Supplier information is not available yet.',
-            ),
+            content: Text('Supplier information is not available yet.'),
           ),
         );
       },
       child: Container(
-        padding: const EdgeInsets.all(
-          14,
-        ),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(
-            22,
-          ),
+          borderRadius: BorderRadius.circular(22),
         ),
         child: const Center(
           child: Text(
             'Supplier information is not available.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Color(
-                0xFF7B8FA3,
-              ),
+              color: Color(0xFF7B8FA3),
               fontSize: 12,
               height: 1.4,
             ),
@@ -73,26 +59,14 @@ class RecentFishPosts
     );
   }
 
-  Widget errorList(
-    Object error,
-  ) {
+  Widget errorList(Object error) {
     return Container(
-      margin: const EdgeInsets.symmetric(
-        horizontal: 16,
-      ),
-      padding: const EdgeInsets.all(
-        16,
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(
-          20,
-        ),
-        border: Border.all(
-          color: const Color(
-            0xFFD9EAF2,
-          ),
-        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFD9EAF2)),
       ),
       child: Row(
         children: [
@@ -100,24 +74,16 @@ class RecentFishPosts
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: const Color(
-                0xFFFFF1F1,
-              ),
-              borderRadius: BorderRadius.circular(
-                12,
-              ),
+              color: const Color(0xFFFFF1F1),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
               Icons.error_outline_rounded,
-              color: Color(
-                0xFFD65A5A,
-              ),
+              color: Color(0xFFD65A5A),
               size: 19,
             ),
           ),
-          const SizedBox(
-            width: 11,
-          ),
+          const SizedBox(width: 11),
           Expanded(
             child: Text(
               AppErrorMessage.from(
@@ -125,9 +91,7 @@ class RecentFishPosts
                 fallback: 'Unable to load fresh fish stocks right now.',
               ),
               style: const TextStyle(
-                color: Color(
-                  0xFF6F8494,
-                ),
+                color: Color(0xFF6F8494),
                 fontSize: 11,
                 height: 1.35,
                 fontWeight: FontWeight.w700,
@@ -143,107 +107,62 @@ class RecentFishPosts
     return SizedBox(
       height: 232,
       child: ListView.separated(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
         itemCount: 2,
-        separatorBuilder:
-            (
-              context,
-              index,
-            ) => const SizedBox(
-              width: 12,
+        separatorBuilder: (context, index) => const SizedBox(width: 12),
+        itemBuilder: (context, index) {
+          return Container(
+            width: 190,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: const Color(0xFFDCECF3)),
             ),
-        itemBuilder:
-            (
-              context,
-              index,
-            ) {
-              return Container(
-                width: 190,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(
-                    22,
-                  ),
-                  border: Border.all(
-                    color: const Color(
-                      0xFFDCECF3,
-                    ),
-                  ),
-                ),
-                child: const Center(
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                  ),
-                ),
-              );
-            },
+            child: const Center(
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          );
+        },
       ),
     );
   }
 
   Widget emptyList() {
     return Container(
-      margin: const EdgeInsets.symmetric(
-        horizontal: 14,
-      ),
-      padding: const EdgeInsets.all(
-        18,
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 14),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(
-          22,
-        ),
+        borderRadius: BorderRadius.circular(22),
         boxShadow: const [
           BoxShadow(
-            color: Color(
-              0x10000000,
-            ),
+            color: Color(0x10000000),
             blurRadius: 14,
-            offset: Offset(
-              0,
-              7,
-            ),
+            offset: Offset(0, 7),
           ),
         ],
       ),
       child: const Column(
         children: [
-          Icon(
-            Icons.inventory_2_outlined,
-            color: Color(
-              0xFF146BFF,
-            ),
-            size: 38,
-          ),
-          SizedBox(
-            height: 10,
-          ),
+          Icon(Icons.inventory_2_outlined, color: Color(0xFF146BFF), size: 38),
+          SizedBox(height: 10),
           Text(
             'No recent fish posts yet',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Color(
-                0xFF102C44,
-              ),
+              color: Color(0xFF102C44),
               fontSize: 14,
               fontWeight: FontWeight.w900,
             ),
           ),
-          SizedBox(
-            height: 5,
-          ),
+          SizedBox(height: 5),
           Text(
             'Supplier fish stocks will appear here.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Color(
-                0xFF7B8FA3,
-              ),
+              color: Color(0xFF7B8FA3),
               fontSize: 12,
               height: 1.4,
             ),
@@ -255,40 +174,19 @@ class RecentFishPosts
 
   Widget cardForDocument(
     BuildContext context,
-    QueryDocumentSnapshot<
-      Map<
-        String,
-        dynamic
-      >
-    >
-    document, {
+    QueryDocumentSnapshot<Map<String, dynamic>> document, {
     bool isWide = false,
-    required Map<
-      String,
-      String
-    >
-    supplierImageUrlsById,
+    required Map<String, String> supplierImageUrlsById,
   }) {
     final data = document.data();
 
-    final product = stockService.fishProductFromFirestore(
-      data,
-    );
-    final supplier = stockService.supplierForStock(
-      data,
-    );
+    final product = stockService.fishProductFromFirestore(data);
+    final supplier = stockService.supplierForStock(data);
 
-    final stockSupplierId = OrderHelpers.getStringValue(
-      data,
-      'supplierId',
-      '',
-    );
+    final stockSupplierId = OrderHelpers.getStringValue(data, 'supplierId', '');
 
-    if (supplier ==
-        null) {
-      return supplierUnavailableCard(
-        context,
-      );
+    if (supplier == null) {
+      return supplierUnavailableCard(context);
     }
 
     return HomeMarketFishCard(
@@ -299,24 +197,14 @@ class RecentFishPosts
         supplierImageUrlsById,
       ),
       isWide: isWide,
-      badgeLabel: stockService.arrivalBadge(
-        data,
-      ),
-      activityLabel: stockService.activityLabel(
-        data,
-      ),
-      onTap: () => onProductTap(
-        supplier,
-        product,
-        document.id,
-        stockSupplierId,
-      ),
+      badgeLabel: stockService.arrivalBadge(data),
+      activityLabel: stockService.activityLabel(data),
+      onTap: () =>
+          onProductTap(supplier, product, document.id, stockSupplierId),
     );
   }
 
-  Widget exploreAllFishCard({
-    required int totalStocks,
-  }) {
+  Widget exploreAllFishCard({required int totalStocks}) {
     return SizedBox(
       width: 148,
       child: Center(
@@ -324,56 +212,29 @@ class RecentFishPosts
           height: 150,
           child: Material(
             color: Colors.transparent,
-            borderRadius: BorderRadius.circular(
-              20,
-            ),
+            borderRadius: BorderRadius.circular(20),
             child: InkWell(
               onTap: onViewAll,
-              borderRadius: BorderRadius.circular(
-                20,
-              ),
+              borderRadius: BorderRadius.circular(20),
               child: Ink(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(
-                    20,
-                  ),
+                  borderRadius: BorderRadius.circular(20),
                   gradient: const LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [
-                      Color(
-                        0xFFF5FBFD,
-                      ),
-                      Color(
-                        0xFFEAF7FB,
-                      ),
-                    ],
+                    colors: [Color(0xFFF5FBFD), Color(0xFFEAF7FB)],
                   ),
-                  border: Border.all(
-                    color: const Color(
-                      0xFFCFE7F1,
-                    ),
-                  ),
+                  border: Border.all(color: const Color(0xFFCFE7F1)),
                   boxShadow: const [
                     BoxShadow(
-                      color: Color(
-                        0x0D075C9B,
-                      ),
+                      color: Color(0x0D075C9B),
                       blurRadius: 12,
-                      offset: Offset(
-                        0,
-                        5,
-                      ),
+                      offset: Offset(0, 5),
                     ),
                   ],
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    14,
-                    14,
-                    14,
-                    13,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(14, 14, 14, 13),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -381,31 +242,16 @@ class RecentFishPosts
                         width: 48,
                         height: 48,
                         decoration: BoxDecoration(
-                          color: const Color(
-                            0xFFE4F6FB,
-                          ),
-                          borderRadius: BorderRadius.circular(
-                            14,
-                          ),
-                          border: Border.all(
-                            color: const Color(
-                              0xFFC7E7F1,
-                            ),
-                          ),
+                          color: const Color(0xFFE4F6FB),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFFC7E7F1)),
                         ),
                         child: Padding(
-                          padding: const EdgeInsets.all(
-                            7,
-                          ),
+                          padding: const EdgeInsets.all(7),
                           child: Image.asset(
                             'assets/images/Fish.png',
                             fit: BoxFit.contain,
-                            errorBuilder:
-                                (
-                                  _,
-                                  _,
-                                  _,
-                                ) => const SizedBox.shrink(),
+                            errorBuilder: (_, _, _) => const SizedBox.shrink(),
                           ),
                         ),
                       ),
@@ -413,48 +259,36 @@ class RecentFishPosts
                       Text(
                         '$totalStocks fish stocks',
                         style: const TextStyle(
-                          color: Color(
-                            0xFF7693A4,
-                          ),
+                          color: Color(0xFF7693A4),
                           fontSize: 9,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
-                      const SizedBox(
-                        height: 3,
-                      ),
+                      const SizedBox(height: 3),
                       const Text(
                         'All fish stocks',
                         style: TextStyle(
-                          color: Color(
-                            0xFF123B55,
-                          ),
+                          color: Color(0xFF123B55),
                           fontSize: 14,
                           height: 1.05,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
-                      const SizedBox(
-                        height: 6,
-                      ),
+                      const SizedBox(height: 6),
                       const Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
                             'Browse',
                             style: TextStyle(
-                              color: Color(
-                                0xFF087AC0,
-                              ),
+                              color: Color(0xFF087AC0),
                               fontSize: 9.2,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
                           DecoratedBox(
                             decoration: BoxDecoration(
-                              color: Color(
-                                0xFFD8F1F8,
-                              ),
+                              color: Color(0xFFD8F1F8),
                               shape: BoxShape.circle,
                             ),
                             child: SizedBox(
@@ -462,9 +296,7 @@ class RecentFishPosts
                               height: 22,
                               child: Icon(
                                 Icons.arrow_forward_rounded,
-                                color: Color(
-                                  0xFF087AC0,
-                                ),
+                                color: Color(0xFF087AC0),
                                 size: 14,
                               ),
                             ),
@@ -482,256 +314,143 @@ class RecentFishPosts
     );
   }
 
-  Widget feedForCutoff(
-    BuildContext context,
-    DateTime cutoff,
-  ) {
-    return StreamBuilder<
-      QuerySnapshot<
-        Map<
-          String,
-          dynamic
-        >
-      >
-    >(
+  Widget feedForCutoff(BuildContext context, DateTime cutoff) {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: const SupplierBrowseService().suppliersStream,
-      builder:
-          (
-            context,
-            supplierSnapshot,
-          ) {
-            final supplierImageUrlsById = stockService.supplierImageUrlsById(
-              supplierSnapshot.data?.docs ??
-                  <
-                    QueryDocumentSnapshot<
-                      Map<
-                        String,
-                        dynamic
-                      >
-                    >
-                  >[],
+      builder: (context, supplierSnapshot) {
+        final supplierImageUrlsById = stockService.supplierImageUrlsById(
+          supplierSnapshot.data?.docs ??
+              <QueryDocumentSnapshot<Map<String, dynamic>>>[],
+        );
+
+        return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+          stream: stockService.recentFishPostsStream,
+          builder: (context, snapshot) {
+            final allDocuments =
+                snapshot.data?.docs ??
+                <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+            final unseenCount = stockService.unseenArrivalCount(
+              allDocuments,
+              cutoff,
             );
 
-            return StreamBuilder<
-              QuerySnapshot<
-                Map<
-                  String,
-                  dynamic
-                >
-              >
-            >(
-              stream: stockService.recentFishPostsStream,
-              builder:
-                  (
-                    context,
-                    snapshot,
-                  ) {
-                    final allDocuments =
-                        snapshot.data?.docs ??
-                        <
-                          QueryDocumentSnapshot<
-                            Map<
-                              String,
-                              dynamic
-                            >
-                          >
-                        >[];
-                    final unseenCount = stockService.unseenArrivalCount(
-                      allDocuments,
-                      cutoff,
-                    );
+            Widget body;
 
-                    Widget body;
+            if (snapshot.hasError) {
+              body = errorList(snapshot.error!);
+            } else if (!snapshot.hasData) {
+              body = loadingGrid();
+            } else {
+              final allAvailableStocks = stockService.availableStocks(
+                allDocuments,
+              );
+              final documents = allAvailableStocks.take(6).toList();
 
-                    if (snapshot.hasError) {
-                      body = errorList(
-                        snapshot.error!,
-                      );
-                    } else if (!snapshot.hasData) {
-                      body = loadingGrid();
-                    } else {
-                      final allAvailableStocks = stockService.availableStocks(
-                        allDocuments,
-                      );
-                      final documents = allAvailableStocks
-                          .take(
-                            6,
-                          )
-                          .toList();
+              if (documents.isEmpty) {
+                body = emptyList();
+              } else {
+                final hasMoreStocks =
+                    allAvailableStocks.length > documents.length;
 
-                      if (documents.isEmpty) {
-                        body = emptyList();
-                      } else {
-                        final hasMoreStocks =
-                            allAvailableStocks.length >
-                            documents.length;
+                final screenWidth = MediaQuery.sizeOf(context).width;
+                final cardWidth = (screenWidth * 0.51)
+                    .clamp(188.0, 202.0)
+                    .toDouble();
+                final cards = <Widget>[
+                  for (final document in documents)
+                    SizedBox(
+                      width: cardWidth,
+                      child: cardForDocument(
+                        context,
+                        document,
+                        isWide: false,
+                        supplierImageUrlsById: supplierImageUrlsById,
+                      ),
+                    ),
+                  if (hasMoreStocks)
+                    SizedBox(
+                      width: 148,
+                      child: exploreAllFishCard(
+                        totalStocks: allAvailableStocks.length,
+                      ),
+                    ),
+                ];
 
-                        final screenWidth = MediaQuery.sizeOf(
-                          context,
-                        ).width;
-                        final cardWidth =
-                            (screenWidth *
-                                    0.51)
-                                .clamp(
-                                  188.0,
-                                  202.0,
-                                )
-                                .toDouble();
-                        final cards =
-                            <
-                              Widget
-                            >[
-                              for (final document in documents)
-                                SizedBox(
-                                  width: cardWidth,
-                                  child: cardForDocument(
-                                    context,
-                                    document,
-                                    isWide: false,
-                                    supplierImageUrlsById: supplierImageUrlsById,
-                                  ),
-                                ),
-                              if (hasMoreStocks)
-                                SizedBox(
-                                  width: 148,
-                                  child: exploreAllFishCard(
-                                    totalStocks: allAvailableStocks.length,
-                                  ),
-                                ),
-                            ];
+                body = SizedBox(
+                  height: 232,
+                  child: _HomeFishSnappingCarousel(
+                    itemExtent: cardWidth + 12,
+                    children: cards,
+                  ),
+                );
+              }
+            }
 
-                        body = SizedBox(
-                          height: 232,
-                          child: _HomeFishSnappingCarousel(
-                            itemExtent:
-                                cardWidth +
-                                12,
-                            children: cards,
-                          ),
-                        );
-                      }
-                    }
-
-                    return Column(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                          ),
-                          child: HomeSectionHeader(
-                            title: 'Latest Fish Stocks',
-                            icon: Icons.set_meal_rounded,
-                            assetIconPath: 'assets/images/Fish.png',
-                            subtitle: 'Freshly posted by suppliers across Caraga',
-                            badgeLabel:
-                                unseenCount >
-                                    0
-                                ? '$unseenCount updates'
-                                : null,
-                            actionLabel: 'View all',
-                            onViewAll: onViewAll,
-                          ),
-                        ),
-                        const SizedBox(
-                          height: 4,
-                        ),
-                        body,
-                      ],
-                    );
-                  },
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: HomeSectionHeader(
+                    title: 'Latest Fish Stocks',
+                    icon: Icons.set_meal_rounded,
+                    assetIconPath: 'assets/images/Fish.png',
+                    subtitle: 'Freshly posted by suppliers across Caraga',
+                    badgeLabel: unseenCount > 0 ? '$unseenCount updates' : null,
+                    actionLabel: 'View all',
+                    onViewAll: onViewAll,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                body,
+              ],
             );
           },
+        );
+      },
     );
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
-    final userId =
-        FirebaseAuth.instance.currentUser?.uid ??
-        '';
+  Widget build(BuildContext context) {
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
     if (userId.isEmpty) {
-      return feedForCutoff(
-        context,
-        stockService.feedCutoff(
-          null,
-        ),
-      );
+      return feedForCutoff(context, stockService.feedCutoff(null));
     }
 
-    return StreamBuilder<
-      DocumentSnapshot<
-        Map<
-          String,
-          dynamic
-        >
-      >
-    >(
-      stream: stockService.vendorFeedStateStream(
-        userId,
-      ),
-      builder:
-          (
-            context,
-            snapshot,
-          ) {
-            final cutoff = stockService.feedCutoff(
-              snapshot.data?.data(),
-            );
-            return feedForCutoff(
-              context,
-              cutoff,
-            );
-          },
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: stockService.vendorFeedStateStream(userId),
+      builder: (context, snapshot) {
+        final cutoff = stockService.feedCutoff(snapshot.data?.data());
+        return feedForCutoff(context, cutoff);
+      },
     );
   }
 }
 
-class _HomeFishSnappingCarousel
-    extends
-        StatelessWidget {
+class _HomeFishSnappingCarousel extends StatelessWidget {
   const _HomeFishSnappingCarousel({
     required this.children,
     required this.itemExtent,
   });
 
-  final List<
-    Widget
-  >
-  children;
+  final List<Widget> children;
   final double itemExtent;
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return ListView.separated(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.only(
-        left: 16,
-        right: 16,
-      ),
+      padding: const EdgeInsets.only(left: 16, right: 16),
       physics: HomeItemSnapScrollPhysics(
         parent: const BouncingScrollPhysics(),
         itemExtent: itemExtent,
       ),
       itemCount: children.length,
-      separatorBuilder:
-          (
-            context,
-            index,
-          ) => const SizedBox(
-            width: 12,
-          ),
-      itemBuilder:
-          (
-            context,
-            index,
-          ) {
-            return children[index];
-          },
+      separatorBuilder: (context, index) => const SizedBox(width: 12),
+      itemBuilder: (context, index) {
+        return children[index];
+      },
     );
   }
 }

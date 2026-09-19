@@ -10,26 +10,11 @@ class HomeStockService {
 
   static const Duration defaultNewWindow = Duration(hours: 48);
 
-  Stream<
-    QuerySnapshot<
-      Map<
-        String,
-        dynamic
-      >
-    >
-  >
-  get recentFishPostsStream {
+  Stream<QuerySnapshot<Map<String, dynamic>>> get recentFishPostsStream {
     return FirebaseFirestore.instance
-        .collection(
-          'fishStocks',
-        )
-        .orderBy(
-          'createdAt',
-          descending: true,
-        )
-        .limit(
-          100,
-        )
+        .collection('fishStocks')
+        .orderBy('createdAt', descending: true)
+        .limit(100)
         .snapshots();
   }
 
@@ -55,15 +40,9 @@ class HomeStockService {
       return;
     }
 
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .set(
-          {
-            'lastFishFeedViewedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true),
-        );
+    await FirebaseFirestore.instance.collection('users').doc(userId).set({
+      'lastFishFeedViewedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
   Map<String, String> supplierImageUrlsById(
@@ -158,18 +137,12 @@ class HomeStockService {
     return restocked;
   }
 
-  bool isNewListing(
-    Map<String, dynamic> data,
-    DateTime cutoff,
-  ) {
+  bool isNewListing(Map<String, dynamic> data, DateTime cutoff) {
     final created = createdAt(data);
     return created != null && created.isAfter(cutoff);
   }
 
-  bool isRestockedListing(
-    Map<String, dynamic> data,
-    DateTime cutoff,
-  ) {
+  bool isRestockedListing(Map<String, dynamic> data, DateTime cutoff) {
     final restocked = restockedAt(data);
     final created = createdAt(data);
 
@@ -202,9 +175,7 @@ class HomeStockService {
 
   String activityLabel(Map<String, dynamic> data) {
     final isRestocked = isRecentlyRestockedListing(data);
-    final timestamp = isRestocked
-        ? restockedAt(data)
-        : createdAt(data);
+    final timestamp = isRestocked ? restockedAt(data) : createdAt(data);
     final prefix = isRestocked ? 'Restocked' : 'Posted';
 
     if (timestamp == null) {
@@ -280,32 +251,15 @@ class HomeStockService {
       }
 
       final data = document.data();
-      return isNewListing(data, cutoff) ||
-          isRestockedListing(data, cutoff);
+      return isNewListing(data, cutoff) || isRestockedListing(data, cutoff);
     }).length;
   }
 
-  bool isAvailableStock(
-    QueryDocumentSnapshot<
-      Map<
-        String,
-        dynamic
-      >
-    >
-    document,
-  ) {
-    return StockState.isMarketplaceOrderable(
-      document.data(),
-    );
+  bool isAvailableStock(QueryDocumentSnapshot<Map<String, dynamic>> document) {
+    return StockState.isMarketplaceOrderable(document.data());
   }
 
-  Supplier? supplierForStock(
-    Map<
-      String,
-      dynamic
-    >
-    data,
-  ) {
+  Supplier? supplierForStock(Map<String, dynamic> data) {
     final supplierName = OrderHelpers.getStringValue(
       data,
       'supplierName',
@@ -314,88 +268,42 @@ class HomeStockService {
     final supplierLocation = OrderHelpers.getStringValue(
       data,
       'supplierLocation',
-      OrderHelpers.getStringValue(
-        data,
-        'location',
-        'Caraga Region',
-      ),
+      OrderHelpers.getStringValue(data, 'location', 'Caraga Region'),
     );
     final supplierContactNumber = OrderHelpers.getStringValue(
       data,
       'supplierContactNumber',
-      OrderHelpers.getStringValue(
-        data,
-        'contactNumber',
-        'No contact number',
-      ),
+      OrderHelpers.getStringValue(data, 'contactNumber', 'No contact number'),
     );
 
     return Supplier(
       name: supplierName,
       location: supplierLocation,
       contactNumber: supplierContactNumber,
-      description: 'Registered fish supplier in the IsdaLink platform for vendor-supplier coordination.',
+      description:
+          'Registered fish supplier in the IsdaLink platform for vendor-supplier coordination.',
       rating: 4.5,
       reviews: 0,
       products: const [],
     );
   }
 
-  FishProduct fishProductFromFirestore(
-    Map<
-      String,
-      dynamic
-    >
-    data,
-  ) {
+  FishProduct fishProductFromFirestore(Map<String, dynamic> data) {
     return FishProduct(
-      name: OrderHelpers.getStringValue(
-        data,
-        'productName',
-        'Fish Product',
-      ),
-      category: OrderHelpers.getStringValue(
-        data,
-        'category',
-        'Fresh Fish',
-      ),
+      name: OrderHelpers.getStringValue(data, 'productName', 'Fish Product'),
+      category: OrderHelpers.getStringValue(data, 'category', 'Fresh Fish'),
       description: OrderHelpers.getStringValue(
         data,
         'description',
         'Fresh fish stock available for vendor orders.',
       ),
-      emoji: OrderHelpers.getStringValue(
-        data,
-        'emoji',
-        '🐟',
-      ),
-      imageUrl: OrderHelpers.getStringValue(
-        data,
-        'productImageUrl',
-        '',
-      ),
-      price: OrderHelpers.getDoubleValue(
-        data,
-        'price',
-      ),
-      priceUnit: OrderHelpers.getStringValue(
-        data,
-        'priceUnit',
-        'per kilo',
-      ),
-      availableQuantity: OrderHelpers.getDoubleValue(
-        data,
-        'quantity',
-      ),
-      quantityUnit: OrderHelpers.getStringValue(
-        data,
-        'quantityUnit',
-        'kilo',
-      ),
-      lowStockThreshold: OrderHelpers.getDoubleValue(
-        data,
-        'lowStockLevel',
-      ),
+      emoji: OrderHelpers.getStringValue(data, 'emoji', '🐟'),
+      imageUrl: OrderHelpers.getStringValue(data, 'productImageUrl', ''),
+      price: OrderHelpers.getDoubleValue(data, 'price'),
+      priceUnit: OrderHelpers.getStringValue(data, 'priceUnit', 'per kilo'),
+      availableQuantity: OrderHelpers.getDoubleValue(data, 'quantity'),
+      quantityUnit: OrderHelpers.getStringValue(data, 'quantityUnit', 'kilo'),
+      lowStockThreshold: OrderHelpers.getDoubleValue(data, 'lowStockLevel'),
     );
   }
 }

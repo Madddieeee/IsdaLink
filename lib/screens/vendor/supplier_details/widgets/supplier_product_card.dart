@@ -31,13 +31,10 @@ class SupplierProductCard extends StatelessWidget {
   bool get hasNetworkImage {
     final value = imageUrl.trim();
 
-    return value.startsWith('http://') ||
-        value.startsWith('https://');
+    return value.startsWith('http://') || value.startsWith('https://');
   }
 
-  String formatNumber(
-    double value,
-  ) {
+  String formatNumber(double value) {
     final raw = value % 1 == 0
         ? value.toStringAsFixed(0)
         : value.toStringAsFixed(1);
@@ -78,18 +75,12 @@ class SupplierProductCard extends StatelessWidget {
       height: 90,
       width: double.infinity,
       child: ClipRRect(
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(17),
-        ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(17)),
         child: hasNetworkImage
             ? Image.network(
                 imageUrl,
                 fit: BoxFit.cover,
-                loadingBuilder: (
-                  context,
-                  child,
-                  loadingProgress,
-                ) {
+                loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) {
                     return child;
                   }
@@ -100,24 +91,17 @@ class SupplierProductCard extends StatelessWidget {
                   );
                 },
                 errorBuilder: (_, _, _) {
-                  return ProductImagePlaceholder(
-                    emoji: emoji,
-                  );
+                  return ProductImagePlaceholder(emoji: emoji);
                 },
               )
-            : ProductImagePlaceholder(
-                emoji: emoji,
-              ),
+            : ProductImagePlaceholder(emoji: emoji),
       ),
     );
   }
 
   Widget stockBadge() {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 7,
-        vertical: 4,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
       decoration: BoxDecoration(
         color: stockColor.withAlpha(236),
         borderRadius: BorderRadius.circular(99),
@@ -141,9 +125,7 @@ class SupplierProductCard extends StatelessWidget {
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(17),
@@ -154,9 +136,7 @@ class SupplierProductCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(17),
-            border: Border.all(
-              color: const Color(0xFFE0EEF5),
-            ),
+            border: Border.all(color: const Color(0xFFE0EEF5)),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x0F000000),
@@ -171,11 +151,7 @@ class SupplierProductCard extends StatelessWidget {
               Stack(
                 children: [
                   productImage(),
-                  Positioned(
-                    right: 9,
-                    top: 9,
-                    child: stockBadge(),
-                  ),
+                  Positioned(right: 9, top: 9, child: stockBadge()),
                 ],
               ),
               Expanded(
@@ -259,9 +235,7 @@ class SupplierProductCard extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: const Color(0xFFF5FBFE),
                           shape: BoxShape.circle,
-                          border: Border.all(
-                            color: const Color(0xFFDCECF4),
-                          ),
+                          border: Border.all(color: const Color(0xFFDCECF4)),
                         ),
                         child: const Icon(
                           Icons.arrow_forward_rounded,
@@ -292,9 +266,7 @@ class ProductImagePlaceholder extends StatelessWidget {
   final bool loading;
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Container(
       color: const Color(0xFFEAF7FB),
       alignment: Alignment.center,
@@ -302,16 +274,9 @@ class ProductImagePlaceholder extends StatelessWidget {
           ? const SizedBox(
               width: 20,
               height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-              ),
+              child: CircularProgressIndicator(strokeWidth: 2),
             )
-          : Text(
-              emoji,
-              style: const TextStyle(
-                fontSize: 44,
-              ),
-            ),
+          : Text(emoji, style: const TextStyle(fontSize: 44)),
     );
   }
 }

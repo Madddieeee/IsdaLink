@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
-class AdminOverviewCard
-    extends
-        StatelessWidget {
+class AdminOverviewCard extends StatelessWidget {
   const AdminOverviewCard({
     super.key,
     required this.usersCount,
@@ -17,28 +15,17 @@ class AdminOverviewCard
   final int ordersCount;
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(
-        16,
-      ),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(
-          24,
-        ),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: const [
           BoxShadow(
-            color: Color(
-              0x10000000,
-            ),
+            color: Color(0x10000000),
             blurRadius: 14,
-            offset: Offset(
-              0,
-              7,
-            ),
+            offset: Offset(0, 7),
           ),
         ],
       ),
@@ -71,9 +58,7 @@ class AdminOverviewCard
   }
 }
 
-class AdminOverviewRow
-    extends
-        StatelessWidget {
+class AdminOverviewRow extends StatelessWidget {
   const AdminOverviewRow({
     super.key,
     required this.icon,
@@ -88,30 +73,18 @@ class AdminOverviewRow
   final bool showDivider;
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Column(
       children: [
         Row(
           children: [
-            Icon(
-              icon,
-              color: const Color(
-                0xFF146BFF,
-              ),
-              size: 21,
-            ),
-            const SizedBox(
-              width: 10,
-            ),
+            Icon(icon, color: const Color(0xFF146BFF), size: 21),
+            const SizedBox(width: 10),
             Expanded(
               child: Text(
                 label,
                 style: const TextStyle(
-                  color: Color(
-                    0xFF52677A,
-                  ),
+                  color: Color(0xFF52677A),
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                 ),
@@ -120,19 +93,14 @@ class AdminOverviewRow
             Text(
               value,
               style: const TextStyle(
-                color: Color(
-                  0xFF102C44,
-                ),
+                color: Color(0xFF102C44),
                 fontSize: 15,
                 fontWeight: FontWeight.w900,
               ),
             ),
           ],
         ),
-        if (showDivider)
-          const Divider(
-            height: 22,
-          ),
+        if (showDivider) const Divider(height: 22),
       ],
     );
   }

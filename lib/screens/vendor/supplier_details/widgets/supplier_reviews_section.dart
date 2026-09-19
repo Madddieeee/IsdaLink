@@ -35,9 +35,7 @@ class _SupplierReviewsSectionState extends State<SupplierReviewsSection> {
         .snapshots();
   }
 
-  String vendorInitial(
-    String vendorName,
-  ) {
+  String vendorInitial(String vendorName) {
     final value = vendorName.trim();
 
     if (value.isEmpty) {
@@ -47,9 +45,7 @@ class _SupplierReviewsSectionState extends State<SupplierReviewsSection> {
     return value.substring(0, 1).toUpperCase();
   }
 
-  DateTime? dateValue(
-    dynamic value,
-  ) {
+  DateTime? dateValue(dynamic value) {
     if (value is Timestamp) {
       return value.toDate();
     }
@@ -65,9 +61,7 @@ class _SupplierReviewsSectionState extends State<SupplierReviewsSection> {
     return null;
   }
 
-  String formatDate(
-    DateTime? date,
-  ) {
+  String formatDate(DateTime? date) {
     if (date == null) {
       return '';
     }
@@ -90,24 +84,16 @@ class _SupplierReviewsSectionState extends State<SupplierReviewsSection> {
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
-  Widget ratingStars(
-    int rating, {
-    double size = 15,
-  }) {
+  Widget ratingStars(int rating, {double size = 15}) {
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: List.generate(
-        5,
-        (index) {
-          return Icon(
-            index < rating
-                ? Icons.star_rounded
-                : Icons.star_border_rounded,
-            color: const Color(0xFFFFB703),
-            size: size,
-          );
-        },
-      ),
+      children: List.generate(5, (index) {
+        return Icon(
+          index < rating ? Icons.star_rounded : Icons.star_border_rounded,
+          color: const Color(0xFFFFB703),
+          size: size,
+        );
+      }),
     );
   }
 
@@ -118,17 +104,11 @@ class _SupplierReviewsSectionState extends State<SupplierReviewsSection> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(23),
-        border: Border.all(
-          color: const Color(0xFFE0EEF5),
-        ),
+        border: Border.all(color: const Color(0xFFE0EEF5)),
       ),
       child: const Column(
         children: [
-          Icon(
-            Icons.reviews_outlined,
-            color: Color(0xFF87A5B8),
-            size: 38,
-          ),
+          Icon(Icons.reviews_outlined, color: Color(0xFF87A5B8), size: 38),
           SizedBox(height: 10),
           Text(
             'No store reviews yet',
@@ -153,9 +133,7 @@ class _SupplierReviewsSectionState extends State<SupplierReviewsSection> {
     );
   }
 
-  Widget reviewTile(
-    QueryDocumentSnapshot<Map<String, dynamic>> document,
-  ) {
+  Widget reviewTile(QueryDocumentSnapshot<Map<String, dynamic>> document) {
     final data = document.data();
 
     final vendorName = OrderHelpers.getStringValue(
@@ -170,11 +148,7 @@ class _SupplierReviewsSectionState extends State<SupplierReviewsSection> {
       'Fish Product',
     );
 
-    final comment = OrderHelpers.getStringValue(
-      data,
-      'comment',
-      '',
-    );
+    final comment = OrderHelpers.getStringValue(data, 'comment', '');
 
     final rating = OrderHelpers.getDoubleValue(
       data,
@@ -190,9 +164,7 @@ class _SupplierReviewsSectionState extends State<SupplierReviewsSection> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(21),
-        border: Border.all(
-          color: const Color(0xFFE0EEF5),
-        ),
+        border: Border.all(color: const Color(0xFFE0EEF5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -250,10 +222,7 @@ class _SupplierReviewsSectionState extends State<SupplierReviewsSection> {
           ),
           const SizedBox(height: 10),
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 9,
-              vertical: 6,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
             decoration: BoxDecoration(
               color: const Color(0xFFF0F6FA),
               borderRadius: BorderRadius.circular(10),
@@ -284,9 +253,7 @@ class _SupplierReviewsSectionState extends State<SupplierReviewsSection> {
     );
   }
 
-  int documentRating(
-    QueryDocumentSnapshot<Map<String, dynamic>> document,
-  ) {
+  int documentRating(QueryDocumentSnapshot<Map<String, dynamic>> document) {
     return OrderHelpers.getDoubleValue(
       document.data(),
       'rating',
@@ -296,13 +263,7 @@ class _SupplierReviewsSectionState extends State<SupplierReviewsSection> {
   Widget ratingFilterRow(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> sortedReviews,
   ) {
-    final counts = <int, int>{
-      5: 0,
-      4: 0,
-      3: 0,
-      2: 0,
-      1: 0,
-    };
+    final counts = <int, int>{5: 0, 4: 0, 3: 0, 2: 0, 1: 0};
 
     for (final document in sortedReviews) {
       final rating = documentRating(document);
@@ -329,14 +290,9 @@ class _SupplierReviewsSectionState extends State<SupplierReviewsSection> {
           borderRadius: BorderRadius.circular(13),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 160),
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 8,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: selected
-                  ? const Color(0xFF087AC0)
-                  : Colors.white,
+              color: selected ? const Color(0xFF087AC0) : Colors.white,
               borderRadius: BorderRadius.circular(13),
               border: Border.all(
                 color: selected
@@ -347,9 +303,7 @@ class _SupplierReviewsSectionState extends State<SupplierReviewsSection> {
             child: Text(
               label,
               style: TextStyle(
-                color: selected
-                    ? Colors.white
-                    : const Color(0xFF52677A),
+                color: selected ? Colors.white : const Color(0xFF52677A),
                 fontSize: 10.2,
                 fontWeight: FontWeight.w900,
               ),
@@ -365,7 +319,7 @@ class _SupplierReviewsSectionState extends State<SupplierReviewsSection> {
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
         itemCount: 1 + availableRatings.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 7),
+        separatorBuilder: (_, _) => const SizedBox(width: 7),
         itemBuilder: (context, index) {
           if (index == 0) {
             return filterChip(
@@ -401,28 +355,19 @@ class _SupplierReviewsSectionState extends State<SupplierReviewsSection> {
       return emptyReviews();
     }
 
-    final sortedReviews = OrderHelpers.sortDocuments(
-      documents,
-    );
+    final sortedReviews = OrderHelpers.sortDocuments(documents);
 
-    final totalRating = sortedReviews.fold<double>(
-      0,
-      (total, document) {
-        return total +
-            OrderHelpers.getDoubleValue(
-              document.data(),
-              'rating',
-            );
-      },
-    );
+    final totalRating = sortedReviews.fold<double>(0, (total, document) {
+      return total + OrderHelpers.getDoubleValue(document.data(), 'rating');
+    });
 
     final averageRating = totalRating / sortedReviews.length;
 
     final visibleReviews = selectedRating == null
         ? sortedReviews
-        : sortedReviews.where(
-            (document) => documentRating(document) == selectedRating,
-          ).toList();
+        : sortedReviews
+              .where((document) => documentRating(document) == selectedRating)
+              .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -433,9 +378,7 @@ class _SupplierReviewsSectionState extends State<SupplierReviewsSection> {
           decoration: BoxDecoration(
             color: const Color(0xFFF2F9FD),
             borderRadius: BorderRadius.circular(21),
-            border: Border.all(
-              color: const Color(0xFFDCECF4),
-            ),
+            border: Border.all(color: const Color(0xFFDCECF4)),
           ),
           child: Row(
             children: [
@@ -461,10 +404,7 @@ class _SupplierReviewsSectionState extends State<SupplierReviewsSection> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ratingStars(
-                      averageRating.round().clamp(1, 5),
-                      size: 18,
-                    ),
+                    ratingStars(averageRating.round().clamp(1, 5), size: 18),
                     const SizedBox(height: 5),
                     Text(
                       '${sortedReviews.length} verified review'
@@ -519,9 +459,7 @@ class _SupplierReviewsSectionState extends State<SupplierReviewsSection> {
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     final stream = reviewsStream;
 
     if (stream == null) {
@@ -537,9 +475,7 @@ class _SupplierReviewsSectionState extends State<SupplierReviewsSection> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(23),
-              border: Border.all(
-                color: const Color(0xFFFFD7D7),
-              ),
+              border: Border.all(color: const Color(0xFFFFD7D7)),
             ),
             child: const Text(
               'Unable to load store reviews right now.',
@@ -564,9 +500,7 @@ class _SupplierReviewsSectionState extends State<SupplierReviewsSection> {
           );
         }
 
-        return reviewsBody(
-          snapshot.data!.docs,
-        );
+        return reviewsBody(snapshot.data!.docs);
       },
     );
   }

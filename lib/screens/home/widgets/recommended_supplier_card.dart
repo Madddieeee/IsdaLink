@@ -250,7 +250,8 @@ class _RecommendedSupplierCardState extends State<RecommendedSupplierCard> {
                               ? Image.network(
                                   supplier.profileImageUrl,
                                   fit: BoxFit.cover,
-                                  errorBuilder: (_, error, stack) => _placeholder(),
+                                  errorBuilder: (_, error, stack) =>
+                                      _placeholder(),
                                 )
                               : _placeholder(),
                         ),
@@ -386,15 +387,15 @@ class _RecommendedSupplierCardState extends State<RecommendedSupplierCard> {
   }
 
   Widget _placeholder() => Container(
-        color: const Color(0xFFDDF2FE),
-        alignment: Alignment.center,
-        child: Text(
-          storeInitial,
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w900,
-            color: Color(0xFF007FB5),
-          ),
-        ),
-      );
+    color: const Color(0xFFDDF2FE),
+    alignment: Alignment.center,
+    child: Text(
+      storeInitial,
+      style: const TextStyle(
+        fontSize: 24,
+        fontWeight: FontWeight.w900,
+        color: Color(0xFF007FB5),
+      ),
+    ),
+  );
 }

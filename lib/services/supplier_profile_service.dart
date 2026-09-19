@@ -7,25 +7,17 @@ class SupplierProfileService {
 
   User? get currentUser => FirebaseAuth.instance.currentUser;
 
-  DocumentReference<Map<String, dynamic>> supplierProfileRef(
-    String uid,
-  ) {
-    return FirebaseFirestore.instance
-        .collection('supplierProfiles')
-        .doc(uid);
+  DocumentReference<Map<String, dynamic>> supplierProfileRef(String uid) {
+    return FirebaseFirestore.instance.collection('supplierProfiles').doc(uid);
   }
 
-  DocumentReference<Map<String, dynamic>> changeRequestRef(
-    String uid,
-  ) {
+  DocumentReference<Map<String, dynamic>> changeRequestRef(String uid) {
     return FirebaseFirestore.instance
         .collection('supplierChangeRequests')
         .doc(uid);
   }
 
-  Stream<DocumentSnapshot<Map<String, dynamic>>> profileStream(
-    String uid,
-  ) {
+  Stream<DocumentSnapshot<Map<String, dynamic>>> profileStream(String uid) {
     return supplierProfileRef(uid).snapshots();
   }
 
@@ -63,19 +55,16 @@ class SupplierProfileService {
     required String description,
     required List<String> supportedUnits,
   }) async {
-    await supplierProfileRef(uid).update(
-      <String, dynamic>{
-        'phone': contactNumber.trim(),
-        'contactNumber': contactNumber.trim(),
-        'primaryMarketArea': primaryMarketArea.trim(),
-        'serviceArea': primaryMarketArea.trim(),
-        'description': description.trim(),
-        'supportedUnits': supportedUnits,
-        'updatedAt': FieldValue.serverTimestamp(),
-      },
-    );
+    await supplierProfileRef(uid).update(<String, dynamic>{
+      'phone': contactNumber.trim(),
+      'contactNumber': contactNumber.trim(),
+      'primaryMarketArea': primaryMarketArea.trim(),
+      'serviceArea': primaryMarketArea.trim(),
+      'description': description.trim(),
+      'supportedUnits': supportedUnits,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
   }
-
 
   Future<void> updateStorefrontImage({
     required String uid,
@@ -154,43 +143,35 @@ class SupplierProfileService {
       'Caraga Region',
     ].where((part) => part.isNotEmpty).join(', ');
 
-    await changeRequestRef(uid).set(
-      <String, dynamic>{
-        'supplierId': uid,
-        'supplierName': supplierName.trim(),
-        'requestType': 'verified_business_change',
-        'status': 'pending',
-        'reason': reason.trim(),
-        'requestedStoreName': requestedStoreName.trim(),
-        'requestedStoreProvince': requestedStoreProvince.trim(),
-        'requestedStoreCityMunicipality':
-            requestedStoreCityMunicipality.trim(),
-        'requestedStoreAddress': requestedStoreAddress.trim(),
-        'requestedStoreLatitude': requestedStoreLatitude,
-        'requestedStoreLongitude': requestedStoreLongitude,
-        'requestedLocation': location,
-        'requestedBusinessPermitNumber':
-            requestedBusinessPermitNumber.trim(),
-        'requestedBusinessPermitUrl': requestedBusinessPermitUrl.trim(),
-        'requestedBusinessPermitStoragePath':
-            requestedBusinessPermitStoragePath.trim(),
-        'requestedStorePhotoUrl': requestedStorePhotoUrl.trim(),
-        'changedFields': changedFields,
-        'submittedAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      },
-    );
+    await changeRequestRef(uid).set(<String, dynamic>{
+      'supplierId': uid,
+      'supplierName': supplierName.trim(),
+      'requestType': 'verified_business_change',
+      'status': 'pending',
+      'reason': reason.trim(),
+      'requestedStoreName': requestedStoreName.trim(),
+      'requestedStoreProvince': requestedStoreProvince.trim(),
+      'requestedStoreCityMunicipality': requestedStoreCityMunicipality.trim(),
+      'requestedStoreAddress': requestedStoreAddress.trim(),
+      'requestedStoreLatitude': requestedStoreLatitude,
+      'requestedStoreLongitude': requestedStoreLongitude,
+      'requestedLocation': location,
+      'requestedBusinessPermitNumber': requestedBusinessPermitNumber.trim(),
+      'requestedBusinessPermitUrl': requestedBusinessPermitUrl.trim(),
+      'requestedBusinessPermitStoragePath': requestedBusinessPermitStoragePath
+          .trim(),
+      'requestedStorePhotoUrl': requestedStorePhotoUrl.trim(),
+      'changedFields': changedFields,
+      'submittedAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
   }
 
-  Future<void> withdrawVerifiedChangeRequest({
-    required String uid,
-  }) async {
-    await changeRequestRef(uid).update(
-      <String, dynamic>{
-        'status': 'withdrawn',
-        'withdrawnAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      },
-    );
+  Future<void> withdrawVerifiedChangeRequest({required String uid}) async {
+    await changeRequestRef(uid).update(<String, dynamic>{
+      'status': 'withdrawn',
+      'withdrawnAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
   }
 }

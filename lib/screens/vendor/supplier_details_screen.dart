@@ -18,9 +18,7 @@ import 'package:isdalink/services/supplier_profile_service.dart';
 import 'package:isdalink/services/supplier_details_service.dart';
 import 'package:isdalink/utils/app_error_message.dart';
 
-
-class _SupplierBusinessMapViewer
-    extends StatelessWidget {
+class _SupplierBusinessMapViewer extends StatelessWidget {
   const _SupplierBusinessMapViewer({
     required this.storeName,
     required this.locationLabel,
@@ -31,126 +29,68 @@ class _SupplierBusinessMapViewer
   final String locationLabel;
   final LatLng position;
 
-  static final LatLngBounds _caragaBounds =
-      LatLngBounds(
-    southwest: const LatLng(
-      7.55,
-      124.65,
-    ),
-    northeast: const LatLng(
-      10.75,
-      126.85,
-    ),
+  static final LatLngBounds _caragaBounds = LatLngBounds(
+    southwest: const LatLng(7.55, 124.65),
+    northeast: const LatLng(10.75, 126.85),
   );
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(
-        0xFFF4F8FB,
-      ),
+      backgroundColor: const Color(0xFFF4F8FB),
       body: SafeArea(
         child: Column(
           children: [
             Container(
               width: double.infinity,
-              padding:
-                  const EdgeInsets.fromLTRB(
-                15,
-                10,
-                15,
-                11,
-              ),
-              decoration:
-                  const BoxDecoration(
+              padding: const EdgeInsets.fromLTRB(15, 10, 15, 11),
+              decoration: const BoxDecoration(
                 color: Colors.white,
-                border: Border(
-                  bottom: BorderSide(
-                    color: Color(
-                      0xFFE1EBF2,
-                    ),
-                  ),
-                ),
+                border: Border(bottom: BorderSide(color: Color(0xFFE1EBF2))),
               ),
               child: Row(
                 children: [
                   Material(
-                    color: const Color(
-                      0xFFEAF3FF,
-                    ),
-                    borderRadius:
-                        BorderRadius.circular(
-                      14,
-                    ),
+                    color: const Color(0xFFEAF3FF),
+                    borderRadius: BorderRadius.circular(14),
                     child: InkWell(
-                      borderRadius:
-                          BorderRadius.circular(
-                        14,
-                      ),
-                      onTap: () =>
-                          Navigator.pop(
-                        context,
-                      ),
-                      child:
-                          const SizedBox(
+                      borderRadius: BorderRadius.circular(14),
+                      onTap: () => Navigator.pop(context),
+                      child: const SizedBox(
                         width: 42,
                         height: 42,
                         child: Icon(
-                          Icons
-                              .arrow_back_rounded,
-                          color: Color(
-                            0xFF146BFF,
-                          ),
+                          Icons.arrow_back_rounded,
+                          color: Color(0xFF146BFF),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(
-                    width: 11,
-                  ),
+                  const SizedBox(width: 11),
                   Expanded(
                     child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment
-                              .start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           '$storeName Location',
                           maxLines: 1,
-                          overflow:
-                              TextOverflow
-                                  .ellipsis,
-                          style:
-                              const TextStyle(
-                            color: Color(
-                              0xFF102C44,
-                            ),
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFF102C44),
                             fontSize: 16.2,
-                            fontWeight:
-                                FontWeight.w900,
+                            fontWeight: FontWeight.w900,
                           ),
                         ),
-                        if (locationLabel
-                            .isNotEmpty) ...[
-                          const SizedBox(
-                            height: 2,
-                          ),
+                        if (locationLabel.isNotEmpty) ...[
+                          const SizedBox(height: 2),
                           Text(
                             locationLabel,
                             maxLines: 1,
-                            overflow:
-                                TextOverflow
-                                    .ellipsis,
-                            style:
-                                const TextStyle(
-                              color: Color(
-                                0xFF7B8FA3,
-                              ),
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Color(0xFF7B8FA3),
                               fontSize: 9.4,
-                              fontWeight:
-                                  FontWeight.w600,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
@@ -164,63 +104,35 @@ class _SupplierBusinessMapViewer
               child: Stack(
                 children: [
                   GoogleMap(
-                    initialCameraPosition:
-                        CameraPosition(
+                    initialCameraPosition: CameraPosition(
                       target: position,
                       zoom: 16,
                     ),
-                    cameraTargetBounds:
-                        CameraTargetBounds(
-                      _caragaBounds,
-                    ),
-                    minMaxZoomPreference:
-                        const MinMaxZoomPreference(
-                      7.6,
-                      20,
-                    ),
+                    cameraTargetBounds: CameraTargetBounds(_caragaBounds),
+                    minMaxZoomPreference: const MinMaxZoomPreference(7.6, 20),
                     markers: {
                       Marker(
-                        markerId:
-                            const MarkerId(
-                          'supplier_business_location',
-                        ),
+                        markerId: const MarkerId('supplier_business_location'),
                         position: position,
                         draggable: false,
-                        infoWindow:
-                            InfoWindow(
-                          title:
-                              '$storeName Location',
-                          snippet:
-                              locationLabel
-                                      .isEmpty
-                                  ? null
-                                  : locationLabel,
+                        infoWindow: InfoWindow(
+                          title: '$storeName Location',
+                          snippet: locationLabel.isEmpty ? null : locationLabel,
                         ),
                       ),
                     },
-                    myLocationEnabled:
-                        false,
-                    myLocationButtonEnabled:
-                        false,
-                    zoomControlsEnabled:
-                        true,
+                    myLocationEnabled: false,
+                    myLocationButtonEnabled: false,
+                    zoomControlsEnabled: true,
                     compassEnabled: true,
-                    mapToolbarEnabled:
-                        false,
-                    rotateGesturesEnabled:
-                        true,
-                    scrollGesturesEnabled:
-                        true,
-                    zoomGesturesEnabled:
-                        true,
-                    tiltGesturesEnabled:
-                        true,
-                    trafficEnabled:
-                        false,
-                    indoorViewEnabled:
-                        false,
-                    buildingsEnabled:
-                        true,
+                    mapToolbarEnabled: false,
+                    rotateGesturesEnabled: true,
+                    scrollGesturesEnabled: true,
+                    zoomGesturesEnabled: true,
+                    tiltGesturesEnabled: true,
+                    trafficEnabled: false,
+                    indoorViewEnabled: false,
+                    buildingsEnabled: true,
                   ),
                   Positioned(
                     left: 14,
@@ -228,78 +140,36 @@ class _SupplierBusinessMapViewer
                     top: 14,
                     child: IgnorePointer(
                       child: Container(
-                        padding:
-                            const EdgeInsets
-                                .fromLTRB(
-                          11,
-                          9,
-                          11,
-                          9,
-                        ),
-                        decoration:
-                            BoxDecoration(
-                          color: Colors.white
-                              .withValues(
-                            alpha: 0.95,
-                          ),
-                          borderRadius:
-                              BorderRadius
-                                  .circular(
-                            16,
-                          ),
-                          border:
-                              Border.all(
-                            color:
-                                const Color(
-                              0xFFDCE8F1,
-                            ),
-                          ),
-                          boxShadow:
-                              const [
+                        padding: const EdgeInsets.fromLTRB(11, 9, 11, 9),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.95),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFDCE8F1)),
+                          boxShadow: const [
                             BoxShadow(
-                              color: Color(
-                                0x1800152A,
-                              ),
-                              blurRadius:
-                                  12,
-                              offset:
-                                  Offset(
-                                0,
-                                5,
-                              ),
+                              color: Color(0x1800152A),
+                              blurRadius: 12,
+                              offset: Offset(0, 5),
                             ),
                           ],
                         ),
-                        child:
-                            const Row(
+                        child: const Row(
                           children: [
                             Icon(
-                              Icons
-                                  .open_with_rounded,
-                              color: Color(
-                                0xFF146BFF,
-                              ),
+                              Icons.open_with_rounded,
+                              color: Color(0xFF146BFF),
                               size: 18,
                             ),
-                            SizedBox(
-                              width: 8,
-                            ),
+                            SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 'Drag and zoom the map to explore the area. '
                                 'The supplier business pin remains fixed.',
-                                style:
-                                    TextStyle(
-                                  color: Color(
-                                    0xFF52677A,
-                                  ),
-                                  fontSize:
-                                      9.2,
-                                  height:
-                                      1.3,
-                                  fontWeight:
-                                      FontWeight
-                                          .w700,
+                                style: TextStyle(
+                                  color: Color(0xFF52677A),
+                                  fontSize: 9.2,
+                                  height: 1.3,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ),
@@ -331,20 +201,17 @@ class SupplierDetailsScreen extends StatefulWidget {
   final bool isOwnerView;
 
   @override
-  State<SupplierDetailsScreen> createState() =>
-      _SupplierDetailsScreenState();
+  State<SupplierDetailsScreen> createState() => _SupplierDetailsScreenState();
 }
 
 class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
-  final SupplierDetailsService detailsService =
-      const SupplierDetailsService();
+  final SupplierDetailsService detailsService = const SupplierDetailsService();
   final FavoriteSupplierService favoriteService = FavoriteSupplierService();
   final ImagePicker imagePicker = ImagePicker();
   final CloudinaryUploadService uploadService = const CloudinaryUploadService();
   final SupplierProfileService profileService = const SupplierProfileService();
 
-  final TextEditingController searchController =
-      TextEditingController();
+  final TextEditingController searchController = TextEditingController();
   final ScrollController storeScrollController = ScrollController();
 
   late String storefrontProfileImageUrl;
@@ -395,14 +262,10 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
     final currentUid = FirebaseAuth.instance.currentUser?.uid;
     final storeUid = supplierId?.trim() ?? '';
 
-    return currentUid != null &&
-        storeUid.isNotEmpty &&
-        currentUid == storeUid;
+    return currentUid != null && storeUid.isNotEmpty && currentUid == storeUid;
   }
 
-  Future<void> toggleFavorite({
-    required bool currentlyFavorite,
-  }) async {
+  Future<void> toggleFavorite({required bool currentlyFavorite}) async {
     final storeUid = supplierId?.trim() ?? '';
 
     if (favoriteBusy || storeUid.isEmpty || ownerMode) {
@@ -463,17 +326,14 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
     }
   }
 
-  Widget supplierHeader(
-    SupplierDetailsStats stats,
-  ) {
+  Widget supplierHeader(SupplierDetailsStats stats) {
     final storeUid = supplierId?.trim() ?? '';
-    final canFavorite = FirebaseAuth.instance.currentUser != null &&
+    final canFavorite =
+        FirebaseAuth.instance.currentUser != null &&
         !ownerMode &&
         storeUid.isNotEmpty;
 
-    Widget buildHeader({
-      required bool isFavorite,
-    }) {
+    Widget buildHeader({required bool isFavorite}) {
       return SupplierDetailsHeader(
         supplier: supplier,
         stats: stats,
@@ -535,17 +395,12 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => _StorefrontImageViewer(
-          imageUrl: value,
-          title: title,
-        ),
+        builder: (_) => _StorefrontImageViewer(imageUrl: value, title: title),
       ),
     );
   }
 
-  Future<void> showStorefrontImageActions({
-    required bool isCover,
-  }) async {
+  Future<void> showStorefrontImageActions({required bool isCover}) async {
     if (!ownerMode || uploadingProfileImage || uploadingCoverImage) {
       return;
     }
@@ -649,9 +504,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
     }
   }
 
-  Future<void> pickAndUploadStorefrontImage({
-    required bool isCover,
-  }) async {
+  Future<void> pickAndUploadStorefrontImage({required bool isCover}) async {
     final uid = supplierId?.trim() ?? '';
     if (uid.isEmpty || FirebaseAuth.instance.currentUser?.uid != uid) {
       return;
@@ -678,7 +531,8 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
     try {
       final imageUrl = await uploadService.uploadImage(
         image,
-        folder: '${CloudinaryConfig.supplierStorefrontFolder}/$uid/${isCover ? 'cover' : 'profile'}',
+        folder:
+            '${CloudinaryConfig.supplierStorefrontFolder}/$uid/${isCover ? 'cover' : 'profile'}',
       );
 
       await profileService.updateStorefrontImage(
@@ -718,7 +572,8 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
             content: Text(
               AppErrorMessage.from(
                 error,
-                fallback: 'The storefront photo could not be updated. Please try again.',
+                fallback:
+                    'The storefront photo could not be updated. Please try again.',
                 allowBusinessMessage: true,
               ),
             ),
@@ -737,9 +592,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
     }
   }
 
-  Future<void> removeStorefrontImage({
-    required bool isCover,
-  }) async {
+  Future<void> removeStorefrontImage({required bool isCover}) async {
     final uid = supplierId?.trim() ?? '';
     if (uid.isEmpty || FirebaseAuth.instance.currentUser?.uid != uid) {
       return;
@@ -754,10 +607,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
     });
 
     try {
-      await profileService.removeStorefrontImage(
-        uid: uid,
-        isCover: isCover,
-      );
+      await profileService.removeStorefrontImage(uid: uid, isCover: isCover);
 
       if (!mounted) return;
       setState(() {
@@ -775,7 +625,8 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
           content: Text(
             AppErrorMessage.from(
               error,
-              fallback: 'The storefront photo could not be removed. Please try again.',
+              fallback:
+                  'The storefront photo could not be removed. Please try again.',
               allowBusinessMessage: true,
             ),
           ),
@@ -794,18 +645,13 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
     }
   }
 
-
-  double? mapCoordinate(
-    dynamic value,
-  ) {
+  double? mapCoordinate(dynamic value) {
     if (value is num) {
       return value.toDouble();
     }
 
     if (value is String) {
-      return double.tryParse(
-        value.trim(),
-      );
+      return double.tryParse(value.trim());
     }
 
     return null;
@@ -873,7 +719,6 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
     );
   }
 
-
   Widget storeSummaryMetric({
     required IconData icon,
     required String value,
@@ -897,11 +742,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
                     color: const Color(0xFFE8F7FD),
                     borderRadius: BorderRadius.circular(9),
                   ),
-                  child: Icon(
-                    icon,
-                    color: const Color(0xFF0A6094),
-                    size: 15,
-                  ),
+                  child: Icon(icon, color: const Color(0xFF0A6094), size: 15),
                 ),
                 const SizedBox(width: 5),
                 Flexible(
@@ -962,8 +803,18 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
     final createdAt = supplier.accountCreatedAt;
     final localCreatedAt = createdAt?.toLocal();
     const memberMonths = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     final memberValue = localCreatedAt == null
         ? '${stats.availableListings}'
@@ -989,24 +840,14 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
               value: '${stats.totalListings}',
               label: 'Fish Stocks',
             ),
-            Container(
-              width: 1,
-              height: 34,
-              color: const Color(0xFFDDEAF2),
-            ),
+            Container(width: 1, height: 34, color: const Color(0xFFDDEAF2)),
             storeSummaryMetric(
               icon: Icons.groups_2_outlined,
               value: memberValue,
               label: memberLabel,
             ),
-            Container(
-              width: 1,
-              height: 34,
-              color: const Color(0xFFDDEAF2),
-            ),
-            Expanded(
-              child: supplierBusinessLocationPreview(),
-            ),
+            Container(width: 1, height: 34, color: const Color(0xFFDDEAF2)),
+            Expanded(child: supplierBusinessLocationPreview()),
           ],
         ),
       ),
@@ -1025,16 +866,11 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
   void openManageProducts() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => const SupplierManageProductsScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const SupplierManageProductsScreen()),
     );
   }
 
-
-  void openProduct(
-    QueryDocumentSnapshot<Map<String, dynamic>> document,
-  ) {
+  void openProduct(QueryDocumentSnapshot<Map<String, dynamic>> document) {
     if (ownerMode) {
       openManageProducts();
       return;
@@ -1042,9 +878,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
 
     final data = document.data();
 
-    final product = detailsService.fishProductFromFirestore(
-      data,
-    );
+    final product = detailsService.fishProductFromFirestore(data);
 
     final stockSupplierId = detailsService.getStringValue(
       data,
@@ -1071,18 +905,8 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
       padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
       child: Row(
         children: [
-          Expanded(
-            child: storeTabButton(
-              label: 'Fish Stocks',
-              index: 0,
-            ),
-          ),
-          Expanded(
-            child: storeTabButton(
-              label: 'About',
-              index: 1,
-            ),
-          ),
+          Expanded(child: storeTabButton(label: 'Fish Stocks', index: 0)),
+          Expanded(child: storeTabButton(label: 'About', index: 1)),
           Expanded(
             child: storeTabButton(
               label: supplier.reviews > 0
@@ -1096,10 +920,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
     );
   }
 
-  Widget storeTabButton({
-    required String label,
-    required int index,
-  }) {
+  Widget storeTabButton({required String label, required int index}) {
     final selected = selectedTab == index;
 
     return InkWell(
@@ -1126,9 +947,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            color: selected
-                ? const Color(0xFF087AC0)
-                : const Color(0xFF45647C),
+            color: selected ? const Color(0xFF087AC0) : const Color(0xFF45647C),
             fontSize: 10.6,
             fontWeight: FontWeight.w900,
           ),
@@ -1137,9 +956,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
     );
   }
 
-  Widget storeControlsCard(
-    List<String> units,
-  ) {
+  Widget storeControlsCard(List<String> units) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(10, 2, 10, 5),
       child: Container(
@@ -1161,10 +978,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
             if (selectedTab == 0)
               Padding(
                 padding: const EdgeInsets.fromLTRB(7, 6, 7, 7),
-                child: searchAndFilterCard(
-                  units,
-                  embedded: true,
-                ),
+                child: searchAndFilterCard(units, embedded: true),
               ),
           ],
         ),
@@ -1263,8 +1077,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
                       return Material(
                         color: Colors.transparent,
                         child: InkWell(
-                          onTap: () =>
-                              Navigator.pop(sheetContext, option.$1),
+                          onTap: () => Navigator.pop(sheetContext, option.$1),
                           borderRadius: BorderRadius.circular(16),
                           child: Ink(
                             padding: const EdgeInsets.all(12),
@@ -1354,14 +1167,8 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
     });
   }
 
-  Widget searchAndFilterCard(
-    List<String> units, {
-    bool embedded = false,
-  }) {
-    final unitOptions = [
-      'all',
-      ...units,
-    ];
+  Widget searchAndFilterCard(List<String> units, {bool embedded = false}) {
+    final unitOptions = ['all', ...units];
 
     final effectiveSelectedUnit = unitOptions.contains(selectedUnit)
         ? selectedUnit
@@ -1376,9 +1183,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
           : BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: const Color(0xFFE0EEF5),
-              ),
+              border: Border.all(color: const Color(0xFFE0EEF5)),
               boxShadow: const [
                 BoxShadow(
                   color: Color(0x0E000000),
@@ -1392,85 +1197,79 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
           SizedBox(
             height: 40,
             child: TextField(
-            controller: searchController,
-            maxLines: 1,
-            textAlignVertical: TextAlignVertical.center,
-            cursorColor: const Color(0xFF087AC0),
-            cursorHeight: 18,
-            style: const TextStyle(
-              color: Color(0xFF102C44),
-              fontSize: 12,
-              height: 1.15,
-              fontWeight: FontWeight.w700,
-            ),
-            onChanged: (value) {
-              setState(
-                () {
-                  searchQuery = value;
-                },
-              );
-            },
-            textInputAction: TextInputAction.search,
-            decoration: InputDecoration(
-              hintText: 'Search fish in this store',
-              hintStyle: const TextStyle(
-                color: Color(0xFF9AAEBD),
+              controller: searchController,
+              maxLines: 1,
+              textAlignVertical: TextAlignVertical.center,
+              cursorColor: const Color(0xFF087AC0),
+              cursorHeight: 18,
+              style: const TextStyle(
+                color: Color(0xFF102C44),
                 fontSize: 12,
+                height: 1.15,
                 fontWeight: FontWeight.w700,
               ),
-              prefixIcon: const Icon(
-                Icons.search_rounded,
-                color: Color(0xFF6E90A6),
-                size: 20,
-              ),
-              prefixIconConstraints: const BoxConstraints(
-                minWidth: 40,
-                minHeight: 40,
-              ),
-              suffixIcon: searchQuery.trim().isEmpty
-                  ? null
-                  : IconButton(
-                      onPressed: () {
-                        searchController.clear();
-
-                        setState(
-                          () {
-                            searchQuery = '';
-                          },
-                        );
-                      },
-                      icon: const Icon(
-                        Icons.close_rounded,
-                        size: 19,
-                        color: Color(0xFF7B8FA3),
-                      ),
-                    ),
-              filled: true,
-              fillColor: const Color(0xFFF4F8FB),
-              isDense: true,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 8,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(15),
-                borderSide: BorderSide.none,
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(15),
-                borderSide: const BorderSide(
-                  color: Color(0xFFE1EEF6),
+              onChanged: (value) {
+                setState(() {
+                  searchQuery = value;
+                });
+              },
+              textInputAction: TextInputAction.search,
+              decoration: InputDecoration(
+                hintText: 'Search fish in this store',
+                hintStyle: const TextStyle(
+                  color: Color(0xFF9AAEBD),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
                 ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(15),
-                borderSide: const BorderSide(
-                  color: Color(0xFF16A9D1),
-                  width: 1.3,
+                prefixIcon: const Icon(
+                  Icons.search_rounded,
+                  color: Color(0xFF6E90A6),
+                  size: 20,
+                ),
+                prefixIconConstraints: const BoxConstraints(
+                  minWidth: 40,
+                  minHeight: 40,
+                ),
+                suffixIcon: searchQuery.trim().isEmpty
+                    ? null
+                    : IconButton(
+                        onPressed: () {
+                          searchController.clear();
+
+                          setState(() {
+                            searchQuery = '';
+                          });
+                        },
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          size: 19,
+                          color: Color(0xFF7B8FA3),
+                        ),
+                      ),
+                filled: true,
+                fillColor: const Color(0xFFF4F8FB),
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  borderSide: const BorderSide(color: Color(0xFFE1EEF6)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF16A9D1),
+                    width: 1.3,
+                  ),
                 ),
               ),
             ),
-          ),
           ),
           const SizedBox(height: 7),
           Row(
@@ -1481,8 +1280,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: unitOptions.length,
-                    separatorBuilder: (_, _) =>
-                        const SizedBox(width: 7),
+                    separatorBuilder: (_, _) => const SizedBox(width: 7),
                     itemBuilder: (context, index) {
                       final unit = unitOptions[index];
                       final selected = effectiveSelectedUnit == unit;
@@ -1490,17 +1288,14 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
                       return ChoiceChip(
                         selected: selected,
                         onSelected: (_) {
-                          setState(
-                            () {
-                              selectedUnit = unit;
-                            },
-                          );
+                          setState(() {
+                            selectedUnit = unit;
+                          });
                         },
                         label: Text(
                           unit == 'all'
                               ? 'All units'
-                              : unit[0].toUpperCase() +
-                                  unit.substring(1),
+                              : unit[0].toUpperCase() + unit.substring(1),
                         ),
                         labelStyle: TextStyle(
                           color: selected
@@ -1538,9 +1333,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
                     decoration: BoxDecoration(
                       color: const Color(0xFFE8F8FD),
                       borderRadius: BorderRadius.circular(11),
-                      border: Border.all(
-                        color: const Color(0xFFD5EEF7),
-                      ),
+                      border: Border.all(color: const Color(0xFFD5EEF7)),
                     ),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
@@ -1586,11 +1379,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
       'category',
       'Fresh Fish',
     );
-    final emoji = detailsService.getStringValue(
-      data,
-      'emoji',
-      '🐟',
-    );
+    final emoji = detailsService.getStringValue(data, 'emoji', '🐟');
     final imageUrl = detailsService.productImageUrl(data);
     final price = detailsService.getDoubleValue(data, 'price');
     final priceUnit = detailsService.getStringValue(
@@ -1604,10 +1393,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
       'quantityUnit',
       'kilo',
     );
-    final lowStockLevel = detailsService.getDoubleValue(
-      data,
-      'lowStockLevel',
-    );
+    final lowStockLevel = detailsService.getDoubleValue(data, 'lowStockLevel');
     final stockColor = detailsService.getStockColor(
       quantity: quantity,
       lowStockLevel: lowStockLevel,
@@ -1632,9 +1418,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
     );
   }
 
-  Widget productsHeading(
-    int count,
-  ) {
+  Widget productsHeading(int count) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 7, 14, 7),
       child: Column(
@@ -1653,10 +1437,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 9,
-                  vertical: 5,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                 decoration: BoxDecoration(
                   color: const Color(0xFFE8F8FD),
                   borderRadius: BorderRadius.circular(99),
@@ -1759,19 +1540,19 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
     );
   }
 
-  Widget compactStoreHeaderForState({
-    required bool isFavorite,
-  }) {
+  Widget compactStoreHeaderForState({required bool isFavorite}) {
     final topPadding = MediaQuery.paddingOf(context).top;
     final storeUid = supplierId?.trim() ?? '';
-    final canFavorite = FirebaseAuth.instance.currentUser != null &&
+    final canFavorite =
+        FirebaseAuth.instance.currentUser != null &&
         !ownerMode &&
         storeUid.isNotEmpty;
     final profileUrl = storefrontProfileImageUrl.trim();
     final hasProfile =
         profileUrl.startsWith('http://') || profileUrl.startsWith('https://');
-    final storeName =
-        supplier.name.trim().isEmpty ? 'Supplier' : supplier.name.trim();
+    final storeName = supplier.name.trim().isEmpty
+        ? 'Supplier'
+        : supplier.name.trim();
 
     Widget compactAction({
       required IconData icon,
@@ -1798,11 +1579,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
                         color: foreground,
                       ),
                     )
-                  : Icon(
-                      icon,
-                      color: foreground,
-                      size: 20,
-                    ),
+                  : Icon(icon, color: foreground, size: 20),
             ),
           ),
         ),
@@ -1822,10 +1599,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
           gradient: LinearGradient(
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
-            colors: [
-              Color(0xFF0A4F78),
-              Color(0xFF0873A9),
-            ],
+            colors: [Color(0xFF0A4F78), Color(0xFF0873A9)],
           ),
           boxShadow: [
             BoxShadow(
@@ -1845,9 +1619,9 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
             GestureDetector(
               onTap: hasProfile
                   ? () => openStorefrontImageViewer(
-                        imageUrl: profileUrl,
-                        title: '$storeName profile photo',
-                      )
+                      imageUrl: profileUrl,
+                      title: '$storeName profile photo',
+                    )
                   : null,
               child: Container(
                 width: 34,
@@ -1862,7 +1636,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
                       ? Image.network(
                           profileUrl,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
+                          errorBuilder: (_, _, _) => Container(
                             color: const Color(0xFFE8F8FD),
                             alignment: Alignment.center,
                             child: Text(
@@ -1928,13 +1702,9 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
                 icon: isFavorite
                     ? Icons.favorite_rounded
                     : Icons.favorite_border_rounded,
-                onTap: () => toggleFavorite(
-                  currentlyFavorite: isFavorite,
-                ),
+                onTap: () => toggleFavorite(currentlyFavorite: isFavorite),
                 busy: favoriteBusy,
-                foreground: isFavorite
-                    ? const Color(0xFFFFB3C6)
-                    : Colors.white,
+                foreground: isFavorite ? const Color(0xFFFFB3C6) : Colors.white,
               ),
           ],
         ),
@@ -1944,23 +1714,20 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
 
   Widget compactStickyStoreHeader() {
     final storeUid = supplierId?.trim() ?? '';
-    final canFavorite = FirebaseAuth.instance.currentUser != null &&
+    final canFavorite =
+        FirebaseAuth.instance.currentUser != null &&
         !ownerMode &&
         storeUid.isNotEmpty;
 
     if (!canFavorite) {
-      return compactStoreHeaderForState(
-        isFavorite: false,
-      );
+      return compactStoreHeaderForState(isFavorite: false);
     }
 
     return StreamBuilder<bool>(
       stream: favoriteService.isFavoriteStream(storeUid),
       initialData: false,
       builder: (context, snapshot) {
-        return compactStoreHeaderForState(
-          isFavorite: snapshot.data ?? false,
-        );
+        return compactStoreHeaderForState(isFavorite: snapshot.data ?? false);
       },
     );
   }
@@ -1988,18 +1755,18 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
     final width = MediaQuery.sizeOf(context).width;
     final columns = width < 330 ? 1 : 2;
 
-    final hasPublicCover = storefrontCoverImageUrl.trim().startsWith('http://') ||
+    final hasPublicCover =
+        storefrontCoverImageUrl.trim().startsWith('http://') ||
         storefrontCoverImageUrl.trim().startsWith('https://');
-    final heroHeight = MediaQuery.paddingOf(context).top +
-        (hasPublicCover ? 246.0 : 224.0);
+    final heroHeight =
+        MediaQuery.paddingOf(context).top + (hasPublicCover ? 246.0 : 224.0);
 
     return Stack(
       fit: StackFit.expand,
       children: [
         CustomScrollView(
           controller: storeScrollController,
-          keyboardDismissBehavior:
-              ScrollViewKeyboardDismissBehavior.onDrag,
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           physics: const ClampingScrollPhysics(),
           slivers: [
             // The large storefront identity is part of the normal scroll now.
@@ -2011,9 +1778,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
                 children: [
                   supplierHeader(stats),
                   Padding(
-                    padding: EdgeInsets.only(
-                      top: heroHeight - 20,
-                    ),
+                    padding: EdgeInsets.only(top: heroHeight - 20),
                     child: Container(
                       width: double.infinity,
                       decoration: const BoxDecoration(
@@ -2046,19 +1811,12 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
               SliverToBoxAdapter(
                 child: Container(
                   color: Colors.white,
-                  child: productsHeading(
-                    visibleProducts.length,
-                  ),
+                  child: productsHeading(visibleProducts.length),
                 ),
               ),
               if (orderable.isEmpty)
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(
-                    18,
-                    0,
-                    18,
-                    24,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(18, 0, 18, 24),
                   sliver: SliverToBoxAdapter(
                     child: SupplierDetailsEmptyCard(
                       title: 'No fish available right now',
@@ -2070,12 +1828,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
                 )
               else if (visibleProducts.isEmpty)
                 const SliverPadding(
-                  padding: EdgeInsets.fromLTRB(
-                    18,
-                    0,
-                    18,
-                    24,
-                  ),
+                  padding: EdgeInsets.fromLTRB(18, 0, 18, 24),
                   sliver: SliverToBoxAdapter(
                     child: SupplierDetailsEmptyCard(
                       title: 'No matching fish found',
@@ -2087,47 +1840,30 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
                 )
               else
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(
-                    12,
-                    0,
-                    12,
-                    22,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 22),
                   sliver: SliverGrid(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) =>
-                          productCardForDocument(
-                        visibleProducts[index],
-                      ),
+                          productCardForDocument(visibleProducts[index]),
                       childCount: visibleProducts.length,
                     ),
-                    gridDelegate:
-                        SliverGridDelegateWithFixedCrossAxisCount(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: columns,
                       crossAxisSpacing: 8,
                       mainAxisSpacing: 8,
-                      mainAxisExtent:
-                          columns == 1 ? 202 : 194,
+                      mainAxisExtent: columns == 1 ? 202 : 194,
                     ),
                   ),
                 ),
             ] else if (selectedTab == 1)
               SliverToBoxAdapter(
-                child: Container(
-                  color: Colors.white,
-                  child: aboutBody(),
-                ),
+                child: Container(color: Colors.white, child: aboutBody()),
               )
             else
               SliverToBoxAdapter(
-                child: Container(
-                  color: Colors.white,
-                  child: reviewsBody(),
-                ),
+                child: Container(color: Colors.white, child: reviewsBody()),
               ),
-            const SliverToBoxAdapter(
-              child: SizedBox(height: 24),
-            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
         ),
 
@@ -2157,9 +1893,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
   }
 
   Widget loadingBody() {
-    final stats = detailsService.calculateStats(
-      const [],
-    );
+    final stats = detailsService.calculateStats(const []);
 
     return Column(
       children: [
@@ -2180,15 +1914,12 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
     );
   }
 
-  Widget errorBody(
-    Object error,
-  ) {
-    final stats = detailsService.calculateStats(
-      const [],
-    );
+  Widget errorBody(Object error) {
+    final stats = detailsService.calculateStats(const []);
     final message = AppErrorMessage.from(
       error,
-      fallback: 'The supplier store could not be loaded right now. Please try again.',
+      fallback:
+          'The supplier store could not be loaded right now. Please try again.',
       allowBusinessMessage: true,
     );
 
@@ -2202,9 +1933,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
               storeControlsCard(const []),
               Padding(
                 padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
-                child: SupplierDetailsErrorCard(
-                  message: message,
-                ),
+                child: SupplierDetailsErrorCard(message: message),
               ),
             ],
           ),
@@ -2214,9 +1943,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -2245,12 +1972,8 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
   }
 }
 
-
 class _StorefrontImageViewer extends StatelessWidget {
-  const _StorefrontImageViewer({
-    required this.imageUrl,
-    required this.title,
-  });
+  const _StorefrontImageViewer({required this.imageUrl, required this.title});
 
   final String imageUrl;
   final String title;
@@ -2320,10 +2043,7 @@ class _StorefrontImageViewer extends StatelessWidget {
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
                           shadows: [
-                            Shadow(
-                              color: Colors.black54,
-                              blurRadius: 6,
-                            ),
+                            Shadow(color: Colors.black54, blurRadius: 6),
                           ],
                         ),
                       ),
@@ -2340,10 +2060,7 @@ class _StorefrontImageViewer extends StatelessWidget {
 }
 
 class _StoreMapSummaryButton extends StatelessWidget {
-  const _StoreMapSummaryButton({
-    this.enabled = false,
-    this.onTap,
-  });
+  const _StoreMapSummaryButton({this.enabled = false, this.onTap});
 
   final bool enabled;
   final VoidCallback? onTap;
@@ -2423,9 +2140,7 @@ class _StoreMapSummaryButton extends StatelessWidget {
 }
 
 class _StoreAboutCard extends StatelessWidget {
-  const _StoreAboutCard({
-    required this.children,
-  });
+  const _StoreAboutCard({required this.children});
 
   final List<Widget> children;
 
@@ -2480,11 +2195,7 @@ class _StoreAboutRow extends StatelessWidget {
                   color: const Color(0xFFEAF7FD),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  icon,
-                  color: const Color(0xFF087AC0),
-                  size: 18,
-                ),
+                child: Icon(icon, color: const Color(0xFF087AC0), size: 18),
               ),
               const SizedBox(width: 11),
               Expanded(
@@ -2515,20 +2226,16 @@ class _StoreAboutRow extends StatelessWidget {
             ],
           ),
         ),
-        if (showDivider)
-          const Divider(
-            height: 1,
-            color: Color(0xFFE8EFF4),
-          ),
+        if (showDivider) const Divider(height: 1, color: Color(0xFFE8EFF4)),
       ],
     );
   }
 }
 
+// Retained for the sticky-tab layout variant.
+// ignore: unused_element
 class _StoreTabsHeaderDelegate extends SliverPersistentHeaderDelegate {
-  const _StoreTabsHeaderDelegate({
-    required this.child,
-  });
+  const _StoreTabsHeaderDelegate({required this.child});
 
   final Widget child;
 
@@ -2567,18 +2274,15 @@ class _StoreTabsHeaderDelegate extends SliverPersistentHeaderDelegate {
   }
 }
 
+// Retained for supplier-owner preview mode.
+// ignore: unused_element
 class _OwnerPreviewBadge extends StatelessWidget {
   const _OwnerPreviewBadge();
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 7,
-        vertical: 4,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
       decoration: BoxDecoration(
         color: const Color(0xFFE1F5EC),
         borderRadius: BorderRadius.circular(99),
@@ -2595,4 +2299,3 @@ class _OwnerPreviewBadge extends StatelessWidget {
     );
   }
 }
-

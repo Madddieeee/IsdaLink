@@ -74,10 +74,7 @@ class PlaceOrderService {
         'available',
       ).toLowerCase();
 
-      final availableQuantity = OrderHelpers.getDoubleValue(
-        data,
-        'quantity',
-      );
+      final availableQuantity = OrderHelpers.getDoubleValue(data, 'quantity');
 
       return (status == 'available' || status == 'active') &&
           availableQuantity > 0;
@@ -90,9 +87,9 @@ class PlaceOrderService {
     }
 
     matchingDocuments.sort(
-      (a, b) => OrderHelpers.createdAtMillis(b).compareTo(
-        OrderHelpers.createdAtMillis(a),
-      ),
+      (a, b) => OrderHelpers.createdAtMillis(
+        b,
+      ).compareTo(OrderHelpers.createdAtMillis(a)),
     );
 
     return matchingDocuments.first.id;
@@ -128,8 +125,7 @@ class PlaceOrderService {
       );
     }
 
-    if (requestedSupplierId.isNotEmpty &&
-        requestedSupplierId == user.uid) {
+    if (requestedSupplierId.isNotEmpty && requestedSupplierId == user.uid) {
       throw Exception(
         'You cannot place an order from your own supplier store.',
       );
@@ -149,27 +145,31 @@ class PlaceOrderService {
 
     final userData = userDocument.data() ?? <String, dynamic>{};
 
-    final savedVendorName = firstNonEmpty(
-      userData,
-      const ['name', 'fullName', 'displayName'],
-      fallback: user.displayName ?? user.email ?? 'Vendor',
-    );
+    final savedVendorName = firstNonEmpty(userData, const [
+      'name',
+      'fullName',
+      'displayName',
+    ], fallback: user.displayName ?? user.email ?? 'Vendor');
 
-    final savedVendorPhone = firstNonEmpty(
-      userData,
-      const ['phone', 'contactNumber', 'mobileNumber'],
-    );
+    final savedVendorPhone = firstNonEmpty(userData, const [
+      'phone',
+      'contactNumber',
+      'mobileNumber',
+    ]);
 
-    final savedVendorAddress = firstNonEmpty(
-      userData,
-      const ['deliveryAddress', 'address', 'location', 'region'],
-      fallback: 'Caraga Region',
-    );
+    final savedVendorAddress = firstNonEmpty(userData, const [
+      'deliveryAddress',
+      'address',
+      'location',
+      'region',
+    ], fallback: 'Caraga Region');
 
-    final finalVendorName =
-        buyerName.trim().isNotEmpty ? buyerName.trim() : savedVendorName;
-    final finalVendorPhone =
-        buyerPhone.trim().isNotEmpty ? buyerPhone.trim() : savedVendorPhone;
+    final finalVendorName = buyerName.trim().isNotEmpty
+        ? buyerName.trim()
+        : savedVendorName;
+    final finalVendorPhone = buyerPhone.trim().isNotEmpty
+        ? buyerPhone.trim()
+        : savedVendorPhone;
     final finalVendorAddress = buyerAddress.trim().isNotEmpty
         ? buyerAddress.trim()
         : savedVendorAddress;
@@ -200,15 +200,10 @@ class PlaceOrderService {
 
       final stockData = stockSnapshot.data() ?? <String, dynamic>{};
 
-      final currentStock = OrderHelpers.getDoubleValue(
-        stockData,
-        'quantity',
-      );
+      final currentStock = OrderHelpers.getDoubleValue(stockData, 'quantity');
 
       if (!StockState.isMarketplaceOrderable(stockData)) {
-        throw Exception(
-          'This product is no longer available for ordering.',
-        );
+        throw Exception('This product is no longer available for ordering.');
       }
 
       if (quantity > currentStock) {
@@ -255,21 +250,15 @@ class PlaceOrderService {
         nextQuantity: remainingStock,
       );
 
-      transaction.update(
-        stockReference,
-        {
-          ...StockState.fieldsForQuantity(
-            stockData,
-            quantity: remainingStock,
-          ),
-          ...stockTransition.markerFields(),
-          // Links this exact stock deduction to the order created in the
-          // same Firestore transaction. Security Rules validate both writes
-          // together so another signed-in user cannot drain supplier stock.
-          'lastOrderId': orderReference.id,
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-      );
+      transaction.update(stockReference, {
+        ...StockState.fieldsForQuantity(stockData, quantity: remainingStock),
+        ...stockTransition.markerFields(),
+        // Links this exact stock deduction to the order created in the
+        // same Firestore transaction. Security Rules validate both writes
+        // together so another signed-in user cannot drain supplier stock.
+        'lastOrderId': orderReference.id,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
 
       stockNotificationService.createNotificationInTransaction(
         transaction: transaction,
@@ -283,68 +272,62 @@ class PlaceOrderService {
         sourceOrderId: orderReference.id,
       );
 
-      transaction.set(
-        orderReference,
-        {
-          'stockId': resolvedStockId,
-          'fishStockId': resolvedStockId,
-          'supplierId': realSupplierId,
-          'productName': product.name,
-          'productCategory': product.category,
-          'productEmoji': product.emoji,
-          'productImageUrl': product.imageUrl,
-          'imageUrl': product.imageUrl,
-          'productDescription': product.description,
-          'supplierName': realSupplierName,
-          'supplierLocation': realSupplierLocation,
-          'supplierContactNumber': realSupplierContact,
-          'vendorId': user.uid,
-          'vendorName': finalVendorName,
-          'vendorEmail': user.email ?? '',
-          'vendorPhone': finalVendorPhone,
-          'vendorAddress': finalVendorAddress,
-          'deliveryAddress': finalVendorAddress,
-          'deliveryLatitude': deliveryLatitude,
-          'deliveryLongitude': deliveryLongitude,
-          'deliveryProvince': deliveryProvince.trim(),
-          'deliveryCityMunicipality': deliveryCityMunicipality.trim(),
-          'deliveryReferenceType': 'map_pin',
-          'quantity': quantity,
-          'quantityUnit': product.quantityUnit,
-          'unitPrice': product.price,
-          'priceUnit': product.priceUnit,
-          'totalAmount': product.price * quantity,
-          'paymentMethod': 'COD',
-          'paymentStatus': 'To be paid on delivery',
-          'orderStatus': 'Pending',
-          'stockDeducted': true,
-          'stockRestored': false,
-          'newOrderNotificationId': newOrderNotificationReference.id,
-          'reservedQuantity': quantity,
-          'remainingStockAfterOrder': remainingStock,
-          'region': 'Caraga Region',
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-      );
+      transaction.set(orderReference, {
+        'stockId': resolvedStockId,
+        'fishStockId': resolvedStockId,
+        'supplierId': realSupplierId,
+        'productName': product.name,
+        'productCategory': product.category,
+        'productEmoji': product.emoji,
+        'productImageUrl': product.imageUrl,
+        'imageUrl': product.imageUrl,
+        'productDescription': product.description,
+        'supplierName': realSupplierName,
+        'supplierLocation': realSupplierLocation,
+        'supplierContactNumber': realSupplierContact,
+        'vendorId': user.uid,
+        'vendorName': finalVendorName,
+        'vendorEmail': user.email ?? '',
+        'vendorPhone': finalVendorPhone,
+        'vendorAddress': finalVendorAddress,
+        'deliveryAddress': finalVendorAddress,
+        'deliveryLatitude': deliveryLatitude,
+        'deliveryLongitude': deliveryLongitude,
+        'deliveryProvince': deliveryProvince.trim(),
+        'deliveryCityMunicipality': deliveryCityMunicipality.trim(),
+        'deliveryReferenceType': 'map_pin',
+        'quantity': quantity,
+        'quantityUnit': product.quantityUnit,
+        'unitPrice': product.price,
+        'priceUnit': product.priceUnit,
+        'totalAmount': product.price * quantity,
+        'paymentMethod': 'COD',
+        'paymentStatus': 'To be paid on delivery',
+        'orderStatus': 'Pending',
+        'stockDeducted': true,
+        'stockRestored': false,
+        'newOrderNotificationId': newOrderNotificationReference.id,
+        'reservedQuantity': quantity,
+        'remainingStockAfterOrder': remainingStock,
+        'region': 'Caraga Region',
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
 
       if (realSupplierId.isNotEmpty) {
-        transaction.set(
-          newOrderNotificationReference,
-          <String, dynamic>{
-            'notificationId': newOrderNotificationReference.id,
-            'userId': realSupplierId,
-            'supplierId': realSupplierId,
-            'orderId': orderReference.id,
-            'title': 'New COD Order',
-            'message':
-                'Order #$orderCode: $finalVendorName ordered ${OrderHelpers.formatNumber(quantity.toDouble())} ${product.quantityUnit} of ${product.name}.',
-            'type': 'new_order',
-            'status': 'Pending',
-            'isRead': false,
-            'createdAt': FieldValue.serverTimestamp(),
-          },
-        );
+        transaction.set(newOrderNotificationReference, <String, dynamic>{
+          'notificationId': newOrderNotificationReference.id,
+          'userId': realSupplierId,
+          'supplierId': realSupplierId,
+          'orderId': orderReference.id,
+          'title': 'New COD Order',
+          'message':
+              'Order #$orderCode: $finalVendorName ordered ${OrderHelpers.formatNumber(quantity.toDouble())} ${product.quantityUnit} of ${product.name}.',
+          'type': 'new_order',
+          'status': 'Pending',
+          'isRead': false,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
       }
     });
 

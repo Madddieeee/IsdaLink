@@ -129,10 +129,7 @@ class BrowseSuppliersEmptyBody extends StatelessWidget {
 }
 
 class BrowseSuppliersErrorBody extends StatelessWidget {
-  const BrowseSuppliersErrorBody({
-    super.key,
-    required this.error,
-  });
+  const BrowseSuppliersErrorBody({super.key, required this.error});
 
   final Object error;
 
@@ -169,7 +166,8 @@ class BrowseSuppliersErrorBody extends StatelessWidget {
               Text(
                 AppErrorMessage.from(
                   error,
-                  fallback: 'The supplier marketplace could not be loaded right now. Please try again.',
+                  fallback:
+                      'The supplier marketplace could not be loaded right now. Please try again.',
                 ),
                 textAlign: TextAlign.center,
                 style: const TextStyle(

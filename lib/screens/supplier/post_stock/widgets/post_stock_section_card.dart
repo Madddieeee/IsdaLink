@@ -19,16 +19,12 @@ class PostStockSectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(
-        bottom: 14,
-      ),
+      margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: const Color(0xFFE1EBF2),
-        ),
+        border: Border.all(color: const Color(0xFFE1EBF2)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x0E00152A),
@@ -49,18 +45,11 @@ class PostStockSectionCard extends StatelessWidget {
                   gradient: const LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [
-                      Color(0xFFE9F7FF),
-                      Color(0xFFDDF1FF),
-                    ],
+                    colors: [Color(0xFFE9F7FF), Color(0xFFDDF1FF)],
                   ),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(
-                  icon,
-                  color: const Color(0xFF146BFF),
-                  size: 21,
-                ),
+                child: Icon(icon, color: const Color(0xFF146BFF), size: 21),
               ),
               const SizedBox(width: 11),
               Expanded(

@@ -2,10 +2,7 @@ class SearchMatcher {
   const SearchMatcher._();
 
   static String normalize(String value) {
-    return value
-        .trim()
-        .toLowerCase()
-        .replaceAll(RegExp(r'\s+'), ' ');
+    return value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
   }
 
   static bool matches({
@@ -147,8 +144,8 @@ class SearchMatcher {
       for (var rightIndex = 1; rightIndex <= right.length; rightIndex++) {
         final substitutionCost =
             left.codeUnitAt(leftIndex - 1) == right.codeUnitAt(rightIndex - 1)
-                ? 0
-                : 1;
+            ? 0
+            : 1;
 
         final deletion = previous[rightIndex] + 1;
         final insertion = current[rightIndex - 1] + 1;

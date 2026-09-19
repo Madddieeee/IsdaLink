@@ -49,12 +49,8 @@ class Supplier {
       return 0;
     }
 
-    final expiresAt = createdAt.toUtc().add(
-          const Duration(days: 7),
-        );
-    final remaining = expiresAt.difference(
-      DateTime.now().toUtc(),
-    );
+    final expiresAt = createdAt.toUtc().add(const Duration(days: 7));
+    final remaining = expiresAt.difference(DateTime.now().toUtc());
 
     final days = (remaining.inMinutes / Duration.minutesPerDay).ceil();
 

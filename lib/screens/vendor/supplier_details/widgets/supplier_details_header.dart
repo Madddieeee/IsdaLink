@@ -121,11 +121,7 @@ class SupplierDetailsHeader extends StatelessWidget {
                       color: foreground,
                     ),
                   )
-                : Icon(
-                    icon,
-                    color: foreground,
-                    size: 21,
-                  ),
+                : Icon(icon, color: foreground, size: 21),
           ),
         ),
       ),
@@ -234,9 +230,7 @@ class SupplierDetailsHeader extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFF7FCFF),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFFD8EDF6),
-        ),
+        border: Border.all(color: const Color(0xFFD8EDF6)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x16002D46),
@@ -339,11 +333,7 @@ class SupplierDetailsHeader extends StatelessWidget {
                     color: const Color(0xFFE8F7FD),
                     borderRadius: BorderRadius.circular(9),
                   ),
-                  child: Icon(
-                    icon,
-                    color: const Color(0xFF0A6094),
-                    size: 15,
-                  ),
+                  child: Icon(icon, color: const Color(0xFF0A6094), size: 15),
                 ),
                 const SizedBox(width: 5),
                 Flexible(
@@ -382,7 +372,9 @@ class SupplierDetailsHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.paddingOf(context).top;
     final description = cleanDescription;
-    final storeName = supplier.name.trim().isEmpty ? 'Supplier' : supplier.name.trim();
+    final storeName = supplier.name.trim().isEmpty
+        ? 'Supplier'
+        : supplier.name.trim();
     final hasPublicCover = isNetworkImage(coverImageUrl);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -409,142 +401,141 @@ class SupplierDetailsHeader extends StatelessWidget {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: hasPublicCover ? onCoverImageTap : null,
-                  child: coverBackground(),
-                ),
-                const IgnorePointer(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Color(0x2C001A2C),
-                          Color(0x42001C31),
-                          Color(0xE500385B),
-                        ],
-                        stops: [0.0, 0.44, 1.0],
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: hasPublicCover ? onCoverImageTap : null,
+                        child: coverBackground(),
                       ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  left: 18,
-                  right: 18,
-                  top: topPadding + 12,
-                  child: Row(
-                    children: [
-                      circleAction(
-                        icon: Icons.arrow_back_rounded,
-                        onTap: onBack,
-                      ),
-                      const Spacer(),
-                      verifiedBadge(),
-                      const SizedBox(width: 8),
-                      if (isOwnerView)
-                        circleAction(
-                          icon: Icons.photo_camera_back_outlined,
-                          onTap: onEditCoverImage,
-                          busy: coverImageBusy,
-                        )
-                      else if (showFavoriteAction)
-                        circleAction(
-                          icon: isFavorite
-                              ? Icons.favorite_rounded
-                              : Icons.favorite_border_rounded,
-                          onTap: onFavoriteToggle,
-                          busy: favoriteBusy,
-                          foreground: isFavorite
-                              ? const Color(0xFFE94C72)
-                              : const Color(0xFF0A4E7E),
-                        ),
-                    ],
-                  ),
-                ),
-                Positioned(
-                  left: 20,
-                  right: 20,
-                  bottom: 38,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      profileImageWithOwnerControl(),
-                      const SizedBox(width: 13),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              storeName,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 20.5,
-                                height: 1.05,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -0.3,
-                              ),
+                      const IgnorePointer(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Color(0x2C001A2C),
+                                Color(0x42001C31),
+                                Color(0xE500385B),
+                              ],
+                              stops: [0.0, 0.44, 1.0],
                             ),
-                            const SizedBox(height: 6),
-                            ratingLine(),
-                            const SizedBox(height: 5),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Padding(
-                                  padding: EdgeInsets.only(top: 1),
-                                  child: Icon(
-                                    Icons.location_on_rounded,
-                                    color: Colors.white,
-                                    size: 17,
-                                  ),
-                                ),
-                                const SizedBox(width: 5),
-                                Expanded(
-                                  child: Text(
-                                    compactLocation.isEmpty
-                                        ? supplier.location
-                                        : compactLocation,
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        left: 18,
+                        right: 18,
+                        top: topPadding + 12,
+                        child: Row(
+                          children: [
+                            circleAction(
+                              icon: Icons.arrow_back_rounded,
+                              onTap: onBack,
+                            ),
+                            const Spacer(),
+                            verifiedBadge(),
+                            const SizedBox(width: 8),
+                            if (isOwnerView)
+                              circleAction(
+                                icon: Icons.photo_camera_back_outlined,
+                                onTap: onEditCoverImage,
+                                busy: coverImageBusy,
+                              )
+                            else if (showFavoriteAction)
+                              circleAction(
+                                icon: isFavorite
+                                    ? Icons.favorite_rounded
+                                    : Icons.favorite_border_rounded,
+                                onTap: onFavoriteToggle,
+                                busy: favoriteBusy,
+                                foreground: isFavorite
+                                    ? const Color(0xFFE94C72)
+                                    : const Color(0xFF0A4E7E),
+                              ),
+                          ],
+                        ),
+                      ),
+                      Positioned(
+                        left: 20,
+                        right: 20,
+                        bottom: 38,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            profileImageWithOwnerControl(),
+                            const SizedBox(width: 13),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    storeName,
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
                                       color: Colors.white,
-                                      fontSize: 10.2,
-                                      height: 1.25,
-                                      fontWeight: FontWeight.w700,
+                                      fontSize: 20.5,
+                                      height: 1.05,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: -0.3,
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            if (description.isNotEmpty) ...[
-                              const SizedBox(height: 6),
-                              Text(
-                                description,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Color(0xFFEAF6FC),
-                                  fontSize: 10.2,
-                                  height: 1.35,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                  const SizedBox(height: 6),
+                                  ratingLine(),
+                                  const SizedBox(height: 5),
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Padding(
+                                        padding: EdgeInsets.only(top: 1),
+                                        child: Icon(
+                                          Icons.location_on_rounded,
+                                          color: Colors.white,
+                                          size: 17,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Expanded(
+                                        child: Text(
+                                          compactLocation.isEmpty
+                                              ? supplier.location
+                                              : compactLocation,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10.2,
+                                            height: 1.25,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  if (description.isNotEmpty) ...[
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      description,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Color(0xFFEAF6FC),
+                                        fontSize: 10.2,
+                                        height: 1.35,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
-                            ],
+                            ),
                           ],
                         ),
                       ),
                     ],
                   ),
                 ),
-                    ],
-                  ),
-                ),
-
-
               ],
             ),
           );
@@ -555,10 +546,7 @@ class SupplierDetailsHeader extends StatelessWidget {
 }
 
 class StoreInitial extends StatelessWidget {
-  const StoreInitial({
-    super.key,
-    required this.initial,
-  });
+  const StoreInitial({super.key, required this.initial});
 
   final String initial;
 
@@ -569,10 +557,7 @@ class StoreInitial extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFEAF8FC),
-            Color(0xFFD6F0FA),
-          ],
+          colors: [Color(0xFFEAF8FC), Color(0xFFD6F0FA)],
         ),
       ),
       alignment: Alignment.center,
@@ -601,11 +586,7 @@ class _StorefrontFallback extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF0A4F78),
-            Color(0xFF0873A9),
-            Color(0xFF0B88B2),
-          ],
+          colors: [Color(0xFF0A4F78), Color(0xFF0873A9), Color(0xFF0B88B2)],
         ),
       ),
     );

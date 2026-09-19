@@ -29,9 +29,7 @@ class FishStockPreviewCard extends StatelessWidget {
   String get displayProductName {
     final value = productName.trim();
 
-    return value.isEmpty
-        ? 'Product name not set'
-        : value;
+    return value.isEmpty ? 'Product name not set' : value;
   }
 
   String? get validPrice {
@@ -59,9 +57,7 @@ class FishStockPreviewCard extends StatelessWidget {
   }
 
   String? get validAlertLevel {
-    final parsed = double.tryParse(
-      lowStockLevel.trim(),
-    );
+    final parsed = double.tryParse(lowStockLevel.trim());
 
     if (parsed == null || parsed <= 0) {
       return null;
@@ -73,27 +69,19 @@ class FishStockPreviewCard extends StatelessWidget {
   }
 
   bool get hasLocalImage => selectedImage != null;
-  bool get hasUploadedImage =>
-      uploadedImageUrl.trim().isNotEmpty;
+  bool get hasUploadedImage => uploadedImageUrl.trim().isNotEmpty;
   bool get hasImage => hasLocalImage || hasUploadedImage;
 
   Widget productVisual() {
     if (hasLocalImage) {
-      return Image.file(
-        File(selectedImage!.path),
-        fit: BoxFit.cover,
-      );
+      return Image.file(File(selectedImage!.path), fit: BoxFit.cover);
     }
 
     if (hasUploadedImage) {
       return Image.network(
         uploadedImageUrl,
         fit: BoxFit.cover,
-        errorBuilder: (
-          context,
-          error,
-          stackTrace,
-        ) {
+        errorBuilder: (context, error, stackTrace) {
           return const _PhotoPlaceholderVisual();
         },
       );
@@ -113,9 +101,7 @@ class FishStockPreviewCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: const Color(0xFFF2F7FB),
           borderRadius: BorderRadius.circular(21),
-          border: Border.all(
-            color: const Color(0xFFDDE8EF),
-          ),
+          border: Border.all(color: const Color(0xFFDDE8EF)),
         ),
         child: Column(
           children: [
@@ -135,14 +121,8 @@ class FishStockPreviewCard extends StatelessWidget {
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Color(0xB0001727),
-                          ],
-                          stops: [
-                            0.48,
-                            1.0,
-                          ],
+                          colors: [Colors.transparent, Color(0xB0001727)],
+                          stops: [0.48, 1.0],
                         ),
                       ),
                     ),
@@ -151,35 +131,30 @@ class FishStockPreviewCard extends StatelessWidget {
                       right: 13,
                       bottom: 12,
                       child: Row(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.end,
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Expanded(
                             child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   displayProductName,
                                   maxLines: 1,
-                                  overflow:
-                                      TextOverflow.ellipsis,
+                                  overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 15.5,
                                     fontWeight: FontWeight.w900,
-                                    fontStyle:
-                                        productName.trim().isEmpty
-                                            ? FontStyle.italic
-                                            : FontStyle.normal,
+                                    fontStyle: productName.trim().isEmpty
+                                        ? FontStyle.italic
+                                        : FontStyle.normal,
                                   ),
                                 ),
                                 const SizedBox(height: 3),
                                 Text(
                                   selectedCategory,
                                   maxLines: 1,
-                                  overflow:
-                                      TextOverflow.ellipsis,
+                                  overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
                                     color: Color(0xFFDDEFFA),
                                     fontSize: 9.8,
@@ -190,25 +165,21 @@ class FishStockPreviewCard extends StatelessWidget {
                             ),
                           ),
                           Container(
-                            constraints: const BoxConstraints(
-                              maxWidth: 112,
-                            ),
+                            constraints: const BoxConstraints(maxWidth: 112),
                             padding: const EdgeInsets.symmetric(
                               horizontal: 9,
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius:
-                                  BorderRadius.circular(99),
+                              borderRadius: BorderRadius.circular(99),
                             ),
                             child: Text(
                               validPrice == null
                                   ? 'Price not set'
                                   : '₱$validPrice',
                               maxLines: 1,
-                              overflow:
-                                  TextOverflow.ellipsis,
+                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 color: validPrice == null
                                     ? const Color(0xFF7B8FA3)
@@ -226,12 +197,7 @@ class FishStockPreviewCard extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(
-                13,
-                12,
-                13,
-                13,
-              ),
+              padding: const EdgeInsets.fromLTRB(13, 12, 13, 13),
               child: Row(
                 children: [
                   Expanded(
@@ -256,8 +222,7 @@ class FishStockPreviewCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: _PreviewMetric(
-                      icon:
-                          Icons.notifications_active_outlined,
+                      icon: Icons.notifications_active_outlined,
                       label: 'ALERT AT',
                       value: validAlertLevel == null
                           ? 'Alert pending'
@@ -286,10 +251,7 @@ class _PhotoPlaceholderVisual extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFE4F5FC),
-            Color(0xFFCDEAF6),
-          ],
+          colors: [Color(0xFFE4F5FC), Color(0xFFCDEAF6)],
         ),
       ),
       child: const Icon(
@@ -317,12 +279,7 @@ class _PreviewMetric extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(
-        7,
-        9,
-        7,
-        9,
-      ),
+      padding: const EdgeInsets.fromLTRB(7, 9, 7, 9),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -331,9 +288,7 @@ class _PreviewMetric extends StatelessWidget {
         children: [
           Icon(
             icon,
-            color: complete
-                ? const Color(0xFF146BFF)
-                : const Color(0xFF9AAEBC),
+            color: complete ? const Color(0xFF146BFF) : const Color(0xFF9AAEBC),
             size: 17,
           ),
           const SizedBox(height: 4),
