@@ -785,33 +785,27 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
     bool reviewSubmitted,
   ) {
     if (orderStatus.toLowerCase() == 'pending') {
-      return SizedBox(
-        width: double.infinity,
-        height: 38,
-        child: OutlinedButton.icon(
+      return Align(
+        alignment: Alignment.centerRight,
+        child: TextButton.icon(
           onPressed: widget.onCancelPendingOrder,
           icon: const Icon(
             Icons.cancel_outlined,
-            size: 15,
+            size: 14,
           ),
           label: const Text(
-            'Cancel Order',
+            'Cancel order',
             style: TextStyle(
-              fontSize: 10.8,
+              fontSize: 10.2,
               fontWeight: FontWeight.w900,
             ),
           ),
-          style: OutlinedButton.styleFrom(
+          style: TextButton.styleFrom(
             foregroundColor: const Color(0xFFD32F2F),
-            backgroundColor:
-                const Color(0xFFD32F2F).withAlpha(7),
-            side: const BorderSide(
-              color: Color(0x55D32F2F),
-              width: 1,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(13),
-            ),
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            minimumSize: const Size(0, 34),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
         ),
       );
@@ -942,15 +936,15 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
 
     return Container(
       margin: const EdgeInsets.only(
-        bottom: 11,
+        bottom: 12,
       ),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: widget.highlighted
               ? const Color(0xFF146BFF)
-              : const Color(0xFFE1ECF2),
+                  : const Color(0xFFDCE9F1),
           width: widget.highlighted ? 1.5 : 1,
         ),
         boxShadow: widget.highlighted
@@ -963,37 +957,37 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
               ]
             : const [
                 BoxShadow(
-                  color: Color(0x0D00152A),
-                  blurRadius: 13,
-                  offset: Offset(0, 6),
+                  color: Color(0x0B00152A),
+                  blurRadius: 14,
+                  offset: Offset(0, 5),
                 ),
               ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(21),
+        borderRadius: BorderRadius.circular(19),
         child: Column(
           children: [
             Container(
               padding: const EdgeInsets.fromLTRB(
+                14,
                 12,
+                14,
                 11,
-                12,
-                10,
               ),
-              color: color.withAlpha(9),
+              color: Colors.white,
               child: Row(
                 children: [
                   Container(
-                    width: 34,
-                    height: 34,
+                    width: 32,
+                    height: 32,
                     decoration: BoxDecoration(
                       color: color.withAlpha(18),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(11),
                     ),
                     child: Icon(
                       statusIcon(orderStatus),
                       color: color,
-                      size: 17,
+                      size: 16,
                     ),
                   ),
                   const SizedBox(width: 9),
@@ -1005,7 +999,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
                           orderId,
                           style: const TextStyle(
                             color: Color(0xFF102C44),
-                            fontSize: 12.4,
+                            fontSize: 12.8,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
@@ -1028,9 +1022,9 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                12,
+                14,
                 11,
-                12,
+                14,
                 12,
               ),
               child: Column(
@@ -1133,6 +1127,13 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
                   ],
                   const SizedBox(height: 10),
                   compactStatusBar(orderStatus),
+                  if (orderStatus.toLowerCase() == 'pending') ...[
+                    const SizedBox(height: 5),
+                    actionArea(
+                      orderStatus,
+                      reviewSubmitted,
+                    ),
+                  ],
                   AnimatedSize(
                     duration: const Duration(
                       milliseconds: 230,
@@ -1152,13 +1153,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
                                 ),
                                 const SizedBox(height: 9),
                                 compactProgress(orderStatus),
-                                if (orderStatus.toLowerCase() == 'pending') ...[
-                                  const SizedBox(height: 9),
-                                  actionArea(
-                                    orderStatus,
-                                    reviewSubmitted,
-                                  ),
-                                ] else if (isCompletedStatus(orderStatus) &&
+                                if (isCompletedStatus(orderStatus) &&
                                     !reviewSubmitted) ...[
                                   const SizedBox(height: 9),
                                   actionArea(

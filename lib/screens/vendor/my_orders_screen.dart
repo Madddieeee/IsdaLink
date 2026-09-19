@@ -62,26 +62,6 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     return value == 'pending' || value == 'accepted';
   }
 
-  int activeOrderCount(
-    List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
-  ) {
-    return documents.where(
-      (document) => isActiveStatus(
-        statusOf(document),
-      ),
-    ).length;
-  }
-
-  int completedOrderCount(
-    List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
-  ) {
-    return documents.where(
-      (document) => isCompletedStatus(
-        statusOf(document),
-      ),
-    ).length;
-  }
-
   List<QueryDocumentSnapshot<Map<String, dynamic>>> filteredOrders(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
   ) {
@@ -898,13 +878,13 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     );
 
     return Transform.translate(
-      offset: const Offset(0, -8),
+      offset: const Offset(0, -10),
       child: Container(
         margin: const EdgeInsets.fromLTRB(
-          5,
-          0,
-          5,
           7,
+          0,
+          7,
+          4,
         ),
         padding: const EdgeInsets.fromLTRB(
           11,
@@ -913,17 +893,10 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
           9,
         ),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-            colors: [
-              Color(0xFFEAF8F2),
-              Color(0xFFF1F8FF),
-            ],
-          ),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: const Color(0xFFCFE8DE),
+            color: const Color(0xFFDCE9F1),
           ),
         ),
         child: Row(
@@ -932,12 +905,12 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
               width: 37,
               height: 37,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: const Color(0xFFEAF6FD),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(
                 Icons.rate_review_outlined,
-                color: Color(0xFF147D64),
+                color: Color(0xFF0875D1),
                 size: 19,
               ),
             ),
@@ -1030,11 +1003,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
 
   Widget header({
     required BuildContext context,
-    required List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
   }) {
-    final active = activeOrderCount(documents);
-    final completed = completedOrderCount(documents);
-    final total = documents.length;
     final topPadding = MediaQuery.paddingOf(context).top;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -1043,120 +1012,176 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
         statusBarIconBrightness: Brightness.light,
         statusBarBrightness: Brightness.dark,
       ),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned.fill(
-            child: IgnorePointer(
-              child: CustomPaint(
-                painter: const _OrdersWaveTransitionPainter(),
+      child: SizedBox(
+        height: topPadding + 178,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+              Image.asset(
+                'assets/images/order_center_caraga_header.png',
+                fit: BoxFit.cover,
+                alignment: Alignment.center,
+                errorBuilder: (_, _, _) => const DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF06355F),
+                        Color(0xFF0875D1),
+                      ],
+                    ),
+                  ),
+                ),
               ),
-            ),
-          ),
-          ClipPath(
-            clipper: const _OrdersHeaderClipper(),
-            clipBehavior: Clip.hardEdge,
-            child: Container(
-              width: double.infinity,
-              padding: EdgeInsets.fromLTRB(
-                16,
-                topPadding + 8,
-                14,
-                33,
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0x5C001E38),
+                      Color(0xC900294A),
+                    ],
+                  ),
+                ),
               ),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF06355F),
-                    Color(0xFF0875D1),
-                    Color(0xFF12B6D6),
-                  ],
-                  stops: [
-                    0,
-                    0.57,
-                    1,
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  18,
+                  topPadding + 10,
+                  18,
+                  38,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        _HeaderActionButton(
+                          icon: Icons.arrow_back_rounded,
+                          tooltip: 'Back',
+                          onTap: () => Navigator.maybePop(context),
+                        ),
+                        const Spacer(),
+                        SizedBox(
+                          height: 40,
+                          child: Center(
+                            child: ColorFiltered(
+                              colorFilter: const ColorFilter.mode(
+                                Colors.white,
+                                BlendMode.srcIn,
+                              ),
+                              child: Image.asset(
+                                'assets/images/isdalink_logo.png',
+                                width: 92,
+                                height: 31,
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, _, _) =>
+                                    const SizedBox.shrink(),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+                    const Text(
+                      'MY ORDERS',
+                      style: TextStyle(
+                        color: Color(0xFFD7EEFA),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.8,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    const Text(
+                      'Order Center',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 29,
+                        height: 1,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.7,
+                        shadows: [
+                          Shadow(
+                            color: Color(0x6600182B),
+                            blurRadius: 10,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Track your Cash on Delivery orders.',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Color(0xFFF1FAFF),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ],
                 ),
               ),
-              child: Stack(
-                children: [
-                  const Positioned.fill(
-                    child: IgnorePointer(
-                      child: CustomPaint(
-                        painter: _OrdersHeaderBackdropPainter(),
-                      ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget orderCenterPage({
+    required List<Widget> children,
+  }) {
+    final headerHeight = MediaQuery.paddingOf(context).top + 178;
+    final minimumSheetHeight =
+        MediaQuery.sizeOf(context).height - headerHeight + 26;
+
+    return ListView(
+      padding: EdgeInsets.zero,
+      children: [
+        Stack(
+          children: [
+            header(
+              context: context,
+            ),
+            Padding(
+              padding: EdgeInsets.only(
+                top: headerHeight - 26,
+              ),
+              child: Container(
+                clipBehavior: Clip.antiAlias,
+                constraints: BoxConstraints(
+                  minHeight: minimumSheetHeight,
+                ),
+                padding: const EdgeInsets.only(
+                  top: 8,
+                  bottom: 28,
+                ),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF4F8FB),
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(32),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0x1900213D),
+                      blurRadius: 20,
+                      offset: Offset(0, -3),
                     ),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          _HeaderActionButton(
-                            icon: Icons.arrow_back_rounded,
-                            tooltip: 'Back',
-                            onTap: () => Navigator.pop(context),
-                          ),
-                          const SizedBox(width: 12),
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'MY ORDERS',
-                                  style: TextStyle(
-                                    color: Color(0xFFCBF4F7),
-                                    fontSize: 8.2,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 1.25,
-                                  ),
-                                ),
-                                SizedBox(height: 5),
-                                Text(
-                                  'Order Center',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 24,
-                                    height: 1,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: -0.25,
-                                  ),
-                                ),
-                                SizedBox(height: 5),
-                                Text(
-                                  'Track your Cash on Delivery orders.',
-                                  style: TextStyle(
-                                    color: Color(0xFFDDF5F7),
-                                    fontSize: 10.6,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          const _CodBadge(),
-                        ],
-                      ),
-                      const SizedBox(height: 18),
-                      _OrdersOverviewPanel(
-                        active: active,
-                        completed: completed,
-                        total: total,
-                        onActiveTap: () => selectFilter('Active'),
-                        onCompletedTap: () => selectFilter('Completed'),
-                        onTotalTap: () => selectFilter('All'),
-                      ),
-                    ],
-                  ),
-                ],
+                  ],
+                ),
+                child: Column(
+                  children: children,
+                ),
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -1173,43 +1198,11 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
       _ => '$selectedFilter Orders',
     };
 
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(21),
-        border: Border.all(
-          color: const Color(0xFFE0EDF4),
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0C00152A),
-            blurRadius: 12,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(2, 0, 2, 0),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Container(
-            width: 41,
-            height: 41,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [
-                  Color(0xFF0875D1),
-                  Color(0xFF12B6D6),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(
-              Icons.receipt_long_rounded,
-              color: Colors.white,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 11),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1218,24 +1211,33 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                   title,
                   style: const TextStyle(
                     color: Color(0xFF102C44),
-                    fontSize: 16,
+                    fontSize: 19.5,
+                    height: 1,
                     fontWeight: FontWeight.w900,
+                    letterSpacing: -0.25,
                   ),
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 4),
                 Text(
-                  '$visibleCount order${visibleCount == 1 ? '' : 's'} · '
-                  '${filterDescription()}',
-                  maxLines: 2,
+                  filterDescription(),
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Color(0xFF7B8FA3),
-                    fontSize: 10.2,
-                    height: 1.3,
+                    fontSize: 10.5,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            '$visibleCount result${visibleCount == 1 ? '' : 's'}',
+            style: const TextStyle(
+              color: Color(0xFF6E8293),
+              fontSize: 10.5,
+              fontWeight: FontWeight.w800,
             ),
           ),
         ],
@@ -1360,32 +1362,29 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
   }) {
     final orders = filteredOrders(documents);
 
-    return Column(
+    return orderCenterPage(
       children: [
-        header(
-          context: context,
-          documents: documents,
-        ),
         OrderFilterSelector(
           documents: documents,
           selectedFilter: selectedFilter,
           onFilterSelected: selectFilter,
         ),
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(
-              16,
-              11,
-              16,
-              28,
-            ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            16,
+            11,
+            16,
+            0,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               OrderNotificationPanel(
                 vendorId: vendorId,
                 service: orderService,
               ),
               listHeading(orders.length),
-              const SizedBox(height: 13),
+              const SizedBox(height: 11),
               if (orders.isEmpty)
                 emptyOrdersCard()
               else
@@ -1424,24 +1423,11 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
   }
 
   Widget loadingBody() {
-    return Column(
+    return orderCenterPage(
       children: [
-        header(
-          context: context,
-          documents: const [],
-        ),
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(
-              16,
-              18,
-              16,
-              28,
-            ),
-            children: [
-              loadingCard(),
-            ],
-          ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          child: loadingCard(),
         ),
       ],
     );
@@ -1450,24 +1436,11 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
   Widget errorBody(
     Object error,
   ) {
-    return Column(
+    return orderCenterPage(
       children: [
-        header(
-          context: context,
-          documents: const [],
-        ),
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(
-              16,
-              18,
-              16,
-              28,
-            ),
-            children: [
-              errorCard(error),
-            ],
-          ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          child: errorCard(error),
         ),
       ],
     );
@@ -1577,16 +1550,16 @@ class _HeaderActionButton extends StatelessWidget {
       message: tooltip,
       child: Material(
         color: Colors.white.withAlpha(25),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(13),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(13),
           splashColor: Colors.white.withAlpha(28),
           child: Container(
-            width: 43,
-            height: 43,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(13),
               border: Border.all(
                 color: Colors.white.withAlpha(38),
               ),
@@ -1594,7 +1567,7 @@ class _HeaderActionButton extends StatelessWidget {
             child: Icon(
               icon,
               color: Colors.white,
-              size: 22,
+              size: 21,
             ),
           ),
         ),
@@ -1860,198 +1833,5 @@ class _OverviewMetric extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _OrdersHeaderClipper extends CustomClipper<Path> {
-  const _OrdersHeaderClipper();
-
-  @override
-  Path getClip(
-    Size size,
-  ) {
-    return Path()
-      ..moveTo(0, 0)
-      ..lineTo(
-        0,
-        size.height - 31,
-      )
-      ..cubicTo(
-        size.width * 0.18,
-        size.height - 17,
-        size.width * 0.38,
-        size.height - 7,
-        size.width * 0.56,
-        size.height - 11,
-      )
-      ..cubicTo(
-        size.width * 0.72,
-        size.height - 15,
-        size.width * 0.87,
-        size.height - 31,
-        size.width + 8,
-        size.height - 33,
-      )
-      ..lineTo(
-        size.width + 8,
-        0,
-      )
-      ..close();
-  }
-
-  @override
-  bool shouldReclip(
-    covariant CustomClipper<Path> oldClipper,
-  ) {
-    return false;
-  }
-}
-
-class _OrdersWaveTransitionPainter extends CustomPainter {
-  const _OrdersWaveTransitionPainter();
-
-  Path wave(
-    Size size,
-  ) {
-    return Path()
-      ..moveTo(
-        -8,
-        size.height - 31,
-      )
-      ..cubicTo(
-        size.width * 0.18,
-        size.height - 17,
-        size.width * 0.38,
-        size.height - 7,
-        size.width * 0.56,
-        size.height - 11,
-      )
-      ..cubicTo(
-        size.width * 0.72,
-        size.height - 15,
-        size.width * 0.87,
-        size.height - 31,
-        size.width + 10,
-        size.height - 33,
-      );
-  }
-
-  @override
-  void paint(
-    Canvas canvas,
-    Size size,
-  ) {
-    final path = wave(size);
-
-    final shadow = Paint()
-      ..color = Colors.black.withAlpha(30)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 16
-      ..strokeCap = StrokeCap.round
-      ..maskFilter = const MaskFilter.blur(
-        BlurStyle.normal,
-        8,
-      );
-
-    final underglow = Paint()
-      ..shader = const LinearGradient(
-        colors: [
-          Color(0xFF0B76C8),
-          Color(0xFF16B8D5),
-          Color(0xFF77E6EB),
-        ],
-      ).createShader(
-        Rect.fromLTWH(
-          0,
-          size.height - 46,
-          size.width,
-          32,
-        ),
-      )
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 9
-      ..strokeCap = StrokeCap.round;
-
-    final foam = Paint()
-      ..color = Colors.white.withAlpha(98)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2
-      ..strokeCap = StrokeCap.round;
-
-    canvas
-      ..drawPath(path, shadow)
-      ..drawPath(path, underglow)
-      ..drawPath(path, foam);
-  }
-
-  @override
-  bool shouldRepaint(
-    covariant CustomPainter oldDelegate,
-  ) {
-    return false;
-  }
-}
-
-class _OrdersHeaderBackdropPainter extends CustomPainter {
-  const _OrdersHeaderBackdropPainter();
-
-  @override
-  void paint(
-    Canvas canvas,
-    Size size,
-  ) {
-    final glowCenter = Offset(
-      size.width * 0.86,
-      size.height * 0.25,
-    );
-
-    final glow = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          Colors.white.withAlpha(22),
-          Colors.white.withAlpha(0),
-        ],
-      ).createShader(
-        Rect.fromCircle(
-          center: glowCenter,
-          radius: size.width * 0.39,
-        ),
-      );
-
-    canvas.drawCircle(
-      glowCenter,
-      size.width * 0.39,
-      glow,
-    );
-
-    final ring = Paint()
-      ..color = Colors.white.withAlpha(10)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-
-    canvas
-      ..drawCircle(
-        Offset(
-          size.width * 0.94,
-          size.height * 0.38,
-        ),
-        size.width * 0.11,
-        ring,
-      )
-      ..drawCircle(
-        Offset(
-          size.width * 0.94,
-          size.height * 0.38,
-        ),
-        size.width * 0.19,
-        ring,
-      );
-  }
-
-  @override
-  bool shouldRepaint(
-    covariant CustomPainter oldDelegate,
-  ) {
-    return false;
   }
 }

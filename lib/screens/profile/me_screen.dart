@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:isdalink/config/cloudinary_config.dart';
-import 'package:isdalink/screens/analytics/analytics_screen.dart';
+import 'package:isdalink/screens/analytics/supplier_analytics_screen.dart';
 import 'package:isdalink/screens/profile/manage_profile_screen.dart';
 import 'package:isdalink/screens/profile/region_location_screen.dart';
 import 'package:isdalink/screens/supplier/post_fish_stock_screen.dart';
@@ -706,9 +706,10 @@ class _MeScreenState
         supplierStatus ==
         'rejected';
 
-    return Column(
+    return ListView(
+      padding: EdgeInsets.zero,
       children: [
-        _MeDashboardHeader(
+        _AccountCenterHeader(
           name: name,
           email: email,
           location: location,
@@ -738,16 +739,15 @@ class _MeScreenState
               );
             }
           },
-          onLogout: logout,
         ),
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(
-              16,
-              14,
-              16,
-              28,
-            ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            16,
+            10,
+            16,
+            28,
+          ),
+          child: Column(
             children: [
               if (uid.isNotEmpty)
                 _VendorOrdersOverviewCard(
@@ -776,9 +776,7 @@ class _MeScreenState
                     const SupplierCodOrdersScreen(),
                   ),
                   onAnalytics: () => openScreen(
-                    const AnalyticsScreen(
-                      mode: AnalyticsMode.supplier,
-                    ),
+                    const SupplierAnalyticsScreen(),
                   ),
                 ),
                 const SizedBox(
@@ -854,10 +852,8 @@ class _MeScreenState
   }
 }
 
-class _MeDashboardHeader
-    extends
-        StatelessWidget {
-  const _MeDashboardHeader({
+class _AccountCenterHeader extends StatelessWidget {
+  const _AccountCenterHeader({
     required this.name,
     required this.email,
     required this.location,
@@ -870,8 +866,10 @@ class _MeDashboardHeader
     required this.onProfilePhotoTap,
     required this.onManageProfile,
     required this.onSupplierCenter,
-    required this.onLogout,
   });
+
+  static const String _coverAsset =
+      'assets/images/order_center_caraga_header.png';
 
   final String name;
   final String email;
@@ -885,371 +883,354 @@ class _MeDashboardHeader
   final VoidCallback onProfilePhotoTap;
   final VoidCallback onManageProfile;
   final VoidCallback onSupplierCenter;
-  final VoidCallback onLogout;
 
   String get accountLabel {
-    if (isApprovedSupplier) {
-      return 'Approved Supplier';
-    }
+    if (isApprovedSupplier) return 'Approved Supplier';
+    if (isPendingSupplier) return 'Application Pending';
+    if (isRejectedSupplier) return 'Review Application';
+    return 'Become a Supplier';
+  }
 
-    if (isPendingSupplier) {
-      return 'Pending Review';
-    }
+  IconData get accountIcon {
+    if (isApprovedSupplier) return Icons.verified_rounded;
+    if (isPendingSupplier) return Icons.hourglass_top_rounded;
+    if (isRejectedSupplier) return Icons.info_outline_rounded;
+    return Icons.storefront_rounded;
+  }
 
-    if (isRejectedSupplier) {
-      return 'Application Rejected';
-    }
-
-    return 'Vendor Account';
+  Color get accountColor {
+    if (isPendingSupplier) return const Color(0xFFE76F12);
+    if (isRejectedSupplier) return const Color(0xFFC93636);
+    return const Color(0xFF087DD1);
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
-    final topPadding = MediaQuery.paddingOf(
-      context,
-    ).top;
+  Widget build(BuildContext context) {
+    final topPadding = MediaQuery.paddingOf(context).top;
+    // Match Order Center exactly so moving between both screens feels stable.
+    final coverHeight = topPadding + 178;
+    final panelHeight = isApprovedSupplier ? 150.0 : 214.0;
 
-    return AnnotatedRegion<
-      SystemUiOverlayStyle
-    >(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
-        statusBarColor: Color(
-          0xFF06355F,
-        ),
+        statusBarColor: Color(0xFF06355F),
         statusBarIconBrightness: Brightness.light,
         statusBarBrightness: Brightness.dark,
       ),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned.fill(
-            child: IgnorePointer(
-              child: CustomPaint(
-                painter: const _MeHeaderWavePainter(),
-              ),
-            ),
-          ),
-          ClipPath(
-            clipper: const _MeHeaderClipper(),
-            child: Container(
-              width: double.infinity,
-              padding: EdgeInsets.fromLTRB(
-                16,
-                topPadding +
-                    8,
-                16,
-                34,
-              ),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(
-                      0xFF06355F,
-                    ),
-                    Color(
-                      0xFF0875D1,
-                    ),
-                    Color(
-                      0xFF12B6D6,
-                    ),
-                  ],
-                  stops: [
-                    0,
-                    0.58,
-                    1,
-                  ],
-                ),
-              ),
+      child: SizedBox(
+        height: coverHeight + panelHeight - 26,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned(
+              left: 0,
+              top: 0,
+              right: 0,
+              height: coverHeight,
               child: Stack(
+                fit: StackFit.expand,
                 children: [
-                  const Positioned.fill(
-                    child: IgnorePointer(
-                      child: CustomPaint(
-                        painter: _MeHeaderBackdropPainter(),
+                  Image.asset(
+                    _coverAsset,
+                    fit: BoxFit.cover,
+                    alignment: Alignment.center,
+                    errorBuilder: (_, __, ___) => const DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFF075489), Color(0xFF079AC7)],
+                        ),
                       ),
                     ),
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          _HeaderCircleButton(
-                            icon: Icons.arrow_back_rounded,
-                            tooltip: 'Back',
-                            onTap: onBack,
-                          ),
-                          const SizedBox(
-                            width: 11,
-                          ),
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'MY ACCOUNT',
-                                  style: TextStyle(
-                                    color: Color(
-                                      0xFFCBF4F7,
-                                    ),
-                                    fontSize: 8.6,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 1.1,
-                                  ),
-                                ),
-                                SizedBox(
-                                  height: 4,
-                                ),
-                                Text(
-                                  'Account Center',
+                  const DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Color(0x5C001E38), Color(0xC900294A)],
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      18,
+                      topPadding + 10,
+                      18,
+                      38,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            _HeaderCircleButton(
+                              icon: Icons.arrow_back_rounded,
+                              onTap: onBack,
+                              tooltip: 'Back',
+                            ),
+                            const Spacer(),
+                            ColorFiltered(
+                              colorFilter: const ColorFilter.mode(
+                                Colors.white,
+                                BlendMode.srcIn,
+                              ),
+                              child: Image.asset(
+                                'assets/images/isdalink_logo.png',
+                                width: 92,
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, __, ___) => const Text(
+                                  'IsdaLink',
                                   style: TextStyle(
                                     color: Colors.white,
-                                    fontSize: 21,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          _HeaderCircleButton(
-                            icon: Icons.settings_rounded,
-                            tooltip: 'Account settings',
-                            onTap: onManageProfile,
-                          ),
-                          const SizedBox(
-                            width: 8,
-                          ),
-                          _HeaderCircleButton(
-                            icon: Icons.logout_rounded,
-                            tooltip: 'Logout',
-                            onTap: onLogout,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(
-                        height: 17,
-                      ),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(
-                          14,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(
-                            13,
-                          ),
-                          borderRadius: BorderRadius.circular(
-                            25,
-                          ),
-                          border: Border.all(
-                            color: Colors.white.withAlpha(
-                              20,
-                            ),
-                          ),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(
-                                0x17001226,
-                              ),
-                              blurRadius: 18,
-                              offset: Offset(
-                                0,
-                                9,
-                              ),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            Row(
-                              children: [
-                                _ProfileAvatar(
-                                  imageUrl: profileImageUrl,
-                                  isSupplier: isApprovedSupplier,
-                                  isUploading: isUploadingProfileImage,
-                                  onTap: onProfilePhotoTap,
-                                ),
-                                const SizedBox(
-                                  width: 14,
-                                ),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        name,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 22,
-                                          fontWeight: FontWeight.w900,
-                                          height: 1.05,
-                                        ),
-                                      ),
-                                      const SizedBox(
-                                        height: 5,
-                                      ),
-                                      Text(
-                                        email,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          color: Color(
-                                            0xFFDCEEF6,
-                                          ),
-                                          fontSize: 10.8,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      const SizedBox(
-                                        height: 9,
-                                      ),
-                                      Wrap(
-                                        spacing: 7,
-                                        runSpacing: 7,
-                                        children: [
-                                          _HeaderBadge(
-                                            icon: isApprovedSupplier
-                                                ? Icons.verified_rounded
-                                                : Icons.person_rounded,
-                                            label: accountLabel,
-                                            highlight: isApprovedSupplier,
-                                          ),
-                                          _HeaderBadge(
-                                            icon: Icons.location_on_rounded,
-                                            label: location,
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(
-                              height: 13,
-                            ),
-                            Material(
-                              color: Colors.white.withAlpha(
-                                20,
-                              ),
-                              borderRadius: BorderRadius.circular(
-                                16,
-                              ),
-                              child: InkWell(
-                                onTap: onSupplierCenter,
-                                borderRadius: BorderRadius.circular(
-                                  16,
-                                ),
-                                child: Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 10,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(
-                                      16,
-                                    ),
-                                    border: Border.all(
-                                      color: Colors.white.withAlpha(
-                                        23,
-                                      ),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 31,
-                                        height: 31,
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withAlpha(
-                                            24,
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            10,
-                                          ),
-                                        ),
-                                        child: Icon(
-                                          isApprovedSupplier
-                                              ? Icons.storefront_rounded
-                                              : isPendingSupplier
-                                              ? Icons.hourglass_top_rounded
-                                              : isRejectedSupplier
-                                              ? Icons.info_outline_rounded
-                                              : Icons.store_mall_directory,
-                                          color: Colors.white,
-                                          size: 17,
-                                        ),
-                                      ),
-                                      const SizedBox(
-                                        width: 9,
-                                      ),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              isApprovedSupplier
-                                                  ? 'Supplier Center'
-                                                  : isPendingSupplier
-                                                  ? 'Application Pending'
-                                                  : isRejectedSupplier
-                                                  ? 'Review Application'
-                                                  : 'Become a Supplier',
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 11.2,
-                                                fontWeight: FontWeight.w900,
-                                              ),
-                                            ),
-                                            const SizedBox(
-                                              height: 2,
-                                            ),
-                                            Text(
-                                              isApprovedSupplier
-                                                  ? 'Manage your supplier tools and sales.'
-                                                  : isPendingSupplier
-                                                  ? 'Your supplier application is under review.'
-                                                  : isRejectedSupplier
-                                                  ? 'Review the application details and submit again.'
-                                                  : 'Activate supplier tools in this account.',
-                                              style: const TextStyle(
-                                                color: Color(
-                                                  0xFFD6EDF4,
-                                                ),
-                                                fontSize: 8.9,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const Icon(
-                                        Icons.arrow_forward_rounded,
-                                        color: Colors.white,
-                                        size: 18,
-                                      ),
-                                    ],
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w800,
                                   ),
                                 ),
                               ),
                             ),
                           ],
                         ),
-                      ),
-                    ],
+                        const Spacer(),
+                        const Text(
+                          'MY ACCOUNT',
+                          style: TextStyle(
+                            color: Color(0xFFD7EEFA),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.8,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Account Center',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 29,
+                            height: 1,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.7,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
-          ),
-        ],
+            Positioned(
+              left: 0,
+              right: 0,
+              top: coverHeight - 26,
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(18, 22, 18, 16),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF4F8FB),
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(32),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0x1900213D),
+                      blurRadius: 20,
+                      offset: Offset(0, -3),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _ProfileAvatar(
+                          imageUrl: profileImageUrl,
+                          isSupplier: isApprovedSupplier,
+                          isUploading: isUploadingProfileImage,
+                          onTap: onProfilePhotoTap,
+                          size: 78,
+                        ),
+                        const SizedBox(width: 13),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      name,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Color(0xFF062A49),
+                                        fontSize: 18,
+                                        height: 1.08,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  SizedBox(
+                                    height: 30,
+                                    child: OutlinedButton.icon(
+                                      onPressed: onManageProfile,
+                                      icon: const Icon(
+                                        Icons.edit_outlined,
+                                        size: 14,
+                                      ),
+                                      label: const Text('Edit'),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: const Color(0xFF087DD1),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 9,
+                                        ),
+                                        textStyle: const TextStyle(
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                        side: const BorderSide(
+                                          color: Color(0xFF87C6EA),
+                                        ),
+                                        shape: const StadiumBorder(),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                email,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Color(0xFF6D8497),
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 7),
+                              Wrap(
+                                spacing: 7,
+                                runSpacing: 5,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: accountColor.withAlpha(18),
+                                      borderRadius: BorderRadius.circular(99),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          accountIcon,
+                                          color: accountColor,
+                                          size: 13,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          accountLabel,
+                                          style: TextStyle(
+                                            color: accountColor,
+                                            fontSize: 9.5,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.location_on_rounded,
+                                        color: Color(0xFF70899D),
+                                        size: 14,
+                                      ),
+                                      const SizedBox(width: 3),
+                                      ConstrainedBox(
+                                        constraints: const BoxConstraints(
+                                          maxWidth: 155,
+                                        ),
+                                        child: Text(
+                                          location,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            color: Color(0xFF70899D),
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (!isApprovedSupplier) ...[
+                      const SizedBox(height: 12),
+                      Material(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        child: InkWell(
+                          onTap: onSupplierCenter,
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: const Color(0xFFD8E8F1),
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  accountIcon,
+                                  color: accountColor,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 9),
+                                Expanded(
+                                  child: Text(
+                                    accountLabel,
+                                    style: const TextStyle(
+                                      color: Color(0xFF0A2D4B),
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.arrow_forward_rounded,
+                                  color: Color(0xFF087DD1),
+                                  size: 18,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1344,9 +1325,8 @@ class _VendorOrdersOverviewCard
 
             return _SectionCard(
               title: 'My Orders',
-              subtitle: 'Your Cash on Delivery order activity.',
               icon: Icons.receipt_long_rounded,
-              actionLabel: 'View My Orders',
+              actionLabel: 'View Orders',
               onActionTap: onOpenOrders,
               child: Container(
                 padding: const EdgeInsets.symmetric(
@@ -1534,10 +1514,9 @@ class _SupplierCenterCard
                     ).length;
 
                     return _SectionCard(
-                      title: 'Supplier Center',
-                      subtitle: 'Manage stock, COD orders, and supplier analytics.',
+                      title: 'Supplier Tools',
                       icon: Icons.storefront_rounded,
-                      actionLabel: 'Open Dashboard',
+                      actionLabel: 'Dashboard',
                       onActionTap: onOpenDashboard,
                       child: Column(
                         children: [
@@ -1596,34 +1575,14 @@ class _SupplierCenterCard
                                         width: 10,
                                       ),
                                       Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              '$pending pending COD order'
-                                              '${pending == 1 ? '' : 's'}',
-                                              style: const TextStyle(
-                                                color: Color(
-                                                  0xFF102C44,
-                                                ),
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w900,
-                                              ),
-                                            ),
-                                            const SizedBox(
-                                              height: 3,
-                                            ),
-                                            const Text(
-                                              'Review and respond to new orders.',
-                                              style: TextStyle(
-                                                color: Color(
-                                                  0xFF7B8FA3,
-                                                ),
-                                                fontSize: 9.4,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ],
+                                        child: Text(
+                                          '$pending pending COD order'
+                                          '${pending == 1 ? '' : 's'}',
+                                          style: const TextStyle(
+                                            color: Color(0xFF102C44),
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w900,
+                                          ),
                                         ),
                                       ),
                                       const Icon(
@@ -1744,32 +1703,27 @@ class _AccountSettingsCard
   ) {
     return _SectionCard(
       title: 'Account Settings',
-      subtitle: 'Manage your account and app preferences.',
       icon: Icons.manage_accounts_outlined,
       child: Column(
         children: [
           _SettingsTile(
             icon: Icons.person_outline_rounded,
             title: 'Account Information',
-            subtitle: 'Update profile and contact details',
             onTap: onAccountInformation,
           ),
           _SettingsTile(
             icon: Icons.location_on_outlined,
             title: 'Region and Location',
-            subtitle: 'Manage market and service area',
             onTap: onRegionAndLocation,
           ),
           _SettingsTile(
             icon: Icons.help_outline_rounded,
             title: 'Help and Support',
-            subtitle: 'Learn how to use IsdaLink',
             onTap: onHelp,
           ),
           _SettingsTile(
             icon: Icons.logout_rounded,
             title: 'Logout',
-            subtitle: 'Return to the welcome screen',
             color: const Color(
               0xFFD32F2F,
             ),
@@ -1787,15 +1741,15 @@ class _SectionCard
         StatelessWidget {
   const _SectionCard({
     required this.title,
-    required this.subtitle,
     required this.icon,
     required this.child,
+    this.subtitle,
     this.actionLabel,
     this.onActionTap,
   });
 
   final String title;
-  final String subtitle;
+  final String? subtitle;
   final IconData icon;
   final Widget child;
   final String? actionLabel;
@@ -1873,22 +1827,20 @@ class _SectionCard
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(
-                      height: 3,
-                    ),
-                    Text(
-                      subtitle,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(
-                          0xFF7B8FA3,
+                    if (subtitle?.trim().isNotEmpty == true) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        subtitle!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFF7B8FA3),
+                          fontSize: 9.8,
+                          height: 1.25,
+                          fontWeight: FontWeight.w600,
                         ),
-                        fontSize: 9.8,
-                        height: 1.25,
-                        fontWeight: FontWeight.w600,
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
@@ -2150,8 +2102,8 @@ class _SettingsTile
   const _SettingsTile({
     required this.icon,
     required this.title,
-    required this.subtitle,
     required this.onTap,
+    this.subtitle,
     this.color = const Color(
       0xFF0875D1,
     ),
@@ -2160,7 +2112,7 @@ class _SettingsTile
 
   final IconData icon;
   final String title;
-  final String subtitle;
+  final String? subtitle;
   final VoidCallback onTap;
   final Color color;
   final bool showDivider;
@@ -2227,19 +2179,17 @@ class _SettingsTile
                             fontWeight: FontWeight.w900,
                           ),
                         ),
-                        const SizedBox(
-                          height: 3,
-                        ),
-                        Text(
-                          subtitle,
-                          style: const TextStyle(
-                            color: Color(
-                              0xFF7B8FA3,
+                        if (subtitle?.trim().isNotEmpty == true) ...[
+                          const SizedBox(height: 3),
+                          Text(
+                            subtitle!,
+                            style: const TextStyle(
+                              color: Color(0xFF7B8FA3),
+                              fontSize: 9.2,
+                              fontWeight: FontWeight.w600,
                             ),
-                            fontSize: 9.2,
-                            fontWeight: FontWeight.w600,
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   ),
@@ -2475,91 +2425,6 @@ class _HeaderCircleButton
   }
 }
 
-class _HeaderBadge
-    extends
-        StatelessWidget {
-  const _HeaderBadge({
-    required this.icon,
-    required this.label,
-    this.highlight = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool highlight;
-
-  @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 9,
-        vertical: 6,
-      ),
-      decoration: BoxDecoration(
-        color: highlight
-            ? const Color(
-                0xFFFFC857,
-              ).withAlpha(
-                36,
-              )
-            : Colors.white.withAlpha(
-                20,
-              ),
-        borderRadius: BorderRadius.circular(
-          99,
-        ),
-        border: Border.all(
-          color: highlight
-              ? const Color(
-                  0xFFFFD978,
-                ).withAlpha(
-                  55,
-                )
-              : Colors.white.withAlpha(
-                  26,
-                ),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            color: highlight
-                ? const Color(
-                    0xFFFFD66B,
-                  )
-                : const Color(
-                    0xFFEAF8FC,
-                  ),
-            size: 12,
-          ),
-          const SizedBox(
-            width: 5,
-          ),
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: 140,
-            ),
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 9.2,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _ProfilePhotoAction
     extends
         StatelessWidget {
@@ -2688,283 +2553,5 @@ class _MeLoadingBody
         ),
       ),
     );
-  }
-}
-
-class _MeHeaderClipper
-    extends
-        CustomClipper<
-          Path
-        > {
-  const _MeHeaderClipper();
-
-  @override
-  Path getClip(
-    Size size,
-  ) {
-    return Path()
-      ..moveTo(
-        0,
-        0,
-      )
-      ..lineTo(
-        0,
-        size.height -
-            31,
-      )
-      ..cubicTo(
-        size.width *
-            0.18,
-        size.height -
-            16,
-        size.width *
-            0.38,
-        size.height -
-            7,
-        size.width *
-            0.57,
-        size.height -
-            11,
-      )
-      ..cubicTo(
-        size.width *
-            0.74,
-        size.height -
-            15,
-        size.width *
-            0.88,
-        size.height -
-            29,
-        size.width +
-            8,
-        size.height -
-            32,
-      )
-      ..lineTo(
-        size.width +
-            8,
-        0,
-      )
-      ..close();
-  }
-
-  @override
-  bool shouldReclip(
-    covariant CustomClipper<
-      Path
-    >
-    oldClipper,
-  ) {
-    return false;
-  }
-}
-
-class _MeHeaderWavePainter
-    extends
-        CustomPainter {
-  const _MeHeaderWavePainter();
-
-  @override
-  void paint(
-    Canvas canvas,
-    Size size,
-  ) {
-    final path = Path()
-      ..moveTo(
-        -8,
-        size.height -
-            31,
-      )
-      ..cubicTo(
-        size.width *
-            0.18,
-        size.height -
-            16,
-        size.width *
-            0.38,
-        size.height -
-            7,
-        size.width *
-            0.57,
-        size.height -
-            11,
-      )
-      ..cubicTo(
-        size.width *
-            0.74,
-        size.height -
-            15,
-        size.width *
-            0.88,
-        size.height -
-            29,
-        size.width +
-            10,
-        size.height -
-            32,
-      );
-
-    final shadow = Paint()
-      ..color = Colors.black.withAlpha(
-        27,
-      )
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 14
-      ..strokeCap = StrokeCap.round
-      ..maskFilter = const MaskFilter.blur(
-        BlurStyle.normal,
-        7,
-      );
-
-    final accent = Paint()
-      ..shader =
-          const LinearGradient(
-            colors: [
-              Color(
-                0xFF0A75C8,
-              ),
-              Color(
-                0xFF18BDD8,
-              ),
-              Color(
-                0xFF7BE9ED,
-              ),
-            ],
-          ).createShader(
-            Rect.fromLTWH(
-              0,
-              size.height -
-                  45,
-              size.width,
-              32,
-            ),
-          )
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 8
-      ..strokeCap = StrokeCap.round;
-
-    final foam = Paint()
-      ..color = Colors.white.withAlpha(
-        95,
-      )
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2
-      ..strokeCap = StrokeCap.round;
-
-    canvas
-      ..drawPath(
-        path,
-        shadow,
-      )
-      ..drawPath(
-        path,
-        accent,
-      )
-      ..drawPath(
-        path,
-        foam,
-      );
-  }
-
-  @override
-  bool shouldRepaint(
-    covariant CustomPainter oldDelegate,
-  ) {
-    return false;
-  }
-}
-
-class _MeHeaderBackdropPainter
-    extends
-        CustomPainter {
-  const _MeHeaderBackdropPainter();
-
-  @override
-  void paint(
-    Canvas canvas,
-    Size size,
-  ) {
-    final glowCenter = Offset(
-      size.width *
-          0.86,
-      size.height *
-          0.25,
-    );
-
-    final glow = Paint()
-      ..shader =
-          RadialGradient(
-            colors: [
-              Colors.white.withAlpha(
-                22,
-              ),
-              Colors.white.withAlpha(
-                0,
-              ),
-            ],
-          ).createShader(
-            Rect.fromCircle(
-              center: glowCenter,
-              radius:
-                  size.width *
-                  0.4,
-            ),
-          );
-
-    canvas.drawCircle(
-      glowCenter,
-      size.width *
-          0.4,
-      glow,
-    );
-
-    final ring = Paint()
-      ..color = Colors.white.withAlpha(
-        10,
-      )
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-
-    canvas
-      ..drawCircle(
-        Offset(
-          size.width *
-              0.94,
-          size.height *
-              0.34,
-        ),
-        size.width *
-            0.11,
-        ring,
-      )
-      ..drawCircle(
-        Offset(
-          size.width *
-              0.94,
-          size.height *
-              0.34,
-        ),
-        size.width *
-            0.2,
-        ring,
-      )
-      ..drawCircle(
-        Offset(
-          size.width *
-              0.08,
-          size.height *
-              0.72,
-        ),
-        size.width *
-            0.13,
-        ring,
-      );
-  }
-
-  @override
-  bool shouldRepaint(
-    covariant CustomPainter oldDelegate,
-  ) {
-    return false;
   }
 }

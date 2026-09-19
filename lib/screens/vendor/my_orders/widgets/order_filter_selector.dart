@@ -14,18 +14,12 @@ class OrderFilterSelector extends StatelessWidget {
   final String selectedFilter;
   final ValueChanged<String> onFilterSelected;
 
-  List<String> get primaryFilters => const [
-        'All',
-        'Active',
-        'Completed',
-        'Cancelled',
-      ];
-
-  List<String> get activeFilters => const [
-        'Active',
-        'Pending',
-        'Accepted',
-      ];
+  static const primaryFilters = <String>[
+    'All',
+    'Active',
+    'Completed',
+    'Cancelled',
+  ];
 
   String statusOf(
     QueryDocumentSnapshot<Map<String, dynamic>> document,
@@ -37,153 +31,141 @@ class OrderFilterSelector extends StatelessWidget {
     ).toLowerCase();
   }
 
-  int countFor(
-    String filter,
-  ) {
+  int countFor(String filter) {
     final value = filter.toLowerCase();
 
     if (value == 'all') {
       return documents.length;
     }
 
-    return documents.where(
-      (document) {
-        final status = statusOf(document);
+    return documents.where((document) {
+      final status = statusOf(document);
 
-        if (value == 'active') {
+      switch (value) {
+        case 'active':
           return status == 'pending' || status == 'accepted';
-        }
-
-        if (value == 'completed') {
+        case 'completed':
           return status == 'completed' || status == 'delivered';
-        }
-
-        if (value == 'cancelled') {
+        case 'cancelled':
           return status == 'cancelled' ||
               status == 'rejected' ||
               status == 'returned' ||
               status == 'refunded';
-        }
-
-        return status == value;
-      },
-    ).length;
+        default:
+          return status == value;
+      }
+    }).length;
   }
 
-  Color colorFor(
-    String filter,
-  ) {
-    switch (filter.toLowerCase()) {
-      case 'active':
-        return const Color(0xFF0875D1);
-      case 'pending':
-        return const Color(0xFFFF7A1A);
-      case 'accepted':
-        return const Color(0xFF376EF6);
-      case 'completed':
-        return const Color(0xFF2E7D32);
-      case 'cancelled':
-        return const Color(0xFFD32F2F);
-      case 'all':
-      default:
-        return const Color(0xFF102C44);
+  bool get activeMode {
+    final value = selectedFilter.toLowerCase();
+    return value == 'active' || value == 'pending' || value == 'accepted';
+  }
+
+  bool primarySelected(String filter) {
+    if (filter == 'Active') {
+      return activeMode;
     }
+    return selectedFilter == filter;
   }
 
-  IconData iconFor(
-    String filter,
-  ) {
-    switch (filter.toLowerCase()) {
-      case 'active':
-        return Icons.pending_actions_rounded;
-      case 'pending':
-        return Icons.schedule_rounded;
-      case 'accepted':
-        return Icons.check_circle_outline_rounded;
-      case 'completed':
-        return Icons.task_alt_rounded;
-      case 'cancelled':
-        return Icons.cancel_outlined;
-      case 'all':
-      default:
-        return Icons.grid_view_rounded;
-    }
-  }
-
-  Widget filterChip(
-    String filter, {
-    String? displayLabel,
-    bool compact = false,
-  }) {
-    final selected = selectedFilter == filter;
-    final color = colorFor(filter);
+  Widget primarySegment(String filter) {
+    final selected = primarySelected(filter);
     final count = countFor(filter);
 
-    return Material(
-      color: selected ? color : Colors.white,
-      borderRadius: BorderRadius.circular(99),
-      child: InkWell(
-        onTap: () => onFilterSelected(filter),
-        borderRadius: BorderRadius.circular(99),
-        child: Container(
-          height: compact ? 36 : 40,
-          padding: EdgeInsets.symmetric(
-            horizontal: compact ? 10 : 11,
-          ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(99),
-            border: Border.all(
-              color: selected ? color : const Color(0xFFDDE9F1),
-            ),
-            boxShadow: selected
-                ? [
-                    BoxShadow(
-                      color: color.withAlpha(32),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
+    return Expanded(
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: '$filter orders, $count',
+        child: Material(
+          color: selected ? const Color(0xFF0875D1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(15),
+          child: InkWell(
+            onTap: () => onFilterSelected(filter),
+            borderRadius: BorderRadius.circular(15),
+            child: SizedBox(
+              height: 54,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 3),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        filter,
+                        maxLines: 1,
+                        style: TextStyle(
+                          color: selected
+                              ? Colors.white
+                              : const Color(0xFF102C44),
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
                     ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                iconFor(filter),
-                color: selected ? Colors.white : color,
-                size: compact ? 13 : 14,
+                    const SizedBox(height: 3),
+                    Text(
+                      '$count',
+                      style: TextStyle(
+                        color: selected
+                            ? const Color(0xFFEAF7FF)
+                            : const Color(0xFF0875D1),
+                        fontSize: 10.5,
+                        height: 1,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(width: 5),
-              Text(
-                displayLabel ?? filter,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget activeStatusButton({
+    required String filter,
+    required String label,
+  }) {
+    final selected = selectedFilter == filter;
+
+    return Expanded(
+      child: Material(
+        color: selected ? const Color(0xFFE6F3FC) : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: () => onFilterSelected(filter),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            height: 38,
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: selected
+                    ? const Color(0xFF8BC7EE)
+                    : const Color(0xFFDDE9F1),
+              ),
+            ),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                '$label  ${countFor(filter)}',
+                maxLines: 1,
                 style: TextStyle(
-                  color: selected ? Colors.white : const Color(0xFF52677A),
-                  fontSize: compact ? 9.4 : 10,
+                  color: selected
+                      ? const Color(0xFF076BB6)
+                      : const Color(0xFF5F7485),
+                  fontSize: 9.5,
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              const SizedBox(width: 6),
-              Container(
-                constraints: BoxConstraints(
-                  minWidth: compact ? 18 : 20,
-                  minHeight: compact ? 18 : 20,
-                ),
-                alignment: Alignment.center,
-                padding: const EdgeInsets.symmetric(horizontal: 5),
-                decoration: BoxDecoration(
-                  color: selected ? Colors.white.withAlpha(35) : color.withAlpha(17),
-                  borderRadius: BorderRadius.circular(99),
-                ),
-                child: Text(
-                  '$count',
-                  style: TextStyle(
-                    color: selected ? Colors.white : color,
-                    fontSize: compact ? 8.5 : 9,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -191,163 +173,70 @@ class OrderFilterSelector extends StatelessWidget {
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
-    final activeMode = selectedFilter == 'Active' ||
-        selectedFilter == 'Pending' ||
-        selectedFilter == 'Accepted';
-
+  Widget build(BuildContext context) {
     return Container(
       color: const Color(0xFFF4F8FB),
-      padding: const EdgeInsets.fromLTRB(16, 13, 0, 3),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            height: 40,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              physics: const ClampingScrollPhysics(),
-              padding: const EdgeInsets.only(right: 16),
-              itemCount: primaryFilters.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 8),
-              itemBuilder: (context, index) {
-                final filter = primaryFilters[index];
-                final selectedPrimary = filter == 'Active'
-                    ? activeMode
-                    : selectedFilter == filter;
-
-                if (filter == 'Active' && selectedPrimary && selectedFilter != 'Active') {
-                  return _PrimaryActiveProxy(
-                    color: colorFor('Active'),
-                    count: countFor('Active'),
-                    onTap: () => onFilterSelected('Active'),
-                  );
-                }
-
-                return filterChip(filter);
-              },
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 2),
+      child: Container(
+        padding: const EdgeInsets.all(5),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(19),
+          border: Border.all(color: const Color(0xFFDCE9F1)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0D00152A),
+              blurRadius: 14,
+              offset: Offset(0, 5),
             ),
-          ),
-          AnimatedSize(
-            duration: const Duration(milliseconds: 190),
-            curve: Curves.easeOutCubic,
-            alignment: Alignment.topLeft,
-            child: activeMode
-                ? Padding(
-                    padding: const EdgeInsets.only(top: 8, right: 16),
-                    child: Row(
-                      children: [
-                        const Text(
-                          'ACTIVE STATUS',
-                          style: TextStyle(
-                            color: Color(0xFF8CA0AE),
-                            fontSize: 7.8,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.9,
-                          ),
-                        ),
-                        const SizedBox(width: 9),
-                        Expanded(
-                          child: SizedBox(
-                            height: 36,
-                            child: ListView.separated(
-                              scrollDirection: Axis.horizontal,
-                              physics: const ClampingScrollPhysics(),
-                              itemCount: activeFilters.length,
-                              separatorBuilder: (_, _) => const SizedBox(width: 7),
-                              itemBuilder: (context, index) {
-                                final filter = activeFilters[index];
-                                return filterChip(
-                                  filter,
-                                  displayLabel: filter == 'Active' ? 'All active' : filter,
-                                  compact: true,
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                      ],
+          ],
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                for (var index = 0;
+                    index < primaryFilters.length;
+                    index++) ...[
+                  primarySegment(primaryFilters[index]),
+                  if (index < primaryFilters.length - 1)
+                    Container(
+                      width: 1,
+                      height: 31,
+                      color: const Color(0xFFE3EDF3),
                     ),
-                  )
-                : const SizedBox.shrink(),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PrimaryActiveProxy extends StatelessWidget {
-  const _PrimaryActiveProxy({
-    required this.color,
-    required this.count,
-    required this.onTap,
-  });
-
-  final Color color;
-  final int count;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: color,
-      borderRadius: BorderRadius.circular(99),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(99),
-        child: Container(
-          height: 40,
-          padding: const EdgeInsets.symmetric(horizontal: 11),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(99),
-            boxShadow: [
-              BoxShadow(
-                color: color.withAlpha(32),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.pending_actions_rounded,
-                color: Colors.white,
-                size: 14,
-              ),
-              const SizedBox(width: 5),
-              const Text(
-                'Active',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Container(
-                constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
-                alignment: Alignment.center,
-                padding: const EdgeInsets.symmetric(horizontal: 5),
-                decoration: BoxDecoration(
-                  color: Colors.white.withAlpha(35),
-                  borderRadius: BorderRadius.circular(99),
-                ),
-                child: Text(
-                  '$count',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-            ],
-          ),
+                ],
+              ],
+            ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
+              alignment: Alignment.topCenter,
+              child: activeMode
+                  ? Padding(
+                      padding: const EdgeInsets.fromLTRB(5, 5, 5, 3),
+                      child: Row(
+                        children: [
+                          activeStatusButton(
+                            filter: 'Active',
+                            label: 'All active',
+                          ),
+                          const SizedBox(width: 6),
+                          activeStatusButton(
+                            filter: 'Pending',
+                            label: 'Pending',
+                          ),
+                          const SizedBox(width: 6),
+                          activeStatusButton(
+                            filter: 'Accepted',
+                            label: 'To Receive',
+                          ),
+                        ],
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ],
         ),
       ),
     );

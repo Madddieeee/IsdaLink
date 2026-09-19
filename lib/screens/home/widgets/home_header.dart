@@ -23,9 +23,7 @@ class HomeHeader extends StatelessWidget {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final compact = screenWidth <= 400;
 
-    return ClipPath(
-      clipper: _OceanEdge(),
-      child: SizedBox(
+    return SizedBox(
         height: compact ? 260 : 276,
         child: DecoratedBox(
           decoration: const BoxDecoration(
@@ -128,7 +126,6 @@ class HomeHeader extends StatelessWidget {
             ],
           ),
         ),
-      ),
     );
   }
 }
@@ -462,37 +459,6 @@ class _HeaderSearch extends StatelessWidget {
       ),
     );
   }
-}
-
-class _OceanEdge extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final path = Path()
-      ..lineTo(0, size.height - 12)
-      ..cubicTo(
-        size.width * 0.20,
-        size.height - 2,
-        size.width * 0.44,
-        size.height - 20,
-        size.width * 0.66,
-        size.height - 14,
-      )
-      ..cubicTo(
-        size.width * 0.82,
-        size.height - 10,
-        size.width * 0.93,
-        size.height - 4,
-        size.width,
-        size.height - 7,
-      )
-      ..lineTo(size.width, 0)
-      ..close();
-
-    return path;
-  }
-
-  @override
-  bool shouldReclip(covariant _OceanEdge oldClipper) => false;
 }
 
 class _TopBrandWaveClipper extends CustomClipper<Path> {

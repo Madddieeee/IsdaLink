@@ -1995,6 +1995,25 @@ class _AnalyticsScreenState
         continue;
       }
 
+      final selectedEvaluation =
+          selection.method == ForecastingMethod.simpleMovingAverage
+          ? simpleEvaluation
+          : seasonalEvaluation;
+      final seriesVariability = variability(
+        points.map((point) => point.quantity).toList(),
+      );
+      final cautionReasons = <String>[];
+
+      if (selectedEvaluation.hasMape && selectedEvaluation.mape > 50) {
+        cautionReasons.add('high forecast error');
+      }
+      if (seriesVariability > 25) {
+        cautionReasons.add('high sales variability');
+      }
+      if (selectedEvaluation.mapePairCount < 4) {
+        cautionReasons.add('limited evaluation history');
+      }
+
       suggestions.add(
         RestockingSuggestion(
           productName: product.productName,
@@ -2002,6 +2021,7 @@ class _AnalyticsScreenState
           quantityUnit: product.quantityUnit,
           suggestedQuantity: suggestedQuantity,
           selectedMethod: selection.method!,
+          cautionReason: cautionReasons.join(', '),
         ),
       );
     }
@@ -3773,6 +3793,7 @@ class _AnalyticsScreenState
     required int availablePeriods,
     required int requiredPeriods,
     bool selected = false,
+    String selectedLabel = 'SELECTED',
   }) {
     final available = result.hasValue;
     final readiness =
@@ -3903,9 +3924,9 @@ class _AnalyticsScreenState
                                 99,
                               ),
                             ),
-                            child: const Text(
-                              'BEST FIT',
-                              style: TextStyle(
+                            child: Text(
+                              selectedLabel,
+                              style: const TextStyle(
                                 color: Color(
                                   0xFF147D64,
                                 ),
@@ -4127,177 +4148,213 @@ class _AnalyticsScreenState
     );
   }
 
-  Widget methodEvaluationCard({
-    required String title,
-    required ForecastEvaluation evaluation,
+  Widget forecastEvaluationMatrix({
+    required AnalyticsData data,
     required String unit,
-    required bool selected,
   }) {
+    final bothMethodsEligible =
+        data.simpleForecast.hasValue &&
+        data.seasonalForecast.hasValue &&
+        data.simpleEvaluation.hasMape &&
+        data.seasonalEvaluation.hasMape;
+
+    Widget cell(
+      String text, {
+      required int flex,
+      bool header = false,
+      Color? color,
+      TextAlign alignment = TextAlign.left,
+    }) {
+      return Expanded(
+        flex: flex,
+        child: Text(
+          text,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          textAlign: alignment,
+          style: TextStyle(
+            color: color ??
+                (header
+                    ? const Color(0xFF5F778B)
+                    : const Color(0xFF102C44)),
+            fontSize: header ? 7.1 : 8.1,
+            height: 1.2,
+            fontWeight: header ? FontWeight.w800 : FontWeight.w700,
+          ),
+        ),
+      );
+    }
+
+    Widget row({
+      required String method,
+      required ForecastingMethod forecastingMethod,
+      required ForecastEvaluation evaluation,
+    }) {
+      final selected = data.selectedMethod.method == forecastingMethod;
+      final validPairs = evaluation.hasMape
+          ? evaluation.mapePairCount
+          : evaluation.maePairCount;
+
+      return Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 9,
+          vertical: 10,
+        ),
+        decoration: BoxDecoration(
+          color: selected
+              ? const Color(0xFFF0FAF6)
+              : Colors.transparent,
+          border: const Border(
+            top: BorderSide(
+              color: Color(0xFFE5EDF2),
+            ),
+          ),
+        ),
+        child: Row(
+          children: [
+            cell(
+              method,
+              flex: 27,
+              color: selected
+                  ? const Color(0xFF147D64)
+                  : null,
+            ),
+            cell(
+              evaluation.hasMape
+                  ? '${evaluation.mape.toStringAsFixed(2)}%'
+                  : 'N/A',
+              flex: 18,
+              alignment: TextAlign.center,
+            ),
+            cell(
+              evaluation.hasMae
+                  ? '${formatNumber(evaluation.mae)} $unit'
+                  : 'N/A',
+              flex: 22,
+              alignment: TextAlign.center,
+            ),
+            cell(
+              evaluation.hasMae ? '$validPairs' : '—',
+              flex: 12,
+              alignment: TextAlign.center,
+            ),
+            cell(
+              selected
+                  ? bothMethodsEligible
+                      ? 'Selected'
+                      : 'Only eligible'
+                  : evaluation.hasMae && evaluation.hasMape
+                      ? 'Not selected'
+                      : evaluation.hasMae
+                      ? 'Not eligible'
+                      : 'Pending',
+              flex: 21,
+              color: selected
+                  ? const Color(0xFF147D64)
+                  : const Color(0xFF6F8495),
+              alignment: TextAlign.right,
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       margin: const EdgeInsets.only(
-        bottom: 8,
-      ),
-      padding: const EdgeInsets.all(
-        11,
+        bottom: 9,
       ),
       decoration: BoxDecoration(
-        color: selected
-            ? const Color(
-                0xFFF2FAF7,
-              )
-            : const Color(
-                0xFFF8FAFC,
-              ),
-        borderRadius: BorderRadius.circular(
-          16,
-        ),
+        color: const Color(0xFFF9FBFC),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: selected
-              ? const Color(
-                  0xFFC0E7D9,
-                )
-              : const Color(
-                  0xFFE4EBF0,
-                ),
+          color: const Color(0xFFE1EAF0),
         ),
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    color: Color(
-                      0xFF102C44,
-                    ),
-                    fontSize: 11.4,
+          const Padding(
+            padding: EdgeInsets.fromLTRB(10, 10, 10, 7),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.table_chart_outlined,
+                  color: Color(0xFF087AC0),
+                  size: 15,
+                ),
+                SizedBox(width: 6),
+                Text(
+                  'FORECAST EVALUATION MATRIX',
+                  style: TextStyle(
+                    color: Color(0xFF24445E),
+                    fontSize: 7.8,
+                    letterSpacing: 0.45,
                     fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-              if (selected)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 7,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(
-                      0xFFE0F5EC,
-                    ),
-                    borderRadius: BorderRadius.circular(
-                      99,
-                    ),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.check_circle_rounded,
-                        color: Color(
-                          0xFF147D64,
-                        ),
-                        size: 11,
-                      ),
-                      SizedBox(
-                        width: 3,
-                      ),
-                      Text(
-                        'SELECTED',
-                        style: TextStyle(
-                          color: Color(
-                            0xFF147D64,
-                          ),
-                          fontSize: 6.8,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(
-            height: 8,
-          ),
-          if (!evaluation.hasMae)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(
-                  Icons.hourglass_bottom_rounded,
-                  size: 16,
-                  color: Color(
-                    0xFF8BA0B1,
-                  ),
-                ),
-                const SizedBox(
-                  width: 7,
-                ),
-                Expanded(
-                  child: Text(
-                    evaluation.reason,
-                    style: const TextStyle(
-                      color: Color(
-                        0xFF7B8FA3,
-                      ),
-                      fontSize: 8.9,
-                      height: 1.3,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            )
-          else ...[
-            Row(
-              children: [
-                evaluationTile(
-                  label: 'MAPE',
-                  value: evaluation.hasMape
-                      ? '${evaluation.mape.toStringAsFixed(2)}%'
-                      : 'N/A',
-                  subtitle: evaluation.hasMape
-                      ? '${evaluation.mapePairCount} valid pair${evaluation.mapePairCount == 1 ? '' : 's'}'
-                      : 'Zero actuals excluded',
-                  color: const Color(
-                    0xFF176BFF,
-                  ),
-                ),
-                const SizedBox(
-                  width: 7,
-                ),
-                evaluationTile(
-                  label: 'MAE',
-                  value: '${formatNumber(evaluation.mae)} $unit',
-                  subtitle: '${evaluation.maePairCount} valid pair${evaluation.maePairCount == 1 ? '' : 's'}',
-                  color: const Color(
-                    0xFFFF7A1A,
                   ),
                 ),
               ],
             ),
-            if (evaluation.zeroActualMapeExclusions >
-                0) ...[
-              const SizedBox(
-                height: 7,
-              ),
-              Text(
-                '${evaluation.zeroActualMapeExclusions} zero-actual pair${evaluation.zeroActualMapeExclusions == 1 ? '' : 's'} excluded from MAPE and retained in MAE.',
-                style: const TextStyle(
-                  color: Color(
-                    0xFF7B8FA3,
-                  ),
-                  fontSize: 8.2,
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 9,
+              vertical: 7,
+            ),
+            child: Row(
+              children: [
+                cell('Method', flex: 27, header: true),
+                cell(
+                  'MAPE',
+                  flex: 18,
+                  header: true,
+                  alignment: TextAlign.center,
+                ),
+                cell(
+                  'MAE',
+                  flex: 22,
+                  header: true,
+                  alignment: TextAlign.center,
+                ),
+                cell(
+                  'Pairs',
+                  flex: 12,
+                  header: true,
+                  alignment: TextAlign.center,
+                ),
+                cell(
+                  'Decision',
+                  flex: 21,
+                  header: true,
+                  alignment: TextAlign.right,
+                ),
+              ],
+            ),
+          ),
+          row(
+            method: 'Simple\nMoving Average',
+            forecastingMethod: ForecastingMethod.simpleMovingAverage,
+            evaluation: data.simpleEvaluation,
+          ),
+          row(
+            method: 'Seasonal\nMoving Average',
+            forecastingMethod: ForecastingMethod.seasonalMovingAverage,
+            evaluation: data.seasonalEvaluation,
+          ),
+          if (data.simpleEvaluation.zeroActualMapeExclusions > 0 ||
+              data.seasonalEvaluation.zeroActualMapeExclusions > 0)
+            const Padding(
+              padding: EdgeInsets.fromLTRB(10, 7, 10, 9),
+              child: Text(
+                'Zero-actual pairs are excluded from MAPE and retained in MAE.',
+                style: TextStyle(
+                  color: Color(0xFF71879A),
+                  fontSize: 7.8,
                   height: 1.25,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-            ],
-          ],
+            ),
         ],
       ),
     );
@@ -4314,6 +4371,12 @@ class _AnalyticsScreenState
     }
 
     final selection = data.selectedMethod;
+    final selectedEvaluation =
+        selection.method == ForecastingMethod.simpleMovingAverage
+        ? data.simpleEvaluation
+        : selection.method == ForecastingMethod.seasonalMovingAverage
+        ? data.seasonalEvaluation
+        : null;
 
     return Column(
       children: [
@@ -4446,22 +4509,15 @@ class _AnalyticsScreenState
             ],
           ),
         ),
-        methodEvaluationCard(
-          title: 'Simple Moving Average',
-          evaluation: data.simpleEvaluation,
+        forecastEvaluationMatrix(
+          data: data,
           unit: product.quantityUnit,
-          selected:
-              selection.method ==
-              ForecastingMethod.simpleMovingAverage,
         ),
-        methodEvaluationCard(
-          title: 'Seasonal Moving Average',
-          evaluation: data.seasonalEvaluation,
-          unit: product.quantityUnit,
-          selected:
-              selection.method ==
-              ForecastingMethod.seasonalMovingAverage,
-        ),
+        if (selectedEvaluation != null && selectedEvaluation.hasMape)
+          forecastReliabilityNote(
+            evaluation: selectedEvaluation,
+            variabilityValue: data.variability,
+          ),
         Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(
@@ -4505,6 +4561,97 @@ class _AnalyticsScreenState
           ),
         ),
       ],
+    );
+  }
+
+  Widget forecastReliabilityNote({
+    required ForecastEvaluation evaluation,
+    required double variabilityValue,
+  }) {
+    String label;
+    String message;
+    Color color;
+
+    if (evaluation.mape <= 10) {
+      label = 'High forecast accuracy';
+      message = 'The selected method has a MAPE of ${evaluation.mape.toStringAsFixed(2)}%.';
+      color = const Color(0xFF147D64);
+    } else if (evaluation.mape <= 20) {
+      label = 'Good forecast accuracy';
+      message = 'The selected method has a MAPE of ${evaluation.mape.toStringAsFixed(2)}%.';
+      color = const Color(0xFF147D64);
+    } else if (evaluation.mape <= 50) {
+      label = 'Moderate forecast accuracy';
+      message = 'MAPE is ${evaluation.mape.toStringAsFixed(2)}%. Use the estimate with care.';
+      color = const Color(0xFFFF7A1A);
+    } else {
+      label = 'Low forecast accuracy';
+      message = 'MAPE is ${evaluation.mape.toStringAsFixed(2)}%. Use this estimate with caution.';
+      color = const Color(0xFFD32F2F);
+    }
+
+    final cautions = <String>[];
+    if (variabilityValue > 25) {
+      cautions.add('sales fluctuate considerably');
+    }
+    if (evaluation.mapePairCount < 4) {
+      cautions.add(
+        'only ${evaluation.mapePairCount} evaluation pair${evaluation.mapePairCount == 1 ? ' is' : 's are'} available',
+      );
+    }
+    if (cautions.isNotEmpty) {
+      message = '$message ${cautions.join(' and ')}.';
+    }
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 9),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      decoration: BoxDecoration(
+        color: color.withAlpha(12),
+        borderRadius: BorderRadius.circular(13),
+        border: Border.all(color: color.withAlpha(42)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            evaluation.mape > 50 ||
+                    variabilityValue > 25 ||
+                    evaluation.mapePairCount < 4
+                ? Icons.warning_amber_rounded
+                : Icons.verified_outlined,
+            color: color,
+            size: 16,
+          ),
+          const SizedBox(width: 7),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 8.8,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  message,
+                  style: const TextStyle(
+                    color: Color(0xFF627B8E),
+                    fontSize: 8.2,
+                    height: 1.3,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -4714,8 +4861,8 @@ class _AnalyticsScreenState
                       ),
                       Text(
                         isSupplier
-                            ? 'Consider preparing ${formatNumber(suggestion.suggestedQuantity, decimals: 2)} ${suggestion.quantityUnit} for the next period.'
-                            : 'Consider purchasing ${formatNumber(suggestion.suggestedQuantity, decimals: 2)} ${suggestion.quantityUnit} for the next period.',
+                            ? 'Estimated next-period demand: ${formatNumber(suggestion.suggestedQuantity, decimals: 2)} ${suggestion.quantityUnit}.'
+                            : 'Estimated next-period requirement: ${formatNumber(suggestion.suggestedQuantity, decimals: 2)} ${suggestion.quantityUnit}.',
                         style: const TextStyle(
                           color: Color(
                             0xFF657C8E,
@@ -4738,6 +4885,18 @@ class _AnalyticsScreenState
                           fontWeight: FontWeight.w800,
                         ),
                       ),
+                      if (suggestion.cautionReason.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'Use as guidance only due to ${suggestion.cautionReason}.',
+                          style: const TextStyle(
+                            color: Color(0xFFD36A12),
+                            fontSize: 8.5,
+                            height: 1.25,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -5343,6 +5502,11 @@ class _AnalyticsScreenState
     final unit =
         selectedProduct?.quantityUnit ??
         'unit';
+    final bothForecastMethodsEligible =
+        data.simpleForecast.hasValue &&
+        data.seasonalForecast.hasValue &&
+        data.simpleEvaluation.hasMape &&
+        data.seasonalEvaluation.hasMape;
 
     return CustomScrollView(
       physics: const BouncingScrollPhysics(
@@ -5398,6 +5562,9 @@ class _AnalyticsScreenState
                         selected:
                             data.selectedMethod.method ==
                             ForecastingMethod.simpleMovingAverage,
+                        selectedLabel: bothForecastMethodsEligible
+                            ? 'BEST FIT'
+                            : 'ONLY ELIGIBLE',
                       ),
                       forecastMethodCard(
                         title: 'Seasonal Moving Average',
@@ -5414,6 +5581,9 @@ class _AnalyticsScreenState
                         selected:
                             data.selectedMethod.method ==
                             ForecastingMethod.seasonalMovingAverage,
+                        selectedLabel: bothForecastMethodsEligible
+                            ? 'BEST FIT'
+                            : 'ONLY ELIGIBLE',
                       ),
                     ],
                   ),
@@ -5426,15 +5596,18 @@ class _AnalyticsScreenState
                     data,
                   ),
                 ),
-                if (isSupplier)
-                  sectionCard(
-                    title: 'Sales Variability',
-                    subtitle: 'How much the selected completed-sales series changes between periods.',
-                    icon: Icons.multiline_chart_rounded,
-                    child: variabilityPanel(
-                      data.variability,
-                    ),
+                sectionCard(
+                  title: isSupplier
+                      ? 'Sales Variability'
+                      : 'Purchase Variability',
+                  subtitle: isSupplier
+                      ? 'How much the selected completed-sales series changes between periods.'
+                      : 'How much the selected completed-purchase series changes between periods.',
+                  icon: Icons.multiline_chart_rounded,
+                  child: variabilityPanel(
+                    data.variability,
                   ),
+                ),
                 sectionCard(
                   title: 'Restocking Guidance',
                   subtitle: isSupplier
@@ -5830,6 +6003,7 @@ class RestockingSuggestion {
     required this.quantityUnit,
     required this.suggestedQuantity,
     required this.selectedMethod,
+    required this.cautionReason,
   });
 
   final String productName;
@@ -5837,6 +6011,7 @@ class RestockingSuggestion {
   final String quantityUnit;
   final double suggestedQuantity;
   final ForecastingMethod selectedMethod;
+  final String cautionReason;
 }
 
 class ForecastResult {

@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:isdalink/models/fish_product.dart';
 import 'package:isdalink/models/supplier.dart';
-import 'package:isdalink/screens/analytics/analytics_screen.dart';
+import 'package:isdalink/screens/analytics/vendor_analytics_screen.dart';
 import 'package:isdalink/screens/home/widgets/home_bottom_nav.dart';
 import 'package:isdalink/screens/home/widgets/home_header.dart';
 import 'package:isdalink/screens/home/widgets/home_carousel_physics.dart';
@@ -77,9 +77,7 @@ class HomeScreen
         builder:
             (
               _,
-            ) => const AnalyticsScreen(
-              mode: AnalyticsMode.vendor,
-            ),
+            ) => const VendorAnalyticsScreen(),
       ),
     );
   }
@@ -912,6 +910,9 @@ class HomeScreen
     final statusBarHeight = MediaQuery.paddingOf(
       context,
     ).top;
+    final homeHeaderHeight = MediaQuery.sizeOf(context).width <= 400
+        ? 260.0
+        : 276.0;
 
     return Scaffold(
       backgroundColor: const Color(
@@ -929,77 +930,101 @@ class HomeScreen
                 padding: EdgeInsets.zero,
                 physics: const ClampingScrollPhysics(),
                 children: [
-                  HomeHeader(
-                    onLogout: () => logout(
-                      context,
-                    ),
-                    onSearchTap: () => openHomeSearch(
-                      context,
-                    ),
-                    onProfileTap: () => openMe(
-                      context,
-                    ),
-                    onActiveOrdersTap: () => openMyOrders(
-                      context,
-                    ),
-                  ),
-                  const SizedBox(
-                    height: 4,
-                  ),
-                  HomeMarketShowcase(
-                    onBrowseSuppliers: () => openBrowseSuppliers(
-                      context,
-                    ),
-                    onBrowseFishStocks: () => openLatestFishStocks(
-                      context,
-                    ),
-                  ),
-                  const SizedBox(
-                    height: 8,
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                    ),
-                    child: HomeSectionHeader(
-                      title: 'Recommended Suppliers',
-                      icon: Icons.verified,
-                      actionLabel: 'View all',
-                      onViewAll: () => openBrowseSuppliers(
-                        context,
+                  Stack(
+                    children: [
+                      HomeHeader(
+                        onLogout: () => logout(
+                          context,
+                        ),
+                        onSearchTap: () => openHomeSearch(
+                          context,
+                        ),
+                        onProfileTap: () => openMe(
+                          context,
+                        ),
+                        onActiveOrdersTap: () => openMyOrders(
+                          context,
+                        ),
                       ),
-                    ),
+                      Padding(
+                        padding: EdgeInsets.only(
+                          top: homeHeaderHeight - 26,
+                        ),
+                        child: Container(
+                          clipBehavior: Clip.antiAlias,
+                          padding: const EdgeInsets.only(
+                            top: 20,
+                            bottom: 4,
+                          ),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFF4FAFF),
+                            borderRadius: BorderRadius.vertical(
+                              top: Radius.circular(32),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Color(0x1900213D),
+                                blurRadius: 20,
+                                offset: Offset(0, -3),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            children: [
+                              HomeMarketShowcase(
+                                onBrowseSuppliers: () => openBrowseSuppliers(
+                                  context,
+                                ),
+                                onBrowseFishStocks: () => openLatestFishStocks(
+                                  context,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                child: HomeSectionHeader(
+                                  title: 'Recommended Suppliers',
+                                  icon: Icons.verified,
+                                  actionLabel: 'View all',
+                                  onViewAll: () => openBrowseSuppliers(
+                                    context,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              recommendedSuppliersList(
+                                context,
+                              ),
+                              const SizedBox(height: 12),
+                              RecentFishPosts(
+                                onViewAll: () => openLatestFishStocks(
+                                  context,
+                                ),
+                                onProductTap:
+                                    (
+                                      supplier,
+                                      product,
+                                      stockId,
+                                      supplierId,
+                                    ) {
+                                      openProductDetails(
+                                        context,
+                                        supplier,
+                                        product,
+                                        stockId: stockId,
+                                        supplierId: supplierId,
+                                      );
+                                    },
+                              ),
+                              const HomeMarketFooter(),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(
-                    height: 4,
-                  ),
-                  recommendedSuppliersList(
-                    context,
-                  ),
-                  const SizedBox(
-                    height: 12,
-                  ),
-                  RecentFishPosts(
-                    onViewAll: () => openLatestFishStocks(
-                      context,
-                    ),
-                    onProductTap:
-                        (
-                          supplier,
-                          product,
-                          stockId,
-                          supplierId,
-                        ) {
-                          openProductDetails(
-                            context,
-                            supplier,
-                            product,
-                            stockId: stockId,
-                            supplierId: supplierId,
-                          );
-                        },
-                  ),
-                  const HomeMarketFooter(),
                 ],
               ),
             ),

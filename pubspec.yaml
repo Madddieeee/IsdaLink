@@ -62,8 +62,7 @@ dev_dependencies:
 flutter:
 
   # The following line ensures that the Material Icons font is
-  # included with your application, so that you can use the icons in
-  # the material Icons class.
+  # included with your application, so that you can use
   uses-material-design: true
 
   assets:
@@ -75,6 +74,8 @@ flutter:
     - assets/images/Store.png
     - assets/images/Store1.png
     - assets/images/productdetailwave.png
+    - assets/images/order_center_caraga_header.png
+
     
   # To add assets to your application, add an assets section, like this:
   # assets:

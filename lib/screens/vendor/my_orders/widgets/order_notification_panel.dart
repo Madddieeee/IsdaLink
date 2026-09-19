@@ -62,26 +62,13 @@ class OrderNotificationPanel
                 .toList();
 
             return Container(
-              margin: const EdgeInsets.only(
-                bottom: 16,
-              ),
-              padding: const EdgeInsets.all(
-                14,
-              ),
+              margin: const EdgeInsets.only(bottom: 14),
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 13),
               decoration: BoxDecoration(
-                color: const Color(
-                  0xFFFFF7E8,
-                ),
-                borderRadius: BorderRadius.circular(
-                  22,
-                ),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
                 border: Border.all(
-                  color:
-                      const Color(
-                        0xFFFFB703,
-                      ).withAlpha(
-                        80,
-                      ),
+                  color: const Color(0xFFDCE9F1),
                 ),
               ),
               child: Column(
@@ -90,11 +77,9 @@ class OrderNotificationPanel
                   Row(
                     children: [
                       const Icon(
-                        Icons.notifications_active,
-                        color: Color(
-                          0xFFFF7A1A,
-                        ),
-                        size: 20,
+                        Icons.notifications_none_rounded,
+                        color: Color(0xFF0875D1),
+                        size: 19,
                       ),
                       const SizedBox(
                         width: 8,
@@ -106,7 +91,7 @@ class OrderNotificationPanel
                             color: Color(
                               0xFF102C44,
                             ),
-                            fontSize: 14,
+                            fontSize: 12.5,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
@@ -116,9 +101,9 @@ class OrderNotificationPanel
                           unreadNotifications,
                         ),
                         child: const Text(
-                          'Mark read',
+                          'Mark as read',
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: 9.5,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
@@ -157,14 +142,10 @@ class OrderNotificationPanel
                         margin: const EdgeInsets.only(
                           top: 8,
                         ),
-                        padding: const EdgeInsets.all(
-                          12,
-                        ),
+                        padding: const EdgeInsets.all(11),
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(
-                            18,
-                          ),
+                          color: const Color(0xFFF4F8FB),
+                          borderRadius: BorderRadius.circular(14),
                         ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,

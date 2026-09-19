@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:isdalink/screens/analytics/analytics_screen.dart';
+import 'package:isdalink/screens/analytics/supplier_analytics_screen.dart';
 import 'package:isdalink/screens/home/home_screen.dart';
 import 'package:isdalink/screens/supplier/post_fish_stock_screen.dart';
 import 'package:isdalink/screens/supplier/supplier_cod_orders_screen.dart';
@@ -906,9 +906,7 @@ class SupplierDashboardScreen
         builder:
             (
               _,
-            ) => const AnalyticsScreen(
-              mode: AnalyticsMode.supplier,
-            ),
+            ) => const SupplierAnalyticsScreen(),
       ),
     );
   }
