@@ -75,6 +75,10 @@ flutter:
     - assets/images/Store1.png
     - assets/images/productdetailwave.png
     - assets/images/order_center_caraga_header.png
+    - assets/images/supplier_analytics_header_bg.png
+    - assets/images/vendor_analytics_header_bg.png
+    - assets/images/vendor_supplier_upgrade_banner.png
+
 
     
   # To add assets to your application, add an assets section, like this:

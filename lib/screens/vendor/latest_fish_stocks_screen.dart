@@ -331,7 +331,7 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
                         color: isSelected
                             ? const Color(0xFF087AC0).withAlpha(18)
                             : const Color(0xFFF2F6F9),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(11),
                       ),
                       child: Icon(
                         icon,
@@ -371,7 +371,7 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
                       const Icon(
                         Icons.check_circle_rounded,
                         color: Color(0xFF159C74),
-                        size: 20,
+                        size: 18,
                       ),
                   ],
                 ),
@@ -476,302 +476,371 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
     });
   }
 
-  Widget metric({
+  Widget _statusCard({
     required String value,
     required String label,
-    required IconData icon,
-    required Color accent,
+    required Widget icon,
+    required Color iconBackground,
+    Color? valueColor,
   }) {
     return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        child: Container(
-          height: 60,
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: BoxDecoration(
-            color: Colors.white.withAlpha(24),
-            borderRadius: BorderRadius.circular(17),
-            border: Border.all(color: Colors.white.withAlpha(28)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 31,
-                height: 31,
-                decoration: BoxDecoration(
-                  color: accent.withAlpha(32),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, color: accent, size: 17),
+      child: Container(
+        height: 88,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFD9EAF4)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0E063A5A),
+              blurRadius: 12,
+              offset: Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: iconBackground,
+                borderRadius: BorderRadius.circular(11),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      value,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 1),
-                    Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFFD8ECF4),
-                        fontSize: 8.2,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
+              alignment: Alignment.center,
+              child: icon,
+            ),
+            const SizedBox(height: 5),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                value,
+                maxLines: 1,
+                style: TextStyle(
+                  color: valueColor ?? const Color(0xFF082E50),
+                  fontSize: 15.5,
+                  height: 1,
+                  fontWeight: FontWeight.w900,
                 ),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 2),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                maxLines: 1,
+                style: const TextStyle(
+                  color: Color(0xFF627D92),
+                  fontSize: 9.8,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget header({
+  Widget _fishMarketplaceIcon() {
+    return Image.asset(
+      'assets/images/Fish.png',
+      width: 18,
+      height: 18,
+      fit: BoxFit.contain,
+      errorBuilder: (_, _, _) => const Icon(
+        Icons.set_meal_rounded,
+        color: Color(0xFF0875D1),
+        size: 18,
+      ),
+    );
+  }
+
+  Widget header() {
+    return Container(
+      decoration: const BoxDecoration(color: Color(0xFF07517D)),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/order_center_caraga_header.png',
+              fit: BoxFit.cover,
+              alignment: Alignment.center,
+              filterQuality: FilterQuality.high,
+              errorBuilder: (context, error, stackTrace) =>
+                  const SizedBox.shrink(),
+            ),
+          ),
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    const Color(0xFF063B68).withAlpha(150),
+                    const Color(0xFF0A6FBA).withAlpha(92),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 10, 18, 30),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Material(
+                        color: Colors.white.withAlpha(34),
+                        shape: CircleBorder(
+                          side: BorderSide(color: Colors.white.withAlpha(74)),
+                        ),
+                        child: InkWell(
+                          onTap: () => Navigator.pop(context),
+                          customBorder: const CircleBorder(),
+                          child: const SizedBox(
+                            width: 42,
+                            height: 42,
+                            child: Icon(
+                              Icons.arrow_back_rounded,
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      ColorFiltered(
+                        colorFilter: const ColorFilter.mode(
+                          Colors.white,
+                          BlendMode.srcIn,
+                        ),
+                        child: Image.asset(
+                          'assets/images/isdalink_logo.png',
+                          width: 126,
+                          height: 40,
+                          fit: BoxFit.contain,
+                          filterQuality: FilterQuality.high,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Text(
+                            'IsdaLink',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        height: 42,
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(36),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: Colors.white.withAlpha(72)),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.location_on_rounded,
+                              color: Colors.white,
+                              size: 17,
+                            ),
+                            SizedBox(width: 5),
+                            Text(
+                              'Caraga',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Fish Stocks',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 31,
+                      height: 1,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.6,
+                      shadows: [
+                        Shadow(
+                          color: Color(0x5500182B),
+                          blurRadius: 8,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Fresh available listings from verified suppliers across Caraga.',
+                    style: TextStyle(
+                      color: Color(0xFFEAF6FD),
+                      fontSize: 13,
+                      height: 1.35,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget marketplaceOverview({
     required int availableCount,
     required int activeSupplierCount,
   }) {
-    return Container(
-      padding: EdgeInsets.fromLTRB(
-        18,
-        MediaQuery.paddingOf(context).top + 12,
-        18,
-        18,
-      ),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF06355F), Color(0xFF0875D1), Color(0xFF12B6D6)],
-          stops: [0.0, 0.58, 1.0],
-        ),
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
-      ),
-      child: Stack(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+      child: Column(
         children: [
-          Positioned(
-            right: -42,
-            top: -42,
-            child: Container(
-              width: 150,
-              height: 150,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white12),
-              ),
+          Container(
+            height: 54,
+            padding: const EdgeInsets.fromLTRB(12, 0, 7, 0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: const Color(0xFFD9EAF4)),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x12063A5A),
+                  blurRadius: 14,
+                  offset: Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEAF7FC),
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: const Icon(
+                    Icons.search_rounded,
+                    color: Color(0xFF0875D1),
+                    size: 21,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextField(
+                    controller: searchController,
+                    onChanged: (value) {
+                      setState(() {
+                        searchQuery = value;
+                      });
+                    },
+                    textInputAction: TextInputAction.search,
+                    cursorColor: const Color(0xFF0875D1),
+                    style: const TextStyle(
+                      color: Color(0xFF18374E),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    decoration: const InputDecoration(
+                      hintText: 'Search fish, supplier, or location...',
+                      hintStyle: TextStyle(
+                        color: Color(0xFF8296A6),
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                ),
+                if (searchController.text.isNotEmpty)
+                  IconButton(
+                    tooltip: 'Clear search',
+                    onPressed: () {
+                      searchController.clear();
+                      setState(() {
+                        searchQuery = '';
+                      });
+                    },
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      color: Color(0xFF7890A1),
+                      size: 18,
+                    ),
+                  ),
+                Material(
+                  color: const Color(0xFFEAF7FC),
+                  borderRadius: BorderRadius.circular(11),
+                  child: InkWell(
+                    onTap: showSortSheet,
+                    borderRadius: BorderRadius.circular(11),
+                    child: const SizedBox(
+                      width: 38,
+                      height: 38,
+                      child: Icon(
+                        Icons.tune_rounded,
+                        color: Color(0xFF0875D1),
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          Positioned(
-            right: 18,
-            top: 48,
-            child: Container(
-              width: 76,
-              height: 76,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white10),
-              ),
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(height: 14),
+          Row(
             children: [
-              Row(
-                children: [
-                  Material(
-                    color: Colors.white.withAlpha(28),
-                    shape: const CircleBorder(),
-                    child: InkWell(
-                      onTap: () => Navigator.pop(context),
-                      customBorder: const CircleBorder(),
-                      child: const SizedBox(
-                        width: 40,
-                        height: 40,
-                        child: Icon(
-                          Icons.arrow_back_rounded,
-                          color: Colors.white,
-                          size: 21,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Fish Stocks',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 21,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -0.25,
-                          ),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          'Fresh available listings across Caraga',
-                          style: TextStyle(
-                            color: Color(0xFFD9F0F6),
-                            fontSize: 9.8,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 9,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(25),
-                      borderRadius: BorderRadius.circular(99),
-                      border: Border.all(color: Colors.white.withAlpha(25)),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.location_on_rounded,
-                          color: Color(0xFFE6FAFC),
-                          size: 13,
-                        ),
-                        SizedBox(width: 4),
-                        Text(
-                          'Caraga',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 8.8,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              _statusCard(
+                value: '$availableCount',
+                label: 'Fish stocks',
+                icon: _fishMarketplaceIcon(),
+                iconBackground: const Color(0xFFEAF5FD),
               ),
-              const SizedBox(height: 15),
-              Container(
-                height: 52,
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(17),
-                  border: Border.all(color: const Color(0xFFE0EDF4)),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x18002A47),
-                      blurRadius: 14,
-                      offset: Offset(0, 6),
-                    ),
-                  ],
+              const SizedBox(width: 10),
+              _statusCard(
+                value: '$activeSupplierCount',
+                label: 'Suppliers',
+                icon: const Icon(
+                  Icons.storefront_rounded,
+                  color: Color(0xFF0A73D8),
+                  size: 18,
                 ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEDF8FC),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.search_rounded,
-                        color: Color(0xFF087AC0),
-                        size: 19,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: TextField(
-                        controller: searchController,
-                        onChanged: (value) {
-                          setState(() {
-                            searchQuery = value;
-                          });
-                        },
-                        textInputAction: TextInputAction.search,
-                        textAlignVertical: TextAlignVertical.center,
-                        cursorColor: const Color(0xFF087AC0),
-                        cursorHeight: 18,
-                        style: const TextStyle(
-                          color: Color(0xFF18374E),
-                          fontSize: 11.8,
-                          height: 1.15,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: 'Search fish, supplier, or location',
-                          hintStyle: const TextStyle(
-                            color: Color(0xFF8296A6),
-                            fontSize: 11.5,
-                            height: 1.15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          border: InputBorder.none,
-                          isDense: true,
-                          contentPadding: EdgeInsets.zero,
-                          suffixIcon: searchController.text.isEmpty
-                              ? null
-                              : IconButton(
-                                  tooltip: 'Clear search',
-                                  onPressed: () {
-                                    searchController.clear();
-                                    setState(() {
-                                      searchQuery = '';
-                                    });
-                                  },
-                                  icon: const Icon(
-                                    Icons.close_rounded,
-                                    color: Color(0xFF7990A0),
-                                    size: 18,
-                                  ),
-                                ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                iconBackground: const Color(0xFFE8F5FC),
               ),
-              const SizedBox(height: 13),
-              Row(
-                children: [
-                  metric(
-                    value: '$availableCount',
-                    label: 'Fish stocks',
-                    icon: Icons.inventory_2_outlined,
-                    accent: const Color(0xFF8BE3FF),
-                  ),
-                  metric(
-                    value: '$activeSupplierCount',
-                    label: 'Suppliers',
-                    icon: Icons.storefront_outlined,
-                    accent: const Color(0xFF8BE3FF),
-                  ),
-                  metric(
-                    value: 'COD',
-                    label: 'Payment',
-                    icon: Icons.payments_outlined,
-                    accent: const Color(0xFFFFD867),
-                  ),
-                ],
+              const SizedBox(width: 10),
+              _statusCard(
+                value: 'COD',
+                label: 'Payment',
+                icon: const Icon(
+                  Icons.account_balance_wallet_rounded,
+                  color: Color(0xFFE79A13),
+                  size: 18,
+                ),
+                iconBackground: const Color(0xFFFFF4DB),
+                valueColor: const Color(0xFF082E50),
               ),
             ],
           ),
@@ -801,13 +870,13 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
                     selectedUnit = label;
                   });
                 },
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(11),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 170),
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: selected ? Colors.white : Colors.transparent,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(11),
                     border: selected
                         ? Border.all(color: const Color(0xFFD7E7F0))
                         : null,
@@ -848,19 +917,17 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
     required int unseenCount,
   }) {
     final query = searchQuery.trim();
-    final title = query.isEmpty
-        ? 'Available Fish Stocks'
-        : 'Results for “$query”';
+    final title = query.isEmpty ? 'Available Fish Stocks' : 'Results for “$query”';
     final subtitle = query.isEmpty
         ? '$totalCount available listing${totalCount == 1 ? '' : 's'} from verified suppliers across Caraga.'
         : '$visibleCount matching listing${visibleCount == 1 ? '' : 's'} found.';
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
       child: Column(
         children: [
           unitSelector(),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -879,13 +946,13 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
                         letterSpacing: -0.2,
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 4),
                     Text(
                       subtitle,
                       style: const TextStyle(
                         color: Color(0xFF7C91A2),
                         fontSize: 9.7,
-                        height: 1.25,
+                        height: 1.3,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -899,12 +966,14 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
                             size: 13,
                           ),
                           const SizedBox(width: 4),
-                          Text(
-                            '$unseenCount new or restocked since your last visit',
-                            style: const TextStyle(
-                              color: Color(0xFF087AC0),
-                              fontSize: 8.7,
-                              fontWeight: FontWeight.w800,
+                          Flexible(
+                            child: Text(
+                              '$unseenCount new or restocked since your last visit',
+                              style: const TextStyle(
+                                color: Color(0xFF087AC0),
+                                fontSize: 8.7,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
                           ),
                         ],
@@ -1034,9 +1103,54 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
     );
   }
 
+  Widget errorState(Object error, String fallback) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 28),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: const Color(0xFFE0EBF2)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: const BoxDecoration(
+                color: Color(0xFFFFF2EE),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.cloud_off_rounded,
+                color: Color(0xFFD96A4B),
+                size: 25,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              AppErrorMessage.from(error, fallback: fallback),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Color(0xFF60798B),
+                fontSize: 11,
+                height: 1.4,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget loadingSkeleton() {
     return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(14, 4, 14, 28),
       itemCount: 6,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
@@ -1109,6 +1223,8 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
     Map<String, String> supplierImageUrlsById,
   ) {
     return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(14, 0, 14, 28),
       itemCount: documents.length,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -1139,6 +1255,40 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
     );
   }
 
+  Widget marketplacePage({
+    required int availableCount,
+    required int activeSupplierCount,
+    required Widget content,
+    Widget? section,
+  }) {
+    return ListView(
+      padding: EdgeInsets.zero,
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      children: [
+        header(),
+        Transform.translate(
+          offset: const Offset(0, -24),
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Color(0xFFF7FAFC),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+            ),
+            child: Column(
+              children: [
+                marketplaceOverview(
+                  availableCount: availableCount,
+                  activeSupplierCount: activeSupplierCount,
+                ),
+                if (section != null) section,
+                content,
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final cutoff = sessionCutoff ?? stockService.feedCutoff(null);
@@ -1149,31 +1299,13 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
         stream: supplierService.suppliersStream,
         builder: (context, supplierSnapshot) {
           if (supplierSnapshot.hasError) {
-            return Column(
-              children: [
-                header(availableCount: 0, activeSupplierCount: 0),
-                Expanded(
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(22),
-                      child: Text(
-                        AppErrorMessage.from(
-                          supplierSnapshot.error!,
-                          fallback:
-                              'The fish marketplace could not be loaded. Please try again.',
-                        ),
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Color(0xFF60798B),
-                          fontSize: 11,
-                          height: 1.4,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+            return marketplacePage(
+              availableCount: 0,
+              activeSupplierCount: 0,
+              content: errorState(
+                supplierSnapshot.error!,
+                'The fish marketplace could not be loaded. Please try again.',
+              ),
             );
           }
 
@@ -1215,68 +1347,54 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
                 }
               }
 
-              return Column(
-                children: [
-                  header(
-                    availableCount: availableDocuments.length,
-                    activeSupplierCount: activeSupplierIds.length,
-                  ),
-                  if (stockSnapshot.hasData)
-                    sectionHeader(
+              final section = stockSnapshot.hasData
+                  ? sectionHeader(
                       visibleCount: visibleDocuments.length,
                       totalCount: availableDocuments.length,
                       unseenCount: unseenCount,
-                    ),
-                  Expanded(
-                    child: Builder(
-                      builder: (context) {
-                        if (stockSnapshot.hasError) {
-                          return Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(22),
-                              child: Text(
-                                AppErrorMessage.from(
-                                  stockSnapshot.error!,
-                                  fallback:
-                                      'The latest fish stocks could not be loaded. Please try again.',
-                                ),
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: Color(0xFF60798B),
-                                  fontSize: 11,
-                                  height: 1.4,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          );
-                        }
+                    )
+                  : null;
 
-                        if (!stockSnapshot.hasData ||
-                            !supplierSnapshot.hasData) {
-                          return loadingSkeleton();
-                        }
-
-                        if (visibleDocuments.isEmpty) {
-                          return ListView(
-                            padding: EdgeInsets.zero,
-                            children: [
-                              emptyState(
-                                hasAvailableStocks:
-                                    availableDocuments.isNotEmpty,
-                              ),
-                            ],
-                          );
-                        }
-
-                        return stockGrid(
-                          visibleDocuments,
-                          supplierImageUrlsById,
-                        );
-                      },
-                    ),
+              if (stockSnapshot.hasError) {
+                return marketplacePage(
+                  availableCount: availableDocuments.length,
+                  activeSupplierCount: activeSupplierIds.length,
+                  section: section,
+                  content: errorState(
+                    stockSnapshot.error!,
+                    'The latest fish stocks could not be loaded. Please try again.',
                   ),
-                ],
+                );
+              }
+
+              if (!stockSnapshot.hasData || !supplierSnapshot.hasData) {
+                return marketplacePage(
+                  availableCount: availableDocuments.length,
+                  activeSupplierCount: activeSupplierIds.length,
+                  section: section,
+                  content: loadingSkeleton(),
+                );
+              }
+
+              if (visibleDocuments.isEmpty) {
+                return marketplacePage(
+                  availableCount: availableDocuments.length,
+                  activeSupplierCount: activeSupplierIds.length,
+                  section: section,
+                  content: emptyState(
+                    hasAvailableStocks: availableDocuments.isNotEmpty,
+                  ),
+                );
+              }
+
+              return marketplacePage(
+                availableCount: availableDocuments.length,
+                activeSupplierCount: activeSupplierIds.length,
+                section: section,
+                content: stockGrid(
+                  visibleDocuments,
+                  supplierImageUrlsById,
+                ),
               );
             },
           );

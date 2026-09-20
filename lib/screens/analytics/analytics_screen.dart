@@ -9,6 +9,8 @@ enum AnalyticsMode { vendor, supplier }
 
 enum AnalyticsPeriod { weekly, monthly }
 
+enum SupplierAnalyticsTab { summary, accuracy, guidance, products }
+
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key, this.mode = AnalyticsMode.vendor});
 
@@ -20,7 +22,31 @@ class AnalyticsScreen extends StatefulWidget {
 
 class _AnalyticsScreenState extends State<AnalyticsScreen> {
   AnalyticsPeriod selectedPeriod = AnalyticsPeriod.weekly;
+  SupplierAnalyticsTab selectedSupplierTab = SupplierAnalyticsTab.summary;
   String? selectedSeriesKey;
+  DateTime? selectedSupplierPeriodStart;
+  int? selectedSupplierChartBarIndex;
+  final ScrollController _supplierScrollController = ScrollController();
+
+  void _scrollSupplierToTop() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_supplierScrollController.hasClients) {
+        return;
+      }
+
+      _supplierScrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 240),
+        curve: Curves.easeOutCubic,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _supplierScrollController.dispose();
+    super.dispose();
+  }
 
   User? get currentUser => FirebaseAuth.instance.currentUser;
 
@@ -510,6 +536,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         .toList();
 
     double totalAmount = 0;
+    var includedLiveCompletedOrders = 0;
+    var includedHistoricalTransactions = 0;
 
     final productMap = <String, ProductSummary>{};
     final productPeriodMap = <String, Map<String, PeriodPoint>>{};
@@ -550,6 +578,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         date: date,
         quantity: (existingPoint?.quantity ?? 0) + line.quantity,
         amount: (existingPoint?.amount ?? 0) + lineAmount,
+        transactionCount: (existingPoint?.transactionCount ?? 0) + 1,
       );
     }
 
@@ -557,6 +586,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     for (final document in completedOrders) {
       final data = document.data();
       final date = periodStart(orderDate(data));
+
+      // Supplier analytics only closes a period after the week/month ends.
+      // This keeps the in-progress period out of summary totals, forecasts,
+      // accuracy evaluation, rankings, and restocking guidance.
+      if (isSupplier && sameAnalyticsPeriod(date, DateTime.now())) {
+        continue;
+      }
+
       final lines = extractOrderLines(data);
       final orderTotal = completedAmount(data);
       final lineTotals = lines.fold<double>(
@@ -565,6 +602,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       );
 
       totalAmount += orderTotal > 0 ? orderTotal : lineTotals;
+      includedLiveCompletedOrders++;
 
       for (final line in lines) {
         addLine(
@@ -581,6 +619,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     for (final document in eligibleHistorical) {
       final data = document.data();
       final date = periodStart(historicalTransactionDate(data));
+
+      if (isSupplier && sameAnalyticsPeriod(date, DateTime.now())) {
+        continue;
+      }
+
       final lines = extractHistoricalLines(data);
 
       if (lines.isEmpty) {
@@ -599,6 +642,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       );
 
       totalAmount += historicalTotal > 0 ? historicalTotal : lineTotals;
+      includedHistoricalTransactions++;
 
       for (final line in lines) {
         addLine(line: line, date: date, fallbackAmount: historicalTotal);
@@ -658,14 +702,25 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
     final variabilityValue = variability(quantities);
 
+    final rankingUnit = quantityUnits.isEmpty
+        ? 'the recorded unit'
+        : isSupplier
+        ? supplierUnitLabel(quantityUnits.first)
+        : quantityUnits.first;
     final rankingBasis = mixedUnits
         ? 'Ranked by completed transaction amount because fish-and-unit series use different units.'
-        : 'Ranked by completed quantity within ${quantityUnits.isEmpty ? 'the recorded unit' : quantityUnits.first}.';
+        : 'Ranked by completed quantity within $rankingUnit.';
 
     return AnalyticsData(
-      completedOrders: completedOrders.length + eligibleHistorical.length,
-      liveCompletedOrders: completedOrders.length,
-      historicalTransactions: eligibleHistorical.length,
+      completedOrders: isSupplier
+          ? includedLiveCompletedOrders + includedHistoricalTransactions
+          : completedOrders.length + eligibleHistorical.length,
+      liveCompletedOrders: isSupplier
+          ? includedLiveCompletedOrders
+          : completedOrders.length,
+      historicalTransactions: isSupplier
+          ? includedHistoricalTransactions
+          : eligibleHistorical.length,
       totalAmount: totalAmount,
       products: products,
       selectedProduct: selectedProduct,
@@ -1109,7 +1164,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }) {
     final suggestions = <RestockingSuggestion>[];
 
-    for (final product in products.take(4)) {
+    for (final product in products) {
       final points = productSeries[product.seriesKey] ?? const <PeriodPoint>[];
 
       final simple = simpleMovingAverageForecast(points);
@@ -1467,13 +1522,18 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     required IconData icon,
     required Widget child,
     Color iconColor = const Color(0xFF146BFF),
+    bool compact = false,
   }) {
+    final cardPadding = compact ? 14.0 : 15.0;
+    final iconSize = compact ? 34.0 : 36.0;
+    final contentGap = compact ? 11.0 : 13.0;
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(15),
+      margin: EdgeInsets.only(bottom: compact ? 10 : 12),
+      padding: EdgeInsets.all(cardPadding),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(compact ? 20 : 22),
         border: Border.all(color: const Color(0xFFE3ECF2)),
         boxShadow: const [
           BoxShadow(
@@ -1490,13 +1550,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 36,
-                height: 36,
+                width: iconSize,
+                height: iconSize,
                 decoration: BoxDecoration(
                   color: iconColor.withAlpha(16),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(compact ? 11 : 12),
                 ),
-                child: Icon(icon, color: iconColor, size: 19),
+                child: Icon(icon, color: iconColor, size: compact ? 18 : 19),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -1505,9 +1565,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
-                        color: Color(0xFF102C44),
-                        fontSize: 14.4,
+                      style: TextStyle(
+                        color: const Color(0xFF102C44),
+                        fontSize: compact ? 13.8 : 14.4,
                         fontWeight: FontWeight.w900,
                         letterSpacing: -0.15,
                       ),
@@ -1516,9 +1576,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       const SizedBox(height: 3),
                       Text(
                         subtitle,
-                        style: const TextStyle(
-                          color: Color(0xFF7890A1),
-                          fontSize: 9.9,
+                        style: TextStyle(
+                          color: const Color(0xFF7890A1),
+                          fontSize: compact ? 9.6 : 9.9,
                           height: 1.34,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1529,7 +1589,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 13),
+          SizedBox(height: contentGap),
           child,
         ],
       ),
@@ -1553,6 +1613,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               onTap: () {
                 setState(() {
                   selectedPeriod = AnalyticsPeriod.weekly;
+                  selectedSupplierPeriodStart = null;
                 });
               },
             ),
@@ -1564,6 +1625,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               onTap: () {
                 setState(() {
                   selectedPeriod = AnalyticsPeriod.monthly;
+                  selectedSupplierPeriodStart = null;
                 });
               },
             ),
@@ -1912,7 +1974,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                                   CrossAxisAlignment.start,
                                               children: [
                                                 Text(
-                                                  '${product.productName} · ${product.quantityUnit}',
+                                                  '${product.productName} · ${isSupplier ? supplierUnitLabel(product.quantityUnit) : product.quantityUnit}',
                                                   style: const TextStyle(
                                                     color: Color(0xFF102C44),
                                                     fontSize: 12.5,
@@ -1921,7 +1983,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                                 ),
                                                 const SizedBox(height: 3),
                                                 Text(
-                                                  '${formatNumber(product.quantity)} ${product.quantityUnit} · ${product.transactionCount} transaction${product.transactionCount == 1 ? '' : 's'}',
+                                                  '${formatNumber(product.quantity)} ${isSupplier ? supplierUnitLabel(product.quantityUnit) : product.quantityUnit} · ${product.transactionCount} transaction${product.transactionCount == 1 ? '' : 's'}',
                                                   style: const TextStyle(
                                                     color: Color(0xFF7B8FA3),
                                                     fontSize: 9.5,
@@ -1965,6 +2027,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
     setState(() {
       selectedSeriesKey = selected;
+      selectedSupplierPeriodStart = null;
+      selectedSupplierChartBarIndex = null;
     });
   }
 
@@ -2246,7 +2310,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '${product.productName} · ${product.quantityUnit}',
+                      '${product.productName} · ${isSupplier ? supplierUnitLabel(product.quantityUnit) : product.quantityUnit}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -2779,6 +2843,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       return const SizedBox.shrink();
     }
 
+    final displayUnit = isSupplier
+        ? supplierUnitLabel(product.quantityUnit)
+        : product.quantityUnit;
     final selection = data.selectedMethod;
     final selectedEvaluation =
         selection.method == ForecastingMethod.simpleMovingAverage
@@ -2861,7 +2928,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               ),
               if (selection.hasSelection)
                 Text(
-                  '${formatNumber(selection.forecast, decimals: 2)}\n${product.quantityUnit}',
+                  '${formatNumber(selection.forecast, decimals: 2)}\n$displayUnit',
                   textAlign: TextAlign.right,
                   style: const TextStyle(
                     color: Color(0xFF087AC0),
@@ -2873,7 +2940,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             ],
           ),
         ),
-        forecastEvaluationMatrix(data: data, unit: product.quantityUnit),
+        forecastEvaluationMatrix(data: data, unit: displayUnit),
         if (selectedEvaluation != null && selectedEvaluation.hasMape)
           forecastReliabilityNote(
             evaluation: selectedEvaluation,
@@ -3141,7 +3208,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     const SizedBox(height: 3),
                     Text(
                       isSupplier
-                          ? 'Estimated next-period demand: ${formatNumber(suggestion.suggestedQuantity, decimals: 2)} ${suggestion.quantityUnit}.'
+                          ? 'Estimated next-period demand: ${formatNumber(suggestion.suggestedQuantity, decimals: 2)} ${supplierUnitLabel(suggestion.quantityUnit)}.'
                           : 'Estimated next-period requirement: ${formatNumber(suggestion.suggestedQuantity, decimals: 2)} ${suggestion.quantityUnit}.',
                       style: const TextStyle(
                         color: Color(0xFF657C8E),
@@ -3234,7 +3301,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '${formatNumber(alert.quantity)} ${alert.quantityUnit} remaining · Alert at ${formatNumber(alert.lowStockLevel)} ${alert.quantityUnit}',
+                      '${formatNumber(alert.quantity)} ${supplierUnitLabel(alert.quantityUnit)} remaining · Alert at ${formatNumber(alert.lowStockLevel)} ${supplierUnitLabel(alert.quantityUnit)}',
                       style: TextStyle(
                         color: color,
                         fontSize: 9.8,
@@ -3283,7 +3350,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             children: [
               Container(
                 width: 30,
-                height: 30,
+                height: 18,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: const Color(0xFF146BFF).withAlpha(18),
@@ -3306,7 +3373,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${product.productName} · ${product.quantityUnit}',
+                      '${product.productName} · ${isSupplier ? supplierUnitLabel(product.quantityUnit) : product.quantityUnit}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -3317,7 +3384,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '${formatNumber(product.quantity)} ${product.quantityUnit} · ${product.transactionCount} transaction${product.transactionCount == 1 ? '' : 's'}',
+                      '${formatNumber(product.quantity)} ${isSupplier ? supplierUnitLabel(product.quantityUnit) : product.quantityUnit} · ${product.transactionCount} transaction${product.transactionCount == 1 ? '' : 's'}',
                       style: const TextStyle(
                         color: Color(0xFF7B8FA3),
                         fontSize: 9.4,
@@ -3546,142 +3613,319 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  Widget analyticsContent(AnalyticsData data) {
-    if (!data.hasTransactions) {
-      return noDataOverview(data);
+  String supplierUnitLabel(String unit) {
+    return switch (normalizeAnalyticsUnit(unit)) {
+      'kilogram' => 'kilo',
+      'icebox' => 'icebox',
+      'tab' => 'tab',
+      final value => value,
+    };
+  }
+
+  String supplierMonthName(int month) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+
+    return months[month - 1];
+  }
+
+  String supplierPeriodRange(DateTime date, {bool includeYear = true}) {
+    final start = periodStart(date);
+
+    if (selectedPeriod == AnalyticsPeriod.monthly) {
+      return includeYear
+          ? '${supplierMonthName(start.month)} ${start.year}'
+          : supplierMonthName(start.month);
     }
 
-    final selectedProduct = data.selectedProduct;
-    final unit = selectedProduct?.quantityUnit ?? 'unit';
-    final bothForecastMethodsEligible =
-        data.simpleForecast.hasValue &&
-        data.seasonalForecast.hasValue &&
-        data.simpleEvaluation.hasMape &&
-        data.seasonalEvaluation.hasMape;
+    final end = start.add(const Duration(days: 6));
+    final yearSuffix = includeYear ? ', ${end.year}' : '';
 
-    return CustomScrollView(
-      physics: const BouncingScrollPhysics(
-        parent: AlwaysScrollableScrollPhysics(),
+    if (start.month == end.month) {
+      return '${supplierMonthName(start.month)} ${start.day}–${end.day}$yearSuffix';
+    }
+
+    return '${supplierMonthName(start.month)} ${start.day}–${supplierMonthName(end.month)} ${end.day}$yearSuffix';
+  }
+
+  String supplierAxisLabel(DateTime date) {
+    final start = periodStart(date);
+
+    if (selectedPeriod == AnalyticsPeriod.monthly) {
+      return supplierMonthName(start.month);
+    }
+
+    return '${supplierMonthName(start.month)} ${start.day}';
+  }
+
+  DateTime? supplierSelectedPeriodDate(AnalyticsData data) {
+    final points = data.selectedPoints;
+
+    if (points.isEmpty) {
+      return null;
+    }
+
+    final requested = selectedSupplierPeriodStart;
+
+    if (requested != null) {
+      for (final point in points) {
+        if (sameAnalyticsPeriod(point.date, requested)) {
+          return point.date;
+        }
+      }
+    }
+
+    return points.last.date;
+  }
+
+  PeriodPoint? supplierSelectedPoint(AnalyticsData data) {
+    final selectedDate = supplierSelectedPeriodDate(data);
+
+    if (selectedDate == null) {
+      return null;
+    }
+
+    return pointForAnalyticsPeriod(data.selectedPoints, selectedDate);
+  }
+
+  int supplierSelectedPointIndex(AnalyticsData data) {
+    final selectedDate = supplierSelectedPeriodDate(data);
+
+    if (selectedDate == null) {
+      return -1;
+    }
+
+    return data.selectedPoints.indexWhere(
+      (point) => sameAnalyticsPeriod(point.date, selectedDate),
+    );
+  }
+
+  void moveSupplierPeriod(AnalyticsData data, int offset) {
+    final index = supplierSelectedPointIndex(data);
+    final targetIndex = index + offset;
+
+    if (index < 0 ||
+        targetIndex < 0 ||
+        targetIndex >= data.selectedPoints.length) {
+      return;
+    }
+
+    setState(() {
+      selectedSupplierPeriodStart = data.selectedPoints[targetIndex].date;
+      selectedSupplierChartBarIndex = null;
+    });
+  }
+
+  List<PeriodPoint> supplierPointsThroughSelection(AnalyticsData data) {
+    final selectedDate = supplierSelectedPeriodDate(data);
+
+    if (selectedDate == null) {
+      return const [];
+    }
+
+    final points = <PeriodPoint>[];
+
+    for (final point in data.selectedPoints) {
+      if (point.date.isAfter(selectedDate) &&
+          !sameAnalyticsPeriod(point.date, selectedDate)) {
+        break;
+      }
+      points.add(point);
+    }
+
+    return points;
+  }
+
+  _SupplierForecastSnapshot supplierForecastSnapshot(AnalyticsData data) {
+    final points = supplierPointsThroughSelection(data);
+
+    if (points.isEmpty) {
+      return _SupplierForecastSnapshot(
+        selectedMethod: ForecastMethodSelection.unavailable(
+          reason: 'No completed periods are available.',
+        ),
+      );
+    }
+
+    final simple = simpleMovingAverageForecast(points);
+    final seasonal = seasonalMovingAverageForecast(points);
+    final simpleEvaluation = evaluateSimpleMovingAverage(points);
+    final seasonalEvaluation = evaluateSeasonalMovingAverage(points);
+
+    return _SupplierForecastSnapshot(
+      selectedMethod: selectForecastMethod(
+        simpleForecast: simple,
+        seasonalForecast: seasonal,
+        simpleEvaluation: simpleEvaluation,
+        seasonalEvaluation: seasonalEvaluation,
       ),
-      slivers: [
-        analyticsHeader(data),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(14, 14, 14, 30),
-          sliver: SliverList(
-            delegate: SliverChildListDelegate([
-              analyticsFilters(data),
-              selectedSeriesSummary(data),
-              sectionCard(
-                title: trendTitle,
-                subtitle:
-                    '${selectedPeriod == AnalyticsPeriod.weekly ? 'Weekly' : 'Monthly'} completed quantity for ${selectedProduct?.productName ?? 'the selected series'}.',
-                icon: Icons.auto_graph_rounded,
-                child: trendChart(data.selectedPoints, unit: unit),
-              ),
-              sectionCard(
-                title: 'Next-Period Forecast',
-                subtitle:
-                    'Compare both forecasting methods for ${selectedProduct?.productName ?? 'the selected fish'} · $unit.',
-                icon: Icons.trending_up_rounded,
-                child: Column(
+    );
+  }
+
+  String supplierFullCurrency(double value) {
+    final rounded = value.round().abs().toString();
+    final buffer = StringBuffer();
+
+    for (var index = 0; index < rounded.length; index++) {
+      if (index > 0 && (rounded.length - index) % 3 == 0) {
+        buffer.write(',');
+      }
+      buffer.write(rounded[index]);
+    }
+
+    return '${value < 0 ? '-' : ''}₱${buffer.toString()}';
+  }
+
+  Widget supplierAnalyticsHeader() {
+    final topPadding = MediaQuery.of(context).padding.top;
+    final delegate = _SupplierAnalyticsHeaderDelegate(
+      topPadding: topPadding,
+      onBack: () => Navigator.of(context).maybePop(),
+      title: isSupplier ? 'Supplier Analytics' : 'Vendor Analytics',
+      eyebrow: isSupplier ? 'SUPPLIER INSIGHTS' : 'VENDOR INSIGHTS',
+      subtitle: isSupplier
+          ? 'Sales, forecasts, and stock planning at a glance.'
+          : 'Purchases, forecasts, and restocking at a glance.',
+      backgroundAsset: isSupplier
+          ? 'assets/images/supplier_analytics_header_bg.png'
+          : 'assets/images/vendor_analytics_header_bg.png',
+    );
+
+    // Keep the Supplier Analytics hero as a normal scrollable header, just
+    // like the other dashboard screens. It moves completely off-screen with
+    // the page instead of collapsing into a pinned toolbar.
+    return SliverToBoxAdapter(
+      child: SizedBox(
+        height: delegate.maxExtent,
+        child: delegate.build(context, 0, false),
+      ),
+    );
+  }
+
+  Widget supplierSummaryFilters(AnalyticsData data) {
+    final selected = data.selectedProduct;
+
+    return Row(
+      children: [
+        Expanded(
+          flex: 5,
+          child: Container(
+            height: 44,
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FBFD),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFE0EAF1)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _SupplierSegmentButton(
+                    label: 'Weekly',
+                    selected: selectedPeriod == AnalyticsPeriod.weekly,
+                    onTap: () {
+                      if (selectedPeriod == AnalyticsPeriod.weekly) {
+                        return;
+                      }
+                      setState(() {
+                        selectedPeriod = AnalyticsPeriod.weekly;
+                        selectedSupplierPeriodStart = null;
+                        selectedSupplierChartBarIndex = null;
+                      });
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: _SupplierSegmentButton(
+                    label: 'Monthly',
+                    selected: selectedPeriod == AnalyticsPeriod.monthly,
+                    onTap: () {
+                      if (selectedPeriod == AnalyticsPeriod.monthly) {
+                        return;
+                      }
+                      setState(() {
+                        selectedPeriod = AnalyticsPeriod.monthly;
+                        selectedSupplierPeriodStart = null;
+                        selectedSupplierChartBarIndex = null;
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 9),
+        Expanded(
+          flex: 6,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: data.products.isEmpty
+                  ? null
+                  : () => showSeriesPicker(data),
+              borderRadius: BorderRadius.circular(14),
+              child: Ink(
+                height: 44,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FBFD),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFE0EAF1)),
+                ),
+                child: Row(
                   children: [
-                    forecastMethodCard(
-                      title: 'Simple Moving Average',
-                      description: selectedPeriod == AnalyticsPeriod.weekly
-                          ? 'Uses the 4 immediately preceding weekly observations.'
-                          : 'Uses the 3 immediately preceding monthly observations.',
-                      result: data.simpleForecast,
-                      unit: unit,
-                      icon: Icons.show_chart_rounded,
-                      availablePeriods: data.selectedPoints.length,
-                      requiredPeriods: simpleRequiredPeriods,
-                      selected:
-                          data.selectedMethod.method ==
-                          ForecastingMethod.simpleMovingAverage,
-                      selectedLabel: bothForecastMethodsEligible
-                          ? 'BEST FIT'
-                          : 'ONLY ELIGIBLE',
+                    Container(
+                      width: 30,
+                      height: 30,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEAF7FF),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        selected?.emoji ?? '🐟',
+                        style: const TextStyle(fontSize: 17),
+                      ),
                     ),
-                    forecastMethodCard(
-                      title: 'Seasonal Moving Average',
-                      description: selectedPeriod == AnalyticsPeriod.weekly
-                          ? 'Uses comparable weekly observations across the 4-week seasonal cycle.'
-                          : 'Uses comparable monthly observations across annual seasonal cycles.',
-                      result: data.seasonalForecast,
-                      unit: unit,
-                      icon: Icons.calendar_month_rounded,
-                      availablePeriods: data.selectedPoints.length,
-                      requiredPeriods: seasonalRequiredPeriods,
-                      selected:
-                          data.selectedMethod.method ==
-                          ForecastingMethod.seasonalMovingAverage,
-                      selectedLabel: bothForecastMethodsEligible
-                          ? 'BEST FIT'
-                          : 'ONLY ELIGIBLE',
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          selected == null
+                              ? 'Select fish'
+                              : '${selected.productName} · ${supplierUnitLabel(selected.quantityUnit)}',
+                          maxLines: 1,
+                          style: const TextStyle(
+                            color: Color(0xFF0B2470),
+                            fontSize: 11.0,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: Color(0xFF0B2470),
+                      size: 20,
                     ),
                   ],
                 ),
               ),
-              sectionCard(
-                title: 'Forecast Accuracy',
-                subtitle:
-                    'MAPE is the primary accuracy measure; MAE provides supporting error magnitude.',
-                icon: Icons.fact_check_outlined,
-                child: forecastEvaluation(data),
-              ),
-              sectionCard(
-                title: isSupplier
-                    ? 'Sales Variability'
-                    : 'Purchase Variability',
-                subtitle: isSupplier
-                    ? 'How much the selected completed-sales series changes between periods.'
-                    : 'How much the selected completed-purchase series changes between periods.',
-                icon: Icons.multiline_chart_rounded,
-                child: variabilityPanel(data.variability),
-              ),
-              sectionCard(
-                title: 'Restocking Guidance',
-                subtitle: isSupplier
-                    ? 'Forecast-based guidance for stock preparation. Inventory is never changed automatically.'
-                    : 'Forecast-based guidance for purchasing decisions. Orders are never placed automatically.',
-                icon: Icons.notifications_active_outlined,
-                child: suggestions(data.suggestions),
-              ),
-              if (isSupplier)
-                sectionCard(
-                  title: 'Stock Alerts',
-                  subtitle:
-                      'Current low-stock and out-of-stock listings that may need attention.',
-                  icon: Icons.inventory_2_outlined,
-                  iconColor: const Color(0xFFFF7A1A),
-                  child: stockAlerts(data.stockAlerts),
-                ),
-              sectionCard(
-                title: isSupplier ? 'Top-Selling Fish' : 'Top Purchased Fish',
-                subtitle: data.rankingBasis,
-                icon: Icons.emoji_events_outlined,
-                child: topProducts(data.products),
-              ),
-              roleDataNote(data),
-            ]),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget loadingBody() {
-    final empty = AnalyticsData.empty();
-
-    return CustomScrollView(
-      slivers: [
-        analyticsHeader(empty),
-        const SliverFillRemaining(
-          hasScrollBody: false,
-          child: Center(
-            child: CircularProgressIndicator(
-              strokeWidth: 2.4,
-              color: Color(0xFF146BFF),
             ),
           ),
         ),
@@ -3689,16 +3933,942 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  Widget errorBody(Object error) {
-    final empty = AnalyticsData.empty();
+  Widget supplierPeriodNavigation(AnalyticsData data) {
+    final date = supplierSelectedPeriodDate(data);
+    final index = supplierSelectedPointIndex(data);
+    final canMoveBack = index > 0;
+    final canMoveForward = index >= 0 && index < data.selectedPoints.length - 1;
+
+    return Row(
+      children: [
+        _SupplierCircleButton(
+          icon: Icons.chevron_left_rounded,
+          enabled: canMoveBack,
+          onTap: () => moveSupplierPeriod(data, -1),
+        ),
+        const SizedBox(width: 7),
+        Expanded(
+          child: Container(
+            height: 42,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FBFD),
+              borderRadius: BorderRadius.circular(21),
+              border: Border.all(color: const Color(0xFFE0EAF1)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.calendar_month_outlined,
+                  color: Color(0xFF0877D8),
+                  size: 20,
+                ),
+                const SizedBox(width: 7),
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      date == null
+                          ? 'No completed period'
+                          : supplierPeriodRange(date),
+                      maxLines: 1,
+                      style: const TextStyle(
+                        color: Color(0xFF0B2470),
+                        fontSize: 12.2,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.15,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 7),
+        _SupplierCircleButton(
+          icon: Icons.chevron_right_rounded,
+          enabled: canMoveForward,
+          onTap: () => moveSupplierPeriod(data, 1),
+        ),
+        const SizedBox(width: 6),
+        TextButton(
+          onPressed: data.selectedPoints.isEmpty
+              ? null
+              : () => showSupplierHistory(data),
+          style: TextButton.styleFrom(
+            foregroundColor: const Color(0xFF0877D8),
+            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
+          ),
+          child: const Text(
+            'History',
+            style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> showSupplierHistory(AnalyticsData data) async {
+    final product = data.selectedProduct;
+
+    if (product == null || data.selectedPoints.isEmpty) {
+      return;
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        final points = data.selectedPoints.reversed.toList();
+
+        return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(sheetContext).size.height * 0.72,
+          ),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            children: [
+              const SizedBox(height: 10),
+              Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD8E2EA),
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 17, 18, 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isSupplier ? 'Sales History' : 'Purchase History',
+                            style: const TextStyle(
+                              color: Color(0xFF0B2470),
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            '${product.productName} · ${supplierUnitLabel(product.quantityUnit)}',
+                            style: const TextStyle(
+                              color: Color(0xFF7185A2),
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(sheetContext),
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1, color: Color(0xFFE7EEF4)),
+              Expanded(
+                child: ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
+                  itemCount: points.length,
+                  separatorBuilder: (context, index) =>
+                      const Divider(height: 1, color: Color(0xFFEEF3F7)),
+                  itemBuilder: (context, index) {
+                    final point = points[index];
+                    final selectedDate = supplierSelectedPeriodDate(data);
+                    final isSelected =
+                        selectedDate != null &&
+                        sameAnalyticsPeriod(selectedDate, point.date);
+
+                    return ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                      onTap: () {
+                        setState(() {
+                          selectedSupplierPeriodStart = point.date;
+                          selectedSupplierTab = SupplierAnalyticsTab.summary;
+                          selectedSupplierChartBarIndex = null;
+                        });
+                        Navigator.pop(sheetContext);
+                      },
+                      leading: Container(
+                        width: 42,
+                        height: 42,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? const Color(0xFFE7F3FF)
+                              : const Color(0xFFF4F8FB),
+                          borderRadius: BorderRadius.circular(13),
+                        ),
+                        child: Icon(
+                          Icons.calendar_today_outlined,
+                          color: isSelected
+                              ? const Color(0xFF0877D8)
+                              : const Color(0xFF7890A5),
+                          size: 19,
+                        ),
+                      ),
+                      title: Text(
+                        supplierPeriodRange(point.date),
+                        style: const TextStyle(
+                          color: Color(0xFF17346F),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      subtitle: Text(
+                        '${formatNumber(point.quantity)} ${supplierUnitLabel(product.quantityUnit)} · ${supplierFullCurrency(point.amount)}',
+                        style: const TextStyle(
+                          color: Color(0xFF73879C),
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      trailing: Text(
+                        '${point.transactionCount} order${point.transactionCount == 1 ? '' : 's'}',
+                        style: const TextStyle(
+                          color: Color(0xFF0877D8),
+                          fontSize: 10.4,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget supplierSummaryMetrics(AnalyticsData data) {
+    final point = supplierSelectedPoint(data);
+    final unit = supplierUnitLabel(
+      data.selectedProduct?.quantityUnit ?? 'unit',
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(9),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFE0EAF1)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0B00152A),
+            blurRadius: 16,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Container(
+        height: 112,
+        decoration: BoxDecoration(
+          color: const Color(0xFFF3F8FB),
+          borderRadius: BorderRadius.circular(17),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: _SupplierSummaryMetric(
+                icon: Icons.inventory_2_outlined,
+                label: isSupplier ? 'Quantity Sold' : 'Quantity Purchased',
+                value: point == null ? '—' : formatNumber(point.quantity),
+                suffix: unit,
+              ),
+            ),
+            const _SupplierMetricDivider(),
+            Expanded(
+              child: _SupplierSummaryMetric(
+                icon: Icons.payments_outlined,
+                label: isSupplier ? 'Sales' : 'Amount Spent',
+                value: point == null ? '—' : supplierFullCurrency(point.amount),
+                valueFontSize: 20.5,
+              ),
+            ),
+            const _SupplierMetricDivider(),
+            Expanded(
+              child: _SupplierSummaryMetric(
+                icon: Icons.groups_2_outlined,
+                label: 'Orders',
+                value: point == null ? '—' : '${point.transactionCount}',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget supplierSalesChartCard(AnalyticsData data) {
+    final selectedDate = supplierSelectedPeriodDate(data);
+    final points = selectedDate == null
+        ? const <PeriodPoint>[]
+        : data.selectedPoints
+              .where(
+                (point) =>
+                    point.date.isBefore(selectedDate) ||
+                    sameAnalyticsPeriod(point.date, selectedDate),
+              )
+              .toList();
+    final visible = points.length > 6
+        ? points.sublist(points.length - 6)
+        : points;
+    final selectedBarIndex =
+        selectedSupplierChartBarIndex != null &&
+            selectedSupplierChartBarIndex! >= 0 &&
+            selectedSupplierChartBarIndex! < visible.length
+        ? selectedSupplierChartBarIndex
+        : null;
+    final unit = supplierUnitLabel(
+      data.selectedProduct?.quantityUnit ?? 'unit',
+    );
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFE0EAF1)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0B00152A),
+            blurRadius: 16,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            selectedPeriod == AnalyticsPeriod.weekly
+                ? (isSupplier ? 'Weekly Sales' : 'Weekly Purchases')
+                : (isSupplier ? 'Monthly Sales' : 'Monthly Purchases'),
+            style: const TextStyle(
+              color: Color(0xFF0B2470),
+              fontSize: 16.2,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.35,
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (visible.isEmpty)
+            const SizedBox(
+              height: 190,
+              child: Center(
+                child: Text(
+                  'No completed periods yet.',
+                  style: TextStyle(
+                    color: Color(0xFF7B8FA3),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            )
+          else
+            SizedBox(
+              height: 184,
+              width: double.infinity,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTapDown: (details) {
+                      const left = 42.0;
+                      const right = 6.0;
+                      final chartWidth = math.max(
+                        1.0,
+                        constraints.maxWidth - left - right,
+                      );
+                      final x = details.localPosition.dx;
+
+                      if (x < left || x > left + chartWidth) {
+                        setState(() => selectedSupplierChartBarIndex = null);
+                        return;
+                      }
+
+                      final slotWidth = chartWidth / visible.length;
+                      final index = ((x - left) / slotWidth).floor();
+
+                      if (index < 0 || index >= visible.length) {
+                        return;
+                      }
+
+                      setState(() {
+                        selectedSupplierChartBarIndex =
+                            selectedSupplierChartBarIndex == index
+                            ? null
+                            : index;
+                      });
+                    },
+                    child: CustomPaint(
+                      painter: _SupplierBarChartPainter(
+                        values: visible.map((point) => point.quantity).toList(),
+                        labels: visible
+                            .map((point) => supplierAxisLabel(point.date))
+                            .toList(),
+                        selectedIndex: selectedBarIndex,
+                        unitLabel: unit,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget supplierForecastCard(AnalyticsData data) {
+    final product = data.selectedProduct;
+    final selectedDate = supplierSelectedPeriodDate(data);
+    final snapshot = supplierForecastSnapshot(data);
+    final selection = snapshot.selectedMethod;
+    final unit = supplierUnitLabel(product?.quantityUnit ?? 'unit');
+    final targetDate = selectedDate == null
+        ? null
+        : shiftAnalyticsPeriod(selectedDate, 1);
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 13),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFE0EAF1)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0B00152A),
+            blurRadius: 16,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEAF8EF),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: const Icon(
+                  Icons.bar_chart_rounded,
+                  color: Color(0xFF079447),
+                  size: 26,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      selectedPeriod == AnalyticsPeriod.weekly
+                          ? 'Next week forecast'
+                          : 'Next month forecast',
+                      style: const TextStyle(
+                        color: Color(0xFF0B2470),
+                        fontSize: 15.2,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    if (selection.hasSelection)
+                      Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.end,
+                        spacing: 7,
+                        children: [
+                          Text(
+                            formatNumber(
+                              roundForecastQuantity(selection.forecast),
+                            ),
+                            style: const TextStyle(
+                              color: Color(0xFF0B2470),
+                              fontSize: 30,
+                              height: 1,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -1.0,
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 3),
+                            child: Text(
+                              unit,
+                              style: const TextStyle(
+                                color: Color(0xFF5871A1),
+                                fontSize: 13.4,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      const Text(
+                        'Not available yet',
+                        style: TextStyle(
+                          color: Color(0xFF0B2470),
+                          fontSize: 17.5,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    if (targetDate != null) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        supplierPeriodRange(targetDate, includeYear: false),
+                        style: const TextStyle(
+                          color: Color(0xFF5871A1),
+                          fontSize: 11.9,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 11),
+          const Divider(height: 1, color: Color(0xFFE6EDF3)),
+          const SizedBox(height: 10),
+          Text(
+            selection.hasSelection && product != null
+                ? isSupplier
+                      ? 'Prepare about ${formatNumber(roundForecastQuantity(selection.forecast))} $unit${roundForecastQuantity(selection.forecast) == 1
+                            ? ''
+                            : unit == 'icebox'
+                            ? 'es'
+                            : 's'} of ${product.productName}.'
+                      : 'Plan for about ${formatNumber(roundForecastQuantity(selection.forecast))} $unit${roundForecastQuantity(selection.forecast) == 1
+                            ? ''
+                            : unit == 'icebox'
+                            ? 'es'
+                            : 's'} of ${product.productName} next period.'
+                : selection.reason,
+            style: const TextStyle(
+              color: Color(0xFF5871A1),
+              fontSize: 11.8,
+              height: 1.35,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget supplierCurrentPeriodNotice() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEAF4FF),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.schedule_rounded,
+            color: Color(0xFF0877D8),
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              'Current ${selectedPeriod == AnalyticsPeriod.weekly ? 'week' : 'month'} in progress · not included yet',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Color(0xFF17346F),
+                fontSize: 10.6,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget supplierControlPanel(
+    AnalyticsData data, {
+    bool includePeriodNavigation = false,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFE3ECF2)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A00152A),
+            blurRadius: 14,
+            offset: Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          supplierSummaryFilters(data),
+          if (includePeriodNavigation) ...[
+            const SizedBox(height: 9),
+            const Divider(height: 1, color: Color(0xFFEDF2F6)),
+            const SizedBox(height: 9),
+            supplierPeriodNavigation(data),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget supplierSummaryTab(AnalyticsData data) {
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 18),
+      sliver: SliverList(
+        delegate: SliverChildListDelegate([
+          supplierControlPanel(data, includePeriodNavigation: true),
+          const SizedBox(height: 10),
+          supplierSummaryMetrics(data),
+          const SizedBox(height: 10),
+          supplierSalesChartCard(data),
+          const SizedBox(height: 10),
+          supplierForecastCard(data),
+          if (isSupplier) ...[
+            const SizedBox(height: 9),
+            supplierCurrentPeriodNotice(),
+          ],
+        ]),
+      ),
+    );
+  }
+
+  Widget supplierAccuracyTab(AnalyticsData data) {
+    final selectedProduct = data.selectedProduct;
+    final unit = supplierUnitLabel(selectedProduct?.quantityUnit ?? 'unit');
+    final bothForecastMethodsEligible =
+        data.simpleForecast.hasValue &&
+        data.seasonalForecast.hasValue &&
+        data.simpleEvaluation.hasMape &&
+        data.seasonalEvaluation.hasMape;
+
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 18),
+      sliver: SliverList(
+        delegate: SliverChildListDelegate([
+          supplierControlPanel(data),
+          const SizedBox(height: 10),
+          sectionCard(
+            title: 'Forecast Methods',
+            subtitle:
+                'Compare the available forecasting methods for this series.',
+            icon: Icons.trending_up_rounded,
+            compact: true,
+            child: Column(
+              children: [
+                forecastMethodCard(
+                  title: 'Simple Moving Average',
+                  description: selectedPeriod == AnalyticsPeriod.weekly
+                      ? 'Uses the 4 immediately preceding weekly observations.'
+                      : 'Uses the 3 immediately preceding monthly observations.',
+                  result: data.simpleForecast,
+                  unit: unit,
+                  icon: Icons.show_chart_rounded,
+                  availablePeriods: data.selectedPoints.length,
+                  requiredPeriods: simpleRequiredPeriods,
+                  selected:
+                      data.selectedMethod.method ==
+                      ForecastingMethod.simpleMovingAverage,
+                  selectedLabel: bothForecastMethodsEligible
+                      ? 'BEST FIT'
+                      : 'ONLY ELIGIBLE',
+                ),
+                forecastMethodCard(
+                  title: 'Seasonal Moving Average',
+                  description: selectedPeriod == AnalyticsPeriod.weekly
+                      ? 'Uses comparable weekly observations across the 4-week seasonal cycle.'
+                      : 'Uses comparable monthly observations across annual seasonal cycles.',
+                  result: data.seasonalForecast,
+                  unit: unit,
+                  icon: Icons.calendar_month_rounded,
+                  availablePeriods: data.selectedPoints.length,
+                  requiredPeriods: seasonalRequiredPeriods,
+                  selected:
+                      data.selectedMethod.method ==
+                      ForecastingMethod.seasonalMovingAverage,
+                  selectedLabel: bothForecastMethodsEligible
+                      ? 'BEST FIT'
+                      : 'ONLY ELIGIBLE',
+                ),
+              ],
+            ),
+          ),
+          sectionCard(
+            title: 'Forecast Accuracy',
+            subtitle:
+                'Forecast accuracy based on completed historical periods.',
+            icon: Icons.track_changes_rounded,
+            compact: true,
+            child: forecastEvaluation(data),
+          ),
+          sectionCard(
+            title: isSupplier ? 'Sales Variability' : 'Purchase Variability',
+            subtitle: isSupplier
+                ? 'How much completed sales change between periods.'
+                : 'How much completed purchases change between periods.',
+            icon: Icons.multiline_chart_rounded,
+            compact: true,
+            child: variabilityPanel(data.variability),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  Widget supplierGuidanceTab(AnalyticsData data) {
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 18),
+      sliver: SliverList(
+        delegate: SliverChildListDelegate([
+          supplierControlPanel(data),
+          const SizedBox(height: 10),
+          sectionCard(
+            title: 'Restocking Guidance',
+            subtitle: isSupplier
+                ? 'Suggested stock preparation for the next period.'
+                : 'Suggested purchase planning for the next period.',
+            icon: Icons.assignment_outlined,
+            compact: true,
+            child: suggestions(data.suggestions),
+          ),
+          if (isSupplier)
+            sectionCard(
+              title: 'Stock Alerts',
+              subtitle:
+                  'Low-stock and out-of-stock items that may need attention.',
+              icon: Icons.inventory_2_outlined,
+              iconColor: const Color(0xFFFF7A1A),
+              compact: true,
+              child: stockAlerts(data.stockAlerts),
+            ),
+        ]),
+      ),
+    );
+  }
+
+  Widget supplierProductsTab(AnalyticsData data) {
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 18),
+      sliver: SliverList(
+        delegate: SliverChildListDelegate([
+          supplierControlPanel(data),
+          const SizedBox(height: 10),
+          sectionCard(
+            title: isSupplier ? 'Top-Selling Fish' : 'Top Purchased Fish',
+            subtitle: data.rankingBasis,
+            icon: Icons.inventory_2_outlined,
+            compact: true,
+            child: topProducts(data.products),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  Widget supplierAnalyticsContent(AnalyticsData data) {
+    final bodySliver = switch (selectedSupplierTab) {
+      SupplierAnalyticsTab.summary => supplierSummaryTab(data),
+      SupplierAnalyticsTab.accuracy => supplierAccuracyTab(data),
+      SupplierAnalyticsTab.guidance => supplierGuidanceTab(data),
+      SupplierAnalyticsTab.products => supplierProductsTab(data),
+    };
 
     return CustomScrollView(
+      controller: _supplierScrollController,
+      primary: false,
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      physics: const ClampingScrollPhysics(),
+      slivers: [supplierAnalyticsHeader(), bodySliver],
+    );
+  }
+
+  Widget supplierBottomNavigation() {
+    const items = [
+      (SupplierAnalyticsTab.summary, Icons.pie_chart_rounded, 'Summary'),
+      (SupplierAnalyticsTab.accuracy, Icons.track_changes_rounded, 'Accuracy'),
+      (SupplierAnalyticsTab.guidance, Icons.description_outlined, 'Guidance'),
+      (SupplierAnalyticsTab.products, Icons.inventory_2_outlined, 'Products'),
+    ];
+
+    return Material(
+      color: Colors.white,
+      elevation: 12,
+      shadowColor: const Color(0x22001E3C),
+      child: SafeArea(
+        top: false,
+        child: Container(
+          height: 62,
+          padding: const EdgeInsets.fromLTRB(8, 5, 8, 3),
+          decoration: const BoxDecoration(
+            border: Border(top: BorderSide(color: Color(0xFFE1EAF1))),
+          ),
+          child: Row(
+            children: items.map((item) {
+              final selected = selectedSupplierTab == item.$1;
+
+              return Expanded(
+                child: InkWell(
+                  onTap: () {
+                    if (selectedSupplierTab == item.$1) {
+                      _scrollSupplierToTop();
+                      return;
+                    }
+
+                    setState(() {
+                      selectedSupplierTab = item.$1;
+                    });
+                    _scrollSupplierToTop();
+                  },
+                  borderRadius: BorderRadius.circular(14),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        item.$2,
+                        color: selected
+                            ? const Color(0xFF0877D8)
+                            : const Color(0xFF63779B),
+                        size: 22,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        item.$3,
+                        style: TextStyle(
+                          color: selected
+                              ? const Color(0xFF0877D8)
+                              : const Color(0xFF63779B),
+                          fontSize: 9.8,
+                          fontWeight: selected
+                              ? FontWeight.w900
+                              : FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget supplierNoDataOverview(AnalyticsData data) {
+    return CustomScrollView(
+      physics: const ClampingScrollPhysics(),
       slivers: [
-        analyticsHeader(empty),
-        SliverFillRemaining(
+        supplierAnalyticsHeader(),
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate([
+              Container(
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: const Color(0xFFD9E7F1)),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.bar_chart_rounded,
+                      color: Color(0xFF0877D8),
+                      size: 42,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      isSupplier
+                          ? 'No completed sales history yet'
+                          : 'No completed purchase history yet',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Color(0xFF0B2470),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 7),
+                    Text(
+                      isSupplier
+                          ? 'Validated historical sales and completed COD orders will appear here once enough data is available.'
+                          : 'Validated historical purchases and completed COD orders will appear here once enough data is available.',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Color(0xFF6D8197),
+                        fontSize: 11.5,
+                        height: 1.4,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ]),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget supplierLoadingBody() {
+    return CustomScrollView(
+      physics: const ClampingScrollPhysics(),
+      slivers: [
+        supplierAnalyticsHeader(),
+        const SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(
+            child: CircularProgressIndicator(
+              strokeWidth: 2.4,
+              color: Color(0xFF0877D8),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget supplierErrorBody() {
+    return CustomScrollView(
+      physics: const ClampingScrollPhysics(),
+      slivers: [
+        supplierAnalyticsHeader(),
+        const SliverFillRemaining(
           hasScrollBody: false,
           child: Padding(
-            padding: const EdgeInsets.all(22),
+            padding: EdgeInsets.all(22),
             child: Center(
               child: _CompactEmptyState(
                 icon: Icons.error_outline_rounded,
@@ -3711,6 +4881,22 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         ),
       ],
     );
+  }
+
+  Widget analyticsContent(AnalyticsData data) {
+    if (!data.hasTransactions) {
+      return supplierNoDataOverview(data);
+    }
+
+    return supplierAnalyticsContent(data);
+  }
+
+  Widget loadingBody() {
+    return supplierLoadingBody();
+  }
+
+  Widget errorBody(Object error) {
+    return supplierErrorBody();
   }
 
   @override
@@ -3734,6 +4920,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F8FB),
+      bottomNavigationBar: supplierBottomNavigation(),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: ordersStream(user.uid),
         builder: (context, orderSnapshot) {
@@ -3791,6 +4978,598 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         },
       ),
     );
+  }
+}
+
+class _SupplierForecastSnapshot {
+  const _SupplierForecastSnapshot({required this.selectedMethod});
+
+  final ForecastMethodSelection selectedMethod;
+}
+
+class _SupplierSegmentButton extends StatelessWidget {
+  const _SupplierSegmentButton({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? const Color(0xFF0877D8) : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: selected
+                ? const [
+                    BoxShadow(
+                      color: Color(0x220877D8),
+                      blurRadius: 8,
+                      offset: Offset(0, 3),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: selected ? Colors.white : const Color(0xFF0B2470),
+              fontSize: 12.2,
+              fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SupplierCircleButton extends StatelessWidget {
+  const _SupplierCircleButton({
+    required this.icon,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: enabled ? onTap : null,
+        customBorder: const CircleBorder(),
+        child: Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FBFD),
+            shape: BoxShape.circle,
+            border: Border.all(color: const Color(0xFFE0EAF1)),
+          ),
+          child: Icon(
+            icon,
+            color: enabled ? const Color(0xFF0B2470) : const Color(0xFFB8C6D2),
+            size: 24,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SupplierAnalyticsHeaderDelegate extends SliverPersistentHeaderDelegate {
+  const _SupplierAnalyticsHeaderDelegate({
+    required this.topPadding,
+    required this.onBack,
+    required this.title,
+    required this.eyebrow,
+    required this.subtitle,
+    required this.backgroundAsset,
+  });
+
+  final double topPadding;
+  final VoidCallback onBack;
+  final String title;
+  final String eyebrow;
+  final String subtitle;
+  final String backgroundAsset;
+
+  @override
+  double get minExtent => topPadding + 56;
+
+  @override
+  double get maxExtent => topPadding + 168;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    final range = math.max(1.0, maxExtent - minExtent);
+    final progress = (shrinkOffset / range).clamp(0.0, 1.0);
+    final expandedOpacity = (1.0 - progress * 1.35).clamp(0.0, 1.0);
+    final titleFontSize = 26.0 - (8.5 * progress);
+    final expandedTitleTop = topPadding + 76.0;
+    final collapsedTitleTop = topPadding + 15.0;
+    final titleTop =
+        expandedTitleTop + (collapsedTitleTop - expandedTitleTop) * progress;
+    final titleLeft = 18.0 + (52.0 * progress);
+    const bottomRadius = 0.0;
+
+    return Material(
+      color: const Color(0xFF0A4E7D),
+      elevation: overlapsContent ? 2 : 0,
+      child: ClipRRect(
+        borderRadius: BorderRadius.vertical(
+          bottom: Radius.circular(bottomRadius),
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.asset(
+              backgroundAsset,
+              fit: BoxFit.cover,
+              alignment: Alignment.centerRight,
+              errorBuilder: (context, error, stackTrace) => const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xFF0B4777),
+                      Color(0xFF0877B8),
+                      Color(0xFF39A6D8),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0x70052C50),
+                    Color(0x63063B66),
+                    Color(0xA006345B),
+                  ],
+                  stops: [0.0, 0.5, 1.0],
+                ),
+              ),
+            ),
+            // Small Order Center-style body curve. Because the whole hero now
+            // scrolls normally, this curve moves away with it instead of
+            // remaining pinned above the analytics content.
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: -1,
+              child: IgnorePointer(
+                child: Container(
+                  height: 18,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF4F8FB),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(30),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              left: 14,
+              top: topPadding + 8,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: onBack,
+                  customBorder: const CircleBorder(),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: const Color(0x33001F3A),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0x66FFFFFF)),
+                    ),
+                    child: const Icon(
+                      Icons.arrow_back_rounded,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              right: 16,
+              top: topPadding + 10,
+              child: Opacity(
+                opacity: 1.0 - progress * 0.15,
+                child: SizedBox(
+                  width: 96,
+                  height: 26,
+                  child: ColorFiltered(
+                    colorFilter: const ColorFilter.mode(
+                      Colors.white,
+                      BlendMode.srcIn,
+                    ),
+                    child: Image.asset(
+                      'assets/images/isdalink_logo.png',
+                      fit: BoxFit.contain,
+                      alignment: Alignment.centerRight,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              left: titleLeft,
+              right: progress > 0.65 ? 120 : 18,
+              top: titleTop,
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: titleFontSize,
+                  height: 1.02,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.6,
+                ),
+              ),
+            ),
+            Positioned(
+              left: 20,
+              right: 18,
+              top: topPadding + 58,
+              child: Opacity(
+                opacity: expandedOpacity,
+                child: Text(
+                  eyebrow,
+                  style: const TextStyle(
+                    color: Color(0xFFE5F4FF),
+                    fontSize: 9.0,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.8,
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              left: 20,
+              right: 18,
+              top: topPadding + 108,
+              child: Opacity(
+                opacity: expandedOpacity,
+                child: Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFFE8F3FA),
+                    fontSize: 11.0,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _SupplierAnalyticsHeaderDelegate oldDelegate) {
+    return oldDelegate.topPadding != topPadding ||
+        oldDelegate.onBack != onBack ||
+        oldDelegate.title != title ||
+        oldDelegate.eyebrow != eyebrow ||
+        oldDelegate.subtitle != subtitle ||
+        oldDelegate.backgroundAsset != backgroundAsset;
+  }
+}
+
+class _SupplierSummaryMetric extends StatelessWidget {
+  const _SupplierSummaryMetric({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.suffix,
+    this.valueFontSize = 23.5,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final String? suffix;
+  final double valueFontSize;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE4F3FB),
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Icon(icon, color: const Color(0xFF0877D8), size: 18),
+          ),
+          const SizedBox(height: 4),
+          SizedBox(
+            height: 22,
+            child: Center(
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Color(0xFF607494),
+                  fontSize: 9.3,
+                  height: 1.05,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 1),
+          SizedBox(
+            height: 29,
+            width: double.infinity,
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    value,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    style: TextStyle(
+                      color: const Color(0xFF0B2470),
+                      fontSize: valueFontSize,
+                      height: 1,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          SizedBox(
+            height: 13,
+            child: Center(
+              child: Text(
+                suffix ?? '',
+                maxLines: 1,
+                style: const TextStyle(
+                  color: Color(0xFF607494),
+                  fontSize: 9.3,
+                  height: 1,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SupplierMetricDivider extends StatelessWidget {
+  const _SupplierMetricDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(width: 1, height: 76, color: const Color(0xFFDCE7EE)),
+    );
+  }
+}
+
+class _SupplierBarChartPainter extends CustomPainter {
+  const _SupplierBarChartPainter({
+    required this.values,
+    required this.labels,
+    required this.unitLabel,
+    this.selectedIndex,
+  });
+
+  final List<double> values;
+  final List<String> labels;
+  final String unitLabel;
+  final int? selectedIndex;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (values.isEmpty) {
+      return;
+    }
+
+    const left = 42.0;
+    const right = 6.0;
+    const top = 8.0;
+    const bottom = 34.0;
+    final chartWidth = math.max(1.0, size.width - left - right).toDouble();
+    final chartHeight = math.max(1.0, size.height - top - bottom).toDouble();
+    final rawMax = values.fold<double>(0, math.max);
+    final stepBase = rawMax <= 10
+        ? 2.0
+        : rawMax <= 25
+        ? 5.0
+        : rawMax <= 60
+        ? 10.0
+        : 20.0;
+    final maxValue = math
+        .max(stepBase * 4, (rawMax / stepBase).ceil() * stepBase)
+        .toDouble();
+    final divisions = math.max(4, (maxValue / stepBase).round()).toInt();
+    final gridPaint = Paint()
+      ..color = const Color(0xFFDCE6EF)
+      ..strokeWidth = 1;
+    final axisPaint = Paint()
+      ..color = const Color(0xFFB9C9D7)
+      ..strokeWidth = 1;
+    final barPaint = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Color(0xFF53B3F3), Color(0xFF87C8F5)],
+      ).createShader(Rect.fromLTWH(left, top, chartWidth, chartHeight));
+    final selectedBarPaint = Paint()..color = const Color(0xFF0877D8);
+
+    for (var i = 0; i <= divisions; i++) {
+      final ratio = i / divisions;
+      final y = top + chartHeight - (chartHeight * ratio);
+      canvas.drawLine(Offset(left, y), Offset(left + chartWidth, y), gridPaint);
+
+      final value = maxValue * ratio;
+      final labelPainter = TextPainter(
+        text: TextSpan(
+          text: value.toStringAsFixed(value % 1 == 0 ? 0 : 1),
+          style: const TextStyle(
+            color: Color(0xFF5B72A0),
+            fontSize: 10.5,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      labelPainter.paint(
+        canvas,
+        Offset(left - labelPainter.width - 9, y - labelPainter.height / 2),
+      );
+    }
+
+    canvas.drawLine(
+      Offset(left, top),
+      Offset(left, top + chartHeight),
+      axisPaint,
+    );
+    canvas.drawLine(
+      Offset(left, top + chartHeight),
+      Offset(left + chartWidth, top + chartHeight),
+      axisPaint,
+    );
+
+    final slotWidth = chartWidth / values.length;
+    final barWidth = math.min(52.0, slotWidth * 0.62).toDouble();
+
+    for (var index = 0; index < values.length; index++) {
+      final value = values[index];
+      final barHeight = maxValue == 0 ? 0.0 : chartHeight * (value / maxValue);
+      final x = left + slotWidth * index + (slotWidth - barWidth) / 2;
+      final barTop = top + chartHeight - barHeight;
+      final rect = RRect.fromRectAndRadius(
+        Rect.fromLTWH(x, barTop, barWidth, barHeight),
+        const Radius.circular(5),
+      );
+      canvas.drawRRect(
+        rect,
+        selectedIndex == index ? selectedBarPaint : barPaint,
+      );
+
+      if (selectedIndex == index) {
+        final valueText = '${_formatChartValue(value)} $unitLabel';
+        final tooltipPainter = TextPainter(
+          text: TextSpan(
+            text: valueText,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 9.5,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          textDirection: TextDirection.ltr,
+        )..layout();
+        const horizontalPadding = 8.0;
+        const verticalPadding = 5.0;
+        final tooltipWidth = tooltipPainter.width + horizontalPadding * 2;
+        final tooltipHeight = tooltipPainter.height + verticalPadding * 2;
+        final centerX = x + barWidth / 2;
+        final tooltipLeft = (centerX - tooltipWidth / 2)
+            .clamp(left, left + chartWidth - tooltipWidth)
+            .toDouble();
+        final tooltipTop = math.max(top, barTop - tooltipHeight - 5).toDouble();
+        final tooltipRect = RRect.fromRectAndRadius(
+          Rect.fromLTWH(tooltipLeft, tooltipTop, tooltipWidth, tooltipHeight),
+          const Radius.circular(8),
+        );
+        canvas.drawRRect(tooltipRect, Paint()..color = const Color(0xFF0B2470));
+        tooltipPainter.paint(
+          canvas,
+          Offset(tooltipLeft + horizontalPadding, tooltipTop + verticalPadding),
+        );
+      }
+
+      if (index < labels.length) {
+        final labelPainter = TextPainter(
+          text: TextSpan(
+            text: labels[index],
+            style: const TextStyle(
+              color: Color(0xFF5B72A0),
+              fontSize: 9.6,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          textAlign: TextAlign.center,
+          textDirection: TextDirection.ltr,
+          maxLines: 1,
+        )..layout(maxWidth: math.max(1.0, slotWidth - 3).toDouble());
+
+        labelPainter.paint(
+          canvas,
+          Offset(
+            left + slotWidth * index + (slotWidth - labelPainter.width) / 2,
+            top + chartHeight + 9,
+          ),
+        );
+      }
+    }
+  }
+
+  static String _formatChartValue(double value) {
+    if ((value - value.roundToDouble()).abs() < 0.001) {
+      return value.round().toString();
+    }
+
+    return value.toStringAsFixed(1);
+  }
+
+  @override
+  bool shouldRepaint(covariant _SupplierBarChartPainter oldDelegate) {
+    return oldDelegate.values != values ||
+        oldDelegate.labels != labels ||
+        oldDelegate.selectedIndex != selectedIndex ||
+        oldDelegate.unitLabel != unitLabel;
   }
 }
 
@@ -3890,11 +5669,13 @@ class PeriodPoint {
     required this.date,
     required this.quantity,
     required this.amount,
+    this.transactionCount = 0,
   });
 
   final DateTime date;
   final double quantity;
   final double amount;
+  final int transactionCount;
 }
 
 class ProductSummary {

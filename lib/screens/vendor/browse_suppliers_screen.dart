@@ -1,15 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:isdalink/screens/vendor/browse_suppliers/widgets/browse_suppliers_header.dart';
 import 'package:isdalink/screens/vendor/browse_suppliers/widgets/browse_suppliers_status_cards.dart';
 import 'package:isdalink/screens/vendor/browse_suppliers/widgets/supplier_profile_card.dart';
 import 'package:isdalink/screens/vendor/supplier_details_screen.dart';
-import 'package:isdalink/services/favorite_supplier_service.dart';
-import 'package:isdalink/services/home_stock_service.dart';
 import 'package:isdalink/services/supplier_browse_service.dart';
 import 'package:isdalink/utils/app_error_message.dart';
 
-enum _SupplierSortOption { recommended, newest, highestRated, mostAvailable }
+enum BrowseSupplierTab { all, favorites }
+
+enum BrowseSupplierSort { recommended, rating, listings, recentlyUpdated, name }
 
 class BrowseSuppliersScreen extends StatefulWidget {
   const BrowseSuppliersScreen({super.key});
@@ -20,15 +21,11 @@ class BrowseSuppliersScreen extends StatefulWidget {
 
 class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
   final searchController = TextEditingController();
-
   final SupplierBrowseService supplierService = const SupplierBrowseService();
-  final FavoriteSupplierService favoriteService = FavoriteSupplierService();
-  final HomeStockService stockService = const HomeStockService();
 
   String searchQuery = '';
-  bool showFavoritesOnly = false;
-  String? favoriteActionSupplierId;
-  _SupplierSortOption sortOption = _SupplierSortOption.recommended;
+  BrowseSupplierTab selectedTab = BrowseSupplierTab.all;
+  BrowseSupplierSort selectedSort = BrowseSupplierSort.recommended;
 
   @override
   void dispose() {
@@ -46,743 +43,538 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) =>
-            SupplierDetailsScreen(supplier: supplier, supplierId: supplierId),
+        builder: (_) => SupplierDetailsScreen(
+          supplier: supplier,
+          supplierId: supplierId,
+        ),
       ),
     );
   }
 
-  Future<void> toggleFavorite({
-    required String supplierId,
-    required bool currentlyFavorite,
-  }) async {
-    if (favoriteActionSupplierId != null) {
-      return;
+  String stringValue(
+    Map<String, dynamic> data,
+    String key, [
+    String fallback = '',
+  ]) {
+    final value = data[key];
+    if (value == null) return fallback;
+    final text = value.toString().trim();
+    return text.isEmpty ? fallback : text;
+  }
+
+  String supplierImageUrl(Map<String, dynamic> data) {
+    final profileImageUrl = stringValue(data, 'profileImageUrl');
+    if (profileImageUrl.isNotEmpty) return profileImageUrl;
+
+    final storePhotoUrl = stringValue(data, 'storePhotoUrl');
+    if (storePhotoUrl.isNotEmpty) return storePhotoUrl;
+
+    final photoUrl = stringValue(data, 'photoUrl');
+    if (photoUrl.isNotEmpty) return photoUrl;
+
+    final application = data['supplierApplication'];
+    if (application is Map<String, dynamic>) {
+      return stringValue(application, 'storePhotoUrl');
     }
 
-    setState(() {
-      favoriteActionSupplierId = supplierId;
-    });
+    return '';
+  }
 
-    try {
-      await favoriteService.toggleFavorite(
-        supplierId: supplierId,
-        currentlyFavorite: currentlyFavorite,
-      );
+  bool isAvailableStock(Map<String, dynamic> data) {
+    final status = stringValue(data, 'status', 'available').toLowerCase();
+    final quantity = double.tryParse((data['quantity'] ?? 0).toString()) ?? 0;
+    return (status == 'available' || status == 'active') && quantity > 0;
+  }
 
-      if (!mounted) {
-        return;
+  Map<String, List<QueryDocumentSnapshot<Map<String, dynamic>>>> stockMap(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> stocks,
+  ) {
+    final result = <String, List<QueryDocumentSnapshot<Map<String, dynamic>>>>{};
+
+    for (final stock in stocks) {
+      final data = stock.data();
+      if (!isAvailableStock(data)) continue;
+
+      final supplierId = stringValue(data, 'supplierId');
+      if (supplierId.isEmpty) continue;
+
+      result.putIfAbsent(supplierId, () => []).add(stock);
+    }
+
+    return result;
+  }
+
+  List<String> productNamesFor(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> stocks,
+  ) {
+    final names = <String>[];
+    final seen = <String>{};
+
+    for (final stock in stocks) {
+      final name = stringValue(stock.data(), 'productName');
+      if (name.isEmpty) continue;
+      final key = name.toLowerCase();
+      if (seen.add(key)) names.add(name);
+    }
+
+    return names;
+  }
+
+  int createdAtMillis(Map<String, dynamic> data) {
+    final value = data['createdAt'];
+    if (value is Timestamp) return value.millisecondsSinceEpoch;
+    return 0;
+  }
+
+  int stockActivityMillis(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> stocks,
+  ) {
+    var latest = 0;
+    for (final stock in stocks) {
+      final data = stock.data();
+      for (final key in const ['updatedAt', 'restockedAt', 'createdAt']) {
+        final value = data[key];
+        if (value is Timestamp) {
+          final millis = value.millisecondsSinceEpoch;
+          if (millis > latest) latest = millis;
+          break;
+        }
       }
+    }
+    return latest;
+  }
 
-      final added = !currentlyFavorite;
+  List<QueryDocumentSnapshot<Map<String, dynamic>>> applySort({
+    required List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
+    required Map<String, List<QueryDocumentSnapshot<Map<String, dynamic>>>> stocksBySupplier,
+  }) {
+    final sorted = [...documents];
 
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            behavior: SnackBarBehavior.floating,
-            content: Text(
-              added
-                  ? 'Supplier added to Favorites.'
-                  : 'Supplier removed from Favorites.',
+    switch (selectedSort) {
+      case BrowseSupplierSort.rating:
+        sorted.sort((a, b) {
+          final aSupplier = supplierService.supplierFromProfile(a.data());
+          final bSupplier = supplierService.supplierFromProfile(b.data());
+          final ratingCompare = bSupplier.rating.compareTo(aSupplier.rating);
+          if (ratingCompare != 0) return ratingCompare;
+          final reviewCompare = bSupplier.reviews.compareTo(aSupplier.reviews);
+          if (reviewCompare != 0) return reviewCompare;
+          return aSupplier.name.toLowerCase().compareTo(
+                bSupplier.name.toLowerCase(),
+              );
+        });
+        break;
+      case BrowseSupplierSort.listings:
+        sorted.sort((a, b) {
+          final countCompare = (stocksBySupplier[b.id]?.length ?? 0).compareTo(
+            stocksBySupplier[a.id]?.length ?? 0,
+          );
+          if (countCompare != 0) return countCompare;
+          final aName = supplierService.supplierFromProfile(a.data()).name;
+          final bName = supplierService.supplierFromProfile(b.data()).name;
+          return aName.toLowerCase().compareTo(bName.toLowerCase());
+        });
+        break;
+      case BrowseSupplierSort.recentlyUpdated:
+        sorted.sort((a, b) {
+          final aUpdated = stockActivityMillis(
+            stocksBySupplier[a.id] ??
+                <QueryDocumentSnapshot<Map<String, dynamic>>>[],
+          );
+          final bUpdated = stockActivityMillis(
+            stocksBySupplier[b.id] ??
+                <QueryDocumentSnapshot<Map<String, dynamic>>>[],
+          );
+          final updateCompare = bUpdated.compareTo(aUpdated);
+          if (updateCompare != 0) return updateCompare;
+          final aName = supplierService.supplierFromProfile(a.data()).name;
+          final bName = supplierService.supplierFromProfile(b.data()).name;
+          return aName.toLowerCase().compareTo(bName.toLowerCase());
+        });
+        break;
+      case BrowseSupplierSort.name:
+        sorted.sort((a, b) {
+          final aName = supplierService.supplierFromProfile(a.data()).name;
+          final bName = supplierService.supplierFromProfile(b.data()).name;
+          return aName.toLowerCase().compareTo(bName.toLowerCase());
+        });
+        break;
+      case BrowseSupplierSort.recommended:
+        sorted.sort((a, b) {
+          final aStocks = stocksBySupplier[a.id] ??
+              <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+          final bStocks = stocksBySupplier[b.id] ??
+              <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+
+          final availabilityCompare = (bStocks.isNotEmpty ? 1 : 0).compareTo(
+            aStocks.isNotEmpty ? 1 : 0,
+          );
+          if (availabilityCompare != 0) return availabilityCompare;
+
+          final aSupplier = supplierService.supplierFromProfile(a.data());
+          final bSupplier = supplierService.supplierFromProfile(b.data());
+          final ratingCompare = bSupplier.rating.compareTo(aSupplier.rating);
+          if (ratingCompare != 0) return ratingCompare;
+
+          final reviewCompare = bSupplier.reviews.compareTo(aSupplier.reviews);
+          if (reviewCompare != 0) return reviewCompare;
+
+          final listingCompare = bStocks.length.compareTo(aStocks.length);
+          if (listingCompare != 0) return listingCompare;
+
+          final activityCompare = stockActivityMillis(bStocks).compareTo(
+            stockActivityMillis(aStocks),
+          );
+          if (activityCompare != 0) return activityCompare;
+
+          return aSupplier.name.toLowerCase().compareTo(
+                bSupplier.name.toLowerCase(),
+              );
+        });
+        break;
+    }
+
+    return sorted;
+  }
+
+  String sortLabel(BrowseSupplierSort sort) {
+    switch (sort) {
+      case BrowseSupplierSort.recommended:
+        return 'Recommended';
+      case BrowseSupplierSort.rating:
+        return 'Top Rated';
+      case BrowseSupplierSort.listings:
+        return 'Most Listings';
+      case BrowseSupplierSort.recentlyUpdated:
+        return 'Recently Updated';
+      case BrowseSupplierSort.name:
+        return 'Name A-Z';
+    }
+  }
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> favoriteStream() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return Stream<QuerySnapshot<Map<String, dynamic>>>.empty();
+    }
+
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('favoriteSuppliers')
+        .snapshots();
+  }
+
+  Widget browseSearchSection({
+    required int approvedCount,
+    required int listingCount,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Column(
+        children: [
+          Container(
+            height: 50,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x18003C61),
+                  blurRadius: 18,
+                  offset: Offset(0, 8),
+                ),
+              ],
             ),
-          ),
-        );
-    } catch (error) {
-      if (!mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            behavior: SnackBarBehavior.floating,
-            content: Text(
-              AppErrorMessage.from(
-                error,
-                fallback: 'Favorite could not be updated. Please try again.',
-                allowBusinessMessage: true,
+            child: TextField(
+              controller: searchController,
+              onChanged: (value) {
+                setState(() => searchQuery = value);
+              },
+              textInputAction: TextInputAction.search,
+              style: const TextStyle(
+                color: Color(0xFF123A59),
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
+              decoration: InputDecoration(
+                hintText: 'Search supplier, fish, or location...',
+                hintStyle: const TextStyle(
+                  color: Color(0xFF8BA2B4),
+                  fontSize: 12.0,
+                  fontWeight: FontWeight.w600,
+                ),
+                prefixIcon: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEAF7FB),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.search_rounded,
+                      color: Color(0xFF0875D1),
+                      size: 21,
+                    ),
+                  ),
+                ),
+                suffixIcon: Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: searchController.text.isEmpty
+                      ? Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEAF7FB),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.tune_rounded,
+                            color: Color(0xFF0875D1),
+                            size: 21,
+                          ),
+                        )
+                      : IconButton(
+                          tooltip: 'Clear search',
+                          onPressed: () {
+                            searchController.clear();
+                            setState(() => searchQuery = '');
+                          },
+                          icon: const Icon(
+                            Icons.close_rounded,
+                            color: Color(0xFF7890A2),
+                          ),
+                        ),
+                ),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(vertical: 15),
               ),
             ),
           ),
-        );
-    } finally {
-      if (mounted) {
-        setState(() {
-          favoriteActionSupplierId = null;
-        });
-      }
-    }
+          const SizedBox(height: 16),
+          BrowseSuppliersStatusCards(
+            supplierCount: approvedCount,
+            listingCount: listingCount,
+          ),
+        ],
+      ),
+    );
   }
 
-  String get sortLabel {
-    return switch (sortOption) {
-      _SupplierSortOption.recommended => 'Recommended',
-      _SupplierSortOption.newest => 'Newest',
-      _SupplierSortOption.highestRated => 'Highest rated',
-      _SupplierSortOption.mostAvailable => 'Most available',
-    };
-  }
-
-  IconData get sortIcon {
-    return switch (sortOption) {
-      _SupplierSortOption.recommended => Icons.auto_awesome_rounded,
-      _SupplierSortOption.newest => Icons.schedule_rounded,
-      _SupplierSortOption.highestRated => Icons.star_rounded,
-      _SupplierSortOption.mostAvailable => Icons.inventory_2_rounded,
-    };
-  }
-
-  Future<void> showSortSheet() async {
-    final selected = await showModalBottomSheet<_SupplierSortOption>(
-      context: context,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withAlpha(150),
-      builder: (sheetContext) {
-        Widget option({
-          required _SupplierSortOption value,
-          required IconData icon,
-          required String title,
-          required String subtitle,
-        }) {
-          final isSelected = sortOption == value;
-          return Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => Navigator.pop(sheetContext, value),
-              borderRadius: BorderRadius.circular(16),
-              child: Ink(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 13,
-                  vertical: 12,
+  Widget tabButton({
+    required bool selected,
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: Material(
+        color: selected ? const Color(0xFF0875D1) : Colors.transparent,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(18),
+          child: Container(
+            height: 42,
+            alignment: Alignment.center,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 17,
+                  color: selected ? Colors.white : const Color(0xFF617F95),
                 ),
-                decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFFEAF7FC) : Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isSelected
-                        ? const Color(0xFF9EDAF1)
-                        : const Color(0xFFE3EDF3),
+                const SizedBox(width: 5),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: selected ? Colors.white : const Color(0xFF617F95),
+                      fontSize: 11.2,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? const Color(0xFF087AC0).withAlpha(18)
-                            : const Color(0xFFF2F6F9),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        icon,
-                        size: 19,
-                        color: isSelected
-                            ? const Color(0xFF087AC0)
-                            : const Color(0xFF6F8798),
-                      ),
-                    ),
-                    const SizedBox(width: 11),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget filterRow({
+    required int favoriteCount,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+      child: Column(
+        children: [
+          Container(
+            height: 50,
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEAF2F7),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFD8E8F1)),
+            ),
+            child: Row(
+              children: [
+                tabButton(
+                  selected: selectedTab == BrowseSupplierTab.all,
+                  icon: Icons.storefront_rounded,
+                  label: 'All Suppliers',
+                  onTap: () {
+                    setState(() => selectedTab = BrowseSupplierTab.all);
+                  },
+                ),
+                tabButton(
+                  selected: selectedTab == BrowseSupplierTab.favorites,
+                  icon: Icons.favorite_border_rounded,
+                  label: 'Favorites',
+                  onTap: () {
+                    setState(() => selectedTab = BrowseSupplierTab.favorites);
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerRight,
+            child: PopupMenuButton<BrowseSupplierSort>(
+              tooltip: 'Sort suppliers',
+              initialValue: selectedSort,
+              onSelected: (value) {
+                setState(() => selectedSort = value);
+              },
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+              itemBuilder: (context) => BrowseSupplierSort.values
+                  .map(
+                    (sort) => PopupMenuItem(
+                      value: sort,
+                      child: Row(
                         children: [
-                          Text(
-                            title,
-                            style: const TextStyle(
-                              color: Color(0xFF102C44),
-                              fontSize: 12.2,
-                              fontWeight: FontWeight.w900,
-                            ),
+                          Icon(
+                            sort == selectedSort
+                                ? Icons.check_circle_rounded
+                                : Icons.circle_outlined,
+                            size: 17,
+                            color: const Color(0xFF0875D1),
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(width: 9),
                           Text(
-                            subtitle,
+                            sortLabel(sort),
                             style: const TextStyle(
-                              color: Color(0xFF748A9B),
-                              fontSize: 9.4,
-                              height: 1.3,
-                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF173B56),
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    Icon(
-                      isSelected
-                          ? Icons.check_circle_rounded
-                          : Icons.chevron_right_rounded,
-                      color: isSelected
-                          ? const Color(0xFF11A87A)
-                          : const Color(0xFFA3B3BE),
-                      size: 20,
+                  )
+                  .toList(),
+              child: Container(
+                height: 46,
+                width: 156,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFFBFE0F2)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.auto_awesome_rounded,
+                      color: Color(0xFF0875D1),
+                      size: 17,
+                    ),
+                    const SizedBox(width: 5),
+                    Flexible(
+                      child: Text(
+                        sortLabel(selectedSort),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFF0875D1),
+                          fontSize: 11.0,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 2),
+                    const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: Color(0xFF0875D1),
+                      size: 17,
                     ),
                   ],
                 ),
               ),
             ),
-          );
-        }
-
-        return Container(
-          margin: const EdgeInsets.only(top: 80),
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 22),
-          decoration: const BoxDecoration(
-            color: Color(0xFFF7FAFC),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 42,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFC4D3DD),
-                  borderRadius: BorderRadius.circular(99),
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Sort suppliers',
-                          style: TextStyle(
-                            color: Color(0xFF102C44),
-                            fontSize: 17,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        SizedBox(height: 3),
-                        Text(
-                          'Choose how supplier stores are ordered.',
-                          style: TextStyle(
-                            color: Color(0xFF748A9B),
-                            fontSize: 10.2,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              option(
-                value: _SupplierSortOption.recommended,
-                icon: Icons.auto_awesome_rounded,
-                title: 'Recommended',
-                subtitle: 'New suppliers first, then rating and reviews.',
-              ),
-              const SizedBox(height: 8),
-              option(
-                value: _SupplierSortOption.newest,
-                icon: Icons.schedule_rounded,
-                title: 'Newest',
-                subtitle: 'Recently registered approved suppliers first.',
-              ),
-              const SizedBox(height: 8),
-              option(
-                value: _SupplierSortOption.highestRated,
-                icon: Icons.star_rounded,
-                title: 'Highest rated',
-                subtitle: 'Higher store rating, then more reviews.',
-              ),
-              const SizedBox(height: 8),
-              option(
-                value: _SupplierSortOption.mostAvailable,
-                icon: Icons.inventory_2_rounded,
-                title: 'Most available',
-                subtitle: 'Suppliers with more orderable fish listings first.',
-              ),
-            ],
-          ),
-        );
-      },
-    );
-
-    if (selected == null || !mounted || selected == sortOption) {
-      return;
-    }
-
-    setState(() {
-      sortOption = selected;
-    });
-  }
-
-  Widget supplierModeSelector({required int favoriteCount}) {
-    Widget option({
-      required bool selected,
-      required IconData icon,
-      required String label,
-      required VoidCallback onTap,
-    }) {
-      return Expanded(
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(15),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOut,
-              height: 45,
-              decoration: BoxDecoration(
-                color: selected ? Colors.white : Colors.transparent,
-                borderRadius: BorderRadius.circular(15),
-                boxShadow: selected
-                    ? const [
-                        BoxShadow(
-                          color: Color(0x12002B4D),
-                          blurRadius: 10,
-                          offset: Offset(0, 4),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    icon,
-                    size: 17,
-                    color: selected
-                        ? const Color(0xFF087AC0)
-                        : const Color(0xFF7B8FA3),
-                  ),
-                  const SizedBox(width: 7),
-                  Flexible(
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: selected
-                            ? const Color(0xFF102C44)
-                            : const Color(0xFF71889B),
-                        fontSize: 11.2,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEAF2F7),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFDCE8F0)),
-      ),
-      child: Row(
-        children: [
-          option(
-            selected: !showFavoritesOnly,
-            icon: Icons.storefront_rounded,
-            label: 'All Suppliers',
-            onTap: () {
-              if (showFavoritesOnly) {
-                setState(() {
-                  showFavoritesOnly = false;
-                });
-              }
-            },
-          ),
-          const SizedBox(width: 4),
-          option(
-            selected: showFavoritesOnly,
-            icon: showFavoritesOnly
-                ? Icons.favorite_rounded
-                : Icons.favorite_border_rounded,
-            label: 'Favorites ($favoriteCount)',
-            onTap: () {
-              if (!showFavoritesOnly) {
-                setState(() {
-                  showFavoritesOnly = true;
-                });
-              }
-            },
           ),
         ],
       ),
     );
   }
 
-  Widget favoritesEmptyBody() {
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(28, 30, 28, 30),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 74,
-              height: 74,
-              decoration: const BoxDecoration(
-                color: Color(0xFFEAF8FC),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.favorite_border_rounded,
-                color: Color(0xFF087AC0),
-                size: 34,
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'No favorite suppliers yet',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Color(0xFF102C44),
-                fontSize: 17,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Save suppliers you frequently buy from so you can return to their stores faster.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Color(0xFF7B8FA3),
-                fontSize: 11.5,
-                height: 1.45,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 17),
-            FilledButton.icon(
-              onPressed: () {
-                setState(() {
-                  showFavoritesOnly = false;
-                });
-              },
-              icon: const Icon(Icons.storefront_rounded, size: 17),
-              label: const Text('Browse Suppliers'),
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF087AC0),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 12,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                textStyle: const TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 11.5,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget supplierListBody({
-    required BuildContext context,
-    required List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
-    required List<QueryDocumentSnapshot<Map<String, dynamic>>> stockDocuments,
-    required Set<String> favoriteSupplierIds,
+  Widget emptyCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
   }) {
-    final approvedDocuments = supplierService.approvedSuppliers(documents);
-    final approvedSupplierIds = approvedDocuments
-        .map((document) => document.id)
-        .toSet();
-    final activeFavoriteIds = favoriteSupplierIds.intersection(
-      approvedSupplierIds,
-    );
-
-    final availableStockDocuments = stockDocuments
-        .where(stockService.isAvailableStock)
-        .toList();
-
-    final availableCountsBySupplier = <String, int>{};
-    for (final stock in availableStockDocuments) {
-      final data = stock.data();
-      final supplierId = (data['supplierId'] ?? '').toString().trim();
-      if (supplierId.isEmpty) {
-        continue;
-      }
-      availableCountsBySupplier.update(
-        supplierId,
-        (currentCount) => currentCount + 1,
-        ifAbsent: () => 1,
-      );
-    }
-
-    final baseSearchedDocuments = supplierService.searchSuppliers(
-      documents: approvedDocuments,
-      query: searchQuery,
-    );
-
-    final normalizedQuery = searchQuery.trim().toLowerCase();
-    final fishMatchedSupplierIds = <String>{};
-    if (normalizedQuery.isNotEmpty) {
-      for (final stock in availableStockDocuments) {
-        final data = stock.data();
-        final searchable =
-            [data['productName'], data['fishName'], data['category']]
-                .whereType<Object>()
-                .map((value) => value.toString().toLowerCase())
-                .join(' ');
-
-        if (searchable.contains(normalizedQuery)) {
-          final supplierId = (data['supplierId'] ?? '').toString().trim();
-          if (supplierId.isNotEmpty) {
-            fishMatchedSupplierIds.add(supplierId);
-          }
-        }
-      }
-    }
-
-    final searchedIds = baseSearchedDocuments
-        .map((document) => document.id)
-        .toSet();
-    final searchedDocuments = normalizedQuery.isEmpty
-        ? approvedDocuments
-        : approvedDocuments.where((document) {
-            return searchedIds.contains(document.id) ||
-                fishMatchedSupplierIds.contains(document.id);
-          }).toList();
-
-    final filteredDocuments = showFavoritesOnly
-        ? searchedDocuments
-              .where((document) => activeFavoriteIds.contains(document.id))
-              .toList()
-        : searchedDocuments;
-
-    final displayedDocuments = [...filteredDocuments];
-    displayedDocuments.sort((first, second) {
-      final firstSupplier = supplierService.supplierFromProfile(first.data());
-      final secondSupplier = supplierService.supplierFromProfile(second.data());
-
-      int nameFallback() => firstSupplier.name.toLowerCase().compareTo(
-        secondSupplier.name.toLowerCase(),
-      );
-
-      switch (sortOption) {
-        case _SupplierSortOption.recommended:
-          final firstIndex = approvedDocuments.indexWhere(
-            (item) => item.id == first.id,
-          );
-          final secondIndex = approvedDocuments.indexWhere(
-            (item) => item.id == second.id,
-          );
-          return firstIndex.compareTo(secondIndex);
-        case _SupplierSortOption.newest:
-          final firstDate = firstSupplier.accountCreatedAt;
-          final secondDate = secondSupplier.accountCreatedAt;
-          if (firstDate == null && secondDate == null) return nameFallback();
-          if (firstDate == null) return 1;
-          if (secondDate == null) return -1;
-          final dateComparison = secondDate.compareTo(firstDate);
-          return dateComparison != 0 ? dateComparison : nameFallback();
-        case _SupplierSortOption.highestRated:
-          final ratingComparison = secondSupplier.rating.compareTo(
-            firstSupplier.rating,
-          );
-          if (ratingComparison != 0) return ratingComparison;
-          final reviewComparison = secondSupplier.reviews.compareTo(
-            firstSupplier.reviews,
-          );
-          return reviewComparison != 0 ? reviewComparison : nameFallback();
-        case _SupplierSortOption.mostAvailable:
-          final firstCount = availableCountsBySupplier[first.id] ?? 0;
-          final secondCount = availableCountsBySupplier[second.id] ?? 0;
-          final countComparison = secondCount.compareTo(firstCount);
-          if (countComparison != 0) return countComparison;
-          final ratingComparison = secondSupplier.rating.compareTo(
-            firstSupplier.rating,
-          );
-          return ratingComparison != 0 ? ratingComparison : nameFallback();
-      }
-    });
-
-    if (approvedDocuments.isEmpty) {
-      return const BrowseSuppliersEmptyBody(
-        title: 'No supplier profiles yet',
-        subtitle: 'Approved supplier stores will appear here when available.',
-      );
-    }
-
-    if (showFavoritesOnly && activeFavoriteIds.isEmpty) {
-      return Column(
+    return Container(
+      margin: const EdgeInsets.fromLTRB(18, 16, 18, 24),
+      padding: const EdgeInsets.fromLTRB(22, 26, 22, 26),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFDCEAF2)),
+      ),
+      child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
-            child: supplierModeSelector(
-              favoriteCount: activeFavoriteIds.length,
+          Container(
+            width: 58,
+            height: 50,
+            decoration: const BoxDecoration(
+              color: Color(0xFFEAF7FB),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: const Color(0xFF0875D1), size: 28),
+          ),
+          const SizedBox(height: 13),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Color(0xFF102C44),
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
             ),
           ),
-          Expanded(child: favoritesEmptyBody()),
-        ],
-      );
-    }
-
-    if (filteredDocuments.isEmpty) {
-      return Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
-            child: supplierModeSelector(
-              favoriteCount: activeFavoriteIds.length,
-            ),
-          ),
-          Expanded(
-            child: BrowseSuppliersEmptyBody(
-              title: showFavoritesOnly
-                  ? 'No matching favorites found'
-                  : 'No matching suppliers found',
-              subtitle: showFavoritesOnly
-                  ? 'Try another supplier name, fish, or location within your Favorites.'
-                  : 'Try another supplier name, fish, or location.',
+          const SizedBox(height: 6),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Color(0xFF71899B),
+              fontSize: 11.8,
+              height: 1.4,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
-      );
-    }
-
-    return ListView(
-      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
-      children: [
-        supplierModeSelector(favoriteCount: activeFavoriteIds.length),
-        const SizedBox(height: 17),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    normalizedQuery.isNotEmpty &&
-                            fishMatchedSupplierIds.isNotEmpty
-                        ? 'Suppliers selling “${searchQuery.trim()}”'
-                        : normalizedQuery.isNotEmpty
-                        ? 'Results for “${searchQuery.trim()}”'
-                        : showFavoritesOnly
-                        ? 'Favorite Suppliers'
-                        : 'All Suppliers',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFF102C44),
-                      fontSize: 18.2,
-                      height: 1.08,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -0.2,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    normalizedQuery.isNotEmpty
-                        ? '${displayedDocuments.length} matching supplier${displayedDocuments.length == 1 ? '' : 's'} found.'
-                        : showFavoritesOnly
-                        ? '${displayedDocuments.length} saved supplier${displayedDocuments.length == 1 ? '' : 's'} ready to revisit.'
-                        : '${displayedDocuments.length} verified supplier${displayedDocuments.length == 1 ? '' : 's'} across Caraga.',
-                    style: const TextStyle(
-                      color: Color(0xFF7B8FA3),
-                      fontSize: 10.8,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 10),
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: showSortSheet,
-                borderRadius: BorderRadius.circular(13),
-                child: Ink(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEAF7FC),
-                    borderRadius: BorderRadius.circular(13),
-                    border: Border.all(color: const Color(0xFFCFE7F1)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(sortIcon, size: 14, color: const Color(0xFF087AC0)),
-                      const SizedBox(width: 5),
-                      Text(
-                        sortLabel,
-                        style: const TextStyle(
-                          color: Color(0xFF087AC0),
-                          fontSize: 8.7,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(width: 3),
-                      const Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        size: 15,
-                        color: Color(0xFF087AC0),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 14),
-        ...displayedDocuments.map((document) {
-          final data = document.data();
-          final supplier = supplierService.supplierFromProfile(data);
-          final isFavorite = activeFavoriteIds.contains(document.id);
-          final availableListingCount =
-              availableCountsBySupplier[document.id] ?? 0;
-          final currentUid = favoriteService.currentUserId?.trim() ?? '';
-          final supplierIds = <String>{
-            document.id.trim(),
-            for (final key in const ['supplierId', 'userId', 'uid'])
-              if ((data[key] ?? '').toString().trim().isNotEmpty)
-                (data[key] ?? '').toString().trim(),
-          };
-          final ownStore =
-              currentUid.isNotEmpty && supplierIds.contains(currentUid);
-
-          return SupplierProfileCard(
-            supplier: supplier,
-            availableListingCount: availableListingCount,
-            isFavorite: isFavorite,
-            favoriteBusy: favoriteActionSupplierId == document.id,
-            showFavoriteAction: !ownStore,
-            onFavoriteToggle: () => toggleFavorite(
-              supplierId: document.id,
-              currentlyFavorite: isFavorite,
-            ),
-            onTap: () => openSupplierDetails(
-              context: context,
-              supplierId: document.id,
-              data: data,
-            ),
-          );
-        }),
-      ],
+      ),
     );
   }
 
@@ -793,90 +585,236 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: supplierService.suppliersStream,
         builder: (context, supplierSnapshot) {
-          final documents = supplierSnapshot.data?.docs ?? [];
+          final supplierDocuments = supplierSnapshot.data?.docs ?? [];
           final approvedDocuments = supplierService.approvedSuppliers(
-            documents,
+            supplierDocuments,
           );
-          final approvedSupplierIds = approvedDocuments
-              .map((document) => document.id)
-              .toSet();
-          final approvedCount = approvedDocuments.length;
 
           return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-            stream: stockService.allFishPostsStream,
+            stream: FirebaseFirestore.instance.collection('fishStocks').snapshots(),
             builder: (context, stockSnapshot) {
               final stockDocuments = stockSnapshot.data?.docs ?? [];
-              final availableStockCount = stockDocuments.where((document) {
-                if (!stockService.isAvailableStock(document)) {
-                  return false;
-                }
-                final supplierId = (document.data()['supplierId'] ?? '')
-                    .toString()
-                    .trim();
-                return approvedSupplierIds.contains(supplierId);
-              }).length;
+              final stocksBySupplier = stockMap(stockDocuments);
+              final listingCount = stocksBySupplier.values.fold<int>(
+                0,
+                (total, items) => total + items.length,
+              );
 
-              return Column(
-                children: [
-                  BrowseSuppliersHeader(
-                    approvedCount: approvedCount,
-                    availableStockCount: availableStockCount,
-                    searchController: searchController,
-                    onSearchChanged: (value) {
-                      setState(() {
-                        searchQuery = value;
-                      });
-                    },
-                    onBack: () => Navigator.pop(context),
-                  ),
-                  Expanded(
-                    child: Builder(
-                      builder: (context) {
-                        if (supplierSnapshot.hasError) {
-                          return BrowseSuppliersErrorBody(
-                            error: supplierSnapshot.error!,
-                          );
-                        }
+              final user = FirebaseAuth.instance.currentUser;
+              if (user == null) {
+                return _buildBody(
+                  context: context,
+                  supplierSnapshot: supplierSnapshot,
+                  approvedDocuments: approvedDocuments,
+                  stocksBySupplier: stocksBySupplier,
+                  listingCount: listingCount,
+                  favoriteIds: const <String>{},
+                );
+              }
 
-                        if (stockSnapshot.hasError) {
-                          return BrowseSuppliersErrorBody(
-                            error: stockSnapshot.error!,
-                          );
-                        }
+              return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                stream: favoriteStream(),
+                builder: (context, favoriteSnapshot) {
+                  final favoriteIds = favoriteSnapshot.data?.docs
+                          .map((document) => document.id)
+                          .toSet() ??
+                      <String>{};
 
-                        if (!supplierSnapshot.hasData ||
-                            !stockSnapshot.hasData) {
-                          return const BrowseSuppliersLoadingBody();
-                        }
-
-                        return StreamBuilder<Set<String>>(
-                          stream: favoriteService.favoriteSupplierIdsStream,
-                          initialData: const <String>{},
-                          builder: (context, favoriteSnapshot) {
-                            if (favoriteSnapshot.hasError) {
-                              return BrowseSuppliersErrorBody(
-                                error: favoriteSnapshot.error!,
-                              );
-                            }
-
-                            return supplierListBody(
-                              context: context,
-                              documents: documents,
-                              stockDocuments: stockDocuments,
-                              favoriteSupplierIds:
-                                  favoriteSnapshot.data ?? const <String>{},
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                ],
+                  return _buildBody(
+                    context: context,
+                    supplierSnapshot: supplierSnapshot,
+                    approvedDocuments: approvedDocuments,
+                    stocksBySupplier: stocksBySupplier,
+                    listingCount: listingCount,
+                    favoriteIds: favoriteIds,
+                  );
+                },
               );
             },
           );
         },
       ),
+    );
+  }
+
+  Widget _buildBody({
+    required BuildContext context,
+    required AsyncSnapshot<QuerySnapshot<Map<String, dynamic>>> supplierSnapshot,
+    required List<QueryDocumentSnapshot<Map<String, dynamic>>> approvedDocuments,
+    required Map<String, List<QueryDocumentSnapshot<Map<String, dynamic>>>> stocksBySupplier,
+    required int listingCount,
+    required Set<String> favoriteIds,
+  }) {
+    final supplierMatches = supplierService.searchSuppliers(
+      documents: approvedDocuments,
+      query: searchQuery,
+    );
+
+    final normalizedQuery = searchQuery.trim().toLowerCase();
+    final supplierMatchIds = supplierMatches.map((document) => document.id).toSet();
+
+    final filtered = normalizedQuery.isEmpty
+        ? approvedDocuments
+        : approvedDocuments.where((document) {
+            if (supplierMatchIds.contains(document.id)) {
+              return true;
+            }
+
+            final stocks = stocksBySupplier[document.id] ??
+                <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+
+            return stocks.any((stock) {
+              final data = stock.data();
+              final productName = stringValue(data, 'productName').toLowerCase();
+              final category = stringValue(data, 'category').toLowerCase();
+              return productName.contains(normalizedQuery) ||
+                  category.contains(normalizedQuery);
+            });
+          }).toList();
+
+    var visible = selectedTab == BrowseSupplierTab.favorites
+        ? filtered.where((document) => favoriteIds.contains(document.id)).toList()
+        : [...filtered];
+
+    visible = applySort(
+      documents: visible,
+      stocksBySupplier: stocksBySupplier,
+    );
+
+    return ListView(
+      padding: EdgeInsets.zero,
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      children: [
+        BrowseSuppliersHeader(
+          onBack: () => Navigator.pop(context),
+        ),
+        Transform.translate(
+          offset: const Offset(0, -24),
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Color(0xFFF7FAFC),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+            ),
+            child: Column(
+            children: [
+              browseSearchSection(
+                approvedCount: approvedDocuments.length,
+                listingCount: listingCount,
+              ),
+              filterRow(favoriteCount: favoriteIds.length),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            selectedTab == BrowseSupplierTab.favorites
+                                ? 'Favorite Suppliers'
+                                : 'All Suppliers',
+                            style: const TextStyle(
+                              color: Color(0xFF102C44),
+                              fontSize: 17,
+                              height: 1,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            selectedTab == BrowseSupplierTab.favorites
+                                ? '${visible.length} saved supplier${visible.length == 1 ? '' : 's'}.'
+                                : '${approvedDocuments.length} verified suppliers across Caraga.',
+                            style: const TextStyle(
+                              color: Color(0xFF748C9E),
+                              fontSize: 11.0,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+        if (supplierSnapshot.hasError)
+          emptyCard(
+            icon: Icons.cloud_off_rounded,
+            title: 'Unable to load suppliers',
+            subtitle: AppErrorMessage.from(
+              supplierSnapshot.error!,
+              fallback: 'Please check your connection and try again.',
+            ),
+          )
+        else if (!supplierSnapshot.hasData)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 42),
+            child: Center(
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: Color(0xFF0875D1),
+              ),
+            ),
+          )
+        else if (approvedDocuments.isEmpty)
+          emptyCard(
+            icon: Icons.storefront_outlined,
+            title: 'No approved suppliers yet',
+            subtitle: 'Approved supplier stores will appear here after verification.',
+          )
+        else if (visible.isEmpty && searchQuery.trim().isNotEmpty)
+          emptyCard(
+            icon: Icons.search_off_rounded,
+            title: 'No matching suppliers',
+            subtitle: 'Try another supplier name, fish product, or Caraga location.',
+          )
+        else if (visible.isEmpty && selectedTab == BrowseSupplierTab.favorites)
+          emptyCard(
+            icon: Icons.favorite_border_rounded,
+            title: 'No favorite suppliers yet',
+            subtitle: 'Tap the heart on a supplier card to save it here for quick access.',
+          )
+        else
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+            child: Column(
+              children: [
+                for (var index = 0; index < visible.length; index++) ...[
+                  Builder(
+                    builder: (context) {
+                      final document = visible[index];
+                      final data = document.data();
+                      final supplier = supplierService.supplierFromProfile(data);
+                      final supplierStocks = stocksBySupplier[document.id] ??
+                          <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+
+                      return SupplierProfileCard(
+                        supplier: supplier,
+                        supplierId: document.id,
+                        imageUrl: supplierImageUrl(data),
+                        availableListingCount: supplierStocks.length,
+                        productNames: productNamesFor(supplierStocks),
+                        onTap: () => openSupplierDetails(
+                          context: context,
+                          supplierId: document.id,
+                          data: data,
+                        ),
+                      );
+                    },
+                  ),
+                  if (index != visible.length - 1) const SizedBox(height: 12),
+                ],
+              ],
+            ),
+          ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -1,126 +1,79 @@
 import 'package:flutter/material.dart';
-import 'package:isdalink/utils/app_error_message.dart';
 
-class BrowseSuppliersLoadingBody extends StatelessWidget {
-  const BrowseSuppliersLoadingBody({super.key});
-
-  Widget _line({required double width, required double height}) {
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: const Color(0xFFEAF1F5),
-        borderRadius: BorderRadius.circular(99),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
-      children: List.generate(
-        5,
-        (index) => Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE1EBF1)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 76,
-                height: 76,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE8F0F4),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _line(width: 130, height: 12),
-                    const SizedBox(height: 9),
-                    _line(width: 175, height: 8),
-                    const SizedBox(height: 11),
-                    _line(width: 145, height: 8),
-                    const SizedBox(height: 11),
-                    _line(width: 90, height: 9),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+Widget _supplierIconBuilder(BuildContext context) {
+  return const Icon(
+    Icons.storefront_rounded,
+    color: Color(0xFF0A73D8),
+    size: 17,
+  );
 }
 
-class BrowseSuppliersEmptyBody extends StatelessWidget {
-  const BrowseSuppliersEmptyBody({
+Widget _listingFishIconBuilder(BuildContext context) {
+  return Image.asset(
+    'assets/images/Fish.png',
+    width: 17,
+    height: 17,
+    fit: BoxFit.contain,
+    errorBuilder: (_, _, _) => const Icon(
+      Icons.set_meal_rounded,
+      color: Color(0xFF0875D1),
+      size: 17,
+    ),
+  );
+}
+
+Widget _paymentIconBuilder(BuildContext context) {
+  return const Icon(
+    Icons.account_balance_wallet_rounded,
+    color: Color(0xFFE79A13),
+    size: 17,
+  );
+}
+
+class BrowseSuppliersStatusCards extends StatelessWidget {
+  const BrowseSuppliersStatusCards({
     super.key,
-    required this.title,
-    required this.subtitle,
+    required this.supplierCount,
+    required this.listingCount,
   });
 
-  final String title;
-  final String subtitle;
+  final int supplierCount;
+  final int listingCount;
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(22, 28, 22, 24),
+    return Row(
       children: [
-        Container(
-          padding: const EdgeInsets.fromLTRB(22, 28, 22, 26),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: const Color(0xFFE2ECF2)),
+        Expanded(
+          child: _BrowseStatusCard(
+            value: '$supplierCount',
+            label: 'Suppliers',
+            iconBackground: const Color(0xFFE8F5FC),
+            markerColor: const Color(0xFF1FAF78),
+            markerIcon: Icons.verified_rounded,
+            iconBuilder: _supplierIconBuilder,
           ),
-          child: Column(
-            children: [
-              Container(
-                width: 66,
-                height: 66,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFEAF8FC),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.storefront_outlined,
-                  color: Color(0xFF087AC0),
-                  size: 30,
-                ),
-              ),
-              const SizedBox(height: 14),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Color(0xFF102C44),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                subtitle,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Color(0xFF748A9B),
-                  fontSize: 11,
-                  height: 1.4,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _BrowseStatusCard(
+            value: '$listingCount',
+            label: 'Listings',
+            iconBackground: const Color(0xFFEAF5FD),
+            markerColor: const Color(0xFF39A7D8),
+            markerIcon: Icons.list_alt_rounded,
+            iconBuilder: _listingFishIconBuilder,
+          ),
+        ),
+        const SizedBox(width: 10),
+        const Expanded(
+          child: _BrowseStatusCard(
+            value: 'COD',
+            label: 'Payment',
+            iconBackground: Color(0xFFFFF4DB),
+            markerColor: Color(0xFFF3B33D),
+            markerIcon: Icons.local_shipping_rounded,
+            iconBuilder: _paymentIconBuilder,
           ),
         ),
       ],
@@ -128,59 +81,109 @@ class BrowseSuppliersEmptyBody extends StatelessWidget {
   }
 }
 
-class BrowseSuppliersErrorBody extends StatelessWidget {
-  const BrowseSuppliersErrorBody({super.key, required this.error});
+class _BrowseStatusCard extends StatelessWidget {
+  const _BrowseStatusCard({
+    required this.value,
+    required this.label,
+    required this.iconBuilder,
+    required this.iconBackground,
+    required this.markerColor,
+    required this.markerIcon,
+  });
 
-  final Object error;
+  final String value;
+  final String label;
+  final WidgetBuilder iconBuilder;
+  final Color iconBackground;
+  final Color markerColor;
+  final IconData markerIcon;
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(22, 28, 22, 24),
-      children: [
-        Container(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 22),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: const Color(0xFFE4EBF0)),
+    return Container(
+      height: 86,
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFD9EAF4)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0E063A5A),
+            blurRadius: 12,
+            offset: Offset(0, 6),
           ),
-          child: Column(
-            children: [
-              const Icon(
-                Icons.cloud_off_rounded,
-                color: Color(0xFF8198A9),
-                size: 34,
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Unable to load suppliers',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Color(0xFF102C44),
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 36,
+            height: 33,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: iconBackground,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    alignment: Alignment.center,
+                    child: iconBuilder(context),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                AppErrorMessage.from(
-                  error,
-                  fallback:
-                      'The supplier marketplace could not be loaded right now. Please try again.',
+                Positioned(
+                  right: -1,
+                  bottom: -1,
+                  child: Container(
+                    width: 16,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFFE4EEF5)),
+                    ),
+                    child: Icon(markerIcon, color: markerColor, size: 10),
+                  ),
                 ),
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Color(0xFF748A9B),
-                  fontSize: 10.5,
-                  height: 1.4,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
+          const SizedBox(height: 4),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              maxLines: 1,
+              style: const TextStyle(
+                color: Color(0xFF082E50),
+                fontSize: 15.5,
+                height: 1,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          const SizedBox(height: 2),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              maxLines: 1,
+              style: const TextStyle(
+                color: Color(0xFF627D92),
+                fontSize: 9.6,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

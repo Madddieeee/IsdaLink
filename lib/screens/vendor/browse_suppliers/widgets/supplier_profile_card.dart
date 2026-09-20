@@ -1,176 +1,138 @@
 import 'package:flutter/material.dart';
 import 'package:isdalink/models/supplier.dart';
+import 'package:isdalink/services/favorite_supplier_service.dart';
+import 'package:isdalink/utils/app_error_message.dart';
 
-class SupplierProfileCard extends StatelessWidget {
+class SupplierProfileCard extends StatefulWidget {
   const SupplierProfileCard({
     super.key,
     required this.supplier,
+    required this.supplierId,
+    required this.imageUrl,
     required this.availableListingCount,
-    required this.isFavorite,
-    required this.favoriteBusy,
-    required this.showFavoriteAction,
-    required this.onFavoriteToggle,
+    required this.productNames,
     required this.onTap,
   });
 
   final Supplier supplier;
+  final String supplierId;
+  final String imageUrl;
   final int availableListingCount;
-  final bool isFavorite;
-  final bool favoriteBusy;
-  final bool showFavoriteAction;
-  final VoidCallback onFavoriteToggle;
+  final List<String> productNames;
   final VoidCallback onTap;
 
+  @override
+  State<SupplierProfileCard> createState() => _SupplierProfileCardState();
+}
+
+class _SupplierProfileCardState extends State<SupplierProfileCard> {
+  final FavoriteSupplierService favoriteService = FavoriteSupplierService();
+  bool favoriteBusy = false;
+
   bool get hasNetworkImage {
-    final imageUrl = supplier.profileImageUrl.trim();
-    return imageUrl.startsWith('http://') || imageUrl.startsWith('https://');
+    final value = widget.imageUrl.trim();
+    return value.startsWith('http://') || value.startsWith('https://');
   }
 
-  String get storeInitial {
-    final name = supplier.name.trim();
-    return name.isEmpty ? 'S' : name.substring(0, 1).toUpperCase();
+  bool get canFavorite {
+    final currentUserId = favoriteService.currentUserId;
+    final supplierId = widget.supplierId.trim();
+    return currentUserId != null &&
+        supplierId.isNotEmpty &&
+        supplierId != currentUserId;
   }
 
   String get compactLocation {
-    final raw = supplier.location.trim();
+    final raw = widget.supplier.location.trim();
     if (raw.isEmpty) return 'Caraga Region';
 
     final parts = raw
         .split(',')
-        .map((part) => part.trim())
-        .where((part) => part.isNotEmpty)
-        .where((part) => part.toLowerCase() != 'caraga region')
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .where((item) => item.toLowerCase() != 'caraga region')
         .toList();
 
-    if (parts.length >= 2) {
-      return '${parts[parts.length - 2]}, ${parts.last}';
-    }
-    return parts.isEmpty ? raw : parts.last;
+    if (parts.isEmpty) return 'Caraga Region';
+    if (parts.length == 1) return parts.first;
+    return '${parts[parts.length - 2]}, ${parts.last}';
   }
 
-  String get reviewLabel {
-    if (supplier.reviews <= 0 || supplier.rating <= 0) {
+  String get reviewText {
+    if (widget.supplier.reviews <= 0 || widget.supplier.rating <= 0) {
       return 'No reviews yet';
     }
-    final word = supplier.reviews == 1 ? 'review' : 'reviews';
-    return '${supplier.rating.toStringAsFixed(1)} · ${supplier.reviews} $word';
+    return '${widget.supplier.rating.toStringAsFixed(1)} (${widget.supplier.reviews})';
   }
 
-  Widget _storePhoto() {
-    return Container(
-      width: 76,
-      height: 76,
-      decoration: BoxDecoration(
-        color: const Color(0xFFEAF8FC),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFD5EAF3)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x10002A47),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(19),
-        child: hasNetworkImage
-            ? Image.network(
-                supplier.profileImageUrl,
-                fit: BoxFit.cover,
-                loadingBuilder: (context, child, progress) {
-                  if (progress == null) return child;
-                  return const Center(
-                    child: SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  );
-                },
-                errorBuilder: (_, _, _) =>
-                    SupplierInitial(initial: storeInitial),
-              )
-            : SupplierInitial(initial: storeInitial),
-      ),
-    );
-  }
+  Future<void> toggleFavorite(bool currentlyFavorite) async {
+    if (favoriteBusy || !canFavorite) return;
 
-  Widget _verifiedBadge() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE8F8F3),
-        borderRadius: BorderRadius.circular(99),
-      ),
-      child: const Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.verified_rounded, color: Color(0xFF11A87A), size: 11),
-          SizedBox(width: 3),
-          Text(
-            'Verified',
-            style: TextStyle(
-              color: Color(0xFF0B8D68),
-              fontSize: 7.8,
-              fontWeight: FontWeight.w900,
+    setState(() => favoriteBusy = true);
+    try {
+      await favoriteService.toggleFavorite(
+        supplierId: widget.supplierId,
+        currentlyFavorite: currentlyFavorite,
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              currentlyFavorite
+                  ? 'Supplier removed from Favorites.'
+                  : 'Supplier added to Favorites.',
             ),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _newBadge() {
-    final remaining = supplier.newSupplierDaysRemaining;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF7E9),
-        borderRadius: BorderRadius.circular(99),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.auto_awesome_rounded,
-            color: Color(0xFFE58A1F),
-            size: 10,
-          ),
-          const SizedBox(width: 3),
-          Text(
-            'NEW · ${remaining}D',
-            style: const TextStyle(
-              color: Color(0xFFC96A00),
-              fontSize: 7.8,
-              fontWeight: FontWeight.w900,
+        );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              AppErrorMessage.from(
+                error,
+                fallback: 'Unable to update Favorites right now.',
+                allowBusinessMessage: true,
+              ),
             ),
+            behavior: SnackBarBehavior.floating,
           ),
-        ],
-      ),
-    );
+        );
+    } finally {
+      if (mounted) setState(() => favoriteBusy = false);
+    }
   }
 
-  Widget _favoriteButton() {
-    return Tooltip(
-      message: isFavorite ? 'Remove from Favorites' : 'Add to Favorites',
-      child: Material(
-        color: isFavorite ? const Color(0xFFFFEEF2) : const Color(0xFFF1F6F9),
-        borderRadius: BorderRadius.circular(12),
-        child: InkWell(
-          onTap: favoriteBusy ? null : onFavoriteToggle,
-          borderRadius: BorderRadius.circular(12),
-          child: SizedBox(
-            width: 34,
-            height: 34,
-            child: Center(
+  Widget favoriteButton() {
+    if (!canFavorite) return const SizedBox(width: 40, height: 40);
+
+    return StreamBuilder<bool>(
+      stream: favoriteService.isFavoriteStream(widget.supplierId),
+      initialData: false,
+      builder: (context, snapshot) {
+        final isFavorite = snapshot.data ?? false;
+        return Material(
+          color: const Color(0xFFF3F9FD),
+          shape: const CircleBorder(),
+          child: InkWell(
+            onTap: favoriteBusy ? null : () => toggleFavorite(isFavorite),
+            customBorder: const CircleBorder(),
+            child: SizedBox(
+              width: 40,
+              height: 40,
               child: favoriteBusy
-                  ? const SizedBox(
-                      width: 15,
-                      height: 15,
+                  ? const Padding(
+                      padding: EdgeInsets.all(11),
                       child: CircularProgressIndicator(
-                        strokeWidth: 1.8,
-                        color: Color(0xFF087AC0),
+                        strokeWidth: 2,
+                        color: Color(0xFF0875D1),
                       ),
                     )
                   : Icon(
@@ -178,192 +140,245 @@ class SupplierProfileCard extends StatelessWidget {
                           ? Icons.favorite_rounded
                           : Icons.favorite_border_rounded,
                       color: isFavorite
-                          ? const Color(0xFFE94C72)
-                          : const Color(0xFF7690A2),
-                      size: 18,
+                          ? const Color(0xFFE94D67)
+                          : const Color(0xFF68869C),
+                      size: 22,
                     ),
             ),
           ),
-        ),
+        );
+      },
+    );
+  }
+
+  Widget supplierImage() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        width: 104,
+        height: 104,
+        color: const Color(0xFFEAF7FB),
+        child: hasNetworkImage
+            ? Image.network(
+                widget.imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => _imageFallback(),
+              )
+            : _imageFallback(),
+      ),
+    );
+  }
+
+  Widget _imageFallback() {
+    return const Center(
+      child: Icon(
+        Icons.storefront_rounded,
+        color: Color(0xFF0875D1),
+        size: 38,
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final ownStore = !showFavoriteAction;
+    final visibleProducts = widget.productNames.take(3).toList();
+    final remainingProducts = widget.productNames.length - visibleProducts.length;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
-          child: Ink(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFE0EBF1)),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x0D002A47),
-                  blurRadius: 14,
-                  offset: Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                _storePhoto(),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              supplier.name,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Color(0xFF102C44),
-                                fontSize: 13.3,
-                                height: 1.08,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -0.1,
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(22),
+      child: InkWell(
+        onTap: widget.onTap,
+        borderRadius: BorderRadius.circular(22),
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: const Color(0xFFDCEAF2)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0F063A5A),
+                blurRadius: 18,
+                offset: Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              supplierImage(),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  widget.supplier.name,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Color(0xFF082E50),
+                                    fontSize: 14.2,
+                                    height: 1.12,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
                               ),
+                              const SizedBox(width: 5),
+                              const Padding(
+                                padding: EdgeInsets.only(top: 1),
+                                child: Tooltip(
+                                  message: 'Verified supplier',
+                                  child: Icon(
+                                    Icons.verified_rounded,
+                                    color: Color(0xFF18A56D),
+                                    size: 16,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        favoriteButton(),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on_rounded,
+                          color: Color(0xFF7D99AC),
+                          size: 16,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            compactLocation,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Color(0xFF607D92),
+                              fontSize: 10.2,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                          const SizedBox(width: 5),
-                          _verifiedBadge(),
-                        ],
-                      ),
-                      const SizedBox(height: 5),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.location_on_rounded,
-                            color: Color(0xFF7B8FA3),
-                            size: 13,
-                          ),
-                          const SizedBox(width: 3),
-                          Expanded(
-                            child: Text(
-                              compactLocation,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Color(0xFF6D8294),
-                                fontSize: 9.7,
-                                fontWeight: FontWeight.w600,
-                              ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 7),
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 5,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              widget.supplier.reviews > 0
+                                  ? Icons.star_rounded
+                                  : Icons.star_border_rounded,
+                              color: widget.supplier.reviews > 0
+                                  ? const Color(0xFFF4A300)
+                                  : const Color(0xFF8FA7B7),
+                              size: 16,
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Icon(
-                            supplier.reviews > 0
-                                ? Icons.star_rounded
-                                : Icons.star_border_rounded,
-                            color: supplier.reviews > 0
-                                ? const Color(0xFFFFB703)
-                                : const Color(0xFF92A4B1),
-                            size: 13,
-                          ),
-                          const SizedBox(width: 3),
-                          Flexible(
-                            child: Text(
-                              reviewLabel,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            const SizedBox(width: 3),
+                            Text(
+                              reviewText,
                               style: const TextStyle(
-                                color: Color(0xFF667E90),
-                                fontSize: 9.2,
+                                color: Color(0xFF547186),
+                                fontSize: 10.2,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
-                          ),
-                          Container(
-                            width: 1,
-                            height: 12,
-                            margin: const EdgeInsets.symmetric(horizontal: 7),
-                            color: const Color(0xFFDDE7ED),
-                          ),
-                          const Icon(
-                            Icons.inventory_2_outlined,
-                            color: Color(0xFF087AC0),
-                            size: 12,
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            '$availableListingCount listing${availableListingCount == 1 ? '' : 's'}',
-                            style: const TextStyle(
-                              color: Color(0xFF087AC0),
-                              fontSize: 9.0,
-                              fontWeight: FontWeight.w800,
+                          ],
+                        ),
+                        Container(
+                          width: 1,
+                          height: 14,
+                          color: const Color(0xFFD9E6ED),
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.inventory_2_outlined,
+                              color: Color(0xFF0875D1),
+                              size: 16,
                             ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${widget.availableListingCount} listings',
+                              style: const TextStyle(
+                                color: Color(0xFF0875D1),
+                                fontSize: 10.2,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    if (visibleProducts.isNotEmpty)
+                      Wrap(
+                        spacing: 5,
+                        runSpacing: 5,
+                        children: [
+                          ...visibleProducts.map(
+                            (name) => _ProductChip(label: name),
                           ),
+                          if (remainingProducts > 0)
+                            _ProductChip(label: '+$remainingProducts'),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          if (supplier.isNewSupplier) _newBadge(),
-                          if (supplier.isNewSupplier) const SizedBox(width: 6),
-                          if (ownStore)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 7,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE8F8F3),
-                                borderRadius: BorderRadius.circular(99),
-                              ),
-                              child: const Text(
-                                'YOUR STORE',
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: SizedBox(
+                        height: 34,
+                        child: ElevatedButton(
+                          onPressed: widget.onTap,
+                          style: ElevatedButton.styleFrom(
+                            elevation: 0,
+                            backgroundColor: const Color(0xFF0875D1),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'View Store',
                                 style: TextStyle(
-                                  color: Color(0xFF0B8D68),
-                                  fontSize: 7.5,
+                                  fontSize: 10.8,
                                   fontWeight: FontWeight.w900,
                                 ),
                               ),
-                            ),
-                          const Spacer(),
-                          Text(
-                            ownStore ? 'Open store' : 'View store',
-                            style: const TextStyle(
-                              color: Color(0xFF087AC0),
-                              fontSize: 9.1,
-                              fontWeight: FontWeight.w900,
-                            ),
+                              SizedBox(width: 6),
+                              Icon(Icons.arrow_forward_rounded, size: 16),
+                            ],
                           ),
-                          const SizedBox(width: 2),
-                          const Icon(
-                            Icons.arrow_forward_rounded,
-                            color: Color(0xFF087AC0),
-                            size: 14,
-                          ),
-                        ],
+                        ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                if (showFavoriteAction) ...[
-                  const SizedBox(width: 8),
-                  _favoriteButton(),
-                ],
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -371,22 +386,27 @@ class SupplierProfileCard extends StatelessWidget {
   }
 }
 
-class SupplierInitial extends StatelessWidget {
-  const SupplierInitial({super.key, required this.initial});
+class _ProductChip extends StatelessWidget {
+  const _ProductChip({required this.label});
 
-  final String initial;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFFEAF8FC),
-      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEAF6FD),
+        borderRadius: BorderRadius.circular(999),
+      ),
       child: Text(
-        initial,
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: const TextStyle(
-          color: Color(0xFF087AC0),
-          fontSize: 27,
-          fontWeight: FontWeight.w900,
+          color: Color(0xFF0875D1),
+          fontSize: 9.2,
+          fontWeight: FontWeight.w800,
         ),
       ),
     );
