@@ -12,140 +12,128 @@ class SupplierActivationProgressCard extends StatelessWidget {
   final List<String> stepTitles;
   final ValueChanged<int> onStepTap;
 
+  static const _blue = Color(0xFF146BFF);
+  static const _navy = Color(0xFF102C44);
+
   @override
   Widget build(BuildContext context) {
     const icons = <IconData>[
       Icons.person_outline_rounded,
       Icons.storefront_outlined,
-      Icons.scale_outlined,
       Icons.verified_user_outlined,
       Icons.fact_check_outlined,
     ];
 
     return Container(
       margin: const EdgeInsets.only(bottom: 13),
-      padding: const EdgeInsets.fromLTRB(14, 13, 14, 12),
+      padding: const EdgeInsets.fromLTRB(13, 12, 13, 11),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE4EDF5)),
+        border: Border.all(color: const Color(0xFFE1EBF2)),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x0E000000),
-            blurRadius: 14,
-            offset: Offset(0, 6),
+            color: Color(0x0D00152A),
+            blurRadius: 16,
+            offset: Offset(0, 7),
           ),
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF146BFF), Color(0xFF10B7D4)],
-                  ),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.route_outlined,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Verification Progress',
-                      style: TextStyle(
-                        color: Color(0xFF102C44),
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Step ${currentStep + 1} of ${stepTitles.length} · ${stepTitles[currentStep]} details',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFF7B8FA3),
-                        fontSize: 10.3,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(99),
-            child: LinearProgressIndicator(
-              value: (currentStep + 1) / stepTitles.length,
-              minHeight: 6,
-              backgroundColor: const Color(0xFFEAF0F5),
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                Color(0xFF146BFF),
-              ),
+          const Text(
+            'Application Progress',
+            style: TextStyle(
+              color: _navy,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 11),
+          const SizedBox(height: 12),
           Row(
-            children: List.generate(stepTitles.length, (index) {
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: List.generate(stepTitles.length * 2 - 1, (slot) {
+              if (slot.isOdd) {
+                final stepIndex = slot ~/ 2;
+                final completed = stepIndex < currentStep;
+                return Expanded(
+                  child: Container(
+                    height: 2,
+                    margin: const EdgeInsets.only(top: 17),
+                    decoration: BoxDecoration(
+                      color: completed ? _blue : const Color(0xFFDCE7EF),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                  ),
+                );
+              }
+
+              final index = slot ~/ 2;
               final active = index == currentStep;
               final done = index < currentStep;
+              final enabled = index <= currentStep;
 
-              return Expanded(
-                child: GestureDetector(
-                  onTap: index <= currentStep ? () => onStepTap(index) : null,
+              return GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: enabled ? () => onStepTap(index) : null,
+                child: SizedBox(
+                  width: 58,
                   child: Column(
                     children: [
                       AnimatedContainer(
-                        duration: const Duration(milliseconds: 170),
-                        width: active ? 36 : 32,
-                        height: active ? 36 : 32,
+                        duration: const Duration(milliseconds: 180),
+                        width: 36,
+                        height: 36,
                         decoration: BoxDecoration(
                           color: done || active
-                              ? const Color(0xFF146BFF)
+                              ? _blue
                               : const Color(0xFFEAF0F5),
                           shape: BoxShape.circle,
                           boxShadow: active
                               ? const [
                                   BoxShadow(
-                                    color: Color(0x35146BFF),
+                                    color: Color(0x30146BFF),
                                     blurRadius: 10,
                                     offset: Offset(0, 4),
                                   ),
                                 ]
                               : null,
                         ),
-                        child: Icon(
-                          done ? Icons.check_rounded : icons[index],
-                          color: done || active
-                              ? Colors.white
-                              : const Color(0xFF9AADBC),
-                          size: active ? 18 : 16,
+                        child: Center(
+                          child: done
+                              ? const Icon(
+                                  Icons.check_rounded,
+                                  color: Colors.white,
+                                  size: 18,
+                                )
+                              : active
+                              ? Text(
+                                  '${index + 1}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                )
+                              : Icon(
+                                  icons[index],
+                                  color: const Color(0xFF9AADBC),
+                                  size: 17,
+                                ),
                         ),
                       ),
                       const SizedBox(height: 6),
                       Text(
                         stepTitles[index],
-                        textAlign: TextAlign.center,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                           color: done || active
-                              ? const Color(0xFF146BFF)
+                              ? _blue
                               : const Color(0xFF8CA0B3),
-                          fontSize: 8.8,
+                          fontSize: 8.6,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
@@ -154,6 +142,73 @@ class SupplierActivationProgressCard extends StatelessWidget {
                 ),
               );
             }),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class SupplierStepStatusCard extends StatelessWidget {
+  const SupplierStepStatusCard({
+    super.key,
+    required this.complete,
+    required this.missingItems,
+  });
+
+  final bool complete;
+  final List<String> missingItems;
+
+  @override
+  Widget build(BuildContext context) {
+    if (complete) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF8ED),
+        borderRadius: BorderRadius.circular(17),
+        border: Border.all(color: const Color(0xFFFFD4A3)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.info_outline_rounded,
+            color: Color(0xFFB86112),
+            size: 19,
+          ),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Complete required details',
+                  style: TextStyle(
+                    color: Color(0xFF9B510F),
+                    fontSize: 10.8,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  missingItems.isEmpty
+                      ? 'Check the information above before continuing.'
+                      : 'Still needed: ${missingItems.join(', ')}.',
+                  style: const TextStyle(
+                    color: Color(0xFF65717D),
+                    fontSize: 9.7,
+                    height: 1.35,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -179,21 +234,21 @@ class SupplierActivationIntroCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 11),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FCFF),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFD8ECF7)),
+        color: const Color(0xFFF7FBFE),
+        borderRadius: BorderRadius.circular(19),
+        border: Border.all(color: const Color(0xFFDCEBF3)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: 35,
+            height: 35,
             decoration: BoxDecoration(
-              color: const Color(0xFFEFF7FF),
-              borderRadius: BorderRadius.circular(13),
+              color: const Color(0xFFEAF6FD),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: const Color(0xFF146BFF), size: 20),
+            child: Icon(icon, color: const Color(0xFF087FCB), size: 19),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -204,7 +259,7 @@ class SupplierActivationIntroCard extends StatelessWidget {
                   title,
                   style: const TextStyle(
                     color: Color(0xFF102C44),
-                    fontSize: 12.5,
+                    fontSize: 11.6,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -244,17 +299,17 @@ class SupplierActivationSectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(15),
+      margin: const EdgeInsets.only(bottom: 13),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 15),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(23),
         border: Border.all(color: const Color(0xFFE1EBF2)),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x0E00152A),
-            blurRadius: 18,
-            offset: Offset(0, 9),
+            color: Color(0x0B00152A),
+            blurRadius: 16,
+            offset: Offset(0, 7),
           ),
         ],
       ),
@@ -263,15 +318,15 @@ class SupplierActivationSectionCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 41,
-                height: 41,
+                width: 39,
+                height: 39,
                 decoration: BoxDecoration(
                   color: const Color(0xFFEAF7FB),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(13),
                 ),
-                child: Icon(icon, color: const Color(0xFF146BFF), size: 21),
+                child: Icon(icon, color: const Color(0xFF087FCB), size: 20),
               ),
-              const SizedBox(width: 11),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -280,16 +335,17 @@ class SupplierActivationSectionCard extends StatelessWidget {
                       title,
                       style: const TextStyle(
                         color: Color(0xFF102C44),
-                        fontSize: 14.5,
+                        fontSize: 13.3,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 2),
                     Text(
                       subtitle,
                       style: const TextStyle(
                         color: Color(0xFF7B8FA3),
-                        fontSize: 10.2,
+                        fontSize: 9.7,
+                        height: 1.3,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -298,7 +354,7 @@ class SupplierActivationSectionCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 13),
           ...children,
         ],
       ),
@@ -337,29 +393,29 @@ class SupplierSelectionField extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             onTap: onTap,
-            borderRadius: BorderRadius.circular(19),
+            borderRadius: BorderRadius.circular(17),
             child: Ink(
-              padding: const EdgeInsets.fromLTRB(10, 8, 9, 8),
+              padding: const EdgeInsets.fromLTRB(9, 8, 8, 8),
               decoration: BoxDecoration(
-                color: const Color(0xFFF6FAFD),
-                borderRadius: BorderRadius.circular(19),
+                color: const Color(0xFFF7FAFC),
+                borderRadius: BorderRadius.circular(17),
                 border: Border.all(
                   color: selected
-                      ? const Color(0xFF77D7B7)
-                      : const Color(0xFFE5EEF6),
-                  width: selected ? 1.25 : 1,
+                      ? const Color(0xFF8EDBC2)
+                      : const Color(0xFFE2EBF1),
+                  width: selected ? 1.2 : 1,
                 ),
               ),
               child: Row(
                 children: [
                   Container(
-                    width: 35,
-                    height: 35,
+                    width: 34,
+                    height: 34,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE6F9FF),
-                      borderRadius: BorderRadius.circular(12),
+                      color: const Color(0xFFEAF7FB),
+                      borderRadius: BorderRadius.circular(11),
                     ),
-                    child: Icon(icon, color: const Color(0xFF146BFF), size: 19),
+                    child: Icon(icon, color: const Color(0xFF087FCB), size: 18),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -369,12 +425,12 @@ class SupplierSelectionField extends StatelessWidget {
                         Text(
                           label,
                           style: const TextStyle(
-                            color: Color(0xFF6B7F93),
-                            fontSize: 9.5,
+                            color: Color(0xFF718598),
+                            fontSize: 9.1,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
-                        const SizedBox(height: 3),
+                        const SizedBox(height: 2),
                         Text(
                           selected ? (value ?? placeholder) : placeholder,
                           maxLines: 1,
@@ -382,8 +438,8 @@ class SupplierSelectionField extends StatelessWidget {
                           style: TextStyle(
                             color: selected
                                 ? const Color(0xFF102C44)
-                                : const Color(0xFF8BA0B1),
-                            fontSize: 11.8,
+                                : const Color(0xFF94A5B4),
+                            fontSize: 11.1,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
@@ -394,6 +450,7 @@ class SupplierSelectionField extends StatelessWidget {
                     IconButton(
                       tooltip: 'Clear $label',
                       onPressed: onClear,
+                      visualDensity: VisualDensity.compact,
                       icon: const Icon(
                         Icons.close_rounded,
                         color: Color(0xFF8BA0B1),
@@ -401,10 +458,13 @@ class SupplierSelectionField extends StatelessWidget {
                       ),
                     )
                   else
-                    const Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      color: Color(0xFF52677A),
-                      size: 21,
+                    const Padding(
+                      padding: EdgeInsets.only(right: 4),
+                      child: Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: Color(0xFF52677A),
+                        size: 20,
+                      ),
                     ),
                 ],
               ),
@@ -414,7 +474,7 @@ class SupplierSelectionField extends StatelessWidget {
         if (helperText != null) ...[
           const SizedBox(height: 5),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Text(
               helperText!,
               style: const TextStyle(
@@ -534,7 +594,7 @@ class _SupplierSelectionSheetState extends State<SupplierSelectionSheet> {
                   hintText: 'Search locality',
                   prefixIcon: const Icon(
                     Icons.search_rounded,
-                    color: Color(0xFF146BFF),
+                    color: Color(0xFF087FCB),
                   ),
                   filled: true,
                   fillColor: Colors.white,
@@ -545,7 +605,7 @@ class _SupplierSelectionSheetState extends State<SupplierSelectionSheet> {
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
                     borderSide: const BorderSide(
-                      color: Color(0xFF146BFF),
+                      color: Color(0xFF087FCB),
                       width: 1.4,
                     ),
                   ),
@@ -587,7 +647,7 @@ class _SupplierSelectionSheetState extends State<SupplierSelectionSheet> {
                             height: 35,
                             decoration: BoxDecoration(
                               color: selected
-                                  ? const Color(0xFF146BFF)
+                                  ? const Color(0xFF087FCB)
                                   : const Color(0xFFEAF7FB),
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -595,7 +655,7 @@ class _SupplierSelectionSheetState extends State<SupplierSelectionSheet> {
                               Icons.location_on_outlined,
                               color: selected
                                   ? Colors.white
-                                  : const Color(0xFF146BFF),
+                                  : const Color(0xFF087FCB),
                               size: 19,
                             ),
                           ),

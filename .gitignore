@@ -52,3 +52,5 @@ dataset/*.csv
 firebase-debug.log
 firebase-debug.*.log
 tools/dataset/
+
+android/.kotlin/

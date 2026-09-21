@@ -5,159 +5,107 @@ class SupplierActivationHeader extends StatelessWidget {
     super.key,
     required this.currentStep,
     required this.totalSteps,
-    required this.enabledUnitCount,
     required this.submitted,
     required this.onBack,
   });
 
   final int currentStep;
   final int totalSteps;
-  final int enabledUnitCount;
   final bool submitted;
   final VoidCallback onBack;
 
-  String get stepLabel {
-    if (submitted) {
-      return 'Pending Review';
-    }
+  String get stepLabel =>
+      submitted ? 'Pending Review' : 'Step ${currentStep + 1} of $totalSteps';
 
-    return 'Step ${currentStep + 1} of $totalSteps';
-  }
+  String get reviewValue => submitted ? 'Pending review' : 'Admin review';
 
-  String get reviewValue {
-    return submitted ? 'Pending review' : 'Admin review';
-  }
-
-  String get unitsValue {
-    if (enabledUnitCount == 1) {
-      return '1 selected';
-    }
-
-    return '$enabledUnitCount selected';
-  }
-
-  Widget backButton() {
+  Widget _backButton() {
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onBack,
         customBorder: const CircleBorder(),
         child: Ink(
+          width: 46,
+          height: 46,
           decoration: BoxDecoration(
-            color: Colors.white.withAlpha(30),
+            color: const Color(0x42001B31),
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.white.withAlpha(28)),
+            border: Border.all(color: Colors.white.withAlpha(92)),
           ),
           child: const Icon(
             Icons.arrow_back_rounded,
             color: Colors.white,
-            size: 21,
+            size: 23,
           ),
         ),
       ),
     );
   }
 
-  Widget stepBadge() {
+  Widget _stepBadge() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      constraints: const BoxConstraints(minWidth: 86),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(28),
+        color: const Color(0x42001B31),
         borderRadius: BorderRadius.circular(99),
-        border: Border.all(color: Colors.white.withAlpha(30)),
+        border: Border.all(color: Colors.white.withAlpha(92)),
       ),
       child: Text(
         stepLabel,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
+        textAlign: TextAlign.center,
         style: const TextStyle(
           color: Colors.white,
-          fontSize: 9.1,
+          fontSize: 10,
+          height: 1,
           fontWeight: FontWeight.w900,
         ),
       ),
     );
   }
 
-  Widget summaryItem({
+  Widget _summaryItem({
     required IconData icon,
     required String label,
     required String value,
   }) {
     return Expanded(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: Colors.white, size: 17),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Color(0xFFBFE8FA),
-              fontSize: 7.1,
-              letterSpacing: 0.4,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 8.9,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget summaryDivider() {
-    return Container(
-      width: 1,
-      height: 36,
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      color: Colors.white.withAlpha(28),
-    );
-  }
-
-  Widget headerCopy(double visibility) {
-    return IgnorePointer(
-      ignoring: visibility < 0.1,
-      child: Opacity(
-        opacity: visibility,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'SUPPLIER ACTIVATION',
-              style: TextStyle(
-                color: Color(0xFFBFE8FA),
-                fontSize: 8.4,
-                letterSpacing: 0.95,
+            Icon(icon, color: Colors.white, size: 18),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              maxLines: 1,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Color(0xFFC5EAF9),
+                fontSize: 7.4,
+                height: 1,
+                letterSpacing: 0.45,
                 fontWeight: FontWeight.w900,
               ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              submitted
-                  ? 'Your supplier application is awaiting admin review.'
-                  : 'Create a trusted supplier profile with verified owner, store, unit, and business details.',
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Color(0xFFDDEFFA),
-                fontSize: 10.6,
-                height: 1.35,
-                fontWeight: FontWeight.w700,
+            const SizedBox(height: 4),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                value,
+                maxLines: 1,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 9.4,
+                  height: 1,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ),
           ],
@@ -166,196 +114,183 @@ class SupplierActivationHeader extends StatelessWidget {
     );
   }
 
-  Widget summaryCard(double visibility) {
-    return IgnorePointer(
-      ignoring: visibility < 0.1,
-      child: Opacity(
-        opacity: visibility,
-        child: Container(
-          width: double.infinity,
-          height: 64,
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.white.withAlpha(27),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white.withAlpha(31)),
-          ),
-          child: Row(
-            children: [
-              summaryItem(
-                icon: Icons.verified_user_outlined,
-                label: 'REVIEW',
-                value: reviewValue,
-              ),
-              summaryDivider(),
-              summaryItem(
-                icon: Icons.scale_outlined,
-                label: 'SELLING UNITS',
-                value: unitsValue,
-              ),
-              summaryDivider(),
-              summaryItem(
-                icon: Icons.payments_outlined,
-                label: 'PAYMENT',
-                value: 'COD only',
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  Widget _summaryDivider() {
+    return Container(width: 1, height: 36, color: Colors.white.withAlpha(48));
   }
 
   @override
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.paddingOf(context).top;
+    final headerHeight = topPadding + 248;
 
-    return SliverAppBar(
-      pinned: true,
-      expandedHeight: 244,
-      toolbarHeight: 62,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      surfaceTintColor: Colors.transparent,
-      backgroundColor: const Color(0xFF075FAE),
-      foregroundColor: Colors.white,
-      leadingWidth: 60,
-      leading: Padding(
-        padding: const EdgeInsets.only(left: 14, top: 8, bottom: 8),
-        child: backButton(),
-      ),
-      titleSpacing: 6,
-      title: const Text(
-        'Supplier Onboarding',
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 19.4,
-          letterSpacing: -0.15,
-          fontWeight: FontWeight.w900,
-        ),
-      ),
-      actions: [
-        Padding(
-          padding: const EdgeInsets.only(right: 15),
-          child: Center(child: stepBadge()),
-        ),
-      ],
-      flexibleSpace: LayoutBuilder(
-        builder: (context, constraints) {
-          final collapsedHeight = topPadding + 62;
-          final expandedHeight = topPadding + 244;
-          final range = expandedHeight - collapsedHeight;
-
-          final expansion = range <= 0
-              ? 0.0
-              : ((constraints.maxHeight - collapsedHeight) / range)
-                    .clamp(0.0, 1.0)
-                    .toDouble();
-
-          final copyVisibility = ((expansion - 0.52) / 0.30)
-              .clamp(0.0, 1.0)
-              .toDouble();
-
-          final summaryVisibility = ((expansion - 0.72) / 0.20)
-              .clamp(0.0, 1.0)
-              .toDouble();
-
-          return ClipRRect(
-            borderRadius: const BorderRadius.vertical(
-              bottom: Radius.circular(29),
+    return SliverToBoxAdapter(
+      child: SizedBox(
+        height: headerHeight,
+        child: Stack(
+          fit: StackFit.expand,
+          clipBehavior: Clip.hardEdge,
+          children: [
+            Image.asset(
+              'assets/images/supplier_application_header_bg.png',
+              fit: BoxFit.cover,
+              alignment: const Alignment(0, 0.12),
             ),
-            child: Container(
-              decoration: const BoxDecoration(
+            const DecoratedBox(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                   colors: [
-                    Color(0xFF063B66),
-                    Color(0xFF075FAE),
-                    Color(0xFF146BFF),
+                    Color(0x9A032B4C),
+                    Color(0xA8063C65),
+                    Color(0xCC07527F),
                   ],
-                  stops: [0.0, 0.55, 1.0],
+                  stops: [0, 0.55, 1],
                 ),
               ),
-              child: Stack(
-                clipBehavior: Clip.hardEdge,
+            ),
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [
+                      Color(0x76001D35),
+                      Colors.transparent,
+                      Color(0x36001D35),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(16, topPadding + 10, 16, 18),
+              child: Column(
                 children: [
-                  const Positioned.fill(
-                    child: IgnorePointer(
-                      child: CustomPaint(painter: _SupplierHeaderPainter()),
+                  SizedBox(
+                    height: 48,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: _backButton(),
+                        ),
+                        ColorFiltered(
+                          colorFilter: const ColorFilter.mode(
+                            Colors.white,
+                            BlendMode.srcIn,
+                          ),
+                          child: Image.asset(
+                            'assets/images/isdalink_logo.png',
+                            width: 126,
+                            height: 42,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: _stepBadge(),
+                        ),
+                      ],
                     ),
                   ),
-                  Positioned(
-                    left: 18,
-                    right: 18,
-                    top: topPadding + 76,
-                    child: headerCopy(copyVisibility),
-                  ),
-                  if (expansion > 0.68)
-                    Positioned(
-                      left: 18,
-                      right: 18,
-                      bottom: 16,
-                      child: summaryCard(summaryVisibility),
+                  const Spacer(),
+                  const Text(
+                    'Supplier Application',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18.2,
+                      height: 1.05,
+                      letterSpacing: -0.25,
+                      fontWeight: FontWeight.w900,
                     ),
+                  ),
+                  const SizedBox(height: 6),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      submitted
+                          ? 'Your application is waiting for admin review.'
+                          : 'Become a verified supplier and grow your fish business with IsdaLink.',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Color(0xFFE5F4FA),
+                        fontSize: 9.8,
+                        height: 1.3,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    height: 68,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 8,
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    decoration: BoxDecoration(
+                      color: const Color(0x4D002C4A),
+                      borderRadius: BorderRadius.circular(19),
+                      border: Border.all(color: Colors.white.withAlpha(70)),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x2500162C),
+                          blurRadius: 14,
+                          offset: Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        _summaryItem(
+                          icon: Icons.verified_user_outlined,
+                          label: 'REVIEW',
+                          value: reviewValue,
+                        ),
+                        _summaryDivider(),
+                        _summaryItem(
+                          icon: Icons.location_on_outlined,
+                          label: 'REGION',
+                          value: 'Caraga only',
+                        ),
+                        _summaryDivider(),
+                        _summaryItem(
+                          icon: Icons.payments_outlined,
+                          label: 'PAYMENT',
+                          value: 'COD only',
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
-          );
-        },
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: -1,
+              child: IgnorePointer(
+                child: Container(
+                  height: 18,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF4F8FB),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(30),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(29)),
-      ),
     );
-  }
-}
-
-class _SupplierHeaderPainter extends CustomPainter {
-  const _SupplierHeaderPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final fillPaint = Paint()..color = Colors.white.withAlpha(10);
-
-    final borderPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.1
-      ..color = Colors.white.withAlpha(20);
-
-    canvas.drawCircle(
-      Offset(size.width * 0.89, size.height * 0.12),
-      size.width * 0.25,
-      fillPaint,
-    );
-
-    canvas.drawCircle(
-      Offset(size.width * 0.85, size.height * 0.27),
-      size.width * 0.18,
-      borderPaint,
-    );
-
-    canvas.drawCircle(
-      Offset(size.width * 0.74, size.height * 0.47),
-      size.width * 0.1,
-      borderPaint,
-    );
-
-    final accentPaint = Paint()..color = Colors.white.withAlpha(8);
-
-    final accentPath = Path()
-      ..moveTo(size.width * 0.58, size.height)
-      ..lineTo(size.width, size.height * 0.50)
-      ..lineTo(size.width, size.height)
-      ..close();
-
-    canvas.drawPath(accentPath, accentPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _SupplierHeaderPainter oldDelegate) {
-    return false;
   }
 }

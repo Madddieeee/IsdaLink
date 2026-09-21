@@ -8,12 +8,144 @@ import 'package:isdalink/screens/supplier/activation/supplier_caraga_locations.d
 import 'package:isdalink/screens/supplier/activation/widgets/supplier_activation_common.dart';
 import 'package:isdalink/screens/supplier/activation/widgets/supplier_activation_header.dart';
 import 'package:isdalink/screens/supplier/activation/widgets/supplier_activation_review.dart';
-import 'package:isdalink/screens/supplier/activation/widgets/supplier_activation_unit_card.dart';
 import 'package:isdalink/screens/supplier/activation/widgets/supplier_verification_photo_card.dart';
 import 'package:isdalink/services/cloudinary_upload_service.dart';
 import 'package:isdalink/services/supplier_activation_service.dart';
 import 'package:isdalink/services/supplier_verification_storage_service.dart';
 import 'package:isdalink/utils/app_error_message.dart';
+
+class _RejectionNextStep extends StatelessWidget {
+  const _RejectionNextStep({
+    required this.number,
+    required this.text,
+  });
+
+  final String number;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 22,
+          height: 22,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: const Color(0xFFE5F3FB),
+            borderRadius: BorderRadius.circular(7),
+          ),
+          child: Text(
+            number,
+            style: const TextStyle(
+              color: Color(0xFF087FCB),
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+        const SizedBox(width: 9),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              color: Color(0xFF526D7D),
+              fontSize: 11.5,
+              height: 1.35,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RejectedApplicationFeedbackCard extends StatelessWidget {
+  const _RejectedApplicationFeedbackCard({
+    required this.reason,
+    required this.onViewFeedback,
+  });
+
+  final String reason;
+  final VoidCallback onViewFeedback;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.fromLTRB(14, 13, 12, 13),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7F5),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFF1C4BC)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFE9E5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.feedback_outlined,
+              color: Color(0xFFD94E42),
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Admin feedback',
+                  style: TextStyle(
+                    color: Color(0xFF713B34),
+                    fontSize: 12.8,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  reason,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFF87554E),
+                    fontSize: 11.2,
+                    height: 1.35,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          TextButton(
+            onPressed: onViewFeedback,
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFF087FCB),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+              minimumSize: const Size(0, 34),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: const Text(
+              'View',
+              style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class SupplierActivationScreen extends StatefulWidget {
   const SupplierActivationScreen({
@@ -29,13 +161,7 @@ class SupplierActivationScreen extends StatefulWidget {
 }
 
 class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
-  static const stepTitles = <String>[
-    'Owner',
-    'Store',
-    'Units',
-    'Verify',
-    'Review',
-  ];
+  static const stepTitles = <String>['Owner', 'Store', 'Verify', 'Review'];
 
   final ownerNameController = TextEditingController();
   final ownerAddressController = TextEditingController();
@@ -54,9 +180,6 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
   final scrollController = ScrollController();
 
   int currentStep = 0;
-  bool kiloUnit = false;
-  bool tabUnit = false;
-  bool iceboxUnit = false;
   bool confirmedAccuracy = false;
   bool isLoadingProfile = true;
   bool isSubmitting = false;
@@ -65,6 +188,8 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
   bool applicationSubmitted = false;
   bool allowPop = false;
   bool rejectionReasonHandled = false;
+
+  String activeRejectionReason = '';
 
   String? selectedProvince;
   String? selectedLocality;
@@ -88,17 +213,6 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
     storeDescriptionController,
     businessPermitNumberController,
   ];
-
-  int get enabledUnitCount =>
-      [kiloUnit, tabUnit, iceboxUnit].where((value) => value).length;
-
-  List<String> get supportedUnits {
-    return <String>[
-      if (kiloUnit) 'kilo',
-      if (tabUnit) 'tab',
-      if (iceboxUnit) 'icebox',
-    ];
-  }
 
   bool get uploadsInProgress => isUploadingPermit || isUploadingStorePhoto;
   bool get isLastStep => currentStep == stepTitles.length - 1;
@@ -136,8 +250,6 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
       primaryMarketAreaController.text.trim().length >= 2 &&
       storeDescriptionController.text.trim().length >= 8;
 
-  bool get unitComplete => supportedUnits.isNotEmpty;
-
   bool get verificationComplete =>
       isValidPermitNumber(businessPermitNumberController.text) &&
       (permitStoragePath.isNotEmpty || permitImageUrl.isNotEmpty) &&
@@ -145,7 +257,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
       !uploadsInProgress;
 
   bool get reviewDetailsComplete =>
-      ownerComplete && storeComplete && unitComplete && verificationComplete;
+      ownerComplete && storeComplete && verificationComplete;
 
   bool get reviewComplete => reviewDetailsComplete && confirmedAccuracy;
 
@@ -153,10 +265,83 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
     return switch (currentStep) {
       0 => ownerComplete,
       1 => storeComplete,
-      2 => unitComplete,
-      3 => verificationComplete,
+      2 => verificationComplete,
       _ => reviewComplete,
     };
+  }
+
+  List<String> get missingRequirements {
+    final missing = <String>[];
+
+    switch (currentStep) {
+      case 0:
+        if (ownerNameController.text.trim().length < 2) {
+          missing.add('owner’s legal name');
+        }
+        if (ownerAddressController.text.trim().length < 5) {
+          missing.add('complete owner address');
+        }
+        if (!isValidEmail(emailController.text)) {
+          missing.add('registered email address');
+        }
+        if (!isValidMobile(contactNumberController.text)) {
+          missing.add('valid Philippine mobile number');
+        }
+        break;
+      case 1:
+        if (businessNameController.text.trim().length < 2) {
+          missing.add('business or store name');
+        }
+        if (selectedProvince == null) {
+          missing.add('province');
+        }
+        if (selectedLocality == null) {
+          missing.add('city or municipality');
+        }
+        if (storeAddressController.text.trim().length < 5) {
+          missing.add('specific store address');
+        }
+        if (!hasValidStorePin) {
+          missing.add('valid business location pin');
+        }
+        if (primaryMarketAreaController.text.trim().length < 2) {
+          missing.add('primary market area');
+        }
+        if (storeDescriptionController.text.trim().length < 8) {
+          missing.add('store description');
+        }
+        break;
+      case 2:
+        if (!isValidPermitNumber(businessPermitNumberController.text)) {
+          missing.add('valid business permit number');
+        }
+        if (permitStoragePath.isEmpty && permitImageUrl.isEmpty) {
+          missing.add('business permit photo');
+        }
+        if (storeImageUrl.isEmpty) {
+          missing.add('store verification photo');
+        }
+        if (uploadsInProgress) {
+          missing.add('photo upload to finish');
+        }
+        break;
+      default:
+        if (!ownerComplete) {
+          missing.add('complete owner details');
+        }
+        if (!storeComplete) {
+          missing.add('complete store details');
+        }
+        if (!verificationComplete) {
+          missing.add('complete verification details');
+        }
+        if (!confirmedAccuracy) {
+          missing.add('accuracy confirmation');
+        }
+        break;
+    }
+
+    return missing;
   }
 
   String get formattedStoreLocation {
@@ -176,9 +361,6 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
     selectedLocality ?? '',
     storeLatitude?.toStringAsFixed(6) ?? '',
     storeLongitude?.toStringAsFixed(6) ?? '',
-    kiloUnit.toString(),
-    tabUnit.toString(),
-    iceboxUnit.toString(),
     permitImageUrl,
     permitStoragePath,
     storeImageUrl,
@@ -248,6 +430,10 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
           .toLowerCase();
 
       applicationSubmitted = supplierStatus == 'pending';
+      activeRejectionReason =
+          supplierStatus == 'rejected' || supplierStatus == 'declined'
+          ? activationService.getStringValue(data, 'rejectionReason', '')
+          : '';
 
       ownerNameController.text = activationService.getStringValue(
         data,
@@ -258,11 +444,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
           ownerNameController.text,
         ),
       );
-      emailController.text = activationService.getStringValue(
-        data,
-        'email',
-        user.email ?? '',
-      );
+      emailController.text = user.email?.trim() ?? '';
       contactNumberController.text = activationService.getStringValue(
         data,
         'phone',
@@ -354,15 +536,6 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
         storeLatitude = null;
         storeLongitude = null;
       }
-
-      final unitValues = data['supportedUnits'];
-      final units = unitValues is Iterable
-          ? unitValues.map((value) => value.toString().toLowerCase()).toSet()
-          : <String>{};
-
-      kiloUnit = units.contains('kilo') || units.contains('kilogram');
-      tabUnit = units.contains('tab');
-      iceboxUnit = units.contains('icebox');
     } catch (_) {
       showMessage(
         'Some saved account details could not be loaded. You may still complete the application.',
@@ -397,210 +570,12 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
         return;
       }
 
-      await showDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        barrierColor: const Color(0xB3001322),
-        builder: (dialogContext) {
-          return Dialog(
-            elevation: 0,
-            backgroundColor: Colors.transparent,
-            insetPadding: const EdgeInsets.symmetric(
-              horizontal: 24,
-              vertical: 24,
-            ),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(28),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x33001322),
-                      blurRadius: 30,
-                      offset: Offset(0, 14),
-                    ),
-                  ],
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.fromLTRB(24, 24, 24, 22),
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [Color(0xFF073B5C), Color(0xFF0A6FA4)],
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            Container(
-                              width: 58,
-                              height: 58,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withAlpha(245),
-                                shape: BoxShape.circle,
-                                boxShadow: const [
-                                  BoxShadow(
-                                    color: Color(0x26001322),
-                                    blurRadius: 14,
-                                    offset: Offset(0, 6),
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.assignment_late_rounded,
-                                color: Color(0xFFE25C4B),
-                                size: 29,
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-                            const Text(
-                              'Supplier Application Declined',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 21,
-                                height: 1.18,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -0.25,
-                              ),
-                            ),
-                            const SizedBox(height: 7),
-                            const Text(
-                              'Your application needs an update before it can be reviewed again.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Color(0xFFD9EEF7),
-                                fontSize: 12.5,
-                                height: 1.4,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Row(
-                              children: [
-                                Icon(
-                                  Icons.admin_panel_settings_outlined,
-                                  color: Color(0xFF315B73),
-                                  size: 18,
-                                ),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Admin feedback',
-                                  style: TextStyle(
-                                    color: Color(0xFF183C52),
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.fromLTRB(
-                                16,
-                                15,
-                                16,
-                                15,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFFF7F5),
-                                borderRadius: BorderRadius.circular(17),
-                                border: Border.all(
-                                  color: const Color(0xFFF3C4BC),
-                                ),
-                              ),
-                              child: Text(
-                                notice.reason,
-                                style: const TextStyle(
-                                  color: Color(0xFF713B34),
-                                  fontSize: 14,
-                                  height: 1.45,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF3F8FB),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: const Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Icon(
-                                    Icons.refresh_rounded,
-                                    color: Color(0xFF0A6FA4),
-                                    size: 20,
-                                  ),
-                                  SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      'Update the details or verification documents mentioned above, then resubmit your application for admin review.',
-                                      style: TextStyle(
-                                        color: Color(0xFF526D7D),
-                                        fontSize: 12.5,
-                                        height: 1.45,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            SizedBox(
-                              width: double.infinity,
-                              height: 52,
-                              child: ElevatedButton.icon(
-                                onPressed: () => Navigator.pop(dialogContext),
-                                style: ElevatedButton.styleFrom(
-                                  elevation: 0,
-                                  backgroundColor: const Color(0xFF0B78C8),
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                ),
-                                icon: const Icon(Icons.edit_rounded, size: 19),
-                                label: const Text(
-                                  'Update Application',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      );
+      activeRejectionReason = notice.reason.trim();
+      if (mounted) {
+        setState(() {});
+      }
+
+      await showRejectionFeedbackDialog(activeRejectionReason);
 
       await activationService.markRejectionReasonViewed(
         user: user,
@@ -609,6 +584,270 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
     } catch (error) {
       debugPrint('Could not show rejection reason: $error');
     }
+  }
+
+  Future<void> showRejectionFeedbackDialog(String reason) async {
+    final feedback = reason.trim();
+    if (!mounted || feedback.isEmpty) {
+      return;
+    }
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: const Color(0xB3001322),
+      builder: (dialogContext) {
+        final screenHeight = MediaQuery.sizeOf(dialogContext).height;
+
+        return Dialog(
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 420,
+              maxHeight: screenHeight * 0.84,
+            ),
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF073B5C),
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(color: const Color(0xFF2A789E), width: 0.8),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x33001322),
+                    blurRadius: 30,
+                    offset: Offset(0, 14),
+                  ),
+                ],
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.fromLTRB(22, 22, 22, 20),
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFF073B5C), Color(0xFF075D89)],
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFE9E5),
+                              borderRadius: BorderRadius.circular(99),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.info_outline_rounded,
+                                  color: Color(0xFFD94E42),
+                                  size: 15,
+                                ),
+                                SizedBox(width: 6),
+                                Text(
+                                  'UPDATE REQUIRED',
+                                  style: TextStyle(
+                                    color: Color(0xFFB74339),
+                                    fontSize: 9.2,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.55,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          Container(
+                            width: 58,
+                            height: 58,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(18),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0x26001322),
+                                  blurRadius: 14,
+                                  offset: Offset(0, 6),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.assignment_late_rounded,
+                              color: Color(0xFFE25C4B),
+                              size: 30,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          const Text(
+                            'Supplier Application Declined',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              height: 1.18,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                          const SizedBox(height: 7),
+                          const Text(
+                            'Admin review found details that need to be updated before you resubmit.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Color(0xFFD9EEF7),
+                              fontSize: 12.2,
+                              height: 1.4,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      width: double.infinity,
+                      color: Colors.white,
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(
+                                Icons.admin_panel_settings_outlined,
+                                color: Color(0xFF315B73),
+                                size: 18,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Admin Feedback',
+                                style: TextStyle(
+                                  color: Color(0xFF183C52),
+                                  fontSize: 13.2,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.fromLTRB(15, 14, 15, 14),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF7F5),
+                              borderRadius: BorderRadius.circular(17),
+                              border: Border.all(color: const Color(0xFFF2C2BA)),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(
+                                  Icons.format_quote_rounded,
+                                  color: Color(0xFFD95A4D),
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 9),
+                                Expanded(
+                                  child: Text(
+                                    feedback,
+                                    style: const TextStyle(
+                                      color: Color(0xFF713B34),
+                                      fontSize: 13.5,
+                                      height: 1.45,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF3F8FB),
+                              borderRadius: BorderRadius.circular(17),
+                              border: Border.all(color: const Color(0xFFDCEAF2)),
+                            ),
+                            child: const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'What to do next',
+                                  style: TextStyle(
+                                    color: Color(0xFF183C52),
+                                    fontSize: 12.4,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                SizedBox(height: 10),
+                                _RejectionNextStep(
+                                  number: '1',
+                                  text: 'Review the admin feedback above.',
+                                ),
+                                SizedBox(height: 7),
+                                _RejectionNextStep(
+                                  number: '2',
+                                  text: 'Update the requested details or verification photo.',
+                                ),
+                                SizedBox(height: 7),
+                                _RejectionNextStep(
+                                  number: '3',
+                                  text: 'Review everything, then resubmit for admin review.',
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 52,
+                            child: ElevatedButton.icon(
+                              onPressed: () => Navigator.pop(dialogContext),
+                              icon: const Icon(Icons.edit_rounded, size: 19),
+                              label: const Text(
+                                'Continue Updating',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 13.2,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                elevation: 0,
+                                backgroundColor: const Color(0xFF087FCB),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   String cleanPhone(String value) {
@@ -662,6 +901,21 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
           ),
         ),
       );
+  }
+
+  String applicationSubmissionError(Object error) {
+    final message = AppErrorMessage.from(
+      error,
+      fallback:
+          'The supplier application could not be submitted. Please try again.',
+      allowBusinessMessage: true,
+    );
+
+    if (message.toLowerCase().contains('permission')) {
+      return 'We couldn’t submit the application because the account session or saved profile is out of date. Sign out, sign in again, and retry.';
+    }
+
+    return message;
   }
 
   Future<bool> confirmDiscard() async {
@@ -805,15 +1059,12 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
   }
 
   String incompleteMessage() {
-    return switch (currentStep) {
-      0 => 'Complete the valid owner and contact details before continuing.',
-      1 =>
-        'Complete the structured Caraga store location, business-location pin, and store details.',
-      2 => 'Select at least one supported selling unit.',
-      3 =>
-        'Enter the matching permit number and upload both verification photos.',
-      _ => 'Review the details and confirm their accuracy before submitting.',
-    };
+    final missing = missingRequirements;
+    if (missing.isEmpty) {
+      return 'Please wait a moment, then try again.';
+    }
+
+    return 'Still needed: ${missing.join(', ')}.';
   }
 
   Future<void> selectProvince() async {
@@ -907,7 +1158,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
   Future<void> selectBusinessLocationPin() async {
     if (selectedProvince == null || selectedLocality == null) {
       showMessage(
-        'Select the store province and city or municipality before placing the business-location pin.',
+        'Select the store province and city or municipality before placing the business location pin.',
         isError: true,
       );
       return;
@@ -1069,7 +1320,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
       showMessage(
         permit
             ? 'Business permit photo uploaded.'
-            : 'Verification store photo uploaded.',
+            : 'Store verification photo uploaded.',
       );
     } on StateError catch (error) {
       showMessage(error.message.toString(), isError: true);
@@ -1138,7 +1389,6 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
           storeLongitude: storeLongitude!,
           primaryMarketArea: primaryMarketAreaController.text.trim(),
           storeDescription: storeDescriptionController.text.trim(),
-          supportedUnits: supportedUnits,
           businessPermitNumber: businessPermitNumberController.text.trim(),
           businessPermitUrl: permitImageUrl,
           businessPermitStoragePath: permitStoragePath,
@@ -1157,16 +1407,12 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
       scrollToTop();
     } on StateError catch (error) {
       showMessage(error.message.toString(), isError: true);
-    } catch (error) {
-      showMessage(
-        AppErrorMessage.from(
-          error,
-          fallback:
-              'The supplier application could not be submitted. Please try again.',
-          allowBusinessMessage: true,
-        ),
-        isError: true,
-      );
+    } catch (error, stackTrace) {
+      // Keep the exact Firebase/Firestore failure visible in flutter run logs
+      // while still showing the user a clean message in the UI.
+      debugPrint('Supplier application submission failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      showMessage(applicationSubmissionError(error), isError: true);
     } finally {
       if (mounted) {
         setState(() => isSubmitting = false);
@@ -1188,12 +1434,12 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
       floatingLabelBehavior: FloatingLabelBehavior.always,
       labelStyle: const TextStyle(
         color: Color(0xFF6B7F93),
-        fontSize: 11.3,
+        fontSize: 10.3,
         fontWeight: FontWeight.w900,
       ),
       helperStyle: const TextStyle(
         color: Color(0xFF7B8FA3),
-        fontSize: 9.7,
+        fontSize: 9.1,
         height: 1.3,
         fontWeight: FontWeight.w600,
       ),
@@ -1205,9 +1451,9 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
           color: const Color(0xFFE6F9FF),
           borderRadius: BorderRadius.circular(13),
         ),
-        child: Icon(icon, color: const Color(0xFF146BFF), size: 19),
+        child: Icon(icon, color: const Color(0xFF087FCB), size: 18),
       ),
-      prefixIconConstraints: const BoxConstraints(minWidth: 52, minHeight: 50),
+      prefixIconConstraints: const BoxConstraints(minWidth: 50, minHeight: 48),
       suffixIcon: valid || locked
           ? Icon(
               locked ? Icons.lock_outline_rounded : Icons.check_circle_rounded,
@@ -1217,24 +1463,24 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
           : null,
       filled: true,
       fillColor: const Color(0xFFF6FAFD),
-      contentPadding: const EdgeInsets.fromLTRB(12, 14, 13, 13),
+      contentPadding: const EdgeInsets.fromLTRB(11, 12, 12, 12),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(19),
+        borderRadius: BorderRadius.circular(17),
         borderSide: BorderSide(
           color: valid ? const Color(0xFF77D7B7) : const Color(0xFFE5EEF6),
           width: valid ? 1.25 : 1,
         ),
       ),
       disabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(19),
+        borderRadius: BorderRadius.circular(17),
         borderSide: const BorderSide(color: Color(0xFFE5EEF6)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(19),
-        borderSide: const BorderSide(color: Color(0xFF146BFF), width: 1.5),
+        borderRadius: BorderRadius.circular(17),
+        borderSide: const BorderSide(color: Color(0xFF087FCB), width: 1.5),
       ),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(19),
+        borderRadius: BorderRadius.circular(17),
         borderSide: const BorderSide(color: Color(0xFFE5EEF6)),
       ),
     );
@@ -1243,467 +1489,388 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
   Widget gap() => const SizedBox(height: 11);
 
   Widget ownerStep() {
-    return Column(
+    return SupplierActivationSectionCard(
+      icon: Icons.person_outline_rounded,
+      title: 'Owner Information',
+      subtitle: 'Use the account owner’s real contact details for admin review.',
       children: [
-        const SupplierActivationIntroCard(
-          icon: Icons.verified_user_outlined,
-          title: 'Account Verification',
-          message:
-              'Use the real owner name, complete address, and active Philippine mobile number.',
+        TextField(
+          controller: ownerNameController,
+          textCapitalization: TextCapitalization.words,
+          textInputAction: TextInputAction.next,
+          inputFormatters: [LengthLimitingTextInputFormatter(80)],
+          decoration: fieldDecoration(
+            label: 'Full Name (as legal name)',
+            icon: Icons.person_outline_rounded,
+            helperText: 'Use the legal name of the account owner.',
+            valid: ownerNameController.text.trim().length >= 2,
+          ),
         ),
-        SupplierActivationSectionCard(
-          icon: Icons.badge_outlined,
-          title: 'Owner Information',
-          subtitle: 'Identity and contact details for admin review.',
-          children: [
-            TextField(
-              controller: ownerNameController,
-              textCapitalization: TextCapitalization.words,
-              textInputAction: TextInputAction.next,
-              inputFormatters: [LengthLimitingTextInputFormatter(80)],
-              decoration: fieldDecoration(
-                label: 'Owner Full Name',
-                icon: Icons.person_outline_rounded,
-                helperText: 'Use the legal name of the account owner.',
-                valid: ownerNameController.text.trim().length >= 2,
-              ),
-            ),
-            gap(),
-            TextField(
-              controller: ownerAddressController,
-              textCapitalization: TextCapitalization.words,
-              textInputAction: TextInputAction.next,
-              minLines: 1,
-              maxLines: 2,
-              inputFormatters: [LengthLimitingTextInputFormatter(180)],
-              decoration: fieldDecoration(
-                label: 'Complete Owner Address',
-                icon: Icons.home_outlined,
-                helperText:
-                    'Include street or barangay and city or municipality.',
-                valid: ownerAddressController.text.trim().length >= 5,
-              ),
-            ),
-            gap(),
-            TextField(
-              controller: emailController,
-              enabled: false,
-              decoration: fieldDecoration(
-                label: 'Registered Email Address',
-                icon: Icons.email_outlined,
-                helperText: 'Email changes require account verification.',
-                valid: isValidEmail(emailController.text),
-                locked: true,
-              ),
-            ),
-            gap(),
-            TextField(
-              controller: contactNumberController,
-              keyboardType: TextInputType.phone,
-              textInputAction: TextInputAction.done,
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[0-9+]')),
-                LengthLimitingTextInputFormatter(13),
-              ],
-              decoration: fieldDecoration(
-                label: 'Philippine Mobile Number',
-                icon: Icons.phone_android_outlined,
-                helperText: 'Accepted: 09XXXXXXXXX or +639XXXXXXXXX.',
-                valid: isValidMobile(contactNumberController.text),
-              ),
-            ),
+        gap(),
+        TextField(
+          controller: emailController,
+          enabled: false,
+          decoration: fieldDecoration(
+            label: 'Email Address',
+            icon: Icons.email_outlined,
+            helperText: 'This is your registered IsdaLink email.',
+            valid: isValidEmail(emailController.text),
+            locked: true,
+          ),
+        ),
+        gap(),
+        TextField(
+          controller: contactNumberController,
+          keyboardType: TextInputType.phone,
+          textInputAction: TextInputAction.next,
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'[0-9+]')),
+            LengthLimitingTextInputFormatter(13),
           ],
+          decoration: fieldDecoration(
+            label: 'Philippine Mobile Number',
+            icon: Icons.phone_android_outlined,
+            helperText: 'Use 09XXXXXXXXX or +639XXXXXXXXX.',
+            valid: isValidMobile(contactNumberController.text),
+          ),
+        ),
+        gap(),
+        TextField(
+          controller: ownerAddressController,
+          textCapitalization: TextCapitalization.words,
+          textInputAction: TextInputAction.done,
+          minLines: 1,
+          maxLines: 2,
+          inputFormatters: [LengthLimitingTextInputFormatter(180)],
+          decoration: fieldDecoration(
+            label: 'Complete Owner Address',
+            icon: Icons.home_outlined,
+            helperText: 'Include street or barangay and city or municipality.',
+            valid: ownerAddressController.text.trim().length >= 5,
+          ),
         ),
       ],
     );
   }
 
   Widget storeStep() {
-    return Column(
+    final hasPin = storeLatitude != null && storeLongitude != null;
+
+    return SupplierActivationSectionCard(
+      icon: Icons.storefront_outlined,
+      title: 'Store Information',
+      subtitle: 'Tell us about your store and business location in Caraga.',
       children: [
-        const SupplierActivationIntroCard(
-          icon: Icons.storefront_outlined,
-          title: 'Store Profile',
-          message:
-              'These approved details will appear in the supplier marketplace profile.',
+        TextField(
+          controller: businessNameController,
+          textCapitalization: TextCapitalization.words,
+          textInputAction: TextInputAction.next,
+          inputFormatters: [LengthLimitingTextInputFormatter(100)],
+          decoration: fieldDecoration(
+            label: 'Business or Store Name',
+            icon: Icons.store_outlined,
+            helperText: 'This name will be shown to vendors.',
+            valid: businessNameController.text.trim().length >= 2,
+          ),
         ),
-        SupplierActivationSectionCard(
-          icon: Icons.storefront_outlined,
-          title: 'Store Information',
-          subtitle: 'Business name and structured Caraga location.',
-          children: [
-            TextField(
-              controller: businessNameController,
-              textCapitalization: TextCapitalization.words,
-              textInputAction: TextInputAction.next,
-              inputFormatters: [LengthLimitingTextInputFormatter(100)],
-              decoration: fieldDecoration(
-                label: 'Business or Store Name',
-                icon: Icons.store_outlined,
-                helperText: 'This name will be shown to vendors.',
-                valid: businessNameController.text.trim().length >= 2,
-              ),
+        gap(),
+        SupplierSelectionField(
+          label: 'Province',
+          icon: Icons.map_outlined,
+          value: selectedProvince,
+          placeholder: 'Select province',
+          onTap: selectProvince,
+          onClear: selectedProvince == null ? null : clearProvince,
+          helperText: 'Choose the province where the supplier store is located.',
+        ),
+        gap(),
+        SupplierSelectionField(
+          label: 'City or Municipality',
+          icon: Icons.location_city_outlined,
+          value: selectedLocality,
+          placeholder: selectedProvince == null
+              ? 'Select a province first'
+              : 'Select city or municipality',
+          onTap: selectLocality,
+          helperText: selectedProvince == null
+              ? 'Choose a province before selecting the locality.'
+              : 'Choose from the listed localities of $selectedProvince.',
+        ),
+        gap(),
+        TextField(
+          controller: storeAddressController,
+          textCapitalization: TextCapitalization.words,
+          textInputAction: TextInputAction.next,
+          minLines: 1,
+          maxLines: 2,
+          inputFormatters: [LengthLimitingTextInputFormatter(180)],
+          decoration: fieldDecoration(
+            label: 'Specific Store Address',
+            icon: Icons.pin_drop_outlined,
+            helperText: 'Street, barangay, landmark, or market location only.',
+            valid: storeAddressController.text.trim().length >= 5,
+          ),
+        ),
+        gap(),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: hasPin ? const Color(0xFFEAF8F3) : const Color(0xFFF5F9FC),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: hasPin ? const Color(0xFF8EDBC2) : const Color(0xFFDCE7EF),
             ),
-            gap(),
-            SupplierSelectionField(
-              label: 'Province',
-              icon: Icons.map_outlined,
-              value: selectedProvince,
-              placeholder: 'Select province',
-              onTap: selectProvince,
-              onClear: selectedProvince == null ? null : clearProvince,
-              helperText:
-                  'Select the province where the supplier store is located.',
-            ),
-            gap(),
-            SupplierSelectionField(
-              label: 'City or Municipality',
-              icon: Icons.location_city_outlined,
-              value: selectedLocality,
-              placeholder: selectedProvince == null
-                  ? 'Select a province first'
-                  : 'Select city or municipality',
-              onTap: selectLocality,
-              helperText: selectedProvince == null
-                  ? 'Choose a province before selecting the locality.'
-                  : 'Choose from the listed localities of $selectedProvince.',
-            ),
-            gap(),
-            TextField(
-              controller: storeAddressController,
-              textCapitalization: TextCapitalization.words,
-              textInputAction: TextInputAction.next,
-              minLines: 1,
-              maxLines: 2,
-              inputFormatters: [LengthLimitingTextInputFormatter(180)],
-              decoration: fieldDecoration(
-                label: 'Specific Store Address',
-                icon: Icons.pin_drop_outlined,
-                helperText: 'Street, barangay, landmark, or market location.',
-                valid: storeAddressController.text.trim().length >= 5,
-              ),
-            ),
-            gap(),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(13),
-              decoration: BoxDecoration(
-                color: storeLatitude != null && storeLongitude != null
-                    ? const Color(0xFFE8F8F2)
-                    : const Color(0xFFF2F7FF),
-                borderRadius: BorderRadius.circular(19),
-                border: Border.all(
-                  color: storeLatitude != null && storeLongitude != null
-                      ? const Color(0xFF77D7B7)
-                      : const Color(0xFFD4E2FF),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 35,
-                        height: 35,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          storeLatitude != null && storeLongitude != null
-                              ? Icons.location_on_rounded
-                              : Icons.add_location_alt_outlined,
-                          color: const Color(0xFF146BFF),
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 9),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Business Location Pin',
-                              style: TextStyle(
-                                color: Color(0xFF102C44),
-                                fontSize: 11.4,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            SizedBox(height: 2),
-                            Text(
-                              'Pin the physical store as a reference for vendors and admin review.',
-                              style: TextStyle(
-                                color: Color(0xFF657C8E),
-                                fontSize: 8.9,
-                                height: 1.3,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
                   Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 9,
-                    ),
+                    width: 36,
+                    height: 36,
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Row(
+                    child: Icon(
+                      hasPin ? Icons.location_on_rounded : Icons.add_location_alt_outlined,
+                      color: const Color(0xFF087FCB),
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          storeLatitude != null && storeLongitude != null
-                              ? Icons.check_circle_rounded
-                              : Icons.location_searching_rounded,
-                          color: storeLatitude != null && storeLongitude != null
-                              ? const Color(0xFF147D64)
-                              : const Color(0xFF7B8FA3),
-                          size: 17,
+                        Text(
+                          'Business Location Pin',
+                          style: TextStyle(
+                            color: Color(0xFF102C44),
+                            fontSize: 11.4,
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
-                        const SizedBox(width: 7),
-                        Expanded(
-                          child: Text(
-                            storeLatitude != null && storeLongitude != null
-                                ? '${storeLatitude!.toStringAsFixed(6)}, '
-                                      '${storeLongitude!.toStringAsFixed(6)}'
-                                : 'No business-location pin selected.',
-                            style: const TextStyle(
-                              color: Color(0xFF52677A),
-                              fontSize: 9.2,
-                              fontWeight: FontWeight.w800,
-                            ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Pin the physical store for vendor reference and admin review.',
+                          style: TextStyle(
+                            color: Color(0xFF657C8E),
+                            fontSize: 8.9,
+                            height: 1.3,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 9),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 45,
-                    child: OutlinedButton.icon(
-                      onPressed: selectBusinessLocationPin,
-                      icon: Icon(
-                        storeLatitude != null && storeLongitude != null
-                            ? Icons.edit_location_alt_outlined
-                            : Icons.map_outlined,
-                        size: 18,
-                      ),
-                      label: Text(
-                        storeLatitude != null && storeLongitude != null
-                            ? 'Update Map Pin'
-                            : 'Choose on Caraga Map',
+                ],
+              ),
+              const SizedBox(height: 9),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      hasPin ? Icons.check_circle_rounded : Icons.location_searching_rounded,
+                      color: hasPin ? const Color(0xFF147D64) : const Color(0xFF7B8FA3),
+                      size: 17,
+                    ),
+                    const SizedBox(width: 7),
+                    Expanded(
+                      child: Text(
+                        hasPin
+                            ? 'Location pin selected${selectedLocality == null ? '' : ' · $selectedLocality'}'
+                            : 'No business location pin selected.',
                         style: const TextStyle(
-                          fontSize: 10.2,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF146BFF),
-                        side: const BorderSide(color: Color(0xFF146BFF)),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          color: Color(0xFF52677A),
+                          fontSize: 9.2,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
                     ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 9),
+              SizedBox(
+                width: double.infinity,
+                height: 43,
+                child: OutlinedButton.icon(
+                  onPressed: selectBusinessLocationPin,
+                  icon: Icon(
+                    hasPin ? Icons.edit_location_alt_outlined : Icons.map_outlined,
+                    size: 18,
                   ),
-                ],
+                  label: Text(
+                    hasPin ? 'Update Map Pin' : 'Choose on Caraga Map',
+                    style: const TextStyle(fontSize: 10.1, fontWeight: FontWeight.w900),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF087FCB),
+                    side: const BorderSide(color: Color(0xFF087FCB)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
+                  ),
+                ),
               ),
-            ),
-            gap(),
-            TextField(
-              controller: primaryMarketAreaController,
-              textCapitalization: TextCapitalization.words,
-              textInputAction: TextInputAction.next,
-              inputFormatters: [LengthLimitingTextInputFormatter(100)],
-              decoration: fieldDecoration(
-                label: 'Primary Market Area',
-                icon: Icons.location_searching_rounded,
-                helperText:
-                    'Main area served by the supplier. This does not calculate routes.',
-                valid: primaryMarketAreaController.text.trim().length >= 2,
-              ),
-            ),
-            gap(),
-            TextField(
-              controller: storeDescriptionController,
-              textCapitalization: TextCapitalization.sentences,
-              minLines: 3,
-              maxLines: 4,
-              inputFormatters: [LengthLimitingTextInputFormatter(260)],
-              decoration: fieldDecoration(
-                label: 'Store Description',
-                icon: Icons.description_outlined,
-                helperText:
-                    'Describe the fish source, selling setup, and regular stocks.',
-                valid: storeDescriptionController.text.trim().length >= 8,
+            ],
+          ),
+        ),
+        gap(),
+        TextField(
+          controller: primaryMarketAreaController,
+          textCapitalization: TextCapitalization.words,
+          textInputAction: TextInputAction.next,
+          inputFormatters: [LengthLimitingTextInputFormatter(100)],
+          decoration: fieldDecoration(
+            label: 'Primary Market Area',
+            icon: Icons.location_searching_rounded,
+            helperText: 'Main market area served by this supplier.',
+            valid: primaryMarketAreaController.text.trim().length >= 2,
+          ),
+        ),
+        gap(),
+        TextField(
+          controller: storeDescriptionController,
+          textCapitalization: TextCapitalization.sentences,
+          minLines: 2,
+          maxLines: 4,
+          inputFormatters: [LengthLimitingTextInputFormatter(240)],
+          decoration: fieldDecoration(
+            label: 'Store Description',
+            icon: Icons.description_outlined,
+            helperText: 'Briefly describe your fish source, selling setup, and regular stocks.',
+            valid: storeDescriptionController.text.trim().length >= 8,
+          ),
+        ),
+        const SizedBox(height: 3),
+        const Row(
+          children: [
+            Icon(Icons.info_outline_rounded, size: 15, color: Color(0xFF7B8FA3)),
+            SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                'Selling unit is chosen separately when posting each fish stock.',
+                style: TextStyle(
+                  color: Color(0xFF7B8FA3),
+                  fontSize: 8.9,
+                  height: 1.3,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
-        ),
-      ],
-    );
-  }
-
-  Widget unitsStep() {
-    return Column(
-      children: [
-        const SupplierActivationIntroCard(
-          icon: Icons.scale_outlined,
-          title: 'Supported Selling Units',
-          message:
-              'Select only the units this supplier can consistently post and fulfill.',
-        ),
-        SupplierActivationUnitCard(
-          kiloUnit: kiloUnit,
-          tabUnit: tabUnit,
-          iceboxUnit: iceboxUnit,
-          onKiloChanged: (value) => setState(() => kiloUnit = value),
-          onTabChanged: (value) => setState(() => tabUnit = value),
-          onIceboxChanged: (value) => setState(() => iceboxUnit = value),
         ),
       ],
     );
   }
 
   Widget verificationStep() {
-    return Column(
+    return SupplierActivationSectionCard(
+      icon: Icons.verified_user_outlined,
+      title: 'Business Verification',
+      subtitle: 'Upload the permit and store photo that admin will review.',
       children: [
-        const SupplierActivationIntroCard(
-          icon: Icons.policy_outlined,
-          title: 'Supplier Verification',
-          message:
-              'Admin compares the entered permit number with the uploaded permit photo.',
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF8ED),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFFFD4A3)),
+          ),
+          child: const Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Color(0xFFE57612), size: 19),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'The permit number must match the uploaded business permit photo.',
+                  style: TextStyle(
+                    color: Color(0xFF7A5328),
+                    fontSize: 9.5,
+                    height: 1.35,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-        SupplierActivationSectionCard(
-          icon: Icons.verified_user_outlined,
-          title: 'Verification Requirements',
-          subtitle:
-              'Permit number, permit photo, and verification store photo.',
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF7F0),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: const Color(0xFFFFC69D)),
-              ),
-              child: const Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    Icons.warning_amber_rounded,
-                    color: Color(0xFFFF7A1A),
-                    size: 20,
-                  ),
-                  SizedBox(width: 9),
-                  Expanded(
-                    child: Text(
-                      'Enter the exact permit number printed on the uploaded business permit photo.',
-                      style: TextStyle(
-                        color: Color(0xFF7A5328),
-                        fontSize: 9.7,
-                        height: 1.35,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            gap(),
-            TextField(
-              controller: businessPermitNumberController,
-              textCapitalization: TextCapitalization.characters,
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9-]')),
-                LengthLimitingTextInputFormatter(30),
-              ],
-              decoration: fieldDecoration(
-                label: 'Business Permit Number',
-                icon: Icons.confirmation_number_outlined,
-                helperText:
-                    'Use the exact letters, numbers, and hyphens shown on the permit.',
-                valid: isValidPermitNumber(businessPermitNumberController.text),
-              ),
-            ),
-            gap(),
-            SupplierVerificationPhotoCard(
-              title: 'Business Permit Photo',
-              subtitle:
-                  'Upload a readable photo showing the permit number and business name.',
-              permit: true,
-              localImage: permitImage,
-              imageUrl: permitImageUrl,
-              storagePath: permitStoragePath,
-              uploading: isUploadingPermit,
-              onUpload: () => pickAndUploadPhoto(permit: true),
-              onRemove: () => removePhoto(permit: true),
-            ),
-            gap(),
-            SupplierVerificationPhotoCard(
-              title: 'Verification Store Photo',
-              subtitle:
-                  'Upload a clear store photo for Admin verification. You can set your public profile and cover photos after approval.',
-              permit: false,
-              localImage: storeImage,
-              imageUrl: storeImageUrl,
-              storagePath: '',
-              uploading: isUploadingStorePhoto,
-              onUpload: () => pickAndUploadPhoto(permit: false),
-              onRemove: () => removePhoto(permit: false),
-            ),
-            const SizedBox(height: 11),
-            Container(
-              padding: const EdgeInsets.all(11),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF2F7FF),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFD4E2FF)),
-              ),
-              child: const Row(
-                children: [
-                  Icon(
-                    Icons.info_outline_rounded,
-                    color: Color(0xFF146BFF),
-                    size: 18,
-                  ),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Use readable photos. Blurry or mismatched records may be rejected during admin review.',
-                      style: TextStyle(
-                        color: Color(0xFF52677A),
-                        fontSize: 9.5,
-                        height: 1.32,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+        gap(),
+        TextField(
+          controller: businessPermitNumberController,
+          textCapitalization: TextCapitalization.characters,
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9-]')),
+            LengthLimitingTextInputFormatter(30),
           ],
+          decoration: fieldDecoration(
+            label: 'Business Permit Number',
+            icon: Icons.confirmation_number_outlined,
+            helperText: 'Enter the letters, numbers, and hyphens exactly as printed.',
+            valid: isValidPermitNumber(businessPermitNumberController.text),
+          ),
+        ),
+        gap(),
+        SupplierVerificationPhotoCard(
+          title: 'Business Permit Photo',
+          subtitle: 'Upload a clear photo showing the permit number and business name.',
+          permit: true,
+          localImage: permitImage,
+          imageUrl: permitImageUrl,
+          storagePath: permitStoragePath,
+          uploading: isUploadingPermit,
+          onUpload: () => pickAndUploadPhoto(permit: true),
+          onRemove: () => removePhoto(permit: true),
+        ),
+        gap(),
+        SupplierVerificationPhotoCard(
+          title: 'Store Verification Photo',
+          subtitle: 'Upload a clear photo of the physical store for admin verification.',
+          permit: false,
+          localImage: storeImage,
+          imageUrl: storeImageUrl,
+          storagePath: '',
+          uploading: isUploadingStorePhoto,
+          onUpload: () => pickAndUploadPhoto(permit: false),
+          onRemove: () => removePhoto(permit: false),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF2F7FF),
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: const Color(0xFFD4E2FF)),
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.info_outline_rounded, color: Color(0xFF087FCB), size: 18),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Use readable, current photos. Blurry or mismatched records may be declined.',
+                  style: TextStyle(
+                    color: Color(0xFF52677A),
+                    fontSize: 9.3,
+                    height: 1.32,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
-  }
-
-  String unitDisplayName(String value) {
-    return switch (value) {
-      'kilo' => 'Kilogram',
-      'tab' => 'Tab',
-      'icebox' => 'Icebox',
-      _ => value,
-    };
   }
 
   void editStep(int step) {
@@ -1714,11 +1881,46 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
   Widget reviewStep() {
     return Column(
       children: [
-        const SupplierActivationIntroCard(
-          icon: Icons.fact_check_outlined,
-          title: 'Final Review',
-          message:
-              'Review every section. Supplier tools remain locked until admin approval.',
+        Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 11),
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF5FAFD),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFDCEBF3)),
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.fact_check_outlined, color: Color(0xFF087FCB), size: 20),
+              SizedBox(width: 9),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Final Review',
+                      style: TextStyle(
+                        color: Color(0xFF102C44),
+                        fontSize: 11.8,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Check your details before submitting. You can still edit any section.',
+                      style: TextStyle(
+                        color: Color(0xFF657C8E),
+                        fontSize: 9.6,
+                        height: 1.3,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
         SupplierReviewSection(
           title: 'Owner Information',
@@ -1727,14 +1929,8 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
           rows: [
             SupplierReviewRow(label: 'Owner', value: ownerNameController.text),
             SupplierReviewRow(label: 'Email', value: emailController.text),
-            SupplierReviewRow(
-              label: 'Contact',
-              value: contactNumberController.text,
-            ),
-            SupplierReviewRow(
-              label: 'Address',
-              value: ownerAddressController.text,
-            ),
+            SupplierReviewRow(label: 'Contact', value: contactNumberController.text),
+            SupplierReviewRow(label: 'Address', value: ownerAddressController.text),
           ],
         ),
         SupplierReviewSection(
@@ -1742,47 +1938,23 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
           icon: Icons.storefront_outlined,
           onEdit: () => editStep(1),
           rows: [
-            SupplierReviewRow(
-              label: 'Store',
-              value: businessNameController.text,
-            ),
+            SupplierReviewRow(label: 'Store', value: businessNameController.text),
             SupplierReviewRow(label: 'Location', value: formattedStoreLocation),
             SupplierReviewRow(
               label: 'Map Pin',
               value: storeLatitude != null && storeLongitude != null
-                  ? '${storeLatitude!.toStringAsFixed(6)}, '
-                        '${storeLongitude!.toStringAsFixed(6)}'
+                  ? 'Location pin selected'
                   : '',
             ),
-            SupplierReviewRow(
-              label: 'Market Area',
-              value: primaryMarketAreaController.text,
-            ),
-            SupplierReviewRow(
-              label: 'Description',
-              value: storeDescriptionController.text,
-            ),
-            const SupplierReviewRow(
-              label: 'Payment',
-              value: 'Cash on Delivery only',
-            ),
-          ],
-        ),
-        SupplierReviewSection(
-          title: 'Selling Units',
-          icon: Icons.scale_outlined,
-          onEdit: () => editStep(2),
-          rows: [
-            SupplierReviewRow(
-              label: 'Units',
-              value: supportedUnits.map(unitDisplayName).join(', '),
-            ),
+            SupplierReviewRow(label: 'Market Area', value: primaryMarketAreaController.text),
+            SupplierReviewRow(label: 'Description', value: storeDescriptionController.text),
+            const SupplierReviewRow(label: 'Payment', value: 'Cash on Delivery (COD)'),
           ],
         ),
         SupplierReviewSection(
           title: 'Verification',
           icon: Icons.verified_user_outlined,
-          onEdit: () => editStep(3),
+          onEdit: () => editStep(2),
           rows: [
             SupplierReviewRow(
               label: 'Permit No.',
@@ -1797,7 +1969,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
               storagePath: permitStoragePath,
             ),
             SupplierReviewImage(
-              title: 'Verification Store Photo',
+              title: 'Store Verification Photo',
               localImage: storeImage,
               imageUrl: storeImageUrl,
               storagePath: '',
@@ -1805,41 +1977,39 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
           ],
         ),
         Container(
-          margin: const EdgeInsets.only(bottom: 14),
-          padding: const EdgeInsets.all(13),
+          margin: const EdgeInsets.only(bottom: 13),
+          padding: const EdgeInsets.fromLTRB(10, 9, 12, 9),
           decoration: BoxDecoration(
             color: confirmedAccuracy
-                ? const Color(0xFFE8F8F2)
-                : const Color(0xFFEAF7FB),
-            borderRadius: BorderRadius.circular(20),
+                ? const Color(0xFFEAF8F3)
+                : const Color(0xFFF5F9FC),
+            borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: confirmedAccuracy
-                  ? const Color(0xFF77D7B7)
-                  : const Color(0xFFD8E8F1),
+                  ? const Color(0xFF8EDBC2)
+                  : const Color(0xFFDCE7EF),
             ),
           ),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Checkbox(
                 value: confirmedAccuracy,
                 activeColor: const Color(0xFF147D64),
+                visualDensity: VisualDensity.compact,
                 onChanged: (value) {
                   setState(() => confirmedAccuracy = value ?? false);
                 },
               ),
               const SizedBox(width: 4),
               const Expanded(
-                child: Padding(
-                  padding: EdgeInsets.only(top: 9),
-                  child: Text(
-                    'I confirm that the permit number, contact number, store details, business-location pin, selling units, and verification photos are accurate and valid.',
-                    style: TextStyle(
-                      color: Color(0xFF52677A),
-                      fontSize: 10.3,
-                      height: 1.38,
-                      fontWeight: FontWeight.w700,
-                    ),
+                child: Text(
+                  'I confirm that my contact, store, location, permit, and verification details are accurate.',
+                  style: TextStyle(
+                    color: Color(0xFF52677A),
+                    fontSize: 9.7,
+                    height: 1.36,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
@@ -1853,10 +2023,10 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
   Widget submittedStep() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 21),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(26),
+        borderRadius: BorderRadius.circular(25),
         border: Border.all(color: const Color(0xFFE1EBF2)),
         boxShadow: const [
           BoxShadow(
@@ -1868,94 +2038,137 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
       ),
       child: Column(
         children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: const BoxDecoration(
-              color: Color(0xFFE8F5FD),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.hourglass_top_rounded,
-              color: Color(0xFF146BFF),
-              size: 37,
-            ),
-          ),
-          const SizedBox(height: 15),
-          const Text(
-            'Supplier Application Submitted',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0xFF102C44),
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 7),
-          const Text(
-            'Your application is awaiting admin review. You can continue using your vendor account while waiting.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0xFF657C8E),
-              fontSize: 10.8,
-              height: 1.4,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(13),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFF7E9),
-              borderRadius: BorderRadius.circular(17),
-              border: Border.all(color: const Color(0xFFFFD49C)),
-            ),
-            child: const Row(
+          SizedBox(
+            height: 115,
+            child: Stack(
+              fit: StackFit.expand,
               children: [
-                Icon(
-                  Icons.pending_actions_rounded,
-                  color: Color(0xFFFF7A1A),
-                  size: 21,
+                Image.asset(
+                  'assets/images/supplier_application_header_bg.png',
+                  fit: BoxFit.cover,
+                  alignment: Alignment.center,
                 ),
-                SizedBox(width: 9),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'STATUS',
-                        style: TextStyle(
-                          color: Color(0xFFB95A10),
-                          fontSize: 8.5,
-                          letterSpacing: 0.55,
-                          fontWeight: FontWeight.w900,
+                const DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Color(0x42073B63), Color(0xD90869BA)],
+                    ),
+                  ),
+                ),
+                Center(
+                  child: Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha(238),
+                      borderRadius: BorderRadius.circular(22),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x2800152A),
+                          blurRadius: 16,
+                          offset: Offset(0, 6),
                         ),
-                      ),
-                      SizedBox(height: 3),
-                      Text(
-                        'Pending Admin Review',
-                        style: TextStyle(
-                          color: Color(0xFF7A5328),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w900,
+                      ],
+                    ),
+                    child: const Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Icon(Icons.mark_email_read_outlined, color: Color(0xFF146BFF), size: 38),
+                        Positioned(
+                          right: 9,
+                          bottom: 10,
+                          child: CircleAvatar(
+                            radius: 10,
+                            backgroundColor: Color(0xFF1DBB8A),
+                            child: Icon(Icons.check_rounded, color: Colors.white, size: 14),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 13),
-          const Text(
-            'A second application cannot be submitted while this one is pending. Supplier tools unlock only after approval.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0xFF52677A),
-              fontSize: 9.7,
-              height: 1.35,
-              fontWeight: FontWeight.w700,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
+            child: Column(
+              children: [
+                const Text(
+                  'Application Under Review',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFF102C44),
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Your supplier application has been received and is waiting for admin review. You can keep using your vendor account while you wait.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFF657C8E),
+                    fontSize: 10.2,
+                    height: 1.42,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 15),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF8ED),
+                    borderRadius: BorderRadius.circular(17),
+                    border: Border.all(color: const Color(0xFFFFD4A3)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.schedule_rounded, color: Color(0xFFE57612), size: 21),
+                      SizedBox(width: 9),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'STATUS',
+                              style: TextStyle(
+                                color: Color(0xFFB95A10),
+                                fontSize: 8.2,
+                                letterSpacing: 0.55,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Pending Admin Review',
+                              style: TextStyle(
+                                color: Color(0xFF7A5328),
+                                fontSize: 10.8,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 13),
+                const Text(
+                  'Supplier tools unlock after approval. We’ll keep this application locked while it is under review so duplicate submissions are avoided.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFF52677A),
+                    fontSize: 9.5,
+                    height: 1.36,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -1971,8 +2184,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
     return switch (currentStep) {
       0 => ownerStep(),
       1 => storeStep(),
-      2 => unitsStep(),
-      3 => verificationStep(),
+      2 => verificationStep(),
       _ => reviewStep(),
     };
   }
@@ -1991,7 +2203,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
               style: TextStyle(fontSize: 14.2, fontWeight: FontWeight.w900),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF146BFF),
+              backgroundColor: const Color(0xFF087FCB),
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -2002,36 +2214,51 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
       );
     }
 
-    final canContinue =
-        currentStepComplete &&
-        !isLoadingProfile &&
-        !isSubmitting &&
-        !uploadsInProgress;
+    final isReady = currentStepComplete;
+    final isBusy = isLoadingProfile || isSubmitting || uploadsInProgress;
 
     return _BottomBar(
       child: Row(
         children: [
           Expanded(
-            child: OutlinedButton.icon(
-              onPressed: isSubmitting || uploadsInProgress
-                  ? null
-                  : previousStep,
-              icon: Icon(
-                currentStep == 0
-                    ? Icons.close_rounded
-                    : Icons.arrow_back_rounded,
-                size: 19,
-              ),
-              label: Text(
-                currentStep == 0 ? 'Cancel' : 'Back',
-                style: const TextStyle(fontWeight: FontWeight.w900),
-              ),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF146BFF),
-                side: const BorderSide(color: Color(0xFF146BFF)),
-                minimumSize: const Size.fromHeight(52),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+            child: SizedBox(
+              height: 52,
+              child: OutlinedButton(
+                onPressed: isSubmitting || uploadsInProgress
+                    ? null
+                    : previousStep,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF087FCB),
+                  side: const BorderSide(color: Color(0xFF087FCB)),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      currentStep == 0
+                          ? Icons.close_rounded
+                          : Icons.arrow_back_rounded,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        currentStep == 0 ? 'Cancel' : 'Back',
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.fade,
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -2040,7 +2267,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
           Expanded(
             flex: 2,
             child: ElevatedButton.icon(
-              onPressed: canContinue ? nextStep : null,
+              onPressed: isBusy ? null : nextStep,
               icon: isSubmitting
                   ? const SizedBox(
                       width: 18,
@@ -2051,22 +2278,26 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                       ),
                     )
                   : Icon(
-                      isLastStep
-                          ? reviewDetailsComplete && !confirmedAccuracy
-                                ? Icons.fact_check_outlined
-                                : Icons.send_rounded
+                      !isReady
+                          ? Icons.info_outline_rounded
+                          : isLastStep
+                          ? Icons.send_rounded
                           : Icons.arrow_forward_rounded,
                       size: 19,
                     ),
               label: Text(
                 isSubmitting
                     ? 'Submitting...'
-                    : canContinue
+                    : uploadsInProgress
+                    ? 'Uploading Photos...'
+                    : isLoadingProfile
+                    ? 'Loading Application...'
+                    : isReady
                     ? isLastStep
                           ? 'Submit Application'
                           : 'Continue'
                     : isLastStep && reviewDetailsComplete && !confirmedAccuracy
-                    ? 'Confirm Accuracy to Submit'
+                    ? 'Confirm Above to Submit'
                     : 'Complete Required Details',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -2076,12 +2307,16 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF146BFF),
+                backgroundColor: isReady
+                    ? const Color(0xFF087FCB)
+                    : const Color(0xFFE8F0F6),
                 disabledBackgroundColor: const Color(0xFFDCE7EF),
-                foregroundColor: Colors.white,
+                foregroundColor: isReady
+                    ? Colors.white
+                    : const Color(0xFF52677A),
                 disabledForegroundColor: const Color(0xFF7B8FA3),
                 minimumSize: const Size.fromHeight(52),
-                elevation: canContinue ? 5 : 0,
+                elevation: isReady ? 5 : 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -2116,7 +2351,6 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
               SupplierActivationHeader(
                 currentStep: currentStep,
                 totalSteps: stepTitles.length,
-                enabledUnitCount: enabledUnitCount,
                 submitted: applicationSubmitted,
                 onBack: closeScreen,
               ),
@@ -2133,6 +2367,15 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                           scrollToTop();
                         },
                       ),
+                    if (!applicationSubmitted &&
+                        !isLoadingProfile &&
+                        activeRejectionReason.trim().isNotEmpty)
+                      _RejectedApplicationFeedbackCard(
+                        reason: activeRejectionReason.trim(),
+                        onViewFeedback: () => showRejectionFeedbackDialog(
+                          activeRejectionReason,
+                        ),
+                      ),
                     if (isLoadingProfile)
                       const _LoadingCard()
                     else
@@ -2146,6 +2389,13 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                           ),
                           child: currentStepBody(),
                         ),
+                      ),
+                    if (!applicationSubmitted &&
+                        !isLoadingProfile &&
+                        !currentStepComplete)
+                      SupplierStepStatusCard(
+                        complete: currentStepComplete,
+                        missingItems: missingRequirements,
                       ),
                   ]),
                 ),

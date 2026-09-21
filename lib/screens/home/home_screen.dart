@@ -69,6 +69,7 @@ class HomeScreen extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      barrierColor: const Color(0x73001C2C),
       builder: (sheetContext) {
         return HomeSearchSheet(
           initialQuery: initialQuery,
@@ -627,7 +628,7 @@ class HomeScreen extends StatelessWidget {
                                   onViewAll: () => openBrowseSuppliers(context),
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: 3),
                               recommendedSuppliersList(context),
                               const SizedBox(height: 12),
                               RecentFishPosts(
@@ -934,7 +935,7 @@ class StaticOverviewCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 88,
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
@@ -1130,6 +1131,8 @@ class _HomeSearchSheetState extends State<HomeSearchSheet> {
   String query = '';
   HomeSearchFilter selectedFilter = HomeSearchFilter.all;
   List<String> recentSearches = const <String>[];
+  bool showAllLocationFish = false;
+  bool showAllLocationSuppliers = false;
 
   String get normalizedQuery => query.trim().toLowerCase();
 
@@ -1712,6 +1715,8 @@ class _HomeSearchSheetState extends State<HomeSearchSheet> {
 
     setState(() {
       query = clean;
+      showAllLocationFish = false;
+      showAllLocationSuppliers = false;
     });
 
     _recordSearch(clean);
@@ -1744,6 +1749,25 @@ class _HomeSearchSheetState extends State<HomeSearchSheet> {
           SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
         );
     }
+  }
+
+  void switchFilterAndScroll(
+    HomeSearchFilter filter,
+    ScrollController scrollController,
+  ) {
+    setState(() {
+      selectedFilter = filter;
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (scrollController.hasClients) {
+        scrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 260),
+          curve: Curves.easeOutCubic,
+        );
+      }
+    });
   }
 
   Widget resultSummary({required int resultCount}) {
@@ -1873,17 +1897,171 @@ class _HomeSearchSheetState extends State<HomeSearchSheet> {
 
     final listingCounts = availableListingCounts(fishDocuments);
 
+    // Resolve each stock's supplier from the approved public supplier profile.
+    // Fish-stock documents only cache basic supplier text, so using the
+    // supplierProfiles document here keeps the marketplace avatar, name,
+    // location, and Product Details supplier identity consistent everywhere.
+    final supplierProfilesById = <
+      String,
+      QueryDocumentSnapshot<Map<String, dynamic>>
+    >{for (final document in approvedSuppliers) document.id: document};
+
     final isBrowsing = normalizedQuery.isEmpty;
+    final showHorizontalBrowseSections =
+        isBrowsing && selectedFilter == HomeSearchFilter.all;
+    final isLocationSearch =
+        selectedFilter == HomeSearchFilter.locations && !isBrowsing;
+    const locationPreviewCount = 2;
 
     final visibleFish = fishMatchesList.take(
-      isBrowsing && selectedFilter == HomeSearchFilter.all ? 4 : 12,
+      showHorizontalBrowseSections
+          ? 6
+          : isLocationSearch
+          ? (showAllLocationFish
+                ? fishMatchesList.length
+                : locationPreviewCount)
+          : 12,
     );
 
     final visibleSuppliers = supplierMatchesList.take(
-      isBrowsing && selectedFilter == HomeSearchFilter.all ? 4 : 12,
+      showHorizontalBrowseSections
+          ? 6
+          : isLocationSearch
+          ? (showAllLocationSuppliers
+                ? supplierMatchesList.length
+                : locationPreviewCount)
+          : 12,
     );
 
     final currentUid = FirebaseAuth.instance.currentUser?.uid ?? '';
+
+    final fishCards = <Widget>[];
+    for (final document in visibleFish) {
+      final data = document.data();
+      final product = stockService.fishProductFromFirestore(data);
+      final supplierId = (data['supplierId'] ?? '').toString().trim();
+      final cachedSupplier = stockService.supplierForStock(data);
+      final supplierProfileDocument = supplierProfilesById[supplierId];
+      final supplier = supplierProfileDocument != null
+          ? supplierService.supplierFromProfile(supplierProfileDocument.data())
+          : cachedSupplier;
+
+      if (supplier == null || supplierId.isEmpty) {
+        continue;
+      }
+
+      final ownerListing = currentUid.isNotEmpty && supplierId == currentUid;
+      final arrivalBadge = stockService.arrivalBadge(data);
+      final activityLabel = stockService.activityLabel(data);
+
+      fishCards.add(
+        HomeSearchFishCard(
+          imageUrl: product.imageUrl,
+          supplierImageUrl: supplier.profileImageUrl,
+          productName: cleanText(
+            value: product.name,
+            fallback: 'Fresh Fish Stock',
+          ),
+          supplierName: cleanText(
+            value: supplier.name,
+            fallback: 'Verified Supplier',
+          ),
+          location: fishLocation(data, supplier),
+          priceText:
+              '₱${formatNumber(product.price)} / ${cleanPriceUnit(product.priceUnit, product.quantityUnit)}',
+          stockText:
+              '${formatNumber(product.availableQuantity)} ${product.quantityUnit} available',
+          stockStatus: product.stockStatus,
+          stockColor: product.stockColor,
+          arrivalBadge: arrivalBadge,
+          activityLabel: activityLabel,
+          ownerListing: ownerListing,
+          onTap: () {
+            _recordSearch(query);
+            Navigator.pop(context);
+
+            Future.microtask(
+              () => widget.onProductTap(
+                supplier,
+                product,
+                document.id,
+                supplierId,
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    final supplierCards = <Widget>[];
+    for (final document in visibleSuppliers) {
+      final supplier = supplierService.supplierFromProfile(document.data());
+      final ownerStore = currentUid.isNotEmpty && document.id == currentUid;
+
+      supplierCards.add(
+        StreamBuilder<bool>(
+          stream: favoriteService.isFavoriteStream(document.id),
+          initialData: false,
+          builder: (context, favoriteSnapshot) {
+            final isFavorite = favoriteSnapshot.data ?? false;
+
+            return HomeSearchSupplierCard(
+              imageUrl: supplier.profileImageUrl,
+              supplierName: cleanText(
+                value: supplier.name,
+                fallback: 'Verified Supplier',
+              ),
+              location: cleanText(
+                value: supplier.location,
+                fallback: 'Caraga Region',
+              ),
+              rating: supplier.rating,
+              reviews: supplier.reviews,
+              activeListings: listingCounts[document.id] ?? 0,
+              ownerStore: ownerStore,
+              isFavorite: isFavorite,
+              favoriteBusy:
+                  favoriteSnapshot.connectionState ==
+                      ConnectionState.waiting &&
+                  !favoriteSnapshot.hasData,
+              onFavoriteTap: ownerStore
+                  ? null
+                  : () => toggleFavoriteSupplier(
+                      supplierId: document.id,
+                      currentlyFavorite: isFavorite,
+                    ),
+              onTap: () {
+                _recordSearch(query);
+                Navigator.pop(context);
+
+                Future.microtask(
+                  () => widget.onSupplierTap(supplier, document.id),
+                );
+              },
+            );
+          },
+        ),
+      );
+    }
+
+    Widget buildHorizontalCards({
+      required List<Widget> cards,
+      required double height,
+      required double width,
+    }) {
+      return SizedBox(
+        height: height,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.only(right: 4),
+          itemCount: cards.length,
+          separatorBuilder: (_, _) => const SizedBox(width: 12),
+          itemBuilder: (context, index) {
+            return SizedBox(width: width, child: cards[index]);
+          },
+        ),
+      );
+    }
 
     return ListView(
       controller: scrollController,
@@ -1911,220 +2089,273 @@ class _HomeSearchSheetState extends State<HomeSearchSheet> {
         if (!isBrowsing && matchingTerms.isNotEmpty) ...[
           HomeSearchSuggestedSearches(
             title: 'Suggested matches',
-            trailingLabel: 'Tap to search',
+            trailingLabel: '',
             icon: Icons.auto_awesome_rounded,
             terms: matchingTerms,
             onTap: applySearchSuggestion,
           ),
           const SizedBox(height: 14),
         ],
-        resultSummary(resultCount: totalResultCount),
-        if (visibleFish.isNotEmpty) ...[
+        if (!showHorizontalBrowseSections)
+          resultSummary(resultCount: totalResultCount),
+        if (fishCards.isNotEmpty) ...[
           HomeSearchSectionLabel(
-            icon: Icons.set_meal_outlined,
+            icon: Image.asset(
+              'assets/images/Fish.png',
+              width: 22,
+              height: 22,
+              fit: BoxFit.contain,
+              errorBuilder: (_, _, _) => const Icon(
+                Icons.set_meal_rounded,
+                color: Color(0xFF087AC0),
+                size: 19,
+              ),
+            ),
             label: selectedFilter == HomeSearchFilter.locations
                 ? 'Fish in this location'
                 : isBrowsing
                 ? 'Fish Available Now'
                 : 'Matching Fish Stocks',
+            subtitle: selectedFilter == HomeSearchFilter.locations
+                ? 'Available fish from suppliers in this market area'
+                : isBrowsing
+                ? 'Fresh catch from local suppliers'
+                : 'Available listings that match your search',
             count: fishMatchesList.length,
+            actionLabel: showHorizontalBrowseSections
+                ? 'View all'
+                : isLocationSearch &&
+                      fishMatchesList.length > locationPreviewCount
+                ? (showAllLocationFish ? 'Show less' : 'View all')
+                : null,
+            onActionTap: showHorizontalBrowseSections
+                ? () => switchFilterAndScroll(
+                    HomeSearchFilter.fish,
+                    scrollController,
+                  )
+                : isLocationSearch &&
+                      fishMatchesList.length > locationPreviewCount
+                ? () {
+                    setState(() {
+                      showAllLocationFish = !showAllLocationFish;
+                    });
+                  }
+                : null,
           ),
-          const SizedBox(height: 10),
-          ...visibleFish.map((document) {
-            final data = document.data();
-            final product = stockService.fishProductFromFirestore(data);
-            final supplier = stockService.supplierForStock(data);
-            final supplierId = (data['supplierId'] ?? '').toString().trim();
-
-            if (supplier == null || supplierId.isEmpty) {
-              return const SizedBox.shrink();
-            }
-
-            final ownerListing =
-                currentUid.isNotEmpty && supplierId == currentUid;
-            final arrivalBadge = stockService.arrivalBadge(data);
-            final activityLabel = stockService.activityLabel(data);
-
-            return HomeSearchFishCard(
-              imageUrl: product.imageUrl,
-              supplierImageUrl: supplier.profileImageUrl,
-              productName: cleanText(
-                value: product.name,
-                fallback: 'Fresh Fish Stock',
-              ),
-              supplierName: cleanText(
-                value: supplier.name,
-                fallback: 'Verified Supplier',
-              ),
-              location: fishLocation(data, supplier),
-              priceText:
-                  '₱${formatNumber(product.price)} / ${cleanPriceUnit(product.priceUnit, product.quantityUnit)}',
-              stockText:
-                  '${formatNumber(product.availableQuantity)} ${product.quantityUnit} available',
-              stockStatus: product.stockStatus,
-              stockColor: product.stockColor,
-              arrivalBadge: arrivalBadge,
-              activityLabel: activityLabel,
-              ownerListing: ownerListing,
-              onTap: () {
-                _recordSearch(query);
-                Navigator.pop(context);
-
-                Future.microtask(
-                  () => widget.onProductTap(
-                    supplier,
-                    product,
-                    document.id,
-                    supplierId,
-                  ),
-                );
-              },
-            );
-          }),
-          const SizedBox(height: 8),
+          const SizedBox(height: 11),
+          if (showHorizontalBrowseSections)
+            buildHorizontalCards(
+              cards: fishCards,
+              height: 126,
+              width: 306,
+            )
+          else
+            ...fishCards,
+          const SizedBox(height: 12),
         ],
-        if (visibleSuppliers.isNotEmpty) ...[
+        if (supplierCards.isNotEmpty) ...[
           HomeSearchSectionLabel(
-            icon: Icons.verified_outlined,
+            icon: ColorFiltered(
+              colorFilter: const ColorFilter.mode(
+                Color(0xFF087AC0),
+                BlendMode.srcIn,
+              ),
+              child: Image.asset(
+                'assets/images/Store.png',
+                width: 21,
+                height: 21,
+                fit: BoxFit.contain,
+                errorBuilder: (_, _, _) => const Icon(
+                  Icons.storefront_rounded,
+                  color: Color(0xFF087AC0),
+                  size: 19,
+                ),
+              ),
+            ),
             label: selectedFilter == HomeSearchFilter.locations
                 ? 'Suppliers in this location'
                 : 'Verified Suppliers',
+            subtitle: selectedFilter == HomeSearchFilter.locations
+                ? 'Verified suppliers serving this market area'
+                : 'Trusted fish suppliers across Caraga',
             count: supplierMatchesList.length,
+            actionLabel: showHorizontalBrowseSections
+                ? 'View all'
+                : isLocationSearch &&
+                      supplierMatchesList.length > locationPreviewCount
+                ? (showAllLocationSuppliers ? 'Show less' : 'View all')
+                : null,
+            onActionTap: showHorizontalBrowseSections
+                ? () => switchFilterAndScroll(
+                    HomeSearchFilter.suppliers,
+                    scrollController,
+                  )
+                : isLocationSearch &&
+                      supplierMatchesList.length > locationPreviewCount
+                ? () {
+                    setState(() {
+                      showAllLocationSuppliers = !showAllLocationSuppliers;
+                    });
+                  }
+                : null,
           ),
-          const SizedBox(height: 10),
-          ...visibleSuppliers.map((document) {
-            final supplier = supplierService.supplierFromProfile(
-              document.data(),
-            );
-
-            final ownerStore =
-                currentUid.isNotEmpty && document.id == currentUid;
-
-            return StreamBuilder<bool>(
-              stream: favoriteService.isFavoriteStream(document.id),
-              initialData: false,
-              builder: (context, favoriteSnapshot) {
-                final isFavorite = favoriteSnapshot.data ?? false;
-
-                return HomeSearchSupplierCard(
-                  imageUrl: supplier.profileImageUrl,
-                  supplierName: cleanText(
-                    value: supplier.name,
-                    fallback: 'Verified Supplier',
-                  ),
-                  location: cleanText(
-                    value: supplier.location,
-                    fallback: 'Caraga Region',
-                  ),
-                  rating: supplier.rating,
-                  reviews: supplier.reviews,
-                  activeListings: listingCounts[document.id] ?? 0,
-                  ownerStore: ownerStore,
-                  isFavorite: isFavorite,
-                  favoriteBusy:
-                      favoriteSnapshot.connectionState ==
-                          ConnectionState.waiting &&
-                      !favoriteSnapshot.hasData,
-                  onFavoriteTap: ownerStore
-                      ? null
-                      : () => toggleFavoriteSupplier(
-                          supplierId: document.id,
-                          currentlyFavorite: isFavorite,
-                        ),
-                  onTap: () {
-                    _recordSearch(query);
-                    Navigator.pop(context);
-
-                    Future.microtask(
-                      () => widget.onSupplierTap(supplier, document.id),
-                    );
-                  },
-                );
-              },
-            );
-          }),
-        ],
-        if (isBrowsing &&
-            selectedFilter == HomeSearchFilter.all &&
-            (fishMatchesList.length > 4 || supplierMatchesList.length > 4)) ...[
-          const SizedBox(height: 4),
-          const HomeSearchBrowseHint(),
+          const SizedBox(height: 11),
+          if (showHorizontalBrowseSections)
+            buildHorizontalCards(
+              cards: supplierCards,
+              height: 118,
+              width: 306,
+            )
+          else
+            ...supplierCards,
         ],
       ],
     );
   }
 
   Widget filterBar() {
-    return SizedBox(
-      height: 38,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        children: [
-          HomeSearchFilterChip(
+    return Row(
+      children: [
+        Expanded(
+          child: HomeSearchFilterChip(
             selected: selectedFilter == HomeSearchFilter.all,
-            icon: Icons.grid_view_rounded,
+            icon: Icon(
+              Icons.grid_view_rounded,
+              color: selectedFilter == HomeSearchFilter.all
+                  ? Colors.white
+                  : const Color(0xFF173D5A),
+              size: 18,
+            ),
             label: 'All',
             onTap: () {
               setState(() {
                 selectedFilter = HomeSearchFilter.all;
+                showAllLocationFish = false;
+                showAllLocationSuppliers = false;
               });
             },
           ),
-          const SizedBox(width: 7),
-          HomeSearchFilterChip(
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: HomeSearchFilterChip(
             selected: selectedFilter == HomeSearchFilter.fish,
-            icon: Icons.set_meal_outlined,
+            icon: selectedFilter == HomeSearchFilter.fish
+                ? ColorFiltered(
+                    colorFilter: const ColorFilter.mode(
+                      Colors.white,
+                      BlendMode.srcIn,
+                    ),
+                    child: Image.asset(
+                      'assets/images/Fish.png',
+                      width: 21,
+                      height: 21,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, _, _) => const Icon(
+                        Icons.set_meal_rounded,
+                        color: Colors.white,
+                        size: 19,
+                      ),
+                    ),
+                  )
+                : Image.asset(
+                    'assets/images/Fish.png',
+                    width: 21,
+                    height: 21,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, _, _) => const Icon(
+                      Icons.set_meal_rounded,
+                      color: Color(0xFF173D5A),
+                      size: 19,
+                    ),
+                  ),
             label: 'Fish',
             onTap: () {
               setState(() {
                 selectedFilter = HomeSearchFilter.fish;
+                showAllLocationFish = false;
+                showAllLocationSuppliers = false;
               });
             },
           ),
-          const SizedBox(width: 7),
-          HomeSearchFilterChip(
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: HomeSearchFilterChip(
             selected: selectedFilter == HomeSearchFilter.suppliers,
-            icon: Icons.storefront_outlined,
+            icon: ColorFiltered(
+              colorFilter: ColorFilter.mode(
+                selectedFilter == HomeSearchFilter.suppliers
+                    ? Colors.white
+                    : const Color(0xFF173D5A),
+                BlendMode.srcIn,
+              ),
+              child: Image.asset(
+                'assets/images/Store.png',
+                width: 20,
+                height: 20,
+                fit: BoxFit.contain,
+                errorBuilder: (_, _, _) => Icon(
+                  Icons.storefront_rounded,
+                  color: selectedFilter == HomeSearchFilter.suppliers
+                      ? Colors.white
+                      : const Color(0xFF173D5A),
+                  size: 19,
+                ),
+              ),
+            ),
             label: 'Suppliers',
             onTap: () {
               setState(() {
                 selectedFilter = HomeSearchFilter.suppliers;
+                showAllLocationFish = false;
+                showAllLocationSuppliers = false;
               });
             },
           ),
-          const SizedBox(width: 7),
-          HomeSearchFilterChip(
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: HomeSearchFilterChip(
             selected: selectedFilter == HomeSearchFilter.locations,
-            icon: Icons.location_on_outlined,
+            icon: Icon(
+              Icons.location_on_rounded,
+              color: selectedFilter == HomeSearchFilter.locations
+                  ? Colors.white
+                  : const Color(0xFF173D5A),
+              size: 19,
+            ),
             label: 'Locations',
             onTap: () {
               setState(() {
                 selectedFilter = HomeSearchFilter.locations;
+                showAllLocationFish = false;
+                showAllLocationSuppliers = false;
               });
             },
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
-      initialChildSize: 0.91,
-      minChildSize: 0.60,
-      maxChildSize: 0.96,
+      initialChildSize: 0.92,
+      minChildSize: 0.64,
+      maxChildSize: 0.97,
       builder: (context, scrollController) {
         return Container(
           clipBehavior: Clip.antiAlias,
           decoration: const BoxDecoration(
-            color: Color(0xFFF5FAFD),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
             boxShadow: [
               BoxShadow(
-                color: Color(0x2600152A),
-                blurRadius: 28,
-                offset: Offset(0, -8),
+                color: Color(0x3300152A),
+                blurRadius: 30,
+                offset: Offset(0, -9),
               ),
             ],
           ),
@@ -2132,120 +2363,126 @@ class _HomeSearchSheetState extends State<HomeSearchSheet> {
             children: [
               Container(
                 width: double.infinity,
+                padding: const EdgeInsets.only(top: 9),
                 decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Color(0xFFF9FDFF),
-                      Color(0xFFEEF9FD),
-                      Color(0xFFF4FAFF),
-                    ],
-                  ),
+                  color: Colors.white,
                 ),
                 child: Column(
                   children: [
-                    const SizedBox(height: 9),
                     Container(
-                      width: 42,
+                      width: 44,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFC6D9E5),
+                        color: const Color(0xFFC4D7E2),
                         borderRadius: BorderRadius.circular(99),
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(18, 14, 18, 12),
+                      padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: [
                               Container(
-                                width: 44,
-                                height: 44,
+                                width: 50,
+                                height: 50,
+                                padding: const EdgeInsets.all(9),
                                 decoration: BoxDecoration(
                                   gradient: const LinearGradient(
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                     colors: [
                                       Color(0xFF0875D1),
-                                      Color(0xFF0CB6CF),
+                                      Color(0xFF08B3CC),
                                     ],
                                   ),
-                                  borderRadius: BorderRadius.circular(15),
+                                  borderRadius: BorderRadius.circular(14),
                                   boxShadow: const [
                                     BoxShadow(
-                                      color: Color(0x240875D1),
-                                      blurRadius: 12,
+                                      color: Color(0x260875D1),
+                                      blurRadius: 14,
                                       offset: Offset(0, 5),
                                     ),
                                   ],
                                 ),
-                                child: const Icon(
-                                  Icons.travel_explore_rounded,
-                                  color: Colors.white,
-                                  size: 22,
+                                child: Image.asset(
+                                  'assets/images/Fish.png',
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, _, _) => const Icon(
+                                    Icons.set_meal_rounded,
+                                    color: Colors.white,
+                                    size: 25,
+                                  ),
                                 ),
                               ),
-                              const SizedBox(width: 11),
+                              const SizedBox(width: 12),
                               const Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       'Explore IsdaLink Market',
-                                      style: TextStyle(
-                                        color: Color(0xFF102C44),
-                                        fontSize: 18.8,
-                                        fontWeight: FontWeight.w900,
-                                        letterSpacing: -0.25,
-                                      ),
-                                    ),
-                                    SizedBox(height: 2),
-                                    Text(
-                                      'Discover fresh fish and verified suppliers across Caraga.',
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
-                                        color: Color(0xFF6F8597),
-                                        fontSize: 10.4,
+                                        color: Color(0xFF0C2F4A),
+                                        fontSize: 18.2,
+                                        height: 1.05,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: -0.3,
+                                      ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Text(
+                                      'Fresh fish, verified suppliers, and market areas across Caraga.',
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: Color(0xFF6C8497),
+                                        fontSize: 10.3,
+                                        height: 1.25,
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 9),
                               Material(
-                                color: const Color(0xFFE8F2F7),
-                                borderRadius: BorderRadius.circular(13),
+                                color: const Color(0xFFEAF2F7),
+                                borderRadius: BorderRadius.circular(16),
                                 child: InkWell(
                                   onTap: () => Navigator.pop(context),
-                                  borderRadius: BorderRadius.circular(13),
+                                  borderRadius: BorderRadius.circular(16),
                                   child: const SizedBox(
-                                    width: 39,
-                                    height: 39,
+                                    width: 44,
+                                    height: 44,
                                     child: Icon(
                                       Icons.close_rounded,
-                                      color: Color(0xFF52677A),
-                                      size: 19,
+                                      color: Color(0xFF526D81),
+                                      size: 22,
                                     ),
                                   ),
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 13),
+                          const SizedBox(height: 14),
                           Container(
+                            height: 58,
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(18),
+                              borderRadius: BorderRadius.circular(22),
+                              border: Border.all(
+                                color: const Color(0xFF087AC0),
+                                width: 1.1,
+                              ),
                               boxShadow: const [
                                 BoxShadow(
-                                  color: Color(0x1000152A),
-                                  blurRadius: 12,
-                                  offset: Offset(0, 5),
+                                  color: Color(0x0B00152A),
+                                  blurRadius: 10,
+                                  offset: Offset(0, 4),
                                 ),
                               ],
                             ),
@@ -2260,74 +2497,104 @@ class _HomeSearchSheetState extends State<HomeSearchSheet> {
                               onChanged: (value) {
                                 setState(() {
                                   query = value;
+                                  showAllLocationFish = false;
+                                  showAllLocationSuppliers = false;
                                 });
                               },
                               style: const TextStyle(
                                 color: Color(0xFF102C44),
-                                fontSize: 13,
+                                fontSize: 13.2,
                                 fontWeight: FontWeight.w700,
                               ),
                               decoration: InputDecoration(
                                 hintText: searchHint,
                                 hintStyle: const TextStyle(
-                                  color: Color(0xFF9AAEBC),
-                                  fontSize: 11.7,
+                                  color: Color(0xFF8DA4B5),
+                                  fontSize: 11.6,
                                   fontWeight: FontWeight.w600,
                                 ),
                                 prefixIcon: const Padding(
-                                  padding: EdgeInsets.only(left: 2),
+                                  padding: EdgeInsets.only(left: 4),
                                   child: Icon(
                                     Icons.search_rounded,
                                     color: Color(0xFF087AC0),
-                                    size: 21,
+                                    size: 23,
                                   ),
                                 ),
-                                suffixIcon: query.trim().isEmpty
-                                    ? null
-                                    : IconButton(
-                                        tooltip: 'Clear search',
-                                        onPressed: () {
-                                          searchController.clear();
-
-                                          setState(() {
-                                            query = '';
-                                          });
-                                        },
-                                        icon: const Icon(
-                                          Icons.cancel_rounded,
-                                          color: Color(0xFF9AAEBC),
-                                          size: 18,
+                                suffixIcon: Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: query.trim().isEmpty
+                                      ? PopupMenuButton<HomeSearchFilter>(
+                                          tooltip: 'Choose search type',
+                                          initialValue: selectedFilter,
+                                          onSelected: (value) {
+                                            setState(() {
+                                              selectedFilter = value;
+                                              showAllLocationFish = false;
+                                              showAllLocationSuppliers = false;
+                                            });
+                                          },
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(16),
+                                          ),
+                                          itemBuilder: (context) => const [
+                                            PopupMenuItem(
+                                              value: HomeSearchFilter.all,
+                                              child: Text('Search everything'),
+                                            ),
+                                            PopupMenuItem(
+                                              value: HomeSearchFilter.fish,
+                                              child: Text('Fish only'),
+                                            ),
+                                            PopupMenuItem(
+                                              value: HomeSearchFilter.suppliers,
+                                              child: Text('Suppliers only'),
+                                            ),
+                                            PopupMenuItem(
+                                              value: HomeSearchFilter.locations,
+                                              child: Text('Locations only'),
+                                            ),
+                                          ],
+                                          child: Container(
+                                            width: 40,
+                                            height: 40,
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFEAF7FB),
+                                              borderRadius: BorderRadius.circular(13),
+                                            ),
+                                            child: const Icon(
+                                              Icons.tune_rounded,
+                                              color: Color(0xFF087AC0),
+                                              size: 20,
+                                            ),
+                                          ),
+                                        )
+                                      : IconButton(
+                                          tooltip: 'Clear search',
+                                          onPressed: () {
+                                            searchController.clear();
+                                            setState(() {
+                                              query = '';
+                                              showAllLocationFish = false;
+                                              showAllLocationSuppliers = false;
+                                            });
+                                          },
+                                          icon: const Icon(
+                                            Icons.close_rounded,
+                                            color: Color(0xFF7F96A7),
+                                            size: 20,
+                                          ),
                                         ),
-                                      ),
-                                filled: true,
-                                fillColor: Colors.white,
+                                ),
+                                border: InputBorder.none,
                                 contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 14,
-                                  vertical: 14,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(18),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFFDCEAF2),
-                                  ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(18),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFFDCEAF2),
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(18),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFF087AC0),
-                                    width: 1.45,
-                                  ),
+                                  vertical: 17,
                                 ),
                               ),
                             ),
                           ),
-                          const SizedBox(height: 11),
+                          const SizedBox(height: 12),
                           filterBar(),
                         ],
                       ),
@@ -2335,7 +2602,7 @@ class _HomeSearchSheetState extends State<HomeSearchSheet> {
                   ],
                 ),
               ),
-              const Divider(height: 1, thickness: 1, color: Color(0xFFE2EEF4)),
+              const Divider(height: 1, thickness: 1, color: Color(0xFFEDF3F6)),
               Expanded(
                 child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                   stream: fishStream,
@@ -2393,7 +2660,7 @@ class HomeSearchFilterChip extends StatelessWidget {
   });
 
   final bool selected;
-  final IconData icon;
+  final Widget icon;
   final String label;
   final VoidCallback onTap;
 
@@ -2401,44 +2668,47 @@ class HomeSearchFilterChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: selected ? const Color(0xFF087AC0) : Colors.white,
-      borderRadius: BorderRadius.circular(13),
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(13),
+        borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 11),
+          height: 44,
+          padding: const EdgeInsets.symmetric(horizontal: 7),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(13),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: selected
                   ? const Color(0xFF087AC0)
-                  : const Color(0xFFDDEAF2),
+                  : const Color(0xFFDCEAF2),
             ),
             boxShadow: selected
                 ? const [
                     BoxShadow(
-                      color: Color(0x20087AC0),
+                      color: Color(0x18087AC0),
                       blurRadius: 8,
-                      offset: Offset(0, 4),
+                      offset: Offset(0, 3),
                     ),
                   ]
                 : null,
           ),
           child: Row(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                icon,
-                color: selected ? Colors.white : const Color(0xFF6D8495),
-                size: 15,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  color: selected ? Colors.white : const Color(0xFF52677A),
-                  fontSize: 9.8,
-                  fontWeight: FontWeight.w900,
+              SizedBox(width: 21, height: 21, child: Center(child: icon)),
+              const SizedBox(width: 5),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    style: TextStyle(
+                      color: selected ? Colors.white : const Color(0xFF173D5A),
+                      fontSize: 10.2,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -2455,36 +2725,81 @@ class HomeSearchSectionLabel extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.count,
+    this.subtitle,
+    this.actionLabel,
+    this.onActionTap,
   });
 
-  final IconData icon;
+  final Widget icon;
   final String label;
   final int count;
+  final String? subtitle;
+  final String? actionLabel;
+  final VoidCallback? onActionTap;
 
   @override
   Widget build(BuildContext context) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
-          width: 31,
-          height: 31,
+          width: 38,
+          height: 38,
           decoration: BoxDecoration(
-            color: const Color(0xFFE7F7FC),
-            borderRadius: BorderRadius.circular(10),
+            color: const Color(0xFFE6F6FC),
+            borderRadius: BorderRadius.circular(13),
           ),
-          child: Icon(icon, color: const Color(0xFF087AC0), size: 16),
+          child: Center(child: icon),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 9),
         Expanded(
-          child: Text(
-            label,
-            style: const TextStyle(
-              color: Color(0xFF102C44),
-              fontSize: 13,
-              fontWeight: FontWeight.w900,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Color(0xFF102C44),
+                  fontSize: 13.4,
+                  height: 1.05,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(
+                  subtitle!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFF7B91A2),
+                    fontSize: 8.8,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        if (actionLabel != null && onActionTap != null) ...[
+          TextButton(
+            onPressed: onActionTap,
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFF087AC0),
+              minimumSize: Size.zero,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
+            ),
+            child: Text(
+              actionLabel!,
+              style: const TextStyle(fontSize: 8.8, fontWeight: FontWeight.w900),
             ),
           ),
-        ),
+          const SizedBox(width: 4),
+        ],
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
           decoration: BoxDecoration(
@@ -2575,7 +2890,7 @@ class HomeSearchRecentSearches extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 7),
+          const SizedBox(height: 5),
           Wrap(
             spacing: 7,
             runSpacing: 7,
@@ -2656,96 +2971,229 @@ class HomeSearchSuggestedSearches extends StatelessWidget {
   final List<String> terms;
   final ValueChanged<String> onTap;
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(12, 11, 12, 12),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFEAF8FC), Color(0xFFF3FAFF)],
-        ),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFD7EBF3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: const Color(0xFF087AC0), size: 15),
-              const SizedBox(width: 5),
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    color: Color(0xFF52677A),
-                    fontSize: 9.2,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
+  static const double _cardHeight = 136;
+
+  Widget _searchChip(String term) {
+    return Material(
+      color: Colors.white.withAlpha(242),
+      borderRadius: BorderRadius.circular(99),
+      child: InkWell(
+        onTap: () => onTap(term),
+        borderRadius: BorderRadius.circular(99),
+        child: Container(
+          height: 30,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(99),
+            border: Border.all(color: const Color(0xFFCBE3EF)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0700152A),
+                blurRadius: 5,
+                offset: Offset(0, 2),
               ),
-              Text(
-                trailingLabel,
-                style: const TextStyle(
-                  color: Color(0xFF91A5B4),
-                  fontSize: 7.8,
-                  fontWeight: FontWeight.w700,
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.search_rounded,
+                color: Color(0xFF6B8798),
+                size: 12.5,
+              ),
+              const SizedBox(width: 5),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 160),
+                child: Text(
+                  term,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFF38566E),
+                    fontSize: 8.7,
+                    height: 1.05,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 7,
-            runSpacing: 7,
-            children: terms.map((term) {
-              return Material(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(99),
-                child: InkWell(
-                  onTap: () => onTap(term),
-                  borderRadius: BorderRadius.circular(99),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 7,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(99),
-                      border: Border.all(color: const Color(0xFFD9E9F1)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.search_rounded,
-                          color: Color(0xFF7A95A7),
-                          size: 12,
+        ),
+      ),
+    );
+  }
+
+  Widget _chipRow(List<String> rowTerms) {
+    return SizedBox(
+      height: 30,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        child: Row(
+          children: [
+            for (var index = 0; index < rowTerms.length; index++) ...[
+              if (index > 0) const SizedBox(width: 7),
+              _searchChip(rowTerms[index]),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final visibleTerms = terms.take(6).toList();
+    final firstRowTerms = <String>[];
+    final secondRowTerms = <String>[];
+
+    for (var index = 0; index < visibleTerms.length; index++) {
+      if (index.isEven) {
+        firstRowTerms.add(visibleTerms[index]);
+      } else {
+        secondRowTerms.add(visibleTerms[index]);
+      }
+    }
+
+    return SizedBox(
+      height: _cardHeight,
+      child: Container(
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: const Color(0xFFF5FBFE),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFD7EAF3)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0900152A),
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Show the complete artwork instead of cropping it. The generated
+            // asset is intentionally wide, so BoxFit.fill keeps every part of
+            // the underwater scene visible inside this compact search card.
+            Image.asset(
+              'assets/images/search_suggestions_underwater_bg.png',
+              fit: BoxFit.fill,
+              filterQuality: FilterQuality.high,
+              errorBuilder: (_, _, _) => const SizedBox.shrink(),
+            ),
+            Container(color: Colors.white.withAlpha(18)),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(13, 11, 13, 11),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 31,
+                        height: 31,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(232),
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        const SizedBox(width: 4),
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 150),
-                          child: Text(
-                            term,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Color(0xFF38566E),
-                              fontSize: 8.6,
-                              fontWeight: FontWeight.w800,
+                        child: Icon(
+                          icon,
+                          color: const Color(0xFF087AC0),
+                          size: 16,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFF173D5A),
+                                fontSize: 10.8,
+                                height: 1.05,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(height: 1),
+                            Text(
+                              title == 'Suggested matches'
+                                  ? 'Matches from the live marketplace'
+                                  : 'Popular searches in Caraga',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFF70899B),
+                                fontSize: 8.2,
+                                height: 1.1,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (trailingLabel.trim().isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4.5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: trailingLabel == 'Live marketplace'
+                                ? const Color(0xE6ECF9F0)
+                                : const Color(0xEAF2F7FA),
+                            borderRadius: BorderRadius.circular(99),
+                            border: Border.all(
+                              color: trailingLabel == 'Live marketplace'
+                                  ? const Color(0xFFD8F2E2)
+                                  : const Color(0xFFE3EDF2),
                             ),
                           ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (trailingLabel == 'Live marketplace') ...[
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF22A85A),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                              ],
+                              Text(
+                                trailingLabel,
+                                style: TextStyle(
+                                  color: trailingLabel == 'Live marketplace'
+                                      ? const Color(0xFF2D8650)
+                                      : const Color(0xFF6E8798),
+                                  fontSize: 7.5,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
-                    ),
+                    ],
                   ),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
+                  const SizedBox(height: 8),
+                  _chipRow(firstRowTerms),
+                  const SizedBox(height: 6),
+                  _chipRow(secondRowTerms),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -2866,7 +3314,7 @@ class HomeSearchFishCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 7),
       child: Material(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -2874,7 +3322,7 @@ class HomeSearchFishCard extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(20),
           child: Ink(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
@@ -2894,10 +3342,10 @@ class HomeSearchFishCard extends StatelessWidget {
                   clipBehavior: Clip.none,
                   children: [
                     SizedBox(
-                      width: 82,
-                      height: 88,
+                      width: 74,
+                      height: 76,
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(14),
                         child: image(),
                       ),
                     ),
@@ -2936,7 +3384,7 @@ class HomeSearchFishCard extends StatelessWidget {
                       ),
                   ],
                 ),
-                const SizedBox(width: 11),
+                const SizedBox(width: 9),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -2961,7 +3409,7 @@ class HomeSearchFishCard extends StatelessWidget {
                           ],
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 3),
                       Row(
                         children: [
                           supplierAvatar(),
@@ -3003,7 +3451,7 @@ class HomeSearchFishCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 7),
+                      const SizedBox(height: 5),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
@@ -3155,7 +3603,7 @@ class HomeSearchSupplierCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 7),
       child: Material(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -3163,7 +3611,7 @@ class HomeSearchSupplierCard extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(20),
           child: Ink(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
@@ -3179,21 +3627,21 @@ class HomeSearchSupplierCard extends StatelessWidget {
             child: Row(
               children: [
                 Container(
-                  width: 68,
-                  height: 68,
+                  width: 62,
+                  height: 62,
                   padding: const EdgeInsets.all(2),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xFF0D8DD3), Color(0xFF12B6D6)],
                     ),
-                    borderRadius: BorderRadius.circular(17),
+                    borderRadius: BorderRadius.circular(15),
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(15),
+                    borderRadius: BorderRadius.circular(13),
                     child: image(),
                   ),
                 ),
-                const SizedBox(width: 11),
+                const SizedBox(width: 9),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -3220,7 +3668,7 @@ class HomeSearchSupplierCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 3),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -3248,7 +3696,7 @@ class HomeSearchSupplierCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 7),
+                      const SizedBox(height: 5),
                       Wrap(
                         spacing: 7,
                         runSpacing: 4,
@@ -3281,13 +3729,19 @@ class HomeSearchSupplierCard extends StatelessWidget {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFEAF7FB),
+                              color: activeListings > 0
+                                  ? const Color(0xFFEAF7FB)
+                                  : const Color(0xFFF1F5F7),
                               borderRadius: BorderRadius.circular(99),
                             ),
                             child: Text(
-                              '$activeListings available',
-                              style: const TextStyle(
-                                color: Color(0xFF087AC0),
+                              activeListings > 0
+                                  ? '$activeListings available'
+                                  : 'No active listings',
+                              style: TextStyle(
+                                color: activeListings > 0
+                                    ? const Color(0xFF087AC0)
+                                    : const Color(0xFF7C909F),
                                 fontSize: 7.7,
                                 fontWeight: FontWeight.w900,
                               ),
@@ -3312,11 +3766,11 @@ class HomeSearchSupplierCard extends StatelessWidget {
                           onTap: favoriteBusy ? null : onFavoriteTap,
                           customBorder: const CircleBorder(),
                           child: SizedBox(
-                            width: 36,
-                            height: 36,
+                            width: 32,
+                            height: 32,
                             child: favoriteBusy
                                 ? const Padding(
-                                    padding: EdgeInsets.all(11),
+                                    padding: EdgeInsets.all(9),
                                     child: CircularProgressIndicator(
                                       strokeWidth: 1.8,
                                     ),
@@ -3328,14 +3782,14 @@ class HomeSearchSupplierCard extends StatelessWidget {
                                     color: isFavorite
                                         ? const Color(0xFFF0546D)
                                         : const Color(0xFF7F98AA),
-                                    size: 18,
+                                    size: 16,
                                   ),
                           ),
                         ),
                       )
                     else
                       const _SearchOwnerBadge(label: 'YOUR STORE'),
-                    const SizedBox(height: 7),
+                    const SizedBox(height: 5),
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
@@ -3417,39 +3871,6 @@ class _SearchOwnerBadge extends StatelessWidget {
   }
 }
 
-class HomeSearchBrowseHint extends StatelessWidget {
-  const HomeSearchBrowseHint({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEAF7FB),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFD7EBF3)),
-      ),
-      child: const Row(
-        children: [
-          Icon(Icons.search_rounded, color: Color(0xFF087AC0), size: 18),
-          SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Type a fish, supplier, or location to narrow the marketplace results.',
-              style: TextStyle(
-                color: Color(0xFF657C8E),
-                fontSize: 9.4,
-                height: 1.35,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class HomeSearchLocationPrompt extends StatelessWidget {
   const HomeSearchLocationPrompt({
     super.key,
@@ -3464,48 +3885,137 @@ class HomeSearchLocationPrompt extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Widget buildPill(IconData icon, String label) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(99),
+          border: Border.all(color: const Color(0xFFDDEAF1)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: const Color(0xFF087AC0), size: 13),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Color(0xFF476275),
+                fontSize: 8.5,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return ListView(
       controller: scrollController,
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
       children: [
         Container(
-          padding: const EdgeInsets.fromLTRB(18, 20, 18, 20),
+          clipBehavior: Clip.antiAlias,
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFFE6F7FC), Color(0xFFF3F9FF)],
-            ),
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: const Color(0xFFD2E9F3)),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: const Color(0xFFD9EBF3)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0900152A),
+                blurRadius: 10,
+                offset: Offset(0, 4),
+              ),
+            ],
           ),
-          child: const Column(
+          child: Stack(
             children: [
-              Icon(
-                Icons.location_searching_rounded,
-                color: Color(0xFF087AC0),
-                size: 31,
-              ),
-              SizedBox(height: 9),
-              Text(
-                'Find fish near a market area',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Color(0xFF102C44),
-                  fontSize: 14.2,
-                  fontWeight: FontWeight.w900,
+              Positioned(
+                right: -26,
+                bottom: -46,
+                child: Container(
+                  width: 130,
+                  height: 130,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0x0D08B3CC),
+                  ),
                 ),
               ),
-              SizedBox(height: 5),
-              Text(
-                'Search a city, municipality, province, or supplier market area. IsdaLink will show matching fish stocks and verified suppliers.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Color(0xFF657C8E),
-                  fontSize: 10.1,
-                  height: 1.4,
-                  fontWeight: FontWeight.w600,
+              Positioned(
+                right: 22,
+                bottom: -40,
+                child: Container(
+                  width: 88,
+                  height: 88,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0x100875D1),
+                  ),
                 ),
+              ),
+              Column(
+                children: [
+                  Container(
+                    width: 54,
+                    height: 54,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF0875D1), Color(0xFF08B3CC)],
+                      ),
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x1F0875D1),
+                          blurRadius: 12,
+                          offset: Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.location_on_rounded,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Find fish near a market area',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Color(0xFF102C44),
+                      fontSize: 15.2,
+                      height: 1.1,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Search a city, municipality, province, or supplier market area. IsdaLink will show matching fish stocks and verified suppliers.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Color(0xFF657C8E),
+                      fontSize: 10.1,
+                      height: 1.45,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      buildPill(Icons.set_meal_rounded, 'Fish stocks'),
+                      buildPill(Icons.storefront_rounded, 'Suppliers'),
+                      buildPill(Icons.map_outlined, 'Caraga areas'),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),

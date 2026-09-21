@@ -49,10 +49,10 @@ class SupplierVerificationPhotoCard extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.all(11),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FBFD),
-        borderRadius: BorderRadius.circular(19),
+        borderRadius: BorderRadius.circular(17),
         border: Border.all(
           color: ready ? const Color(0xFF77D7B7) : const Color(0xFFE1EBF2),
         ),
@@ -62,10 +62,10 @@ class SupplierVerificationPhotoCard extends StatelessWidget {
           Row(
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(12),
                 child: SizedBox(
-                  width: 64,
-                  height: 64,
+                  width: 58,
+                  height: 58,
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
@@ -96,7 +96,7 @@ class SupplierVerificationPhotoCard extends StatelessWidget {
                             title,
                             style: const TextStyle(
                               color: Color(0xFF102C44),
-                              fontSize: 11.5,
+                              fontSize: 10.9,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
@@ -136,7 +136,7 @@ class SupplierVerificationPhotoCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Color(0xFF7B8FA3),
-                        fontSize: 9.3,
+                        fontSize: 9.5,
                         height: 1.3,
                         fontWeight: FontWeight.w600,
                       ),
@@ -161,13 +161,13 @@ class SupplierVerificationPhotoCard extends StatelessWidget {
                     style: const TextStyle(fontWeight: FontWeight.w900),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF146BFF),
+                    backgroundColor: const Color(0xFF087FCB),
                     foregroundColor: Colors.white,
                     disabledBackgroundColor: const Color(0xFF8BA6BD),
-                    minimumSize: const Size.fromHeight(42),
+                    minimumSize: const Size.fromHeight(40),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                 ),
@@ -181,9 +181,9 @@ class SupplierVerificationPhotoCard extends StatelessWidget {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFFD94A45),
                     side: const BorderSide(color: Color(0xFFF0B8B5)),
-                    minimumSize: const Size(48, 42),
+                    minimumSize: const Size(46, 40),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   child: const Icon(Icons.delete_outline_rounded, size: 19),
@@ -209,7 +209,7 @@ class _Placeholder extends StatelessWidget {
       alignment: Alignment.center,
       child: Icon(
         permit ? Icons.badge_outlined : Icons.storefront_outlined,
-        color: const Color(0xFF146BFF),
+        color: const Color(0xFF087FCB),
         size: 28,
       ),
     );

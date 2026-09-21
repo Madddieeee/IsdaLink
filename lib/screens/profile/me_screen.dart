@@ -1035,15 +1035,15 @@ class _AccountCenterHeader extends StatelessWidget {
 
   String get accountLabel {
     if (isApprovedSupplier) return 'Approved Supplier';
-    if (isPendingSupplier) return 'Application Pending';
-    if (isRejectedSupplier) return 'Review Application';
+    if (isPendingSupplier) return 'Pending Review';
+    if (isRejectedSupplier) return 'Update Required';
     return 'Vendor Account';
   }
 
   IconData get accountIcon {
     if (isApprovedSupplier) return Icons.verified_rounded;
     if (isPendingSupplier) return Icons.hourglass_top_rounded;
-    if (isRejectedSupplier) return Icons.info_outline_rounded;
+    if (isRejectedSupplier) return Icons.edit_note_rounded;
     return Icons.person_rounded;
   }
 
@@ -1403,171 +1403,201 @@ class _SupplierUpgradeCard extends StatelessWidget {
   final VoidCallback onTap;
 
   String get title {
-    if (isPending) return 'Supplier application under review';
-    if (isRejected) return 'Review your supplier application';
-    return 'Grow your business with IsdaLink';
+    if (isPending) return 'Supplier application is under review';
+    if (isRejected) return 'Supplier application needs updates';
+    return 'Become an IsdaLink supplier';
   }
 
   String get subtitle {
     if (isPending) {
-      return 'Your details are being reviewed. Supplier tools will unlock after approval.';
+      return 'Admin is reviewing your submitted details. Your vendor features remain available while you wait.';
     }
     if (isRejected) {
-      return 'Update the required details and submit your supplier application again.';
+      return 'Review the admin feedback, update the requested details, then resubmit your application.';
     }
-    return 'Post fish stocks, manage COD orders, and track supplier sales analytics.';
+    return 'Create a verified supplier profile to post fish stocks and manage COD orders.';
+  }
+
+  String get statusLabel {
+    if (isPending) return 'UNDER REVIEW';
+    if (isRejected) return 'ACTION REQUIRED';
+    return 'SUPPLIER ACCESS';
   }
 
   String get actionLabel {
-    if (isPending) return 'Pending';
+    if (isPending) return 'View status';
     if (isRejected) return 'Review';
-    return 'Activate';
+    return 'Apply';
   }
 
   IconData get icon {
     if (isPending) return Icons.hourglass_top_rounded;
-    if (isRejected) return Icons.info_outline_rounded;
+    if (isRejected) return Icons.edit_note_rounded;
     return Icons.storefront_rounded;
   }
 
   Color get accent {
-    if (isPending) return const Color(0xFFE76F12);
-    if (isRejected) return const Color(0xFFC93636);
+    if (isPending) return const Color(0xFFE77817);
+    if (isRejected) return const Color(0xFFD04B43);
     return const Color(0xFF087DD1);
+  }
+
+  Color get softBackground {
+    if (isPending) return const Color(0xFFFFF7EA);
+    if (isRejected) return const Color(0xFFFFF3F2);
+    return const Color(0xFFF2F9FE);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(24),
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: const Color(0xFFDDEAF2),
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0E00213D),
-            blurRadius: 16,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              accent.withAlpha(18),
-              const Color(0xFFF7FBFD),
+        child: Container(
+          padding: const EdgeInsets.all(13),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: const Color(0xFFDDEAF2)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0E00213D),
+                blurRadius: 16,
+                offset: Offset(0, 6),
+              ),
             ],
           ),
-          borderRadius: BorderRadius.circular(19),
-          border: Border.all(
-            color: accent.withAlpha(32),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(14, 13, 14, 12),
+            decoration: BoxDecoration(
+              color: softBackground,
+              borderRadius: BorderRadius.circular(19),
+              border: Border.all(color: accent.withAlpha(38)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 46,
+                      height: 46,
+                      decoration: BoxDecoration(
+                        color: accent.withAlpha(20),
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: Icon(icon, color: accent, size: 23),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              color: Color(0xFF062A49),
+                              fontSize: 13.4,
+                              height: 1.22,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            subtitle,
+                            style: const TextStyle(
+                              color: Color(0xFF667F92),
+                              fontSize: 10.4,
+                              height: 1.38,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 11),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(210),
+                        borderRadius: BorderRadius.circular(99),
+                        border: Border.all(color: accent.withAlpha(30)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: accent,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            statusLabel,
+                            style: TextStyle(
+                              color: accent,
+                              fontSize: 8.5,
+                              letterSpacing: 0.35,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: accent,
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            actionLabel,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9.8,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(
+                            Icons.arrow_forward_rounded,
+                            color: Colors.white,
+                            size: 14,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: accent.withAlpha(20),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Icon(
-                icon,
-                color: accent,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFF062A49),
-                      fontSize: 13.5,
-                      height: 1.2,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFF6D8497),
-                      fontSize: 10.5,
-                      height: 1.35,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            if (isPending)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 11,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: accent.withAlpha(18),
-                  borderRadius: BorderRadius.circular(99),
-                ),
-                child: Text(
-                  actionLabel,
-                  style: TextStyle(
-                    color: accent,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              )
-            else
-              TextButton.icon(
-                onPressed: onTap,
-                icon: Icon(
-                  Icons.arrow_forward_rounded,
-                  size: 17,
-                  color: accent,
-                ),
-                label: Text(
-                  actionLabel,
-                  style: TextStyle(
-                    color: accent,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 8,
-                  ),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  visualDensity: VisualDensity.compact,
-                ),
-              ),
-          ],
         ),
       ),
     );
   }
 }
+
 
 class _VendorOrdersOverviewCard
     extends

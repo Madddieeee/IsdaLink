@@ -1279,7 +1279,7 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
                   availableCount: availableCount,
                   activeSupplierCount: activeSupplierCount,
                 ),
-                if (section != null) section,
+                ?section,
                 content,
               ],
             ),

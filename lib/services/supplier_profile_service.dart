@@ -53,15 +53,33 @@ class SupplierProfileService {
     required String contactNumber,
     required String primaryMarketArea,
     required String description,
-    required List<String> supportedUnits,
   }) async {
+    final contact = contactNumber.trim();
+    final marketArea = primaryMarketArea.trim();
+    final storeDescription = description.trim();
+
+    if (currentUser?.uid != uid) {
+      throw StateError('Sign in to your supplier account before updating it.');
+    }
+    if (contact.length < 7 || contact.length > 30) {
+      throw StateError('Enter a valid store contact number.');
+    }
+    if (marketArea.length < 2 || marketArea.length > 120) {
+      throw StateError('Enter a valid primary market area.');
+    }
+    if (storeDescription.length < 8 || storeDescription.length > 240) {
+      throw StateError('Use 8 to 240 characters for the store description.');
+    }
+
     await supplierProfileRef(uid).update(<String, dynamic>{
-      'phone': contactNumber.trim(),
-      'contactNumber': contactNumber.trim(),
-      'primaryMarketArea': primaryMarketArea.trim(),
-      'serviceArea': primaryMarketArea.trim(),
-      'description': description.trim(),
-      'supportedUnits': supportedUnits,
+      'phone': contact,
+      'contactNumber': contact,
+      'primaryMarketArea': marketArea,
+      'serviceArea': marketArea,
+      'description': storeDescription,
+      // Clean up the retired supplier-wide field on legacy profiles. Each
+      // fish-stock post owns its own kilo, tab, or icebox selection.
+      'supportedUnits': FieldValue.delete(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
   }

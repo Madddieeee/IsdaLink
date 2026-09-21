@@ -35,16 +35,6 @@ class PendingSupplierCard extends StatelessWidget {
     return text;
   }
 
-  String supportedUnitLabel(Map<String, dynamic> data) {
-    final units = data['supportedUnits'];
-
-    if (units is List && units.isNotEmpty) {
-      return units.map((unit) => unit.toString()).join(', ');
-    }
-
-    return 'No selected units';
-  }
-
   @override
   Widget build(BuildContext context) {
     final data = document.data();
@@ -174,11 +164,6 @@ class PendingSupplierCard extends StatelessWidget {
           SupplierInfoRow(icon: Icons.email_outlined, value: email),
           const SizedBox(height: 7),
           SupplierInfoRow(
-            icon: Icons.scale_outlined,
-            value: 'Supported Units: ${supportedUnitLabel(data)}',
-          ),
-          const SizedBox(height: 7),
-          SupplierInfoRow(
             icon: Icons.confirmation_number_outlined,
             value: 'Permit No.: $permitNumber',
           ),
@@ -205,7 +190,7 @@ class PendingSupplierCard extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: VerificationLinkButton(
-                  label: 'Verification Store Photo',
+                  label: 'Store Verification Photo',
                   icon: Icons.photo,
                   url: storePhotoUrl,
                 ),

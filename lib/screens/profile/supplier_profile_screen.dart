@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:isdalink/screens/profile/supplier_verified_change_request_screen.dart';
 import 'package:isdalink/services/supplier_notification_service.dart';
 import 'package:isdalink/services/supplier_profile_service.dart';
@@ -26,29 +27,6 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
   ]) {
     final value = data?[key]?.toString().trim() ?? '';
     return value.isEmpty ? fallback : value;
-  }
-
-  List<String> supportedUnits(Map<String, dynamic>? data) {
-    final raw = data?['supportedUnits'];
-
-    if (raw is! List) {
-      return const <String>[];
-    }
-
-    return raw
-        .map((value) => value.toString().trim().toLowerCase())
-        .where((value) => const {'kilo', 'tab', 'icebox'}.contains(value))
-        .toSet()
-        .toList();
-  }
-
-  String unitLabel(String unit) {
-    return switch (unit) {
-      'kilo' => 'Kilogram',
-      'tab' => 'Tab',
-      'icebox' => 'Icebox',
-      _ => unit,
-    };
   }
 
   String storeImageUrl(Map<String, dynamic> data) {
@@ -101,21 +79,17 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
             stringValue(data, 'serviceArea'),
           ),
           initialDescription: stringValue(data, 'description'),
-          initialSupportedUnits: supportedUnits(data),
-          unitLabel: unitLabel,
           onSave:
               ({
                 required String contactNumber,
                 required String primaryMarketArea,
                 required String description,
-                required List<String> supportedUnits,
               }) {
                 return profileService.updatePublicStoreInformation(
                   uid: uid,
                   contactNumber: contactNumber,
                   primaryMarketArea: primaryMarketArea,
                   description: description,
-                  supportedUnits: supportedUnits,
                 );
               },
         );
@@ -289,8 +263,6 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
                   'description',
                   'No store description added yet.',
                 );
-                final units = supportedUnits(data);
-
                 return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                   stream: notificationService.notificationsStream(user.uid),
                   builder: (context, notificationSnapshot) {
@@ -383,13 +355,6 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
                                     value: contactNumber,
                                   ),
                                   _ProfileInfoRow(
-                                    icon: Icons.inventory_2_outlined,
-                                    label: 'Selling units',
-                                    value: units.isEmpty
-                                        ? 'Not specified'
-                                        : units.map(unitLabel).join(', '),
-                                  ),
-                                  _ProfileInfoRow(
                                     icon: Icons.groups_2_outlined,
                                     label: 'Primary market area',
                                     value: primaryMarketArea,
@@ -441,21 +406,16 @@ class _PublicStoreInformationEditSheet extends StatefulWidget {
     required this.initialContactNumber,
     required this.initialPrimaryMarketArea,
     required this.initialDescription,
-    required this.initialSupportedUnits,
-    required this.unitLabel,
     required this.onSave,
   });
 
   final String initialContactNumber;
   final String initialPrimaryMarketArea;
   final String initialDescription;
-  final List<String> initialSupportedUnits;
-  final String Function(String unit) unitLabel;
   final Future<void> Function({
     required String contactNumber,
     required String primaryMarketArea,
     required String description,
-    required List<String> supportedUnits,
   })
   onSave;
 
@@ -469,7 +429,6 @@ class _PublicStoreInformationEditSheetState
   late final TextEditingController contactController;
   late final TextEditingController marketAreaController;
   late final TextEditingController descriptionController;
-  late final Set<String> selectedUnits;
 
   bool saving = false;
 
@@ -485,7 +444,6 @@ class _PublicStoreInformationEditSheetState
     descriptionController = TextEditingController(
       text: widget.initialDescription,
     );
-    selectedUnits = widget.initialSupportedUnits.toSet();
   }
 
   @override
@@ -567,23 +525,15 @@ class _PublicStoreInformationEditSheetState
       return;
     }
 
-    if (selectedUnits.isEmpty) {
-      showError('Select at least one supported selling unit.');
-      return;
-    }
-
     setState(() {
       saving = true;
     });
 
     try {
-      final units = selectedUnits.toList()..sort();
-
       await widget.onSave(
         contactNumber: contact,
         primaryMarketArea: marketArea,
         description: description,
-        supportedUnits: units,
       );
 
       if (!mounted) {
@@ -673,6 +623,10 @@ class _PublicStoreInformationEditSheetState
             TextField(
               controller: contactController,
               keyboardType: TextInputType.phone,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9+() -]')),
+                LengthLimitingTextInputFormatter(30),
+              ],
               decoration: inputDecoration(
                 label: 'Store contact number',
                 icon: Icons.phone_outlined,
@@ -681,65 +635,20 @@ class _PublicStoreInformationEditSheetState
             const SizedBox(height: 12),
             TextField(
               controller: marketAreaController,
+              textCapitalization: TextCapitalization.words,
+              inputFormatters: [LengthLimitingTextInputFormatter(120)],
               decoration: inputDecoration(
                 label: 'Primary market area',
                 icon: Icons.groups_2_outlined,
               ),
             ),
-            const SizedBox(height: 15),
-            const Text(
-              'Supported selling units',
-              style: TextStyle(
-                color: Color(0xFF17354D),
-                fontSize: 11.5,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'Choose the units currently offered by your store.',
-              style: TextStyle(
-                color: Color(0xFF7B8FA3),
-                fontSize: 8.8,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 9),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: const ['kilo', 'tab', 'icebox'].map((unit) {
-                final selected = selectedUnits.contains(unit);
-
-                return FilterChip(
-                  selected: selected,
-                  showCheckmark: false,
-                  avatar: Icon(
-                    selected
-                        ? Icons.check_circle_rounded
-                        : Icons.inventory_2_outlined,
-                    size: 16,
-                  ),
-                  label: Text(widget.unitLabel(unit)),
-                  onSelected: saving
-                      ? null
-                      : (value) {
-                          setState(() {
-                            if (value) {
-                              selectedUnits.add(unit);
-                            } else {
-                              selectedUnits.remove(unit);
-                            }
-                          });
-                        },
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 15),
+            const SizedBox(height: 12),
             TextField(
               controller: descriptionController,
+              textCapitalization: TextCapitalization.sentences,
               minLines: 3,
               maxLines: 5,
+              inputFormatters: [LengthLimitingTextInputFormatter(240)],
               decoration: inputDecoration(
                 label: 'Store description',
                 icon: Icons.description_outlined,
@@ -1127,7 +1036,7 @@ class _SupplierProfileActionCard extends StatelessWidget {
             iconBackground: const Color(0xFFEAF5FF),
             iconColor: const Color(0xFF146BFF),
             title: 'Edit Public Storefront',
-            subtitle: 'Contact, selling units, market area and description',
+            subtitle: 'Contact, market area and description',
             trailingLabel: 'Edit now',
             onTap: onEditPublic,
           ),

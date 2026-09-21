@@ -19,6 +19,22 @@ const requiredPatterns = [
     'admin decision-notification guard',
     /function validAdminDecisionNotification\(/,
   ],
+  [
+    'supplier application schema guard',
+    /function validSupplierApplicationCore\(/,
+  ],
+  [
+    'legacy draft supplier application guard',
+    /function validInitialSupplierApplication\(/,
+  ],
+  [
+    'legacy draft owner and status transition',
+    /function validInitialSupplierApplication\([\s\S]*currentUid\(\) == supplierId[\s\S]*getAfter\(userPath\(supplierId\)\)\.data\.get\('supplierStatus', ''\)[\s\S]*== 'pending'/,
+  ],
+  [
+    'retired supplier-wide units guard',
+    /!data\.keys\(\)\.hasAny\(\['supportedUnits'\]\)/,
+  ],
   ['stock schema guard', /function validStockCoreData\(/],
   ['stock state guard', /function validStockVisibilityState\(/],
   [
