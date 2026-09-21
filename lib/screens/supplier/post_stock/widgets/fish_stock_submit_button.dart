@@ -17,7 +17,7 @@ class FishStockSubmitButton extends StatelessWidget {
     final canPublish = isEnabled && !isPosting;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(18, 10, 18, 15),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       decoration: const BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -32,7 +32,7 @@ class FishStockSubmitButton extends StatelessWidget {
         top: false,
         child: SizedBox(
           width: double.infinity,
-          height: 53,
+          height: 48,
           child: ElevatedButton.icon(
             onPressed: canPublish ? onPressed : null,
             icon: isPosting
@@ -55,9 +55,9 @@ class FishStockSubmitButton extends StatelessWidget {
                   ? 'Publishing Stock...'
                   : isEnabled
                   ? 'Publish Fish Stock'
-                  : 'Complete Required Details',
+                  : 'Complete required fields',
               style: const TextStyle(
-                fontSize: 14.2,
+                fontSize: 12.8,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -69,7 +69,7 @@ class FishStockSubmitButton extends StatelessWidget {
               elevation: canPublish ? 7 : 0,
               shadowColor: const Color(0x55146BFF),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(15),
               ),
             ),
           ),

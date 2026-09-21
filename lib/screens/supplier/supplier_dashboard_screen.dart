@@ -10,8 +10,8 @@ import 'package:isdalink/screens/supplier/supplier_manage_products_screen.dart';
 import 'package:isdalink/screens/profile/supplier_profile_screen.dart';
 import 'package:isdalink/models/supplier.dart';
 import 'package:isdalink/screens/vendor/supplier_details_screen.dart';
+import 'package:isdalink/services/supplier_dashboard_service.dart';
 import 'package:isdalink/services/supplier_notification_service.dart';
-import 'package:isdalink/utils/stock_state.dart';
 import 'package:isdalink/utils/app_error_message.dart';
 
 class SupplierDashboardScreen extends StatelessWidget {
@@ -19,86 +19,35 @@ class SupplierDashboardScreen extends StatelessWidget {
 
   User? get currentUser => FirebaseAuth.instance.currentUser;
 
+  SupplierDashboardService get dashboardService =>
+      const SupplierDashboardService();
+
   SupplierNotificationService get supplierNotificationService =>
       const SupplierNotificationService();
 
-  double numberValue(Map<String, dynamic> data, String key) {
-    final value = data[key];
-    if (value is num) {
-      return value.toDouble();
-    }
-    return double.tryParse(value?.toString() ?? '') ?? 0;
-  }
+  double numberValue(Map<String, dynamic> data, String key) =>
+      dashboardService.numberValue(data, key);
 
-  String stringValue(Map<String, dynamic> data, String key, String fallback) {
-    final value = data[key]?.toString().trim() ?? '';
-    return value.isEmpty ? fallback : value;
-  }
-
-  int createdAtMillis(QueryDocumentSnapshot<Map<String, dynamic>> document) {
-    final value = document.data()['createdAt'];
-    return value is Timestamp ? value.millisecondsSinceEpoch : 0;
-  }
+  String stringValue(Map<String, dynamic> data, String key, String fallback) =>
+      dashboardService.stringValue(data, key, fallback);
 
   List<QueryDocumentSnapshot<Map<String, dynamic>>> sortStocks(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
-  ) {
-    int priority(Map<String, dynamic> data) {
-      if (isOutOfStock(data)) {
-        return 0;
-      }
-      if (isLowStock(data)) {
-        return 1;
-      }
-      if (isAvailable(data)) {
-        return 2;
-      }
-      return 3;
-    }
+  ) => dashboardService.sortStocks(documents);
 
-    final result = [...documents];
-    result.sort((a, b) {
-      final priorityCompare = priority(a.data()).compareTo(priority(b.data()));
-      if (priorityCompare != 0) {
-        return priorityCompare;
-      }
-      return createdAtMillis(b).compareTo(createdAtMillis(a));
-    });
-    return result;
-  }
+  double thresholdFor(Map<String, dynamic> data) =>
+      dashboardService.thresholdFor(data);
 
-  double thresholdFor(Map<String, dynamic> data) {
-    final saved = numberValue(data, 'lowStockLevel');
-    if (saved > 0) {
-      return saved;
-    }
+  bool isHidden(Map<String, dynamic> data) => dashboardService.isHidden(data);
 
-    final reference = numberValue(data, 'referenceStockQuantity') > 0
-        ? numberValue(data, 'referenceStockQuantity')
-        : numberValue(data, 'quantity');
-    final percentage = numberValue(data, 'lowStockPercentage') > 0
-        ? numberValue(data, 'lowStockPercentage')
-        : 20;
-    return reference * percentage / 100;
-  }
+  bool isOutOfStock(Map<String, dynamic> data) =>
+      dashboardService.isOutOfStock(data);
 
-  bool isHidden(Map<String, dynamic> data) {
-    return StockState.isIntentionallyHidden(data);
-  }
+  bool isLowStock(Map<String, dynamic> data) =>
+      dashboardService.isLowStock(data);
 
-  bool isOutOfStock(Map<String, dynamic> data) {
-    return !isHidden(data) && numberValue(data, 'quantity') <= 0;
-  }
-
-  bool isLowStock(Map<String, dynamic> data) {
-    final quantity = numberValue(data, 'quantity');
-    return !isHidden(data) && quantity > 0 && quantity <= thresholdFor(data);
-  }
-
-  bool isAvailable(Map<String, dynamic> data) {
-    return !isHidden(data) &&
-        numberValue(data, 'quantity') > thresholdFor(data);
-  }
+  bool isAvailable(Map<String, dynamic> data) =>
+      dashboardService.isAvailable(data);
 
   String formatNumber(double value) {
     return value % 1 == 0 ? value.toStringAsFixed(0) : value.toStringAsFixed(1);
@@ -160,26 +109,8 @@ class SupplierDashboardScreen extends StatelessWidget {
     return value.startsWith('https://') ? value : '';
   }
 
-  String supplierLocation(Map<String, dynamic> data) {
-    final approvedStoreLocation = stringValue(data, 'storeLocation', '');
-
-    if (approvedStoreLocation.isNotEmpty) {
-      return approvedStoreLocation;
-    }
-
-    final parts = <String>[
-      stringValue(data, 'storeAddress', ''),
-      stringValue(data, 'storeCityMunicipality', ''),
-      stringValue(data, 'storeProvince', ''),
-      'Caraga Region',
-    ].where((value) => value.trim().isNotEmpty).toList();
-
-    if (parts.length > 1) {
-      return parts.join(', ');
-    }
-
-    return stringValue(data, 'location', 'Caraga Region');
-  }
+  String supplierLocation(Map<String, dynamic> data) =>
+      dashboardService.supplierLocation(data);
 
   Supplier supplierFromProfile(Map<String, dynamic> data, User user) {
     final supplierName = stringValue(
@@ -235,10 +166,7 @@ class SupplierDashboardScreen extends StatelessWidget {
     }
 
     try {
-      final profile = await FirebaseFirestore.instance
-          .collection('supplierProfiles')
-          .doc(user.uid)
-          .get();
+      final profile = await dashboardService.supplierProfile(user.uid);
 
       if (!context.mounted) {
         return;
@@ -311,6 +239,7 @@ class SupplierDashboardScreen extends StatelessWidget {
             ),
           );
     final imageUrl = profileImageUrl(profileData);
+    final location = supplierLocation(profileData);
     final initial = storeName.trim().isEmpty
         ? 'S'
         : storeName.trim().substring(0, 1).toUpperCase();
@@ -318,13 +247,13 @@ class SupplierDashboardScreen extends StatelessWidget {
     Widget storeImage() {
       if (imageUrl.isEmpty) {
         return Container(
-          color: const Color(0xFFEAF8FC),
+          color: const Color(0xFFE8F6FC),
           alignment: Alignment.center,
           child: Text(
             initial,
             style: const TextStyle(
               color: Color(0xFF0875D1),
-              fontSize: 22,
+              fontSize: 25,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -335,13 +264,13 @@ class SupplierDashboardScreen extends StatelessWidget {
         imageUrl,
         fit: BoxFit.cover,
         errorBuilder: (_, _, _) => Container(
-          color: const Color(0xFFEAF8FC),
+          color: const Color(0xFFE8F6FC),
           alignment: Alignment.center,
           child: Text(
             initial,
             style: const TextStyle(
               color: Color(0xFF0875D1),
-              fontSize: 22,
+              fontSize: 25,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -350,94 +279,114 @@ class SupplierDashboardScreen extends StatelessWidget {
     }
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.fromLTRB(13, 13, 12, 13),
+      margin: const EdgeInsets.only(bottom: 22),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-          colors: [Color(0xFFF4FBFE), Color(0xFFF8FBFF)],
-        ),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFD7EAF3)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFDDEAF1)),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x0B00152A),
-            blurRadius: 14,
-            offset: Offset(0, 6),
+            color: Color(0x10052C4F),
+            blurRadius: 18,
+            offset: Offset(0, 8),
           ),
         ],
       ),
-      child: Row(
+      child: Column(
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: SizedBox(width: 54, height: 54, child: storeImage()),
-          ),
-          const SizedBox(width: 11),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(18),
+                child: SizedBox(width: 66, height: 66, child: storeImage()),
+              ),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'YOUR STORE',
-                      style: TextStyle(
-                        color: Color(0xFF6F8798),
-                        fontSize: 7.8,
+                    const Row(
+                      children: [
+                        Text(
+                          'VERIFIED SUPPLIER',
+                          style: TextStyle(
+                            color: Color(0xFF6B8496),
+                            fontSize: 8.2,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.85,
+                          ),
+                        ),
+                        SizedBox(width: 5),
+                        Icon(
+                          Icons.verified_rounded,
+                          color: Color(0xFF12976F),
+                          size: 15,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      storeName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF0E2B45),
+                        fontSize: 16,
                         fontWeight: FontWeight.w900,
-                        letterSpacing: 0.8,
                       ),
                     ),
-                    const SizedBox(width: 6),
-                    const Icon(
-                      Icons.verified_rounded,
-                      color: Color(0xFF11A87A),
-                      size: 13,
+                    const SizedBox(height: 5),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on_outlined,
+                          size: 14,
+                          color: Color(0xFF71889A),
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            location,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Color(0xFF71889A),
+                              fontSize: 9.6,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  storeName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF102C44),
-                    fontSize: 14.2,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                const Text(
-                  'Public store identity and business profile',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Color(0xFF71889A),
-                    fontSize: 9.1,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          _StoreActionButton(
-            icon: Icons.storefront_outlined,
-            label: 'View',
-            onTap: () => openOwnStore(context),
-          ),
-          const SizedBox(width: 6),
-          _StoreActionButton(
-            icon: Icons.edit_outlined,
-            label: 'Edit',
-            showDot: unreadProfileChanges > 0,
-            accent: unreadProfileChanges > 0
-                ? const Color(0xFF11A87A)
-                : const Color(0xFF0875D1),
-            onTap: () => openSupplierProfile(context),
+          const SizedBox(height: 13),
+          const Divider(height: 1, color: Color(0xFFE6EEF3)),
+          const SizedBox(height: 11),
+          Row(
+            children: [
+              Expanded(
+                child: _StoreActionButton(
+                  icon: Icons.visibility_outlined,
+                  label: 'View Store',
+                  onTap: () => openOwnStore(context),
+                ),
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: _StoreActionButton(
+                  icon: Icons.edit_outlined,
+                  label: 'Edit Store',
+                  filled: true,
+                  showDot: unreadProfileChanges > 0,
+                  onTap: () => openSupplierProfile(context),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -484,179 +433,294 @@ class SupplierDashboardScreen extends StatelessWidget {
     );
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> stockStream(String uid) {
-    return FirebaseFirestore.instance
-        .collection('fishStocks')
-        .where('supplierId', isEqualTo: uid)
-        .snapshots();
-  }
+  Stream<QuerySnapshot<Map<String, dynamic>>> stockStream(String uid) =>
+      dashboardService.stockStream(uid);
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> orderStream(String uid) {
-    return FirebaseFirestore.instance
-        .collection('orders')
-        .where('supplierId', isEqualTo: uid)
-        .snapshots();
-  }
+  Stream<QuerySnapshot<Map<String, dynamic>>> orderStream(String uid) =>
+      dashboardService.orderStream(uid);
 
   Stream<DocumentSnapshot<Map<String, dynamic>>> supplierProfileStream(
     String uid,
-  ) {
-    return FirebaseFirestore.instance
-        .collection('supplierProfiles')
-        .doc(uid)
-        .snapshots();
-  }
+  ) => dashboardService.supplierProfileStream(uid);
 
   int activeOrders(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
-  ) {
-    return documents.where((document) {
-      final status = stringValue(
-        document.data(),
-        'orderStatus',
-        'pending',
-      ).toLowerCase();
-      return status == 'pending' || status == 'accepted';
-    }).length;
-  }
+  ) => dashboardService.activeOrders(documents);
 
   int pendingOrders(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
-  ) {
-    return documents.where((document) {
-      return stringValue(
-            document.data(),
-            'orderStatus',
-            'pending',
-          ).toLowerCase() ==
-          'pending';
-    }).length;
+  ) => dashboardService.pendingOrders(documents);
+
+  Widget dashboardHeaderSliver({
+    required BuildContext context,
+  }) {
+    final topPadding = MediaQuery.paddingOf(context).top;
+    const expandedHeight = 184.0;
+    const toolbarHeight = 52.0;
+    final collapsedHeight = topPadding + toolbarHeight;
+
+    return SliverAppBar(
+      pinned: true,
+      floating: false,
+      snap: false,
+      stretch: false,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      automaticallyImplyLeading: false,
+      backgroundColor: const Color(0xFF073E69),
+      surfaceTintColor: Colors.transparent,
+      toolbarHeight: toolbarHeight,
+      expandedHeight: expandedHeight,
+      systemOverlayStyle: const SystemUiOverlayStyle(
+        statusBarColor: Color(0xFF073E69),
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+      flexibleSpace: LayoutBuilder(
+        builder: (context, constraints) {
+          final range = expandedHeight - collapsedHeight;
+          final progress = range <= 0
+              ? 0.0
+              : ((constraints.maxHeight - collapsedHeight) / range)
+                    .clamp(0.0, 1.0)
+                    .toDouble();
+          final compactOpacity = (1 - progress * 2.25)
+              .clamp(0.0, 1.0)
+              .toDouble();
+          final expandedOpacity = ((progress - 0.16) / 0.84)
+              .clamp(0.0, 1.0)
+              .toDouble();
+          final navButtonSize = 38.0 + (6.0 * progress);
+          final navIconSize = 21.0 + (2.0 * progress);
+          final logoWidth = 72.0 + (20.0 * progress);
+          final logoHeight = 30.0 + (8.0 * progress);
+
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.asset(
+                'assets/images/home_header_boat.png',
+                fit: BoxFit.cover,
+                alignment: Alignment.center,
+                errorBuilder: (_, _, _) => Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF06355F),
+                        Color(0xFF0875D1),
+                        Color(0xFF12A7D1),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      const Color(0xFF052D4D).withValues(alpha: 0.38),
+                      const Color(0xFF073F67).withValues(alpha: 0.50),
+                      const Color(0xFF075C89).withValues(alpha: 0.72),
+                    ],
+                    stops: const [0, 0.52, 1],
+                  ),
+                ),
+              ),
+              SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: Row(
+                      children: [
+                        Material(
+                          color: Colors.white.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(13),
+                          child: InkWell(
+                            onTap: () => safeBack(context),
+                            borderRadius: BorderRadius.circular(13),
+                            child: Container(
+                              width: navButtonSize,
+                              height: navButtonSize,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(13),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.20),
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.arrow_back_rounded,
+                                color: Colors.white,
+                                size: navIconSize,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Opacity(
+                            opacity: compactOpacity,
+                            child: const Text(
+                              'Supplier Dashboard',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16.5,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.25,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        SizedBox(
+                          width: logoWidth,
+                          height: logoHeight,
+                          child: Image.asset(
+                            'assets/images/isdalink_logo.png',
+                            fit: BoxFit.contain,
+                            color: Colors.white,
+                            colorBlendMode: BlendMode.srcIn,
+                            errorBuilder: (_, _, _) => const Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Icon(
+                                  Icons.set_meal_rounded,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
+                                SizedBox(width: 4),
+                                Text(
+                                  'IsdaLink',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 20,
+                right: 20,
+                bottom: 22,
+                child: IgnorePointer(
+                  ignoring: progress < 0.30,
+                  child: Opacity(
+                    opacity: expandedOpacity,
+                    child: const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'SUPPLIER WORKSPACE',
+                          style: TextStyle(
+                            color: Color(0xFFD2F4FB),
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.55,
+                          ),
+                        ),
+                        SizedBox(height: 6),
+                        Text(
+                          'Supplier Dashboard',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 25,
+                            height: 1.02,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.55,
+                          ),
+                        ),
+                        SizedBox(height: 7),
+                        Text(
+                          'Manage stock, COD orders, and sales insights in one place.',
+                          style: TextStyle(
+                            color: Color(0xFFE2F4FA),
+                            fontSize: 10.5,
+                            height: 1.30,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
-  Widget header({
+  Widget summaryMetricsCard({
     required BuildContext context,
     required int activeListings,
     required int activeCod,
     required int stockAlerts,
   }) {
-    final topPadding = MediaQuery.paddingOf(context).top;
-
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
-        statusBarColor: Color(0xFF06355F),
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
-      ),
-      child: Container(
-        padding: EdgeInsets.fromLTRB(18, topPadding + 8, 18, 20),
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF06355F), Color(0xFF0875D1), Color(0xFF176CFF)],
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: const Color(0xFFE0EBF1)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0E052C4F),
+            blurRadius: 16,
+            offset: Offset(0, 7),
           ),
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
-        ),
-        child: Stack(
+        ],
+      ),
+      child: SizedBox(
+        height: 70,
+        child: Row(
           children: [
-            const Positioned(right: -44, top: -38, child: _HeaderDecoration()),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Material(
-                      color: Colors.white.withAlpha(32),
-                      shape: const CircleBorder(),
-                      child: InkWell(
-                        onTap: () => safeBack(context),
-                        customBorder: const CircleBorder(),
-                        child: const SizedBox(
-                          width: 40,
-                          height: 40,
-                          child: Icon(
-                            Icons.arrow_back_rounded,
-                            color: Colors.white,
-                            size: 21,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'SUPPLIER CENTER',
-                            style: TextStyle(
-                              color: Color(0xFFCCF4FF),
-                              fontSize: 8.8,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1.15,
-                            ),
-                          ),
-                          SizedBox(height: 5),
-                          Text(
-                            'Supplier Dashboard',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 21.5,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  'Manage fish stock, COD orders, and supplier analytics from one place.',
-                  style: TextStyle(
-                    color: Color(0xFFDDEFFC),
-                    fontSize: 11.3,
-                    height: 1.35,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(22),
-                    borderRadius: BorderRadius.circular(22),
-                    border: Border.all(color: Colors.white.withAlpha(28)),
-                  ),
-                  child: Row(
-                    children: [
-                      _HeaderMetric(
-                        icon: Icons.inventory_2_outlined,
-                        value: '$activeListings',
-                        label: 'Active Listings',
-                        onTap: () => openManageProducts(context),
-                      ),
-                      const _HeaderDivider(),
-                      _HeaderMetric(
-                        icon: Icons.receipt_long_outlined,
-                        value: '$activeCod',
-                        label: 'Active Orders',
-                        onTap: () => openOrders(context),
-                      ),
-                      const _HeaderDivider(),
-                      _HeaderMetric(
-                        icon: Icons.notifications_active_outlined,
-                        value: '$stockAlerts',
-                        label: 'Stock Alerts',
-                        onTap: () => openManageProducts(context),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+            _HeaderMetric(
+              icon: Icons.inventory_2_outlined,
+              value: '$activeListings',
+              label: 'Listings',
+              accent: const Color(0xFF0875D1),
+              softColor: const Color(0xFFE7F3FF),
+              onTap: () => openManageProducts(context),
+            ),
+            const SizedBox(width: 7),
+            _HeaderMetric(
+              icon: Icons.receipt_long_outlined,
+              value: '$activeCod',
+              label: 'Orders',
+              accent: const Color(0xFF118B72),
+              softColor: const Color(0xFFE6F7F2),
+              onTap: () => openOrders(context),
+            ),
+            const SizedBox(width: 7),
+            _HeaderMetric(
+              icon: Icons.warning_amber_rounded,
+              value: '$stockAlerts',
+              label: 'Alerts',
+              accent: stockAlerts > 0
+                  ? const Color(0xFFD94A3A)
+                  : const Color(0xFF6D8293),
+              softColor: stockAlerts > 0
+                  ? const Color(0xFFFFEAE6)
+                  : const Color(0xFFF0F4F6),
+              onTap: () => openManageProducts(context),
             ),
           ],
         ),
@@ -679,79 +743,75 @@ class SupplierDashboardScreen extends StatelessWidget {
     final latest = unread.first.data();
     final status = stringValue(latest, 'status', 'approved').toLowerCase();
     final approved = status == 'approved';
-    final color = approved ? const Color(0xFF16845C) : const Color(0xFFB53A36);
+    final color = approved ? const Color(0xFF138563) : const Color(0xFFB94B45);
     final background = approved
-        ? const Color(0xFFECF8F4)
-        : const Color(0xFFFFEEEE);
+        ? const Color(0xFFF0FAF6)
+        : const Color(0xFFFFF2F0);
     final title = stringValue(
       latest,
       'title',
       approved
-          ? 'Verified profile change approved'
-          : 'Verified profile change needs revision',
+          ? 'Supplier profile update approved'
+          : 'Supplier profile update needs attention',
     );
     final message = stringValue(
       latest,
       'message',
       approved
-          ? 'Your approved changes are now live.'
+          ? 'Your approved business details are now live.'
           : 'Open your supplier profile to review the Admin note.',
     );
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: color.withValues(alpha: 0.22)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0E00152A),
-            blurRadius: 12,
-            offset: Offset(0, 6),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: color.withValues(alpha: 0.18)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      child: InkWell(
+        onTap: () => openSupplierProfile(context),
+        borderRadius: BorderRadius.circular(18),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 11, 10, 11),
+          child: Row(
             children: [
               Container(
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.10),
+                  color: color.withValues(alpha: 0.11),
                   borderRadius: BorderRadius.circular(13),
                 ),
                 child: Icon(
-                  approved
-                      ? Icons.verified_rounded
-                      : Icons.info_outline_rounded,
+                  approved ? Icons.verified_rounded : Icons.edit_note_rounded,
                   color: color,
                   size: 20,
                 ),
               ),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Supplier Profile Notification',
-                      style: TextStyle(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
                         color: Color(0xFF102C44),
-                        fontSize: 12.8,
+                        fontSize: 11.3,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    SizedBox(height: 2),
+                    const SizedBox(height: 3),
                     Text(
-                      'Review the result, then acknowledge it in your profile.',
-                      style: TextStyle(
+                      message,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
                         color: Color(0xFF71889A),
-                        fontSize: 9.3,
+                        fontSize: 9.1,
                         height: 1.25,
                         fontWeight: FontWeight.w600,
                       ),
@@ -759,38 +819,28 @@ class SupplierDashboardScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(99),
-                ),
-                child: Text(
-                  unread.length > 9 ? '9+ NEW' : '${unread.length} NEW',
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 7.8,
-                    letterSpacing: 0.35,
-                    fontWeight: FontWeight.w900,
+              const SizedBox(width: 8),
+              if (unread.length > 1)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.11),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                  child: Text(
+                    '${unread.length}',
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 8.3,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
-              ),
+              const SizedBox(width: 4),
+              Icon(Icons.chevron_right_rounded, color: color, size: 20),
             ],
           ),
-          const SizedBox(height: 10),
-          const Divider(height: 1, color: Color(0xFFE1ECE7)),
-          const SizedBox(height: 10),
-          _AlertRow(
-            icon: approved
-                ? Icons.check_circle_outline_rounded
-                : Icons.edit_note_rounded,
-            color: color,
-            title: title,
-            subtitle: message,
-            actionLabel: 'View Profile',
-            onTap: () => openSupplierProfile(context),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -807,139 +857,85 @@ class SupplierDashboardScreen extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final visible = unread.take(2).toList();
+    final latest = unread.first.data();
+    final title = stringValue(latest, 'title', 'Stock update');
+    final message = stringValue(
+      latest,
+      'message',
+      'A published listing reached its stock alert level.',
+    );
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFFFFBF4), Color(0xFFF4FAFF)],
-        ),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFFFE2B8)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0E00152A),
-            blurRadius: 12,
-            offset: Offset(0, 6),
-          ),
-        ],
+        color: const Color(0xFFFFFAF2),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFFFE1B8)),
       ),
-      child: Column(
+      child: Row(
         children: [
-          Row(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFEFE1),
-                  borderRadius: BorderRadius.circular(13),
-                ),
-                child: const Icon(
-                  Icons.notifications_active_rounded,
-                  color: Color(0xFFFF7A1A),
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 10),
-              const Expanded(
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFEEDB),
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: const Icon(
+              Icons.notifications_active_outlined,
+              color: Color(0xFFE67A19),
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: InkWell(
+              onTap: () => openManageProducts(context),
+              borderRadius: BorderRadius.circular(10),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Stock Notifications',
-                      style: TextStyle(
+                      unread.length == 1 ? title : '${unread.length} new stock updates',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
                         color: Color(0xFF102C44),
-                        fontSize: 12.8,
+                        fontSize: 11.1,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    SizedBox(height: 2),
+                    const SizedBox(height: 3),
                     Text(
-                      'New automatic alerts from your published listings.',
-                      style: TextStyle(
+                      message,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
                         color: Color(0xFF71889A),
-                        fontSize: 9.3,
-                        height: 1.25,
+                        fontSize: 9,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFE9D5),
-                  borderRadius: BorderRadius.circular(99),
-                ),
-                child: Text(
-                  unread.length > 9 ? '9+ NEW' : '${unread.length} NEW',
-                  style: const TextStyle(
-                    color: Color(0xFFC45C00),
-                    fontSize: 7.8,
-                    letterSpacing: 0.35,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-          const SizedBox(height: 10),
-          const Divider(height: 1, color: Color(0xFFE8EEF2)),
-          ...visible.map((notification) {
-            final data = notification.data();
-            final title = stringValue(data, 'title', 'Stock Alert');
-            final message = stringValue(
-              data,
-              'message',
-              'A fish listing reached its stock alert level.',
-            );
-            final stockStatus = stringValue(
-              data,
-              'stockStatus',
-              'lowStock',
-            ).toLowerCase();
-            final critical = stockStatus == 'outofstock';
-
-            return Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: _AlertRow(
-                icon: critical
-                    ? Icons.error_outline_rounded
-                    : Icons.inventory_2_outlined,
-                color: critical
-                    ? const Color(0xFFD94135)
-                    : const Color(0xFFFF7A1A),
-                title: title,
-                subtitle: message,
-                actionLabel: 'Review Stock',
-                onTap: () => openManageProducts(context),
-              ),
-            );
-          }),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: TextButton.icon(
-              onPressed: () =>
-                  supplierNotificationService.markNotificationsRead(unread),
-              icon: const Icon(Icons.done_all_rounded, size: 17),
-              label: const Text(
-                'Mark Stock Notifications as Read',
-                style: TextStyle(fontSize: 10.2, fontWeight: FontWeight.w900),
-              ),
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFF0875D1),
-                backgroundColor: const Color(0xFFEAF7FD),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(13),
-                ),
-              ),
+          TextButton(
+            onPressed: () =>
+                supplierNotificationService.markNotificationsRead(unread),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFFC66A12),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: const Text(
+              'Read',
+              style: TextStyle(fontSize: 8.8, fontWeight: FontWeight.w900),
             ),
           ),
         ],
@@ -971,58 +967,50 @@ class SupplierDashboardScreen extends StatelessWidget {
 
       if (isOutOfStock(data)) {
         stockTitle = '$name is out of stock';
-        stockSubtitle = '0 $unit remaining · Restock this listing.';
+        stockSubtitle = 'Restock this listing so vendors can order again.';
       } else {
-        stockTitle = '$name reached its stock alert';
+        stockTitle = '$name is running low';
         stockSubtitle =
-            '${formatNumber(quantity)} $unit remaining · Alert level: ${formatNumber(threshold)} $unit';
+            '${formatNumber(quantity)} $unit left · Alert level ${formatNumber(threshold)} $unit';
       }
     } else {
-      stockTitle = '${alerts.length} stock alerts';
+      stockTitle = '${alerts.length} listings need stock attention';
       stockSubtitle = '$lowCount low stock · $outCount out of stock';
     }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE1ECF2)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0E00152A),
-            blurRadius: 12,
-            offset: Offset(0, 6),
+    return Column(
+      children: [
+        if (pending > 0)
+          _PriorityNoticeCard(
+            icon: Icons.local_shipping_outlined,
+            accent: const Color(0xFFE5533D),
+            softColor: const Color(0xFFFFEEE9),
+            title: '$pending pending COD order${pending == 1 ? '' : 's'}',
+            subtitle: pending == 1
+                ? 'A vendor is waiting for your confirmation.'
+                : 'Vendors are waiting for your confirmation.',
+            actionLabel: 'Review Orders',
+            onTap: () => openOrders(context),
           ),
-        ],
-      ),
-      child: Column(
-        children: [
-          if (pending > 0)
-            _AlertRow(
-              icon: Icons.notifications_active_rounded,
-              color: const Color(0xFFD94135),
-              title: '$pending pending COD order${pending == 1 ? '' : 's'}',
-              subtitle: 'Review and respond to new vendor orders.',
-              actionLabel: 'Review Orders',
-              onTap: () => openOrders(context),
-            ),
-          if (pending > 0 && alerts.isNotEmpty)
-            const Divider(height: 20, color: Color(0xFFE5EDF2)),
-          if (alerts.isNotEmpty)
-            _AlertRow(
-              icon: Icons.inventory_2_outlined,
-              color: outCount > 0
-                  ? const Color(0xFFD94135)
-                  : const Color(0xFFFF7A1A),
-              title: stockTitle,
-              subtitle: stockSubtitle,
-              actionLabel: 'Review Stock',
-              onTap: () => openManageProducts(context),
-            ),
-        ],
-      ),
+        if (pending > 0 && alerts.isNotEmpty) const SizedBox(height: 10),
+        if (alerts.isNotEmpty)
+          _PriorityNoticeCard(
+            icon: outCount > 0
+                ? Icons.error_outline_rounded
+                : Icons.inventory_2_outlined,
+            accent: outCount > 0
+                ? const Color(0xFFD94135)
+                : const Color(0xFFE78A1D),
+            softColor: outCount > 0
+                ? const Color(0xFFFFEEEE)
+                : const Color(0xFFFFF5E5),
+            title: stockTitle,
+            subtitle: stockSubtitle,
+            actionLabel: 'Review Stock',
+            onTap: () => openManageProducts(context),
+          ),
+        const SizedBox(height: 14),
+      ],
     );
   }
 
@@ -1034,12 +1022,10 @@ class SupplierDashboardScreen extends StatelessWidget {
   }) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        const spacing = 11.0;
+        const spacing = 10.0;
         final cardWidth = (constraints.maxWidth - spacing) / 2;
-        final textScale = MediaQuery.textScalerOf(
-          context,
-        ).scale(1).clamp(1.0, 2.0);
-        final cardHeight = 112 + ((textScale - 1) * 40);
+        final textScale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0);
+        final cardHeight = 108 + ((textScale - 1) * 36);
 
         return GridView.count(
           crossAxisCount: 2,
@@ -1052,33 +1038,41 @@ class SupplierDashboardScreen extends StatelessWidget {
           childAspectRatio: cardWidth / cardHeight,
           children: [
             _ToolCard(
-              icon: Icons.add_box_outlined,
+              icon: Icons.add_rounded,
               title: 'Post Stock',
-              subtitle: 'Create a new fish listing.',
+              subtitle: 'Add a new fish listing',
+              accent: const Color(0xFF0875D1),
+              softColor: const Color(0xFFE6F3FF),
               onTap: () => openPostFishStock(context),
             ),
             _ToolCard(
               icon: Icons.inventory_2_outlined,
               title: 'Products',
-              subtitle: 'Manage stock and alert levels.',
+              subtitle: 'Manage listings and stock',
+              accent: const Color(0xFF0D9272),
+              softColor: const Color(0xFFE5F7F1),
               badge: stockAlerts,
               badgeColor: hasOutOfStock
                   ? const Color(0xFFD94135)
-                  : const Color(0xFFFF8A24),
+                  : const Color(0xFFE78A1D),
               onTap: () => openManageProducts(context),
             ),
             _ToolCard(
               icon: Icons.receipt_long_outlined,
               title: 'COD Orders',
-              subtitle: 'Review incoming vendor orders.',
+              subtitle: 'Review incoming orders',
+              accent: const Color(0xFFE05A40),
+              softColor: const Color(0xFFFFECE7),
               badge: activeCod,
               badgeColor: const Color(0xFFD94135),
               onTap: () => openOrders(context),
             ),
             _ToolCard(
-              icon: Icons.bar_chart_rounded,
-              title: 'Supplier Analytics',
-              subtitle: 'Forecasts and stock insights.',
+              icon: Icons.insights_rounded,
+              title: 'Analytics',
+              subtitle: 'Sales trends and forecasts',
+              accent: const Color(0xFF6A5CE7),
+              softColor: const Color(0xFFEFECFF),
               onTap: () => openAnalytics(context),
             ),
           ],
@@ -1107,14 +1101,14 @@ class SupplierDashboardScreen extends StatelessWidget {
         ? 'Out of Stock'
         : low
         ? 'Low Stock'
-        : 'Available';
+        : 'In Stock';
     final color = hidden
         ? const Color(0xFF71889A)
         : out
         ? const Color(0xFFD94135)
         : low
-        ? const Color(0xFFFF7A1A)
-        : const Color(0xFF2E7D32);
+        ? const Color(0xFFE78A1D)
+        : const Color(0xFF16845C);
 
     Widget fallbackImage() {
       return Container(
@@ -1125,26 +1119,33 @@ class SupplierDashboardScreen extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 11),
+      padding: const EdgeInsets.only(bottom: 9),
       child: Material(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
         child: InkWell(
           onTap: () => openManageProducts(context),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(18),
           child: Container(
-            padding: const EdgeInsets.all(11),
+            padding: const EdgeInsets.fromLTRB(10, 10, 8, 10),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFE1ECF2)),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: const Color(0xFFE2EBF0)),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x09052C4F),
+                  blurRadius: 10,
+                  offset: Offset(0, 4),
+                ),
+              ],
             ),
             child: Row(
               children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(17),
+                  borderRadius: BorderRadius.circular(14),
                   child: SizedBox(
-                    width: 58,
-                    height: 58,
+                    width: 56,
+                    height: 56,
                     child: imageUrl.isEmpty
                         ? fallbackImage()
                         : Image.network(
@@ -1159,83 +1160,106 @@ class SupplierDashboardScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Color(0xFF102C44),
-                                fontSize: 13.4,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: color.withAlpha(18),
-                              borderRadius: BorderRadius.circular(99),
-                            ),
-                            child: Text(
-                              status,
-                              style: TextStyle(
-                                color: color,
-                                fontSize: 8.6,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ),
-                        ],
+                      Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFF102C44),
+                          fontSize: 12.8,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 3),
                       Text(
                         '₱${formatPrice(price)} / $unit',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Color(0xFF0875D1),
-                          fontSize: 10.5,
+                          fontSize: 10.3,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
                       const SizedBox(height: 5),
                       Text(
                         hidden
-                            ? 'Hidden from vendor marketplace'
-                            : out
-                            ? 'Out of stock · Restock this listing'
-                            : low
-                            ? 'Low stock · ${formatNumber(quantity)} $unit left'
+                            ? 'Not visible to vendors'
                             : '${formatNumber(quantity)} $unit available',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: out
+                          color: hidden
+                              ? const Color(0xFF71889A)
+                              : out
                               ? const Color(0xFFD94135)
                               : low
-                              ? const Color(0xFFC66A12)
-                              : const Color(0xFF526B7F),
-                          fontSize: 9.4,
-                          fontWeight: FontWeight.w800,
+                              ? const Color(0xFFB86A16)
+                              : const Color(0xFF607789),
+                          fontSize: 9.1,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 5),
-                IconButton(
-                  tooltip: 'Manage stock',
-                  onPressed: () => openManageProducts(context),
-                  icon: const Icon(
-                    Icons.edit_outlined,
-                    color: Color(0xFF0875D1),
-                    size: 19,
-                  ),
+                const SizedBox(width: 8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: color,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            status,
+                            style: TextStyle(
+                              color: color,
+                              fontSize: 8.1,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 7),
+                    Container(
+                      width: 32,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEEF7FC),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: IconButton(
+                        tooltip: 'Manage stock',
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        onPressed: () => openManageProducts(context),
+                        icon: const Icon(
+                          Icons.edit_outlined,
+                          color: Color(0xFF0875D1),
+                          size: 17,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -1253,73 +1277,92 @@ class SupplierDashboardScreen extends StatelessWidget {
     required Map<String, dynamic> profileData,
   }) {
     final sortedStocks = sortStocks(stocks);
-    final activeListings = sortedStocks.where((doc) {
-      final data = doc.data();
-      return !isHidden(data) && numberValue(data, 'quantity') > 0;
-    }).length;
-    final alerts = sortedStocks.where((doc) {
-      return isLowStock(doc.data()) || isOutOfStock(doc.data());
-    }).toList();
+    final activeListings = dashboardService.activeListings(sortedStocks);
+    final alerts = dashboardService.stockAlerts(sortedStocks);
     final activeCod = activeOrders(orders);
     final pending = pendingOrders(orders);
     final hasOutOfStock = alerts.any((doc) => isOutOfStock(doc.data()));
     final unreadProfileChanges = supplierNotificationService
         .unreadProfileChangeNotifications(notifications);
 
-    return Column(
-      children: [
-        header(
-          context: context,
-          activeListings: activeListings,
-          activeCod: activeCod,
-          stockAlerts: alerts.length,
-        ),
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 32),
-            children: [
-              profileChangeNotificationPanel(
-                context: context,
-                notifications: notifications,
+    return CustomScrollView(
+      physics: const ClampingScrollPhysics(),
+      slivers: [
+        dashboardHeaderSliver(context: context),
+        SliverToBoxAdapter(
+          child: Container(
+            color: const Color(0xFF0A5B84),
+            child: Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                color: Color(0xFFF7FAFC),
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(36),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Color(0x1800152A),
+                    blurRadius: 22,
+                    offset: Offset(0, -5),
+                  ),
+                ],
               ),
-              stockNotificationPanel(
-                context: context,
-                notifications: notifications,
+              padding: const EdgeInsets.fromLTRB(16, 22, 16, 54),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  summaryMetricsCard(
+                    context: context,
+                    activeListings: activeListings,
+                    activeCod: activeCod,
+                    stockAlerts: alerts.length,
+                  ),
+                  alertPanel(
+                    context: context,
+                    pending: pending,
+                    alerts: alerts,
+                  ),
+                  profileChangeNotificationPanel(
+                    context: context,
+                    notifications: notifications,
+                  ),
+                  storeManagementCard(
+                    context,
+                    profileData: profileData,
+                    unreadProfileChanges: unreadProfileChanges.length,
+                  ),
+                  const _SectionHeading(
+                    title: 'Quick Actions',
+                    subtitle: 'Everything you need for today’s supplier work.',
+                  ),
+                  const SizedBox(height: 11),
+                  toolsGrid(
+                    context: context,
+                    activeCod: activeCod,
+                    stockAlerts: alerts.length,
+                    hasOutOfStock: hasOutOfStock,
+                  ),
+                  const SizedBox(height: 24),
+                  _SectionHeading(
+                    title: 'Current Stock',
+                    subtitle: 'See what needs attention before your next sale.',
+                    trailing: sortedStocks.length > 4
+                        ? 'View all (${sortedStocks.length})'
+                        : '${sortedStocks.length} listing${sortedStocks.length == 1 ? '' : 's'}',
+                    onTrailingTap: sortedStocks.length > 4
+                        ? () => openManageProducts(context)
+                        : null,
+                  ),
+                  const SizedBox(height: 12),
+                  if (sortedStocks.isEmpty)
+                    const _EmptyStockCard()
+                  else
+                    ...sortedStocks.take(4).map(
+                          (doc) => stockCard(doc, context),
+                        ),
+                ],
               ),
-              alertPanel(context: context, pending: pending, alerts: alerts),
-              storeManagementCard(
-                context,
-                profileData: profileData,
-                unreadProfileChanges: unreadProfileChanges.length,
-              ),
-              const _SectionHeading(
-                title: 'Quick Actions',
-                subtitle: 'Daily tools for managing your supplier operations.',
-              ),
-              const SizedBox(height: 8),
-              toolsGrid(
-                context: context,
-                activeCod: activeCod,
-                stockAlerts: alerts.length,
-                hasOutOfStock: hasOutOfStock,
-              ),
-              const SizedBox(height: 18),
-              _SectionHeading(
-                title: 'Current Stock',
-                subtitle: 'Live listing health, with stock alerts shown first.',
-                trailing: sortedStocks.length > 5
-                    ? 'View all'
-                    : '${sortedStocks.length} listing${sortedStocks.length == 1 ? '' : 's'}',
-                onTrailingTap: sortedStocks.length > 5
-                    ? () => openManageProducts(context)
-                    : null,
-              ),
-              const SizedBox(height: 10),
-              if (sortedStocks.isEmpty)
-                const _EmptyStockCard()
-              else
-                ...sortedStocks.take(5).map((doc) => stockCard(doc, context)),
-            ],
+            ),
           ),
         ),
       ],
@@ -1327,17 +1370,32 @@ class SupplierDashboardScreen extends StatelessWidget {
   }
 
   Widget loadingBody(BuildContext context) {
-    return Column(
-      children: [
-        header(
-          context: context,
-          activeListings: 0,
-          activeCod: 0,
-          stockAlerts: 0,
-        ),
-        const Expanded(
-          child: Center(
-            child: CircularProgressIndicator(color: Color(0xFF0875D1)),
+    return CustomScrollView(
+      physics: const NeverScrollableScrollPhysics(),
+      slivers: [
+        dashboardHeaderSliver(context: context),
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Container(
+            color: const Color(0xFF0A5B84),
+            child: const DecoratedBox(
+              decoration: BoxDecoration(
+                color: Color(0xFFF7FAFC),
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(36),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Color(0x1800152A),
+                    blurRadius: 22,
+                    offset: Offset(0, -5),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: CircularProgressIndicator(color: Color(0xFF0875D1)),
+              ),
+            ),
           ),
         ),
       ],
@@ -1365,12 +1423,14 @@ class SupplierDashboardScreen extends StatelessWidget {
         }
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF4F8FB),
+        backgroundColor: const Color(0xFFF7FAFC),
         body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
           stream: stockStream(user.uid),
           builder: (context, stockSnapshot) {
             if (stockSnapshot.hasError) {
-              return Center(
+              return Container(
+                color: const Color(0xFFF7FAFC),
+                alignment: Alignment.center,
                 child: Padding(
                   padding: const EdgeInsets.all(24),
                   child: Text(
@@ -1441,41 +1501,50 @@ class _StoreActionButton extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
-    this.accent = const Color(0xFF0875D1),
+    this.filled = false,
     this.showDot = false,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  final Color accent;
+  final bool filled;
   final bool showDot;
 
   @override
   Widget build(BuildContext context) {
+    const accent = Color(0xFF0875D1);
+
     return Material(
-      color: accent.withAlpha(14),
-      borderRadius: BorderRadius.circular(12),
+      color: filled ? accent : const Color(0xFFF1F8FC),
+      borderRadius: BorderRadius.circular(13),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: SizedBox(
-          width: 45,
-          height: 45,
+        borderRadius: BorderRadius.circular(13),
+        child: Container(
+          height: 40,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(13),
+            border: filled ? null : Border.all(color: const Color(0xFFD7E9F3)),
+          ),
           child: Stack(
             children: [
               Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(icon, color: accent, size: 17),
-                    const SizedBox(height: 2),
+                    Icon(
+                      icon,
+                      color: filled ? Colors.white : accent,
+                      size: 17,
+                    ),
+                    const SizedBox(width: 6),
                     Text(
                       label,
-                      maxLines: 1,
                       style: TextStyle(
-                        color: accent,
-                        fontSize: 7.8,
+                        color: filled ? Colors.white : accent,
+                        fontSize: 9.3,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -1484,13 +1553,13 @@ class _StoreActionButton extends StatelessWidget {
               ),
               if (showDot)
                 Positioned(
-                  right: 7,
+                  right: 1,
                   top: 7,
                   child: Container(
                     width: 7,
                     height: 7,
                     decoration: const BoxDecoration(
-                      color: Color(0xFF11A87A),
+                      color: Color(0xFFFFD24D),
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -1503,78 +1572,82 @@ class _StoreActionButton extends StatelessWidget {
   }
 }
 
-class _HeaderDecoration extends StatelessWidget {
-  const _HeaderDecoration();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 180,
-      height: 180,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white.withAlpha(18)),
-      ),
-      child: Center(
-        child: Container(
-          width: 105,
-          height: 105,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white.withAlpha(18)),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _HeaderMetric extends StatelessWidget {
   const _HeaderMetric({
     required this.icon,
     required this.value,
     required this.label,
+    required this.accent,
+    required this.softColor,
     this.onTap,
   });
 
   final IconData icon;
   final String value;
   final String label;
+  final Color accent;
+  final Color softColor;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
       child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(14),
+        color: softColor,
+        borderRadius: BorderRadius.circular(17),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(17),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 3),
-            child: Column(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
+            child: Row(
               children: [
-                Icon(icon, color: Colors.white, size: 18),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.82),
+                    borderRadius: BorderRadius.circular(11),
                   ),
+                  alignment: Alignment.center,
+                  child: Icon(icon, color: accent, size: 17),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFFDDEFFC),
-                    fontSize: 8.7,
-                    fontWeight: FontWeight.w700,
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        value,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFF102C44),
+                          fontSize: 15,
+                          height: 1,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      SizedBox(
+                        height: 18,
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Color(0xFF6D8293),
+                              fontSize: 8.1,
+                              height: 1.05,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -1586,67 +1659,69 @@ class _HeaderMetric extends StatelessWidget {
   }
 }
 
-class _HeaderDivider extends StatelessWidget {
-  const _HeaderDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(width: 1, height: 43, color: Colors.white.withAlpha(28));
-  }
-}
-
-class _AlertRow extends StatelessWidget {
-  const _AlertRow({
+class _PriorityNoticeCard extends StatelessWidget {
+  const _PriorityNoticeCard({
     required this.icon,
-    required this.color,
+    required this.accent,
+    required this.softColor,
     required this.title,
     required this.subtitle,
+    required this.actionLabel,
     required this.onTap,
-    this.actionLabel,
   });
 
   final IconData icon;
-  final Color color;
+  final Color accent;
+  final Color softColor;
   final String title;
   final String subtitle;
+  final String actionLabel;
   final VoidCallback onTap;
-  final String? actionLabel;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(15),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 12, 10, 12),
+      decoration: BoxDecoration(
+        color: softColor,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: accent.withValues(alpha: 0.14)),
+      ),
       child: Row(
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
-              color: color.withAlpha(18),
-              borderRadius: BorderRadius.circular(13),
+              color: accent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(15),
             ),
-            child: Icon(icon, color: color, size: 20),
+            child: Icon(icon, color: accent, size: 22),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 11),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Color(0xFF102C44),
-                    fontSize: 11.8,
+                    fontSize: 11.7,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Color(0xFF71889A),
-                    fontSize: 9.5,
+                    fontSize: 9.2,
+                    height: 1.25,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -1654,24 +1729,26 @@ class _AlertRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          if (actionLabel != null)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-              decoration: BoxDecoration(
-                color: color.withAlpha(16),
-                borderRadius: BorderRadius.circular(99),
+          FilledButton(
+            onPressed: onTap,
+            style: FilledButton.styleFrom(
+              backgroundColor: accent,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Text(
-                actionLabel!,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 8.6,
-                  fontWeight: FontWeight.w900,
-                ),
+            ),
+            child: Text(
+              actionLabel,
+              style: const TextStyle(
+                fontSize: 8.5,
+                fontWeight: FontWeight.w900,
               ),
-            )
-          else
-            Icon(Icons.arrow_forward_rounded, color: color, size: 18),
+            ),
+          ),
         ],
       ),
     );
@@ -1683,6 +1760,8 @@ class _ToolCard extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.subtitle,
+    required this.accent,
+    required this.softColor,
     required this.onTap,
     this.badge = 0,
     this.badgeColor = const Color(0xFFFF4D3D),
@@ -1691,6 +1770,8 @@ class _ToolCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
+  final Color accent;
+  final Color softColor;
   final VoidCallback onTap;
   final int badge;
   final Color badgeColor;
@@ -1699,15 +1780,22 @@ class _ToolCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(22),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         child: Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.fromLTRB(12, 11, 12, 12),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE1ECF2)),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: const Color(0xFFE1EBF1)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x09052C4F),
+                blurRadius: 10,
+                offset: Offset(0, 4),
+              ),
+            ],
           ),
           child: Stack(
             children: [
@@ -1715,23 +1803,33 @@ class _ToolCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEAF8FD),
-                      borderRadius: BorderRadius.circular(13),
-                    ),
-                    child: Icon(icon, color: const Color(0xFF0875D1), size: 19),
+                  Row(
+                    children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: softColor,
+                          borderRadius: BorderRadius.circular(13),
+                        ),
+                        child: Icon(icon, color: accent, size: 20),
+                      ),
+                      const Spacer(),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        color: const Color(0xFF91A4B2),
+                        size: 19,
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 7),
                   Text(
                     title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Color(0xFF102C44),
-                      fontSize: 11.2,
+                      fontSize: 11.4,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -1742,7 +1840,7 @@ class _ToolCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Color(0xFF71889A),
-                      fontSize: 8.7,
+                      fontSize: 8.6,
                       height: 1.25,
                       fontWeight: FontWeight.w600,
                     ),
@@ -1751,7 +1849,7 @@ class _ToolCard extends StatelessWidget {
               ),
               if (badge > 0)
                 Positioned(
-                  right: 0,
+                  right: 18,
                   top: 0,
                   child: Container(
                     constraints: const BoxConstraints(
@@ -1763,12 +1861,13 @@ class _ToolCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: badgeColor,
                       borderRadius: BorderRadius.circular(99),
+                      border: Border.all(color: Colors.white, width: 2),
                     ),
                     child: Text(
-                      '$badge',
+                      badge > 99 ? '99+' : '$badge',
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 9,
+                        fontSize: 8.3,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -1798,7 +1897,7 @@ class _SectionHeading extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Expanded(
           child: Column(
@@ -1810,6 +1909,7 @@ class _SectionHeading extends StatelessWidget {
                   color: Color(0xFF102C44),
                   fontSize: 17,
                   fontWeight: FontWeight.w900,
+                  letterSpacing: -0.2,
                 ),
               ),
               const SizedBox(height: 3),
@@ -1817,7 +1917,7 @@ class _SectionHeading extends StatelessWidget {
                 subtitle,
                 style: const TextStyle(
                   color: Color(0xFF8194A4),
-                  fontSize: 10,
+                  fontSize: 9.7,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -1826,21 +1926,25 @@ class _SectionHeading extends StatelessWidget {
         ),
         if (trailing != null)
           Material(
-            color: const Color(0xFFE8F8FD),
+            color: onTrailingTap == null
+                ? const Color(0xFFF0F6F9)
+                : const Color(0xFFE9F6FD),
             borderRadius: BorderRadius.circular(99),
             child: InkWell(
               onTap: onTrailingTap,
               borderRadius: BorderRadius.circular(99),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       trailing!,
-                      style: const TextStyle(
-                        color: Color(0xFF0875D1),
-                        fontSize: 9.2,
+                      style: TextStyle(
+                        color: onTrailingTap == null
+                            ? const Color(0xFF71889A)
+                            : const Color(0xFF0875D1),
+                        fontSize: 8.8,
                         fontWeight: FontWeight.w900,
                       ),
                     ),

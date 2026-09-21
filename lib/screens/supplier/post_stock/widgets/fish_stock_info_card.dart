@@ -18,20 +18,14 @@ class FishStockInfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 2),
-      padding: const EdgeInsets.all(15),
+      padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: listingReady
-              ? const [Color(0xFFE8F8F2), Color(0xFFEAF8FF)]
-              : const [Color(0xFFF2F7FB), Color(0xFFF6F9FB)],
-        ),
-        borderRadius: BorderRadius.circular(22),
+        color: listingReady ? const Color(0xFFEDF9F5) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: listingReady
-              ? const Color(0xFF1DBB8A).withAlpha(85)
-              : const Color(0xFFDDE8EF),
+              ? const Color(0xFFBCE8D8)
+              : const Color(0xFFE1EBF2),
         ),
       ),
       child: Column(
@@ -40,11 +34,13 @@ class FishStockInfoCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 41,
-                height: 41,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
-                  color: listingReady ? const Color(0xFFDDF6EC) : Colors.white,
-                  borderRadius: BorderRadius.circular(13),
+                  color: listingReady
+                      ? const Color(0xFFDDF6EC)
+                      : const Color(0xFFEAF7FB),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   listingReady
@@ -52,31 +48,31 @@ class FishStockInfoCard extends StatelessWidget {
                       : Icons.fact_check_outlined,
                   color: listingReady
                       ? const Color(0xFF147D64)
-                      : const Color(0xFF146BFF),
-                  size: 22,
+                      : const Color(0xFF0875D1),
+                  size: 20,
                 ),
               ),
-              const SizedBox(width: 11),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      listingReady ? 'Ready to Publish' : 'Listing Readiness',
+                      listingReady ? 'Ready to Publish' : 'Before You Publish',
                       style: const TextStyle(
                         color: Color(0xFF102C44),
-                        fontSize: 14.5,
+                        fontSize: 13.5,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 2),
                     Text(
                       listingReady
-                          ? 'All required listing details are complete.'
-                          : 'Complete each section before publishing.',
+                          ? 'All required details are complete.'
+                          : 'Finish the three required parts below.',
                       style: const TextStyle(
                         color: Color(0xFF657C8E),
-                        fontSize: 10,
+                        fontSize: 9.6,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -85,53 +81,17 @@ class FishStockInfoCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 13),
+          const SizedBox(height: 11),
           _ReadinessItem(
-            label: 'Product information',
+            label: 'Product details',
             complete: productInformationComplete,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 7),
           _ReadinessItem(label: 'Product photo', complete: photoComplete),
-          const SizedBox(height: 8),
+          const SizedBox(height: 7),
           _ReadinessItem(
-            label: 'Price, unit, stock, and alert',
+            label: 'Price, stock, and alert',
             complete: priceAndStockComplete,
-          ),
-          const SizedBox(height: 11),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(11, 10, 11, 10),
-            decoration: BoxDecoration(
-              color: Colors.white.withAlpha(205),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  listingReady
-                      ? Icons.cloud_done_rounded
-                      : Icons.info_outline_rounded,
-                  color: listingReady
-                      ? const Color(0xFF147D64)
-                      : const Color(0xFF146BFF),
-                  size: 19,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    listingReady
-                        ? 'Publishing will add this listing to your Supplier Dashboard and vendor marketplace.'
-                        : 'The Publish button will activate when all required details are complete.',
-                    style: const TextStyle(
-                      color: Color(0xFF52677A),
-                      fontSize: 9.7,
-                      height: 1.32,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
           ),
         ],
       ),
@@ -154,7 +114,7 @@ class _ReadinessItem extends StatelessWidget {
               ? Icons.check_circle_rounded
               : Icons.radio_button_unchecked_rounded,
           color: complete ? const Color(0xFF1DBB8A) : const Color(0xFF9AAEBC),
-          size: 19,
+          size: 18,
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -164,16 +124,18 @@ class _ReadinessItem extends StatelessWidget {
               color: complete
                   ? const Color(0xFF102C44)
                   : const Color(0xFF7B8FA3),
-              fontSize: 10.5,
-              fontWeight: complete ? FontWeight.w900 : FontWeight.w700,
+              fontSize: 10.2,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ),
         Text(
-          complete ? 'Complete' : 'Required',
+          complete ? 'Done' : 'Required',
           style: TextStyle(
-            color: complete ? const Color(0xFF147D64) : const Color(0xFF8BA0B1),
-            fontSize: 8.6,
+            color: complete
+                ? const Color(0xFF147D64)
+                : const Color(0xFF8BA0B1),
+            fontSize: 8.8,
             fontWeight: FontWeight.w900,
           ),
         ),

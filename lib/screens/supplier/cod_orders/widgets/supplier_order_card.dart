@@ -264,7 +264,7 @@ class SupplierOrderCard extends StatelessWidget {
           ),
           const SizedBox(width: 9),
           SizedBox(
-            width: 72,
+            width: 68,
             child: Padding(
               padding: const EdgeInsets.only(top: 2),
               child: Text(
@@ -375,14 +375,14 @@ class SupplierOrderCard extends StatelessWidget {
     if (primary) {
       return Expanded(
         child: SizedBox(
-          height: 44,
+          height: 42,
           child: ElevatedButton.icon(
             onPressed: onPressed,
             icon: Icon(icon, size: 18),
             label: Text(
               label,
               style: const TextStyle(
-                fontSize: 10.8,
+                fontSize: 10.3,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -402,13 +402,13 @@ class SupplierOrderCard extends StatelessWidget {
 
     return Expanded(
       child: SizedBox(
-        height: 44,
+        height: 42,
         child: OutlinedButton.icon(
           onPressed: onPressed,
           icon: Icon(icon, size: 18),
           label: Text(
             label,
-            style: const TextStyle(fontSize: 10.8, fontWeight: FontWeight.w900),
+            style: const TextStyle(fontSize: 10.3, fontWeight: FontWeight.w900),
           ),
           style: OutlinedButton.styleFrom(
             foregroundColor: color ?? const Color(0xFFD94A45),
@@ -499,10 +499,10 @@ class SupplierOrderCard extends StatelessWidget {
       duration: const Duration(milliseconds: 180),
       opacity: isBusy ? 0.62 : 1,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 14),
+        margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: highlighted
                 ? const Color(0xFF146BFF)
@@ -520,24 +520,24 @@ class SupplierOrderCard extends StatelessWidget {
               : const [
                   BoxShadow(
                     color: Color(0x0F00152A),
-                    blurRadius: 18,
-                    offset: Offset(0, 9),
+                    blurRadius: 14,
+                    offset: Offset(0, 6),
                   ),
                 ],
         ),
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(
-                    width: 72,
-                    height: 72,
+                    width: 68,
+                    height: 68,
                     child: productImage(imageUrl),
                   ),
-                  const SizedBox(width: 11),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -552,7 +552,7 @@ class SupplierOrderCard extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   color: Color(0xFF102C44),
-                                  fontSize: 14.5,
+                                  fontSize: 14,
                                   height: 1.15,
                                   fontWeight: FontWeight.w900,
                                 ),
@@ -606,7 +606,7 @@ class SupplierOrderCard extends StatelessWidget {
             ),
             Container(height: 1, color: const Color(0xFFE8EFF4)),
             Padding(
-              padding: const EdgeInsets.fromLTRB(14, 12, 14, 13),
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 11),
               child: Column(
                 children: [
                   Row(
@@ -617,14 +617,14 @@ class SupplierOrderCard extends StatelessWidget {
                         value:
                             '${OrderHelpers.formatNumber(quantity)} $quantityUnit',
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       metric(
                         icon: Icons.payments_outlined,
                         label: 'ORDER TOTAL',
                         value: '₱${OrderHelpers.formatNumber(totalAmount)}',
                         valueColor: const Color(0xFF0875D1),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       metric(
                         icon: Icons.account_balance_wallet_outlined,
                         label: 'PAYMENT',
@@ -633,7 +633,7 @@ class SupplierOrderCard extends StatelessWidget {
                     ],
                   ),
                   if (partialFulfillment) ...[
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(
@@ -673,7 +673,7 @@ class SupplierOrderCard extends StatelessWidget {
                       ),
                     ),
                   ],
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   Material(
                     color: Colors.transparent,
                     child: InkWell(
@@ -700,7 +700,7 @@ class SupplierOrderCard extends StatelessWidget {
                               color: color,
                               size: 18,
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 6),
                             Expanded(
                               child: Text(
                                 delivered

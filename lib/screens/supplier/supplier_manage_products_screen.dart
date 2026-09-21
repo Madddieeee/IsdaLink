@@ -420,6 +420,91 @@ class _SupplierManageProductsScreenState
     });
   }
 
+  Widget statusFilterButton({
+    required ManageProductFilter filter,
+    required int count,
+  }) {
+    final selected = selectedFilter == filter;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            selectedFilter = filter;
+          });
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+          decoration: BoxDecoration(
+            color: selected ? const Color(0xFF0875D1) : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: selected
+                  ? const Color(0xFF0875D1)
+                  : const Color(0xFFD9E6EE),
+            ),
+            boxShadow: selected
+                ? const [
+                    BoxShadow(
+                      color: Color(0x1F0875D1),
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    ),
+                  ]
+                : const [],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                filterIcon(filter),
+                size: 17,
+                color: selected ? Colors.white : const Color(0xFF5B6F80),
+              ),
+              const SizedBox(width: 7),
+              Flexible(
+                child: Text(
+                  '${filterLabel(filter)} $count',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: selected ? Colors.white : const Color(0xFF415768),
+                    fontSize: 10.4,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget bodyShell({required Widget child}) {
+    return Container(
+      color: const Color(0xFF0A5B84),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(16, 22, 16, 28),
+        decoration: const BoxDecoration(
+          color: Color(0xFFF7FAFC),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(36)),
+          boxShadow: [
+            BoxShadow(
+              color: Color(0x1800152A),
+              blurRadius: 22,
+              offset: Offset(0, -5),
+            ),
+          ],
+        ),
+        child: child,
+      ),
+    );
+  }
+
   String filterLabel(ManageProductFilter filter) {
     return switch (filter) {
       ManageProductFilter.all => 'All',
@@ -440,107 +525,131 @@ class _SupplierManageProductsScreenState
     };
   }
 
-  Widget controlsCard() {
+  int filterCount({
+    required List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
+    required ManageProductFilter filter,
+  }) {
+    if (filter == ManageProductFilter.all) {
+      return documents.length;
+    }
+
+    return documents.where((document) {
+      final status = filterStatus(document.data());
+      return switch (filter) {
+        ManageProductFilter.all => true,
+        ManageProductFilter.available => status == 'available',
+        ManageProductFilter.lowStock => status == 'lowStock',
+        ManageProductFilter.outOfStock => status == 'outOfStock',
+        ManageProductFilter.hidden => status == 'hidden',
+      };
+    }).length;
+  }
+
+  Widget controlsCard({
+    required List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
+  }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 15),
+      margin: const EdgeInsets.only(bottom: 18),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(23),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: const Color(0xFFE1EBF2)),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x0D00152A),
-            blurRadius: 16,
-            offset: Offset(0, 8),
+            color: Color(0x0B00152A),
+            blurRadius: 14,
+            offset: Offset(0, 6),
           ),
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           TextField(
             controller: searchController,
             textInputAction: TextInputAction.search,
+            style: const TextStyle(
+              color: Color(0xFF102C44),
+              fontSize: 12.2,
+              fontWeight: FontWeight.w700,
+            ),
             decoration: InputDecoration(
-              hintText: 'Search product, category, or unit',
+              hintText: 'Search fish name, category, or unit',
               hintStyle: const TextStyle(
                 color: Color(0xFF8BA0B1),
-                fontSize: 11.2,
+                fontSize: 10.8,
                 fontWeight: FontWeight.w600,
               ),
               prefixIcon: const Icon(
                 Icons.search_rounded,
-                color: Color(0xFF146BFF),
+                color: Color(0xFF0875D1),
+                size: 22,
               ),
               suffixIcon: searchController.text.isEmpty
                   ? null
                   : IconButton(
                       tooltip: 'Clear search',
                       onPressed: searchController.clear,
-                      icon: const Icon(Icons.close_rounded),
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: Color(0xFF5D7385),
+                        size: 19,
+                      ),
                     ),
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(vertical: 14),
               filled: true,
-              fillColor: const Color(0xFFF2F7FB),
+              fillColor: const Color(0xFFF4F8FB),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(17),
+                borderRadius: BorderRadius.circular(18),
                 borderSide: const BorderSide(color: Color(0xFFE1EBF2)),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(17),
+                borderRadius: BorderRadius.circular(18),
                 borderSide: const BorderSide(
-                  color: Color(0xFF146BFF),
-                  width: 1.5,
+                  color: Color(0xFF0875D1),
+                  width: 1.4,
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 11),
-          SizedBox(
-            height: 38,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: ManageProductFilter.values.length,
-              separatorBuilder: (context, index) {
-                return const SizedBox(width: 7);
-              },
-              itemBuilder: (context, index) {
-                final filter = ManageProductFilter.values[index];
-                final selected = selectedFilter == filter;
-
-                return FilterChip(
-                  selected: selected,
-                  showCheckmark: false,
-                  avatar: Icon(
-                    filterIcon(filter),
-                    size: 16,
-                    color: selected ? Colors.white : const Color(0xFF52677A),
-                  ),
-                  label: Text(
-                    filterLabel(filter),
-                    style: TextStyle(
-                      color: selected ? Colors.white : const Color(0xFF52677A),
-                      fontSize: 9.8,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  onSelected: (_) {
-                    setState(() {
-                      selectedFilter = filter;
-                    });
-                  },
-                  backgroundColor: const Color(0xFFF2F7FB),
-                  selectedColor: const Color(0xFF146BFF),
-                  side: BorderSide(
-                    color: selected
-                        ? const Color(0xFF146BFF)
-                        : const Color(0xFFDCE7EF),
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                );
-              },
+          const SizedBox(height: 14),
+          const Text(
+            'Stock status',
+            style: TextStyle(
+              color: Color(0xFF6F8598),
+              fontSize: 10.2,
+              fontWeight: FontWeight.w800,
             ),
+          ),
+          const SizedBox(height: 9),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              const spacing = 8.0;
+              final filters = ManageProductFilter.values;
+              final itemWidth = (constraints.maxWidth - spacing) / 2;
+
+              return Wrap(
+                spacing: spacing,
+                runSpacing: spacing,
+                children: [
+                  for (var i = 0; i < filters.length; i++)
+                    SizedBox(
+                      width: (filters.length.isOdd && i == filters.length - 1)
+                          ? constraints.maxWidth
+                          : itemWidth,
+                      child: statusFilterButton(
+                        filter: filters[i],
+                        count: filterCount(
+                          documents: documents,
+                          filter: filters[i],
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -549,27 +658,28 @@ class _SupplierManageProductsScreenState
 
   Widget listingTitle(int count) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(2, 0, 2, 12),
+      padding: const EdgeInsets.fromLTRB(2, 0, 2, 11),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Your Product Listings',
+                  'Product Listings',
                   style: TextStyle(
                     color: Color(0xFF102C44),
-                    fontSize: 17,
+                    fontSize: 16.5,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
                 SizedBox(height: 3),
                 Text(
-                  'Only inventory owned by this supplier account is shown.',
+                  'Manage your fish stock and availability.',
                   style: TextStyle(
                     color: Color(0xFF7B8FA3),
-                    fontSize: 9.8,
+                    fontSize: 9.6,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -577,15 +687,15 @@ class _SupplierManageProductsScreenState
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
             decoration: BoxDecoration(
               color: const Color(0xFFEAF7FB),
               borderRadius: BorderRadius.circular(99),
             ),
             child: Text(
-              '$count ${count == 1 ? 'listing' : 'listings'}',
+              '$count ${count == 1 ? 'item' : 'items'}',
               style: const TextStyle(
-                color: Color(0xFF146BFF),
+                color: Color(0xFF0875D1),
                 fontSize: 8.8,
                 fontWeight: FontWeight.w900,
               ),
@@ -599,49 +709,50 @@ class _SupplierManageProductsScreenState
   Widget content({
     required List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
   }) {
-    final stats = productService.calculateStats(documents);
     final visibleDocuments = filteredDocuments(documents);
 
     return CustomScrollView(
+      physics: const ClampingScrollPhysics(),
       key: ValueKey('manage-products-$streamRevision'),
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       slivers: [
         ManageProductsHeader(
-          stats: stats,
           onBack: () {
             Navigator.pop(context);
           },
         ),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-          sliver: SliverList(
-            delegate: SliverChildListDelegate([
-              controlsCard(),
-              listingTitle(visibleDocuments.length),
-              if (documents.isEmpty)
-                ManageProductsEmptyCard(onPostStock: openPostStock)
-              else if (visibleDocuments.isEmpty)
-                ManageProductsFilteredEmptyCard(onClear: clearSearchAndFilters)
-              else
-                ...visibleDocuments.map((document) {
-                  return ManageProductCard(
-                    document: document,
-                    isBusy: busyProductIds.contains(document.id),
-                    onRestock: () {
-                      restockProduct(document);
-                    },
-                    onEdit: () {
-                      editProduct(document);
-                    },
-                    onToggleAvailability: () {
-                      toggleAvailability(document);
-                    },
-                    onArchive: () {
-                      archiveProduct(document);
-                    },
-                  );
-                }),
-            ]),
+        SliverToBoxAdapter(
+          child: bodyShell(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                controlsCard(documents: documents),
+                listingTitle(visibleDocuments.length),
+                if (documents.isEmpty)
+                  ManageProductsEmptyCard(onPostStock: openPostStock)
+                else if (visibleDocuments.isEmpty)
+                  ManageProductsFilteredEmptyCard(onClear: clearSearchAndFilters)
+                else
+                  ...visibleDocuments.map((document) {
+                    return ManageProductCard(
+                      document: document,
+                      isBusy: busyProductIds.contains(document.id),
+                      onRestock: () {
+                        restockProduct(document);
+                      },
+                      onEdit: () {
+                        editProduct(document);
+                      },
+                      onToggleAvailability: () {
+                        toggleAvailability(document);
+                      },
+                      onArchive: () {
+                        archiveProduct(document);
+                      },
+                    );
+                  }),
+              ],
+            ),
           ),
         ),
       ],
@@ -649,48 +760,32 @@ class _SupplierManageProductsScreenState
   }
 
   Widget loadingBody() {
-    const emptyStats = SupplierProductStats(
-      totalProducts: 0,
-      activeProducts: 0,
-      stockAlertCount: 0,
-      hiddenCount: 0,
-    );
-
     return CustomScrollView(
+      physics: const ClampingScrollPhysics(),
       slivers: [
         ManageProductsHeader(
-          stats: emptyStats,
           onBack: () {
             Navigator.pop(context);
           },
         ),
-        const SliverPadding(
-          padding: EdgeInsets.fromLTRB(16, 18, 16, 28),
-          sliver: SliverToBoxAdapter(child: ManageProductsLoadingCard()),
+        SliverToBoxAdapter(
+          child: bodyShell(child: const ManageProductsLoadingCard()),
         ),
       ],
     );
   }
 
   Widget errorBody() {
-    const emptyStats = SupplierProductStats(
-      totalProducts: 0,
-      activeProducts: 0,
-      stockAlertCount: 0,
-      hiddenCount: 0,
-    );
-
     return CustomScrollView(
+      physics: const ClampingScrollPhysics(),
       slivers: [
         ManageProductsHeader(
-          stats: emptyStats,
           onBack: () {
             Navigator.pop(context);
           },
         ),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
-          sliver: SliverToBoxAdapter(
+        SliverToBoxAdapter(
+          child: bodyShell(
             child: ManageProductsErrorCard(
               onRetry: () {
                 setState(() {
@@ -706,7 +801,7 @@ class _SupplierManageProductsScreenState
 
   Widget notLoggedInBody() {
     return const Scaffold(
-      backgroundColor: Color(0xFFF4F8FB),
+      backgroundColor: Color(0xFFF7FAFC),
       body: Center(
         child: Padding(
           padding: EdgeInsets.all(24),
@@ -741,7 +836,7 @@ class _SupplierManageProductsScreenState
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: const Color(0xFFF4F8FB),
+        backgroundColor: const Color(0xFFF7FAFC),
         body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
           key: ValueKey(streamRevision),
           stream: productService.fishStocksStream(user.uid),

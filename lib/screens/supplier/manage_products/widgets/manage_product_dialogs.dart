@@ -127,7 +127,7 @@ class ManageProductDialogs {
                           side: const BorderSide(color: Color(0xFFB9CBD7)),
                           minimumSize: const Size.fromHeight(47),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
+                            borderRadius: BorderRadius.circular(14),
                           ),
                         ),
                         child: const Text(
@@ -150,7 +150,7 @@ class ManageProductDialogs {
                           minimumSize: const Size.fromHeight(47),
                           elevation: 0,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
+                            borderRadius: BorderRadius.circular(14),
                           ),
                         ),
                         child: Text(
@@ -243,7 +243,7 @@ class ManageProductDialogs {
                           side: const BorderSide(color: Color(0xFFB9CBD7)),
                           minimumSize: const Size.fromHeight(47),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
+                            borderRadius: BorderRadius.circular(14),
                           ),
                         ),
                         child: const Text(
@@ -264,7 +264,7 @@ class ManageProductDialogs {
                           minimumSize: const Size.fromHeight(47),
                           elevation: 0,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
+                            borderRadius: BorderRadius.circular(14),
                           ),
                         ),
                         child: const Text(
@@ -372,7 +372,7 @@ class _RestockProductSheetState extends State<_RestockProductSheet> {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: color,
-              fontSize: 12.2,
+              fontSize: 11.8,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -427,12 +427,12 @@ class _RestockProductSheetState extends State<_RestockProductSheet> {
           decoration: const BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(30),
-              topRight: Radius.circular(30),
+              topLeft: Radius.circular(28),
+              topRight: Radius.circular(28),
             ),
           ),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(18, 10, 18, 18),
+            padding: const EdgeInsets.fromLTRB(18, 10, 18, 16),
             child: Form(
               key: formKey,
               child: Column(
@@ -453,20 +453,20 @@ class _RestockProductSheetState extends State<_RestockProductSheet> {
                   Row(
                     children: [
                       Container(
-                        width: 46,
-                        height: 46,
+                        width: 42,
+                        height: 42,
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [Color(0xFF0B5FA5), Color(0xFF13A5D8)],
                           ),
-                          borderRadius: BorderRadius.circular(15),
+                          borderRadius: BorderRadius.circular(14),
                         ),
                         child: const Icon(
                           Icons.add_box_rounded,
                           color: Colors.white,
-                          size: 24,
+                          size: 22,
                         ),
                       ),
                       const SizedBox(width: 11),
@@ -478,7 +478,7 @@ class _RestockProductSheetState extends State<_RestockProductSheet> {
                               'Add Stock',
                               style: TextStyle(
                                 color: Color(0xFF102C44),
-                                fontSize: 17,
+                                fontSize: 16.5,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
@@ -489,7 +489,7 @@ class _RestockProductSheetState extends State<_RestockProductSheet> {
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 color: Color(0xFF657C8E),
-                                fontSize: 10.5,
+                                fontSize: 10.2,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -506,17 +506,17 @@ class _RestockProductSheetState extends State<_RestockProductSheet> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(14),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [Color(0xFFEAF6FF), Color(0xFFECFAF8)],
                       ),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: const Color(0xFFC9E1EF)),
                     ),
                     child: Row(
@@ -549,7 +549,7 @@ class _RestockProductSheetState extends State<_RestockProductSheet> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 15),
+                  const SizedBox(height: 13),
                   TextFormField(
                     controller: quantityController,
                     autofocus: true,
@@ -575,14 +575,13 @@ class _RestockProductSheetState extends State<_RestockProductSheet> {
                     },
                     decoration: InputDecoration(
                       labelText: 'Quantity to add',
-                      helperText:
-                          'This amount will be added to the current stock.',
+                      helperText: 'Added to the current stock.',
                       suffixText: quantityUnit,
                       prefixIcon: Container(
-                        margin: const EdgeInsets.all(10),
+                        margin: const EdgeInsets.all(9),
                         decoration: BoxDecoration(
                           color: const Color(0xFFE8F4FF),
-                          borderRadius: BorderRadius.circular(11),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Icon(
                           Icons.add_rounded,
@@ -592,15 +591,15 @@ class _RestockProductSheetState extends State<_RestockProductSheet> {
                       filled: true,
                       fillColor: const Color(0xFFF4F9FD),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: BorderRadius.circular(16),
                         borderSide: BorderSide.none,
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: BorderRadius.circular(16),
                         borderSide: const BorderSide(color: Color(0xFFC9DDEA)),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: BorderRadius.circular(16),
                         borderSide: const BorderSide(
                           color: Color(0xFF0875D1),
                           width: 1.5,
@@ -608,7 +607,7 @@ class _RestockProductSheetState extends State<_RestockProductSheet> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 11),
+                  const SizedBox(height: 10),
                   const Text(
                     'QUICK AMOUNTS',
                     style: TextStyle(
@@ -628,24 +627,24 @@ class _RestockProductSheetState extends State<_RestockProductSheet> {
                       quickAmount(20),
                     ],
                   ),
-                  const SizedBox(height: 17),
+                  const SizedBox(height: 15),
                   SizedBox(
                     width: double.infinity,
-                    height: 51,
+                    height: 48,
                     child: ElevatedButton.icon(
                       onPressed: submit,
                       icon: const Icon(Icons.inventory_rounded, size: 20),
                       label: const Text(
                         'Confirm Stock Addition',
                         style: TextStyle(
-                          fontSize: 13.5,
+                          fontSize: 13,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF0875D1),
                         foregroundColor: Colors.white,
-                        elevation: 4,
+                        elevation: 2,
                         shadowColor: const Color(0x550875D1),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -807,7 +806,7 @@ class _EditProductSheetState extends State<_EditProductSheet> {
       errorMaxLines: 2,
       labelStyle: const TextStyle(
         color: Color(0xFF7B8FA3),
-        fontSize: 12,
+        fontSize: 11.2,
         fontWeight: FontWeight.w700,
       ),
       floatingLabelStyle: const TextStyle(
@@ -821,34 +820,34 @@ class _EditProductSheetState extends State<_EditProductSheet> {
         fontWeight: FontWeight.w600,
       ),
       prefixIcon: Container(
-        margin: const EdgeInsets.all(10),
+        margin: const EdgeInsets.all(9),
         decoration: BoxDecoration(
           color: const Color(0xFFE5F4FD),
-          borderRadius: BorderRadius.circular(11),
+          borderRadius: BorderRadius.circular(10),
         ),
-        child: Icon(icon, color: const Color(0xFF146BFF), size: 20),
+        child: Icon(icon, color: const Color(0xFF146BFF), size: 19),
       ),
       filled: true,
       fillColor: const Color(0xFFF2F7FB),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 17),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(color: Color(0xFFE1EBF2)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(color: Color(0xFF146BFF), width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(color: Color(0xFFD94A45)),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(color: Color(0xFFD94A45), width: 1.5),
       ),
     );
@@ -892,7 +891,7 @@ class _EditProductSheetState extends State<_EditProductSheet> {
               ? const Color(0xFFB86500)
               : const Color(0xFF147D64),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(14),
           ),
           content: Text(
             message,
@@ -992,13 +991,13 @@ class _EditProductSheetState extends State<_EditProductSheet> {
           color: Colors.transparent,
           child: InkWell(
             onTap: isSaving ? null : pickImage,
-            borderRadius: BorderRadius.circular(19),
+            borderRadius: BorderRadius.circular(17),
             child: Ink(
               width: double.infinity,
-              height: 155,
+              height: 128,
               decoration: BoxDecoration(
                 color: const Color(0xFFEAF7FB),
-                borderRadius: BorderRadius.circular(19),
+                borderRadius: BorderRadius.circular(17),
                 border: Border.all(
                   color: imageError == null
                       ? const Color(0xFFDCEBF3)
@@ -1006,7 +1005,7 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                 ),
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(16),
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -1065,7 +1064,7 @@ class _EditProductSheetState extends State<_EditProductSheet> {
         const SizedBox(height: 9),
         SizedBox(
           width: double.infinity,
-          height: 43,
+          height: 40,
           child: OutlinedButton.icon(
             onPressed: isSaving ? null : pickImage,
             icon: const Icon(Icons.photo_library_outlined, size: 18),
@@ -1127,11 +1126,11 @@ class _EditProductSheetState extends State<_EditProductSheet> {
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: Container(
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.sizeOf(context).height * 0.94,
+          maxHeight: MediaQuery.sizeOf(context).height * 0.90,
         ),
         decoration: const BoxDecoration(
           color: Color(0xFFF7FAFC),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           boxShadow: [
             BoxShadow(
               color: Color(0x55000000),
@@ -1152,12 +1151,12 @@ class _EditProductSheetState extends State<_EditProductSheet> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(18, 14, 10, 13),
+              padding: const EdgeInsets.fromLTRB(18, 12, 10, 11),
               child: Row(
                 children: [
                   Container(
-                    width: 44,
-                    height: 44,
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
                       color: const Color(0xFFE8F5FD),
                       borderRadius: BorderRadius.circular(14),
@@ -1165,7 +1164,7 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                     child: const Icon(
                       Icons.edit_note_rounded,
                       color: Color(0xFF146BFF),
-                      size: 24,
+                      size: 22,
                     ),
                   ),
                   const SizedBox(width: 11),
@@ -1177,7 +1176,7 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                           'Edit Product',
                           style: TextStyle(
                             color: Color(0xFF102C44),
-                            fontSize: 18,
+                            fontSize: 17,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
@@ -1186,7 +1185,8 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                           'Update the marketplace listing and automatic stock alert.',
                           style: TextStyle(
                             color: Color(0xFF7B8FA3),
-                            fontSize: 10.2,
+                            fontSize: 9.7,
+                            height: 1.3,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -1215,10 +1215,10 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                 child: ListView(
                   keyboardDismissBehavior:
                       ScrollViewKeyboardDismissBehavior.onDrag,
-                  padding: const EdgeInsets.fromLTRB(18, 16, 18, 22),
+                  padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
                   children: [
                     photoPreview(),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 12),
                     TextFormField(
                       controller: productNameController,
                       enabled: !isSaving,
@@ -1238,7 +1238,7 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                         icon: Icons.set_meal_outlined,
                       ),
                     ),
-                    const SizedBox(height: 11),
+                    const SizedBox(height: 9),
                     DropdownButtonFormField<String>(
                       initialValue: selectedCategory,
                       isExpanded: true,
@@ -1262,12 +1262,12 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                               }
                             },
                     ),
-                    const SizedBox(height: 11),
+                    const SizedBox(height: 9),
                     TextFormField(
                       controller: descriptionController,
                       enabled: !isSaving,
                       minLines: 2,
-                      maxLines: 3,
+                      maxLines: 2,
                       textCapitalization: TextCapitalization.sentences,
                       inputFormatters: [LengthLimitingTextInputFormatter(240)],
                       validator: (value) {
@@ -1283,7 +1283,7 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                         helperText: 'Freshness, size, or handling details.',
                       ),
                     ),
-                    const SizedBox(height: 11),
+                    const SizedBox(height: 9),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1345,7 +1345,7 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 11),
+                    const SizedBox(height: 9),
                     TextFormField(
                       controller: quantityController,
                       enabled: !isSaving,
@@ -1375,16 +1375,16 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                         suffixText: selectedUnit,
                       ),
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 12),
                     Container(
-                      padding: const EdgeInsets.all(14),
+                      padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [Color(0xFFEAF8FF), Color(0xFFEAFBF5)],
                         ),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: const Color(0xFF75CFEA).withAlpha(88),
                         ),
@@ -1397,7 +1397,7 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                               Icon(
                                 Icons.notifications_active_outlined,
                                 color: Color(0xFFFF7A1A),
-                                size: 21,
+                                size: 20,
                               ),
                               SizedBox(width: 8),
                               Expanded(
@@ -1405,7 +1405,7 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                                   'Automatic Low-Stock Alert',
                                   style: TextStyle(
                                     color: Color(0xFF102C44),
-                                    fontSize: 12.3,
+                                    fontSize: 11.8,
                                     fontWeight: FontWeight.w900,
                                   ),
                                 ),
@@ -1417,11 +1417,11 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                             'Choose when the stock alert should appear.',
                             style: TextStyle(
                               color: Color(0xFF657C8E),
-                              fontSize: 9.5,
+                              fontSize: 9.2,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          const SizedBox(height: 11),
+                          const SizedBox(height: 9),
                           percentageChoices(),
                           if (customPercentage) ...[
                             const SizedBox(height: 11),
@@ -1464,7 +1464,7 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                           const SizedBox(height: 11),
                           Container(
                             width: double.infinity,
-                            padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
+                            padding: const EdgeInsets.fromLTRB(11, 10, 11, 10),
                             decoration: BoxDecoration(
                               color: Colors.white.withAlpha(210),
                               borderRadius: BorderRadius.circular(16),
@@ -1475,8 +1475,8 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                             child: Row(
                               children: [
                                 Container(
-                                  width: 39,
-                                  height: 39,
+                                  width: 36,
+                                  height: 36,
                                   decoration: BoxDecoration(
                                     color: quantity >= 0 && percentage > 0
                                         ? const Color(0xFFE7F8F1)
@@ -1488,7 +1488,7 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                                     color: quantity >= 0 && percentage > 0
                                         ? const Color(0xFF147D64)
                                         : const Color(0xFFFF7A1A),
-                                    size: 21,
+                                    size: 20,
                                   ),
                                 ),
                                 const SizedBox(width: 10),
@@ -1511,7 +1511,7 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                                         '${formatInput(calculatedAlert)} $selectedUnit',
                                         style: const TextStyle(
                                           color: Color(0xFF102C44),
-                                          fontSize: 13,
+                                          fontSize: 12.3,
                                           fontWeight: FontWeight.w900,
                                         ),
                                       ),
@@ -1538,7 +1538,7 @@ class _EditProductSheetState extends State<_EditProductSheet> {
               ),
             ),
             Container(
-              padding: const EdgeInsets.fromLTRB(18, 10, 18, 15),
+              padding: const EdgeInsets.fromLTRB(18, 9, 18, 12),
               decoration: const BoxDecoration(
                 color: Colors.white,
                 boxShadow: [
@@ -1553,7 +1553,7 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                 top: false,
                 child: SizedBox(
                   width: double.infinity,
-                  height: 52,
+                  height: 48,
                   child: ElevatedButton.icon(
                     onPressed: isSaving ? null : save,
                     icon: isSaving
@@ -1569,7 +1569,7 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                     label: Text(
                       isSaving ? 'Saving Changes...' : 'Save Product Changes',
                       style: const TextStyle(
-                        fontSize: 14.2,
+                        fontSize: 13.2,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -1577,7 +1577,7 @@ class _EditProductSheetState extends State<_EditProductSheet> {
                       backgroundColor: const Color(0xFF146BFF),
                       foregroundColor: Colors.white,
                       disabledBackgroundColor: const Color(0xFF7397B8),
-                      elevation: isSaving ? 0 : 6,
+                      elevation: isSaving ? 0 : 2,
                       shadowColor: const Color(0x55146BFF),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -1645,7 +1645,7 @@ class _PercentageChoice extends StatelessWidget {
         borderRadius: BorderRadius.circular(99),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
-          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
           decoration: BoxDecoration(
             color: selected
                 ? const Color(0xFF146BFF)
@@ -1661,7 +1661,7 @@ class _PercentageChoice extends StatelessWidget {
             label,
             style: TextStyle(
               color: selected ? Colors.white : const Color(0xFF52677A),
-              fontSize: 9.2,
+              fontSize: 9,
               fontWeight: FontWeight.w900,
             ),
           ),

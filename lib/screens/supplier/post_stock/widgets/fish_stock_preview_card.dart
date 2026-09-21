@@ -28,17 +28,12 @@ class FishStockPreviewCard extends StatelessWidget {
 
   String get displayProductName {
     final value = productName.trim();
-
     return value.isEmpty ? 'Product name not set' : value;
   }
 
   String? get validPrice {
     final parsed = double.tryParse(price.trim());
-
-    if (parsed == null || parsed <= 0) {
-      return null;
-    }
-
+    if (parsed == null || parsed <= 0) return null;
     return parsed % 1 == 0
         ? parsed.toStringAsFixed(0)
         : parsed.toStringAsFixed(2);
@@ -46,11 +41,7 @@ class FishStockPreviewCard extends StatelessWidget {
 
   String? get validQuantity {
     final parsed = double.tryParse(quantity.trim());
-
-    if (parsed == null || parsed <= 0) {
-      return null;
-    }
-
+    if (parsed == null || parsed <= 0) return null;
     return parsed % 1 == 0
         ? parsed.toStringAsFixed(0)
         : parsed.toStringAsFixed(1);
@@ -58,11 +49,7 @@ class FishStockPreviewCard extends StatelessWidget {
 
   String? get validAlertLevel {
     final parsed = double.tryParse(lowStockLevel.trim());
-
-    if (parsed == null || parsed <= 0) {
-      return null;
-    }
-
+    if (parsed == null || parsed <= 0) return null;
     return parsed % 1 == 0
         ? parsed.toStringAsFixed(0)
         : parsed.toStringAsFixed(1);
@@ -70,7 +57,6 @@ class FishStockPreviewCard extends StatelessWidget {
 
   bool get hasLocalImage => selectedImage != null;
   bool get hasUploadedImage => uploadedImageUrl.trim().isNotEmpty;
-  bool get hasImage => hasLocalImage || hasUploadedImage;
 
   Widget productVisual() {
     if (hasLocalImage) {
@@ -81,9 +67,7 @@ class FishStockPreviewCard extends StatelessWidget {
       return Image.network(
         uploadedImageUrl,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return const _PhotoPlaceholderVisual();
-        },
+        errorBuilder: (_, _, _) => const _PhotoPlaceholderVisual(),
       );
     }
 
@@ -92,146 +76,146 @@ class FishStockPreviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final priceText = validPrice == null
+        ? 'Price not set'
+        : '₱$validPrice / $selectedUnit';
+    final stockText = validQuantity == null
+        ? 'Stock not set'
+        : '$validQuantity $selectedUnit available';
+
     return PostStockSectionCard(
       title: 'Marketplace Preview',
-      subtitle: 'Confirm how the listing will appear to vendors.',
+      subtitle: 'See how the listing will appear to vendors.',
       icon: Icons.visibility_outlined,
       badge: 'FINAL CHECK',
       child: Container(
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: const Color(0xFFF2F7FB),
-          borderRadius: BorderRadius.circular(21),
+          color: const Color(0xFFF3F8FB),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(color: const Color(0xFFDDE8EF)),
         ),
         child: Column(
           children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(20),
-              ),
-              child: SizedBox(
-                width: double.infinity,
-                height: 146,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    productVisual(),
-                    const DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [Colors.transparent, Color(0xB0001727)],
-                          stops: [0.48, 1.0],
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      left: 13,
-                      right: 13,
-                      bottom: 12,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  displayProductName,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 15.5,
-                                    fontWeight: FontWeight.w900,
-                                    fontStyle: productName.trim().isEmpty
-                                        ? FontStyle.italic
-                                        : FontStyle.normal,
-                                  ),
-                                ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  selectedCategory,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: Color(0xFFDDEFFA),
-                                    fontSize: 9.8,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
-                            ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(15),
+                  child: SizedBox(
+                    width: 88,
+                    height: 88,
+                    child: productVisual(),
+                  ),
+                ),
+                const SizedBox(width: 11),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 3),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          displayProductName,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: const Color(0xFF102C44),
+                            fontSize: 13.2,
+                            height: 1.15,
+                            fontWeight: FontWeight.w900,
+                            fontStyle: productName.trim().isEmpty
+                                ? FontStyle.italic
+                                : FontStyle.normal,
                           ),
-                          Container(
-                            constraints: const BoxConstraints(maxWidth: 112),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 9,
-                              vertical: 6,
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.category_outlined,
+                              color: Color(0xFF0875D1),
+                              size: 14,
                             ),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(99),
-                            ),
-                            child: Text(
-                              validPrice == null
-                                  ? 'Price not set'
-                                  : '₱$validPrice',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: validPrice == null
-                                    ? const Color(0xFF7B8FA3)
-                                    : const Color(0xFF0875D1),
-                                fontSize: 9.8,
-                                fontWeight: FontWeight.w900,
+                            const SizedBox(width: 5),
+                            Expanded(
+                              child: Text(
+                                selectedCategory,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Color(0xFF657C8E),
+                                  fontSize: 9.4,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          priceText,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: validPrice == null
+                                ? const Color(0xFF8BA0B1)
+                                : const Color(0xFF0875D1),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
                           ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          stockText,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFF7B8FA3),
+                            fontSize: 9.1,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(13, 12, 13, 13),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _PreviewMetric(
-                      icon: Icons.scale_outlined,
-                      label: 'SELLING UNIT',
-                      value: 'per $selectedUnit',
-                      complete: true,
-                    ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: _PreviewMetric(
+                    icon: Icons.scale_outlined,
+                    label: 'UNIT',
+                    value: 'per $selectedUnit',
+                    complete: true,
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _PreviewMetric(
-                      icon: Icons.inventory_2_outlined,
-                      label: 'AVAILABLE',
-                      value: validQuantity == null
-                          ? 'Stock not set'
-                          : '$validQuantity $selectedUnit',
-                      complete: validQuantity != null,
-                    ),
+                ),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: _PreviewMetric(
+                    icon: Icons.inventory_2_outlined,
+                    label: 'AVAILABLE',
+                    value: validQuantity == null
+                        ? 'Not set'
+                        : '$validQuantity $selectedUnit',
+                    complete: validQuantity != null,
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _PreviewMetric(
-                      icon: Icons.notifications_active_outlined,
-                      label: 'ALERT AT',
-                      value: validAlertLevel == null
-                          ? 'Alert pending'
-                          : '$validAlertLevel $selectedUnit',
-                      complete: validAlertLevel != null,
-                    ),
+                ),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: _PreviewMetric(
+                    icon: Icons.notifications_active_outlined,
+                    label: 'ALERT AT',
+                    value: validAlertLevel == null
+                        ? 'Pending'
+                        : '$validAlertLevel $selectedUnit',
+                    complete: validAlertLevel != null,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ],
         ),
@@ -257,7 +241,7 @@ class _PhotoPlaceholderVisual extends StatelessWidget {
       child: const Icon(
         Icons.add_photo_alternate_outlined,
         color: Color(0xFF146BFF),
-        size: 44,
+        size: 34,
       ),
     );
   }
@@ -279,29 +263,32 @@ class _PreviewMetric extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(7, 9, 7, 9),
+      constraints: const BoxConstraints(minHeight: 62),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(13),
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
             icon,
             color: complete ? const Color(0xFF146BFF) : const Color(0xFF9AAEBC),
-            size: 17,
+            size: 16,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           Text(
             label,
+            maxLines: 1,
             style: const TextStyle(
               color: Color(0xFF8BA0B1),
-              fontSize: 7.2,
-              letterSpacing: 0.3,
+              fontSize: 7,
+              letterSpacing: 0.25,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 3),
+          const SizedBox(height: 2),
           Text(
             value,
             maxLines: 1,
@@ -311,7 +298,7 @@ class _PreviewMetric extends StatelessWidget {
               color: complete
                   ? const Color(0xFF102C44)
                   : const Color(0xFF8BA0B1),
-              fontSize: 8.8,
+              fontSize: 8.3,
               fontWeight: FontWeight.w900,
             ),
           ),

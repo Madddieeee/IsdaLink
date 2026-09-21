@@ -40,13 +40,13 @@ class FishStockImageUploadCard extends StatelessWidget {
             color: Colors.transparent,
             child: InkWell(
               onTap: isUploading ? null : onPickImage,
-              borderRadius: BorderRadius.circular(19),
+              borderRadius: BorderRadius.circular(17),
               child: Ink(
                 width: double.infinity,
-                height: 148,
+                height: 108,
                 decoration: BoxDecoration(
                   color: const Color(0xFFEAF7FB),
-                  borderRadius: BorderRadius.circular(19),
+                  borderRadius: BorderRadius.circular(17),
                   border: Border.all(
                     color: errorText == null
                         ? const Color(0xFFDCEBF3)
@@ -55,7 +55,7 @@ class FishStockImageUploadCard extends StatelessWidget {
                   ),
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(16),
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
@@ -186,7 +186,7 @@ class FishStockImageUploadCard extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF146BFF),
                     foregroundColor: Colors.white,
-                    minimumSize: const Size.fromHeight(44),
+                    minimumSize: const Size.fromHeight(42),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -252,20 +252,20 @@ class ProductImagePlaceholder extends StatelessWidget {
           Icon(
             Icons.add_photo_alternate_outlined,
             color: Color(0xFF146BFF),
-            size: 36,
+            size: 32,
           ),
           SizedBox(height: 6),
           Text(
             'Add a fish product photo',
             style: TextStyle(
               color: Color(0xFF52677A),
-              fontSize: 11.5,
+              fontSize: 10.8,
               fontWeight: FontWeight.w900,
             ),
           ),
           SizedBox(height: 3),
           Text(
-            'Tap here or use Choose Photo',
+            'One clear photo is enough',
             style: TextStyle(
               color: Color(0xFF8BA0B1),
               fontSize: 9.5,

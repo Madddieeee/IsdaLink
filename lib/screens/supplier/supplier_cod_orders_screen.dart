@@ -741,110 +741,196 @@ class _SupplierCodOrdersScreenState extends State<SupplierCodOrdersScreen> {
     });
   }
 
+  Widget statusFilterChip({
+    required SupplierOrderFilter filter,
+    required int count,
+  }) {
+    final selected = selectedFilter == filter;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            selectedFilter = filter;
+          });
+        },
+        borderRadius: BorderRadius.circular(999),
+        child: Ink(
+          height: 42,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: selected ? const Color(0xFF0875D1) : Colors.white,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: selected
+                  ? const Color(0xFF0875D1)
+                  : const Color(0xFFD9E6EE),
+            ),
+            boxShadow: selected
+                ? const [
+                    BoxShadow(
+                      color: Color(0x1F0875D1),
+                      blurRadius: 9,
+                      offset: Offset(0, 3),
+                    ),
+                  ]
+                : const [],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                filterIcon(filter),
+                size: 17,
+                color: selected ? Colors.white : const Color(0xFF5B6F80),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                filterLabel(filter),
+                style: TextStyle(
+                  color: selected ? Colors.white : const Color(0xFF415768),
+                  fontSize: 10.2,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Container(
+                constraints: const BoxConstraints(minWidth: 22),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? Colors.white.withValues(alpha: 0.18)
+                      : const Color(0xFFF0F5F8),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '$count',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: selected ? Colors.white : const Color(0xFF52677A),
+                    fontSize: 9.2,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget bodyShell({required Widget child}) {
+    return Container(
+      color: const Color(0xFF0A5B84),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+        decoration: const BoxDecoration(
+          color: Color(0xFFF7FAFC),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(36)),
+          boxShadow: [
+            BoxShadow(
+              color: Color(0x1800152A),
+              blurRadius: 22,
+              offset: Offset(0, -5),
+            ),
+          ],
+        ),
+        child: child,
+      ),
+    );
+  }
+
   Widget controlsCard({
     required List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 15),
-      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(23),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: const Color(0xFFE1EBF2)),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x0D00152A),
-            blurRadius: 16,
-            offset: Offset(0, 8),
+            color: Color(0x0B00152A),
+            blurRadius: 14,
+            offset: Offset(0, 6),
           ),
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           TextField(
             controller: searchController,
             textInputAction: TextInputAction.search,
+            style: const TextStyle(
+              color: Color(0xFF102C44),
+              fontSize: 12.4,
+              fontWeight: FontWeight.w700,
+            ),
             decoration: InputDecoration(
-              hintText: 'Search vendor, product, or order reference',
+              hintText: 'Search vendor, fish, or order number',
               hintStyle: const TextStyle(
                 color: Color(0xFF8BA0B1),
-                fontSize: 11.2,
+                fontSize: 10.9,
                 fontWeight: FontWeight.w600,
               ),
               prefixIcon: const Icon(
                 Icons.search_rounded,
-                color: Color(0xFF146BFF),
+                color: Color(0xFF0875D1),
+                size: 22,
               ),
               suffixIcon: searchController.text.isEmpty
                   ? null
                   : IconButton(
                       tooltip: 'Clear search',
                       onPressed: searchController.clear,
-                      icon: const Icon(Icons.close_rounded),
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        size: 19,
+                        color: Color(0xFF5D7385),
+                      ),
                     ),
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(vertical: 15),
               filled: true,
-              fillColor: const Color(0xFFF2F7FB),
+              fillColor: const Color(0xFFF4F8FB),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(17),
+                borderRadius: BorderRadius.circular(18),
                 borderSide: const BorderSide(color: Color(0xFFE1EBF2)),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(17),
+                borderRadius: BorderRadius.circular(18),
                 borderSide: const BorderSide(
-                  color: Color(0xFF146BFF),
-                  width: 1.5,
+                  color: Color(0xFF0875D1),
+                  width: 1.4,
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 11),
-          SizedBox(
-            height: 38,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: SupplierOrderFilter.values.length,
-              separatorBuilder: (context, index) {
-                return const SizedBox(width: 7);
-              },
-              itemBuilder: (context, index) {
-                final filter = SupplierOrderFilter.values[index];
-                final selected = selectedFilter == filter;
-                final count = countFilter(documents: documents, filter: filter);
-
-                return FilterChip(
-                  selected: selected,
-                  showCheckmark: false,
-                  avatar: Icon(
-                    filterIcon(filter),
-                    size: 16,
-                    color: selected ? Colors.white : const Color(0xFF52677A),
-                  ),
-                  label: Text(
-                    '${filterLabel(filter)} $count',
-                    style: TextStyle(
-                      color: selected ? Colors.white : const Color(0xFF52677A),
-                      fontSize: 9.7,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  onSelected: (_) {
-                    setState(() {
-                      selectedFilter = filter;
-                    });
-                  },
-                  backgroundColor: const Color(0xFFF2F7FB),
-                  selectedColor: const Color(0xFF146BFF),
-                  side: BorderSide(
-                    color: selected
-                        ? const Color(0xFF146BFF)
-                        : const Color(0xFFDCE7EF),
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                );
-              },
+          const SizedBox(height: 14),
+          const Text(
+            'Order status',
+            style: TextStyle(
+              color: Color(0xFF6F8598),
+              fontSize: 10.3,
+              fontWeight: FontWeight.w800,
             ),
+          ),
+          const SizedBox(height: 9),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: SupplierOrderFilter.values.map((filter) {
+              return statusFilterChip(
+                filter: filter,
+                count: countFilter(documents: documents, filter: filter),
+              );
+            }).toList(),
           ),
         ],
       ),
@@ -853,27 +939,28 @@ class _SupplierCodOrdersScreenState extends State<SupplierCodOrdersScreen> {
 
   Widget queueTitle(int count) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(2, 0, 2, 12),
+      padding: const EdgeInsets.fromLTRB(2, 0, 2, 11),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Supplier Order Queue',
+                  'Orders',
                   style: TextStyle(
                     color: Color(0xFF102C44),
-                    fontSize: 17,
+                    fontSize: 16.5,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
                 SizedBox(height: 3),
                 Text(
-                  'Only COD orders assigned to this supplier account are shown.',
+                  'Open an order to view details and update its status.',
                   style: TextStyle(
                     color: Color(0xFF7B8FA3),
-                    fontSize: 9.8,
+                    fontSize: 9.6,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -881,7 +968,7 @@ class _SupplierCodOrdersScreenState extends State<SupplierCodOrdersScreen> {
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
             decoration: BoxDecoration(
               color: const Color(0xFFEAF7FB),
               borderRadius: BorderRadius.circular(99),
@@ -889,7 +976,7 @@ class _SupplierCodOrdersScreenState extends State<SupplierCodOrdersScreen> {
             child: Text(
               '$count ${count == 1 ? 'order' : 'orders'}',
               style: const TextStyle(
-                color: Color(0xFF146BFF),
+                color: Color(0xFF0875D1),
                 fontSize: 8.8,
                 fontWeight: FontWeight.w900,
               ),
@@ -918,69 +1005,71 @@ class _SupplierCodOrdersScreenState extends State<SupplierCodOrdersScreen> {
     }
 
     return CustomScrollView(
+      physics: const ClampingScrollPhysics(),
       key: ValueKey('supplier-orders-$streamRevision'),
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       slivers: [
         SupplierOrdersHeader(
-          documents: documents,
           onBack: () {
             Navigator.pop(context);
           },
         ),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-          sliver: SliverList(
-            delegate: SliverChildListDelegate([
-              controlsCard(documents: documents),
-              queueTitle(visibleDocuments.length),
-              if (visibleDocuments.isEmpty)
-                SupplierOrdersEmptyCard(
-                  filtered:
-                      documents.isNotEmpty &&
-                      (selectedFilter != SupplierOrderFilter.all ||
-                          searchController.text.trim().isNotEmpty),
-                  onClearFilters: clearSearchAndFilters,
-                )
-              else
-                ...visibleDocuments.map((document) {
-                  return SupplierOrderCard(
-                    document: document,
-                    highlighted: document.id == initialOrderId,
-                    expanded: expandedOrderIds.contains(document.id),
-                    isBusy: busyOrderIds.contains(document.id),
-                    onToggle: () {
-                      setState(() {
-                        if (expandedOrderIds.contains(document.id)) {
-                          expandedOrderIds.remove(document.id);
-                        } else {
-                          expandedOrderIds.add(document.id);
-                        }
-                      });
-                    },
-                    onAccept: () {
-                      updateOrderStatus(
-                        document: document,
-                        newStatus: 'Accepted',
-                        paymentStatus: 'To be paid on delivery',
-                      );
-                    },
-                    onCancel: () {
-                      updateOrderStatus(
-                        document: document,
-                        newStatus: 'Cancelled',
-                        paymentStatus: 'Cancelled',
-                      );
-                    },
-                    onMarkDelivered: () {
-                      updateOrderStatus(
-                        document: document,
-                        newStatus: 'Delivered',
-                        paymentStatus: 'Paid',
-                      );
-                    },
-                  );
-                }),
-            ]),
+        SliverToBoxAdapter(
+          child: bodyShell(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                controlsCard(documents: documents),
+                queueTitle(visibleDocuments.length),
+                if (visibleDocuments.isEmpty)
+                  SupplierOrdersEmptyCard(
+                    filtered:
+                        documents.isNotEmpty &&
+                        (selectedFilter != SupplierOrderFilter.all ||
+                            searchController.text.trim().isNotEmpty),
+                    onClearFilters: clearSearchAndFilters,
+                  )
+                else
+                  ...visibleDocuments.map((document) {
+                    return SupplierOrderCard(
+                      document: document,
+                      highlighted: document.id == initialOrderId,
+                      expanded: expandedOrderIds.contains(document.id),
+                      isBusy: busyOrderIds.contains(document.id),
+                      onToggle: () {
+                        setState(() {
+                          if (expandedOrderIds.contains(document.id)) {
+                            expandedOrderIds.remove(document.id);
+                          } else {
+                            expandedOrderIds.add(document.id);
+                          }
+                        });
+                      },
+                      onAccept: () {
+                        updateOrderStatus(
+                          document: document,
+                          newStatus: 'Accepted',
+                          paymentStatus: 'To be paid on delivery',
+                        );
+                      },
+                      onCancel: () {
+                        updateOrderStatus(
+                          document: document,
+                          newStatus: 'Cancelled',
+                          paymentStatus: 'Cancelled',
+                        );
+                      },
+                      onMarkDelivered: () {
+                        updateOrderStatus(
+                          document: document,
+                          newStatus: 'Delivered',
+                          paymentStatus: 'Paid',
+                        );
+                      },
+                    );
+                  }),
+              ],
+            ),
           ),
         ),
       ],
@@ -989,16 +1078,15 @@ class _SupplierCodOrdersScreenState extends State<SupplierCodOrdersScreen> {
 
   Widget loadingBody() {
     return CustomScrollView(
+      physics: const ClampingScrollPhysics(),
       slivers: [
         SupplierOrdersHeader(
-          documents: const [],
           onBack: () {
             Navigator.pop(context);
           },
         ),
-        const SliverPadding(
-          padding: EdgeInsets.fromLTRB(16, 18, 16, 28),
-          sliver: SliverToBoxAdapter(child: SupplierOrdersLoadingCard()),
+        SliverToBoxAdapter(
+          child: bodyShell(child: const SupplierOrdersLoadingCard()),
         ),
       ],
     );
@@ -1006,16 +1094,15 @@ class _SupplierCodOrdersScreenState extends State<SupplierCodOrdersScreen> {
 
   Widget errorBody() {
     return CustomScrollView(
+      physics: const ClampingScrollPhysics(),
       slivers: [
         SupplierOrdersHeader(
-          documents: const [],
           onBack: () {
             Navigator.pop(context);
           },
         ),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
-          sliver: SliverToBoxAdapter(
+        SliverToBoxAdapter(
+          child: bodyShell(
             child: SupplierOrdersErrorCard(
               onRetry: () {
                 setState(() {
@@ -1031,7 +1118,7 @@ class _SupplierCodOrdersScreenState extends State<SupplierCodOrdersScreen> {
 
   Widget loggedOutBody() {
     return const Scaffold(
-      backgroundColor: Color(0xFFF4F8FB),
+      backgroundColor: Color(0xFFF7FAFC),
       body: Center(
         child: Padding(
           padding: EdgeInsets.all(24),
@@ -1066,7 +1153,7 @@ class _SupplierCodOrdersScreenState extends State<SupplierCodOrdersScreen> {
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: const Color(0xFFF4F8FB),
+        backgroundColor: const Color(0xFFF7FAFC),
         body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
           key: ValueKey(streamRevision),
           stream: orderService.ordersStream(user.uid),

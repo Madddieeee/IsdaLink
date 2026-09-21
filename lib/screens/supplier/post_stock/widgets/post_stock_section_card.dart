@@ -19,17 +19,17 @@ class PostStockSectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(15),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(color: const Color(0xFFE1EBF2)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x0E00152A),
-            blurRadius: 18,
-            offset: Offset(0, 9),
+            blurRadius: 14,
+            offset: Offset(0, 6),
           ),
         ],
       ),
@@ -39,19 +39,19 @@ class PostStockSectionCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [Color(0xFFE9F7FF), Color(0xFFDDF1FF)],
                   ),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: const Color(0xFF146BFF), size: 21),
+                child: Icon(icon, color: const Color(0xFF146BFF), size: 19),
               ),
-              const SizedBox(width: 11),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -65,7 +65,7 @@ class PostStockSectionCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               color: Color(0xFF102C44),
-                              fontSize: 14.5,
+                              fontSize: 13.5,
                               letterSpacing: -0.05,
                               fontWeight: FontWeight.w900,
                             ),
@@ -75,8 +75,8 @@ class PostStockSectionCard extends StatelessWidget {
                           const SizedBox(width: 7),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 5,
+                              horizontal: 7,
+                              vertical: 4,
                             ),
                             decoration: BoxDecoration(
                               color: const Color(0xFFEAF7FB),
@@ -86,7 +86,7 @@ class PostStockSectionCard extends StatelessWidget {
                               badge!,
                               style: const TextStyle(
                                 color: Color(0xFF146BFF),
-                                fontSize: 8,
+                                fontSize: 7.6,
                                 letterSpacing: 0.45,
                                 fontWeight: FontWeight.w900,
                               ),
@@ -95,14 +95,14 @@ class PostStockSectionCard extends StatelessWidget {
                         ],
                       ],
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 2),
                     Text(
                       subtitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Color(0xFF7B8FA3),
-                        fontSize: 10.2,
+                        fontSize: 9.6,
                         height: 1.32,
                         fontWeight: FontWeight.w600,
                       ),
@@ -112,7 +112,7 @@ class PostStockSectionCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           child,
         ],
       ),

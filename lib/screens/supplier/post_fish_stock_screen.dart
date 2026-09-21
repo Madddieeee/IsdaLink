@@ -797,80 +797,101 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
         onPopInvokedWithResult: handlePopInvoked,
         child: Scaffold(
           resizeToAvoidBottomInset: true,
-          backgroundColor: const Color(0xFFF4F8FB),
+          backgroundColor: const Color(0xFFF7FAFC),
           body: CustomScrollView(
             controller: scrollController,
+            physics: const ClampingScrollPhysics(),
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             slivers: [
               PostStockHeader(onBack: handleBack),
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(18, 17, 18, 24),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    FishStockProductInformationCard(
-                      productNameController: productNameController,
-                      descriptionController: descriptionController,
-                      categories: categories,
-                      selectedCategory: selectedCategory,
-                      productNameError: productNameError,
-                      descriptionError: descriptionError,
-                      onPreviewChanged: refreshPreview,
-                      onCategoryChanged: (value) {
-                        setState(() {
-                          selectedCategory = value;
-                        });
-                      },
+              SliverToBoxAdapter(
+                child: Container(
+                  color: const Color(0xFF0A5B84),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(16, 22, 16, 24),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFF7FAFC),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(36),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Color(0x1800152A),
+                          blurRadius: 22,
+                          offset: Offset(0, -5),
+                        ),
+                      ],
                     ),
-                    FishStockImageUploadCard(
-                      selectedImage: selectedImage,
-                      uploadedImageUrl: uploadedImageUrl,
-                      isUploading: isUploadingImage,
-                      errorText: imageError,
-                      onPickImage: pickProductImage,
-                      onRemoveImage: removeProductImage,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        FishStockProductInformationCard(
+                          productNameController: productNameController,
+                          descriptionController: descriptionController,
+                          categories: categories,
+                          selectedCategory: selectedCategory,
+                          productNameError: productNameError,
+                          descriptionError: descriptionError,
+                          onPreviewChanged: refreshPreview,
+                          onCategoryChanged: (value) {
+                            setState(() {
+                              selectedCategory = value;
+                            });
+                          },
+                        ),
+                        FishStockImageUploadCard(
+                          selectedImage: selectedImage,
+                          uploadedImageUrl: uploadedImageUrl,
+                          isUploading: isUploadingImage,
+                          errorText: imageError,
+                          onPickImage: pickProductImage,
+                          onRemoveImage: removeProductImage,
+                        ),
+                        FishStockPriceStockCard(
+                          priceController: priceController,
+                          quantityController: quantityController,
+                          lowStockController: lowStockController,
+                          percentageController: percentageController,
+                          units: units,
+                          selectedUnit: selectedUnit,
+                          isCustomPercentage: useCustomPercentage,
+                          priceError: priceError,
+                          quantityError: quantityError,
+                          percentageError: percentageError,
+                          onPreviewChanged: refreshPreview,
+                          onPercentageChanged: calculateSuggestedThreshold,
+                          onCustomPercentageChanged: (value) {
+                            setState(() {
+                              useCustomPercentage = value;
+                            });
+                          },
+                          onUnitChanged: (value) {
+                            setState(() {
+                              selectedUnit = value;
+                            });
+                            calculateSuggestedThreshold();
+                          },
+                        ),
+                        FishStockPreviewCard(
+                          productName: productNameController.text,
+                          price: priceController.text,
+                          quantity: quantityController.text,
+                          lowStockLevel: lowStockController.text,
+                          selectedCategory: selectedCategory,
+                          selectedUnit: selectedUnit,
+                          selectedImage: selectedImage,
+                          uploadedImageUrl: uploadedImageUrl,
+                        ),
+                        FishStockInfoCard(
+                          productInformationComplete: productInformationComplete,
+                          photoComplete: hasProductImage,
+                          priceAndStockComplete: priceAndStockComplete,
+                          listingReady: listingReady,
+                        ),
+                      ],
                     ),
-                    FishStockPriceStockCard(
-                      priceController: priceController,
-                      quantityController: quantityController,
-                      lowStockController: lowStockController,
-                      percentageController: percentageController,
-                      units: units,
-                      selectedUnit: selectedUnit,
-                      isCustomPercentage: useCustomPercentage,
-                      priceError: priceError,
-                      quantityError: quantityError,
-                      percentageError: percentageError,
-                      onPreviewChanged: refreshPreview,
-                      onPercentageChanged: calculateSuggestedThreshold,
-                      onCustomPercentageChanged: (value) {
-                        setState(() {
-                          useCustomPercentage = value;
-                        });
-                      },
-                      onUnitChanged: (value) {
-                        setState(() {
-                          selectedUnit = value;
-                        });
-                        calculateSuggestedThreshold();
-                      },
-                    ),
-                    FishStockPreviewCard(
-                      productName: productNameController.text,
-                      price: priceController.text,
-                      quantity: quantityController.text,
-                      lowStockLevel: lowStockController.text,
-                      selectedCategory: selectedCategory,
-                      selectedUnit: selectedUnit,
-                      selectedImage: selectedImage,
-                      uploadedImageUrl: uploadedImageUrl,
-                    ),
-                    FishStockInfoCard(
-                      productInformationComplete: productInformationComplete,
-                      photoComplete: hasProductImage,
-                      priceAndStockComplete: priceAndStockComplete,
-                      listingReady: listingReady,
-                    ),
-                  ]),
+                  ),
                 ),
               ),
             ],

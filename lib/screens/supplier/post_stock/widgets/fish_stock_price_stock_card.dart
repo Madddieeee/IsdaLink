@@ -69,8 +69,8 @@ class FishStockPriceStockCard extends StatelessWidget {
     final currentPercentage = percentageController.text.trim();
 
     return PostStockSectionCard(
-      title: 'Price, Unit, and Stock',
-      subtitle: 'Set availability and the automatic alert threshold.',
+      title: 'Price & Stock',
+      subtitle: 'Set price, unit, quantity, and your low-stock alert.',
       icon: Icons.inventory_2_outlined,
       badge: 'STEP 3',
       child: Column(
@@ -96,7 +96,7 @@ class FishStockPriceStockCard extends StatelessWidget {
                     fontWeight: FontWeight.w800,
                   ),
                   decoration: postStockInputDecoration(
-                    label: 'Selling price',
+                    label: 'Price',
                     icon: Icons.sell_outlined,
                     prefixText: '₱ ',
                     errorText: priceError,
@@ -109,7 +109,7 @@ class FishStockPriceStockCard extends StatelessWidget {
                   initialValue: selectedUnit,
                   isExpanded: true,
                   decoration: postStockInputDecoration(
-                    label: 'Selling unit',
+                    label: 'Unit',
                     icon: Icons.scale_outlined,
                   ),
                   dropdownColor: Colors.white,
@@ -150,20 +150,19 @@ class FishStockPriceStockCard extends StatelessWidget {
               label: 'Available stock',
               icon: Icons.inventory_outlined,
               suffixText: selectedUnit,
-              helperText: 'Quantity currently available for vendor orders.',
               errorText: quantityError,
             ),
           ),
-          const SizedBox(height: 13),
+          const SizedBox(height: 11),
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [Color(0xFFEAF8FF), Color(0xFFEAFBF5)],
               ),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(color: const Color(0xFF75CFEA).withAlpha(88)),
             ),
             child: Column(
@@ -181,13 +180,13 @@ class FishStockPriceStockCard extends StatelessWidget {
                             'Automatic Low-Stock Alert',
                             style: TextStyle(
                               color: Color(0xFF102C44),
-                              fontSize: 12.3,
+                              fontSize: 11.5,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
                           SizedBox(height: 3),
                           Text(
-                            'Choose when the supplier stock alert should appear.',
+                            'Choose when you want IsdaLink to warn you.',
                             style: TextStyle(
                               color: Color(0xFF657C8E),
                               fontSize: 9.3,
@@ -199,7 +198,7 @@ class FishStockPriceStockCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 Wrap(
                   spacing: 7,
                   runSpacing: 7,
@@ -261,7 +260,7 @@ class FishStockPriceStockCard extends StatelessWidget {
                 const SizedBox(height: 11),
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
+                  padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
                   decoration: BoxDecoration(
                     color: Colors.white.withAlpha(210),
                     borderRadius: BorderRadius.circular(16),
@@ -270,8 +269,8 @@ class FishStockPriceStockCard extends StatelessWidget {
                   child: Row(
                     children: [
                       Container(
-                        width: 39,
-                        height: 39,
+                        width: 36,
+                        height: 36,
                         decoration: BoxDecoration(
                           color: quantity > 0 && validPercentage
                               ? const Color(0xFFE7F8F1)
@@ -285,7 +284,7 @@ class FishStockPriceStockCard extends StatelessWidget {
                           color: quantity > 0 && validPercentage
                               ? const Color(0xFF147D64)
                               : const Color(0xFFFF7A1A),
-                          size: 21,
+                          size: 19,
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -293,11 +292,9 @@ class FishStockPriceStockCard extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              quantity > 0 && validPercentage
-                                  ? 'CALCULATED ALERT LEVEL'
-                                  : 'ALERT LEVEL',
-                              style: const TextStyle(
+                            const Text(
+                              'LOW-STOCK ALERT',
+                              style: TextStyle(
                                 color: Color(0xFF7B8FA3),
                                 fontSize: 8.4,
                                 letterSpacing: 0.5,
@@ -307,21 +304,21 @@ class FishStockPriceStockCard extends StatelessWidget {
                             const SizedBox(height: 4),
                             Text(
                               quantity > 0 && validPercentage
-                                  ? '${formatNumber(suggested)} $selectedUnit'
+                                  ? 'Alert at ${formatNumber(suggested)} $selectedUnit'
                                   : 'Enter available stock',
                               style: TextStyle(
                                 color: quantity > 0 && validPercentage
                                     ? const Color(0xFF102C44)
                                     : const Color(0xFF8BA0B1),
-                                fontSize: 13,
+                                fontSize: 12,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
                             const SizedBox(height: 3),
                             Text(
                               quantity > 0 && validPercentage
-                                  ? 'You will receive an alert when remaining stock reaches this quantity.'
-                                  : 'The threshold will be calculated automatically.',
+                                  ? '${formatNumber(percentage)}% of your available stock.'
+                                  : 'IsdaLink will calculate the alert quantity automatically.',
                               style: const TextStyle(
                                 color: Color(0xFF657C8E),
                                 fontSize: 9.3,
@@ -385,7 +382,7 @@ class _PercentageChoice extends StatelessWidget {
         borderRadius: BorderRadius.circular(99),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
-          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
           decoration: BoxDecoration(
             color: selected
                 ? const Color(0xFF146BFF)

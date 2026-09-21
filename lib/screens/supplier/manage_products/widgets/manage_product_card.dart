@@ -94,7 +94,7 @@ class ManageProductCard extends StatelessWidget {
     );
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(15),
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -178,19 +178,19 @@ class ManageProductCard extends StatelessWidget {
       duration: const Duration(milliseconds: 180),
       opacity: isBusy ? 0.60 : 1,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 14),
-        padding: const EdgeInsets.all(14),
+        margin: const EdgeInsets.only(bottom: 9),
+        padding: const EdgeInsets.all(11),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(19),
           border: Border.all(
             color: hidden ? const Color(0xFFDDE5EB) : const Color(0xFFE1EBF2),
           ),
           boxShadow: const [
             BoxShadow(
               color: Color(0x0F00152A),
-              blurRadius: 17,
-              offset: Offset(0, 8),
+              blurRadius: 13,
+              offset: Offset(0, 6),
             ),
           ],
         ),
@@ -200,11 +200,11 @@ class ManageProductCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(
-                  width: 86,
-                  height: 86,
+                  width: 68,
+                  height: 68,
                   child: productImage(imageUrl: imageUrl, hidden: hidden),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -219,7 +219,7 @@ class ManageProductCard extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 color: Color(0xFF102C44),
-                                fontSize: 15,
+                                fontSize: 13.5,
                                 height: 1.15,
                                 fontWeight: FontWeight.w900,
                               ),
@@ -229,7 +229,7 @@ class ManageProductCard extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8,
-                              vertical: 5,
+                              vertical: 4,
                             ),
                             decoration: BoxDecoration(
                               color: currentColor.withAlpha(18),
@@ -239,7 +239,7 @@ class ManageProductCard extends StatelessWidget {
                               currentStatus,
                               style: TextStyle(
                                 color: currentColor,
-                                fontSize: 8.3,
+                                fontSize: 8,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
@@ -253,16 +253,16 @@ class ManageProductCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Color(0xFF7B8FA3),
-                          fontSize: 10.3,
+                          fontSize: 10.0,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
                       Text(
                         '₱${formatNumber(price)} per $quantityUnit',
                         style: const TextStyle(
                           color: Color(0xFF0875D1),
-                          fontSize: 12.5,
+                          fontSize: 11.3,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
@@ -272,7 +272,7 @@ class ManageProductCard extends StatelessWidget {
                           'Photo required on next edit',
                           style: TextStyle(
                             color: Color(0xFFFF7A1A),
-                            fontSize: 8.8,
+                            fontSize: 8.2,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
@@ -282,7 +282,7 @@ class ManageProductCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 9),
             Row(
               children: [
                 Expanded(
@@ -293,7 +293,7 @@ class ManageProductCard extends StatelessWidget {
                     valueColor: currentColor,
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 Expanded(
                   child: _ProductMetric(
                     icon: Icons.notifications_active_outlined,
@@ -301,7 +301,7 @@ class ManageProductCard extends StatelessWidget {
                     value: '${formatNumber(lowStockLevel)} $quantityUnit',
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 Expanded(
                   child: _ProductMetric(
                     icon: Icons.percent_rounded,
@@ -311,27 +311,27 @@ class ManageProductCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 9),
             Row(
               children: [
                 if (canRestock) ...[
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: isBusy ? null : onRestock,
-                      icon: const Icon(Icons.add_box_outlined, size: 18),
+                      icon: const Icon(Icons.add_box_outlined, size: 16),
                       label: const Text(
                         'Add Stock',
-                        style: TextStyle(fontWeight: FontWeight.w900),
+                        style: TextStyle(fontSize: 10.2, fontWeight: FontWeight.w900),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFE7F8F1),
                         foregroundColor: const Color(0xFF147D64),
                         disabledBackgroundColor: const Color(0xFFEAF0F4),
                         disabledForegroundColor: const Color(0xFF9AABB8),
-                        minimumSize: const Size.fromHeight(44),
+                        minimumSize: const Size.fromHeight(38),
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(13),
                         ),
                       ),
                     ),
@@ -341,19 +341,19 @@ class ManageProductCard extends StatelessWidget {
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: isBusy ? null : onEdit,
-                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    icon: const Icon(Icons.edit_outlined, size: 16),
                     label: const Text(
-                      'Edit Product',
-                      style: TextStyle(fontWeight: FontWeight.w900),
+                      'Edit',
+                      style: TextStyle(fontSize: 10.2, fontWeight: FontWeight.w900),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF146BFF),
                       foregroundColor: Colors.white,
                       disabledBackgroundColor: const Color(0xFFDCE7EF),
-                      minimumSize: const Size.fromHeight(44),
+                      minimumSize: const Size.fromHeight(38),
                       elevation: 0,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(13),
                       ),
                     ),
                   ),
@@ -465,14 +465,14 @@ class _ProductMetric extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(7, 9, 7, 9),
+      padding: const EdgeInsets.fromLTRB(6, 6, 6, 6),
       decoration: BoxDecoration(
         color: const Color(0xFFF4F8FB),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(13),
       ),
       child: Column(
         children: [
-          Icon(icon, color: const Color(0xFF146BFF), size: 17),
+          Icon(icon, color: const Color(0xFF146BFF), size: 15),
           const SizedBox(height: 4),
           Text(
             label,
@@ -491,7 +491,7 @@ class _ProductMetric extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               color: valueColor,
-              fontSize: 8.8,
+              fontSize: 8.2,
               fontWeight: FontWeight.w900,
             ),
           ),
