@@ -1,29 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:isdalink/screens/welcome_screen.dart';
+import 'package:isdalink/screens/auth/login_screen.dart';
 
 void main() {
   testWidgets(
-    'Welcome screen renders without Firebase services',
-    (
-      WidgetTester tester,
-    ) async {
+    'Primary signed-out screen renders the IsdaLink login flow',
+    (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: WelcomeScreen(),
+          home: LoginScreen(showBackButton: false),
         ),
       );
 
       await tester.pump();
 
-      expect(
-        find.text('IsdaLink'),
-        findsOneWidget,
-      );
-      expect(
-        find.text('Tap anywhere to continue'),
-        findsOneWidget,
-      );
+      expect(find.text('Sign in to IsdaLink'), findsOneWidget);
+      expect(find.text('Log In'), findsOneWidget);
+      expect(find.text('Create Account'), findsOneWidget);
     },
   );
 }

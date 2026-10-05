@@ -88,6 +88,32 @@ class SupplierOrderCard extends StatelessWidget {
     }
   }
 
+  String requestLabel(String type) {
+    switch (type.trim()) {
+      case 'suki_tawad':
+        return 'Suki / Tawad request';
+      case 'handling':
+        return 'Handling request';
+      case 'delivery':
+        return 'Delivery note';
+      default:
+        return 'Buyer request';
+    }
+  }
+
+  IconData requestIcon(String type) {
+    switch (type.trim()) {
+      case 'suki_tawad':
+        return Icons.handshake_outlined;
+      case 'handling':
+        return Icons.inventory_2_outlined;
+      case 'delivery':
+        return Icons.local_shipping_outlined;
+      default:
+        return Icons.chat_bubble_outline_rounded;
+    }
+  }
+
   Color statusColor(String status) {
     final normalized = normalizedStatus(status);
 
@@ -453,6 +479,21 @@ class SupplierOrderCard extends StatelessWidget {
       'deliveryAddress',
       'location',
     ], fallback: 'Caraga Region');
+    final orderRequestType = firstString(
+      data,
+      const ['orderRequestType'],
+      fallback: '',
+    );
+    final orderRequestMessage = firstString(
+      data,
+      const ['orderRequestMessage'],
+      fallback: '',
+    );
+    final hasOrderRequest =
+        data['hasOrderRequest'] == true ||
+        orderRequestType.isNotEmpty ||
+        orderRequestMessage.isNotEmpty;
+    final orderRequestLabel = requestLabel(orderRequestType);
     final deliveryLatitude = firstDouble(data, const ['deliveryLatitude']);
     final deliveryLongitude = firstDouble(data, const ['deliveryLongitude']);
     final hasDeliveryPin = deliveryLatitude != 0 && deliveryLongitude != 0;
@@ -667,6 +708,74 @@ class SupplierOrderCard extends StatelessWidget {
                                 height: 1.3,
                                 fontWeight: FontWeight.w800,
                               ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  if (hasOrderRequest) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.fromLTRB(11, 10, 11, 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0F8FD),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFD6EAF5)),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE1F2FC),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(
+                              requestIcon(orderRequestType),
+                              color: const Color(0xFF0875D1),
+                              size: 17,
+                            ),
+                          ),
+                          const SizedBox(width: 9),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  orderRequestLabel,
+                                  style: const TextStyle(
+                                    color: Color(0xFF102C44),
+                                    fontSize: 10.3,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                if (orderRequestMessage.isNotEmpty) ...[
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    orderRequestMessage,
+                                    style: const TextStyle(
+                                      color: Color(0xFF52677A),
+                                      fontSize: 9.2,
+                                      height: 1.35,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                                const SizedBox(height: 4),
+                                const Text(
+                                  'Review this request before accepting. Any tawad or discount is not applied automatically to the COD total.',
+                                  style: TextStyle(
+                                    color: Color(0xFF7B8FA3),
+                                    fontSize: 8.2,
+                                    height: 1.3,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],

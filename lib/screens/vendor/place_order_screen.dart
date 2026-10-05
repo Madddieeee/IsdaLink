@@ -37,6 +37,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
   final TextEditingController buyerNameController = TextEditingController();
   final TextEditingController buyerPhoneController = TextEditingController();
   final TextEditingController buyerAddressController = TextEditingController();
+  final TextEditingController supplierRequestController = TextEditingController();
   final ScrollController checkoutScrollController = ScrollController();
   final GlobalKey buyerDetailsKey = GlobalKey();
 
@@ -54,12 +55,41 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
   String savedBuyerPhone = '';
   String savedBuyerAddress = '';
   String supplierStoreImageUrl = '';
+  String supplierRequestType = '';
 
   double get totalAmount => widget.product.price * quantity;
   bool get hasDetailedDeliveryAddress =>
       !isGeneralLocationOnly(buyerAddressController.text);
   bool get hasSavedDeliveryPin =>
       deliveryLatitude != null && deliveryLongitude != null;
+
+  bool get hasSupplierRequest =>
+      supplierRequestType.trim().isNotEmpty ||
+      supplierRequestController.text.trim().isNotEmpty;
+
+  String get supplierRequestLabel {
+    switch (supplierRequestType.trim()) {
+      case 'suki_tawad':
+        return 'Suki / Tawad';
+      case 'handling':
+        return 'Handling request';
+      case 'delivery':
+        return 'Delivery note';
+      default:
+        return 'Buyer request';
+    }
+  }
+
+  String get supplierRequestSummary {
+    final message = supplierRequestController.text.trim();
+    if (message.isEmpty) {
+      return supplierRequestLabel;
+    }
+    if (supplierRequestType.trim().isEmpty) {
+      return message;
+    }
+    return '$supplierRequestLabel — $message';
+  }
 
   String normalizeAddress(String value) {
     return value
@@ -149,6 +179,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
     buyerNameController.dispose();
     buyerPhoneController.dispose();
     buyerAddressController.dispose();
+    supplierRequestController.dispose();
     checkoutScrollController.dispose();
     super.dispose();
   }
@@ -871,6 +902,11 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                             label: 'Payment',
                             value: 'Cash on Delivery',
                           ),
+                          if (hasSupplierRequest)
+                            _ConfirmationRow(
+                              label: 'Supplier request',
+                              value: supplierRequestSummary,
+                            ),
                           _DeliveryConfirmationRow(
                             address: fullDeliveryAddress,
                           ),
@@ -1042,6 +1078,8 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
         buyerName: buyerNameController.text.trim(),
         buyerPhone: buyerPhoneController.text.trim(),
         buyerAddress: fullDeliveryAddress,
+        orderRequestType: supplierRequestType.trim(),
+        orderRequestMessage: supplierRequestController.text.trim(),
         deliveryLatitude: deliveryLatitude!,
         deliveryLongitude: deliveryLongitude!,
         deliveryProvince: buyerProvince,
@@ -1215,7 +1253,9 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                 ),
                 const SizedBox(height: 9),
                 Text(
-                  '${widget.product.name} was sent to ${widget.supplier.name}. You can follow the supplier response in My Orders.',
+                  hasSupplierRequest
+                      ? '${widget.product.name} and your request were sent to ${widget.supplier.name}. The supplier can review them before accepting or declining the order.'
+                      : '${widget.product.name} was sent to ${widget.supplier.name}. You can follow the supplier response in My Orders.',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: Color(0xFF52677A),
@@ -1247,6 +1287,11 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                         label: 'Payment',
                         value: 'Cash on Delivery',
                       ),
+                      if (hasSupplierRequest)
+                        _ConfirmationRow(
+                          label: 'Supplier request',
+                          value: supplierRequestSummary,
+                        ),
                       const Divider(height: 20, color: Color(0xFFDDE8EF)),
                       _ConfirmationRow(
                         label: 'Total payment',
@@ -1484,8 +1529,14 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F8FB),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Color(0xFF06355F),
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF4F8FB),
       resizeToAvoidBottomInset: true,
       body: ListView(
         controller: checkoutScrollController,
@@ -1495,7 +1546,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
         children: [
           const PlaceOrderHeader(),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+            padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
             child: Column(
               children: [
                 KeyedSubtree(
@@ -1532,6 +1583,15 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                   onIncrease: increaseQuantity,
                   onEnterQuantity: enterSpecificQuantity,
                 ),
+                SupplierRequestCard(
+                  controller: supplierRequestController,
+                  selectedType: supplierRequestType,
+                  onTypeChanged: (value) {
+                    setState(() {
+                      supplierRequestType = value;
+                    });
+                  },
+                ),
                 PaymentDetailsCard(
                   product: widget.product,
                   quantity: quantity,
@@ -1542,7 +1602,8 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: checkoutBottomBar(),
+        bottomNavigationBar: checkoutBottomBar(),
+      ),
     );
   }
 }

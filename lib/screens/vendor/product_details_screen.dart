@@ -1816,15 +1816,15 @@ class ProductDetailsScreen extends StatelessWidget {
     BuildContext context,
     FishProduct activeProduct,
   ) {
+    final topPadding = MediaQuery.paddingOf(context).top;
     final screenWidth = MediaQuery.sizeOf(context).width;
     const horizontalPadding = 18.0;
-    const bannerHeight = 170.0;
-    const imageOverlap = 50.0;
     const imageAspectRatio = 1.56;
-
+    final headerHeight = topPadding + 170;
     final imageWidth = screenWidth - (horizontalPadding * 2);
     final imageHeight = imageWidth / imageAspectRatio;
-    final expandedHeight = bannerHeight + imageHeight - imageOverlap;
+    final imageTop = headerHeight - 8;
+    final totalHeight = imageTop + imageHeight + 12;
 
     final imageUrl = activeProduct.imageUrl.trim();
     final hasImage = hasNetworkImage(imageUrl);
@@ -1837,7 +1837,7 @@ class ProductDetailsScreen extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             color: const Color(0xFFEAF7FB),
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: BorderRadius.circular(26),
             border: Border.all(color: Colors.white, width: 5),
             boxShadow: const [
               BoxShadow(
@@ -1848,7 +1848,7 @@ class ProductDetailsScreen extends StatelessWidget {
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(23),
+            borderRadius: BorderRadius.circular(21),
             child: hasImage
                 ? Image.network(
                     imageUrl,
@@ -1879,96 +1879,155 @@ class ProductDetailsScreen extends StatelessWidget {
       );
     }
 
-    return SliverAppBar(
-      pinned: false,
-      floating: false,
-      snap: false,
-      stretch: false,
-      elevation: 0,
-      scrolledUnderElevation: 1,
-      shadowColor: const Color(0x1F001325),
-      surfaceTintColor: Colors.transparent,
-      backgroundColor: const Color(0xFFF2FAFE),
-      expandedHeight: expandedHeight,
-      collapsedHeight: expandedHeight,
-      toolbarHeight: 60,
-      leadingWidth: 68,
-      clipBehavior: Clip.hardEdge,
-      systemOverlayStyle: const SystemUiOverlayStyle(
-        statusBarColor: Color(0xFF0B476A),
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
-      ),
-      leading: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 7, 7, 7),
-        child: Material(
-          color: Colors.white.withAlpha(246),
-          shape: const CircleBorder(),
-          elevation: 1,
-          shadowColor: Color(0x24001325),
-          child: InkWell(
-            onTap: () => Navigator.pop(context),
-            customBorder: const CircleBorder(),
-            child: const Icon(
-              Icons.arrow_back_rounded,
-              size: 22,
-              color: Color(0xFF0B476A),
-            ),
-          ),
-        ),
-      ),
-      titleSpacing: 3,
-      title: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.centerLeft,
-        children: [
-          const Positioned(
-            left: -18,
-            top: -10,
-            bottom: -10,
-            child: IgnorePointer(
-              child: SizedBox(
-                width: 190,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: RadialGradient(
-                      center: Alignment(-0.28, 0),
-                      radius: 0.72,
-                      colors: [
-                        Color(0xD6FFFFFF),
-                        Color(0x78FFFFFF),
-                        Color(0x00FFFFFF),
-                      ],
-                      stops: [0.0, 0.48, 1.0],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Image.asset(
-            'assets/images/isdalink_logo.png',
-            height: 40,
-            fit: BoxFit.contain,
-          ),
-        ],
-      ),
-      flexibleSpace: FlexibleSpaceBar(
-        collapseMode: CollapseMode.parallax,
-        background: Stack(
-          clipBehavior: Clip.hardEdge,
+    return SliverToBoxAdapter(
+      child: SizedBox(
+        height: totalHeight,
+        child: Stack(
+          clipBehavior: Clip.none,
           children: [
-            const Positioned(
+            Positioned(
               left: 0,
               right: 0,
               top: 0,
-              height: bannerHeight,
-              child: ProductDetailsBannerHeaderBackground(),
+              height: headerHeight,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.asset(
+                    'assets/images/order_center_caraga_header.png',
+                    fit: BoxFit.cover,
+                    alignment: Alignment.center,
+                    filterQuality: FilterQuality.high,
+                    errorBuilder: (_, _, _) => const DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFF06355F), Color(0xFF0875D1)],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Color(0x52001E38), Color(0xC500294A)],
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(18, topPadding + 8, 18, 35),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Material(
+                              color: Colors.white.withAlpha(28),
+                              borderRadius: BorderRadius.circular(14),
+                              child: InkWell(
+                                onTap: () => Navigator.pop(context),
+                                borderRadius: BorderRadius.circular(14),
+                                child: Container(
+                                  width: 46,
+                                  height: 46,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: Colors.white.withAlpha(52),
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.arrow_back_rounded,
+                                    color: Colors.white,
+                                    size: 24,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const Spacer(),
+                            ColorFiltered(
+                              colorFilter: const ColorFilter.mode(
+                                Colors.white,
+                                BlendMode.srcIn,
+                              ),
+                              child: Image.asset(
+                                'assets/images/isdalink_logo.png',
+                                width: 92,
+                                fit: BoxFit.contain,
+                                filterQuality: FilterQuality.high,
+                                errorBuilder: (_, _, _) => const Text(
+                                  'IsdaLink',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Spacer(),
+                        const Text(
+                          'FISH MARKET',
+                          style: TextStyle(
+                            color: Color(0xFFD7EEFA),
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.7,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Product Details',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 27,
+                            height: 1,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.55,
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        const Text(
+                          'Check the catch, supplier, and COD details before ordering.',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Color(0xFFE2F4FA),
+                            fontSize: 10.2,
+                            height: 1.2,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Positioned(
+              left: 0,
+              right: 0,
+              top: headerHeight - 28,
+              bottom: 0,
+              child: const DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Color(0xFFF4F8FB),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                ),
+              ),
             ),
             Positioned(
               left: horizontalPadding,
               right: horizontalPadding,
-              top: bannerHeight - imageOverlap,
+              top: imageTop,
               height: imageHeight,
               child: productImage(),
             ),
@@ -2056,8 +2115,8 @@ class ProductDetailsScreen extends StatelessWidget {
         normalizedDescription != 'fresh fish';
 
     return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(18, 3, 18, 7),
+      color: const Color(0xFFF4F8FB),
+      padding: const EdgeInsets.fromLTRB(18, 8, 18, 7),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2245,11 +2304,12 @@ class ProductDetailsScreen extends StatelessWidget {
                     Flexible(
                       child: Text(
                         activeSupplier.name,
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Color(0xFF102C44),
-                          fontSize: 15.5,
+                          fontSize: 14.8,
+                          height: 1.08,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
@@ -2643,10 +2703,8 @@ class ProductDetailsScreen extends StatelessWidget {
             statusBarBrightness: Brightness.dark,
           ),
           child: Scaffold(
-            backgroundColor: Colors.white,
-            body: _ProductDetailsScrollChrome(
-              onBack: () => Navigator.pop(context),
-              child: CustomScrollView(
+            backgroundColor: const Color(0xFFF4F8FB),
+            body: CustomScrollView(
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
                 physics: const ClampingScrollPhysics(),
@@ -2698,7 +2756,6 @@ class ProductDetailsScreen extends StatelessWidget {
                   const SliverToBoxAdapter(child: SizedBox(height: 22)),
                 ],
               ),
-            ),
             bottomNavigationBar: polishedBottomOrderBar(
               context,
               activeSupplier,

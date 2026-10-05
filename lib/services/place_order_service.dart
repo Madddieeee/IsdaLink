@@ -105,6 +105,8 @@ class PlaceOrderService {
     String buyerName = '',
     String buyerPhone = '',
     String buyerAddress = '',
+    String orderRequestType = '',
+    String orderRequestMessage = '',
     required double deliveryLatitude,
     required double deliveryLongitude,
     required String deliveryProvince,
@@ -173,6 +175,22 @@ class PlaceOrderService {
     final finalVendorAddress = buyerAddress.trim().isNotEmpty
         ? buyerAddress.trim()
         : savedVendorAddress;
+
+    const allowedRequestTypes = <String>{
+      'suki_tawad',
+      'handling',
+      'delivery',
+    };
+    final normalizedRequestType = allowedRequestTypes.contains(
+      orderRequestType.trim(),
+    )
+        ? orderRequestType.trim()
+        : '';
+    final normalizedRequestMessage = orderRequestMessage.trim().length > 180
+        ? orderRequestMessage.trim().substring(0, 180)
+        : orderRequestMessage.trim();
+    final hasOrderRequest =
+        normalizedRequestType.isNotEmpty || normalizedRequestMessage.isNotEmpty;
 
     final stockReference = FirebaseFirestore.instance
         .collection('fishStocks')
@@ -296,6 +314,9 @@ class PlaceOrderService {
         'deliveryProvince': deliveryProvince.trim(),
         'deliveryCityMunicipality': deliveryCityMunicipality.trim(),
         'deliveryReferenceType': 'map_pin',
+        'hasOrderRequest': hasOrderRequest,
+        'orderRequestType': normalizedRequestType,
+        'orderRequestMessage': normalizedRequestMessage,
         'quantity': quantity,
         'quantityUnit': product.quantityUnit,
         'unitPrice': product.price,
@@ -321,8 +342,9 @@ class PlaceOrderService {
           'supplierId': realSupplierId,
           'orderId': orderReference.id,
           'title': 'New COD Order',
-          'message':
-              'Order #$orderCode: $finalVendorName ordered ${OrderHelpers.formatNumber(quantity.toDouble())} ${product.quantityUnit} of ${product.name}.',
+          'message': hasOrderRequest
+              ? 'Order #$orderCode: $finalVendorName ordered ${OrderHelpers.formatNumber(quantity.toDouble())} ${product.quantityUnit} of ${product.name} and added a buyer request.'
+              : 'Order #$orderCode: $finalVendorName ordered ${OrderHelpers.formatNumber(quantity.toDouble())} ${product.quantityUnit} of ${product.name}.',
           'type': 'new_order',
           'status': 'Pending',
           'isRead': false,

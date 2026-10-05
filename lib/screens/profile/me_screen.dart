@@ -14,7 +14,7 @@ import 'package:isdalink/screens/supplier/supplier_manage_products_screen.dart';
 import 'package:isdalink/screens/vendor/browse_suppliers_screen.dart';
 import 'package:isdalink/screens/vendor/latest_fish_stocks_screen.dart';
 import 'package:isdalink/screens/vendor/my_orders_screen.dart';
-import 'package:isdalink/screens/welcome_screen.dart';
+import 'package:isdalink/screens/auth/login_screen.dart';
 import 'package:isdalink/services/cloudinary_upload_service.dart';
 import 'package:isdalink/services/user_profile_service.dart';
 import 'package:isdalink/utils/app_error_message.dart';
@@ -105,6 +105,7 @@ class _MeScreenState
 
   bool isUploadingProfileImage = false;
   bool approvalDialogScheduled = false;
+  bool isLoggingOut = false;
 
   void openScreen(
     Widget screen,
@@ -147,28 +148,167 @@ class _MeScreenState
     );
   }
 
-  Future<
-    void
-  >
-  logout() async {
-    await profileService.logout();
-
-    if (!mounted) {
+  Future<void> logout() async {
+    if (isLoggingOut) {
       return;
     }
 
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(
-        builder:
-            (
-              _,
-            ) => const WelcomeScreen(),
-      ),
-      (
-        route,
-      ) => false,
+    final user = profileService.currentUser;
+
+    if (user == null) {
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const LoginScreen(showBackButton: false),
+        ),
+        (route) => false,
+      );
+      return;
+    }
+
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          contentPadding: const EdgeInsets.fromLTRB(22, 24, 22, 10),
+          actionsPadding: const EdgeInsets.fromLTRB(18, 4, 18, 18),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 58,
+                height: 58,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFFEEEE),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.logout_rounded,
+                  color: Color(0xFFD32F2F),
+                  size: 29,
+                ),
+              ),
+              const SizedBox(height: 14),
+              const Text(
+                'Log out of IsdaLink?',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Color(0xFF102C44),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 7),
+              const Text(
+                'You will need to sign in again to access your account and continue using IsdaLink.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Color(0xFF6D8497),
+                  fontSize: 11.5,
+                  height: 1.4,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(dialogContext, false),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF52677A),
+                      minimumSize: const Size.fromHeight(46),
+                      side: const BorderSide(color: Color(0xFFD4E1EA)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => Navigator.pop(dialogContext, true),
+                    icon: const Icon(Icons.logout_rounded, size: 18),
+                    label: const Text('Log Out'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD32F2F),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      minimumSize: const Size.fromHeight(46),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      textStyle: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
     );
+
+    if (shouldLogout != true || !mounted) {
+      return;
+    }
+
+    setState(() {
+      isLoggingOut = true;
+    });
+
+    try {
+      await profileService.logout();
+
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const LoginScreen(showBackButton: false),
+        ),
+        (route) => false,
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      showMessage(
+        AppErrorMessage.from(
+          error,
+          fallback: 'Unable to log out right now. Please try again.',
+        ),
+        isError: true,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoggingOut = false;
+        });
+      }
+    }
   }
 
   Future<
@@ -835,37 +975,33 @@ class _MeScreenState
         supplierStatus ==
         'rejected';
 
-    return Column(
-      children: [
-        _AccountCenterHeader(
-          name: name,
-          email: email,
-          location: location,
-          profileImageUrl: profileImageUrl,
-          isApprovedSupplier: isApprovedSupplier,
-          isPendingSupplier: isPendingSupplier,
-          isRejectedSupplier: isRejectedSupplier,
-          isUploadingProfileImage: isUploadingProfileImage,
-          onBack: () => Navigator.pop(
-            context,
-          ),
-          onProfilePhotoTap: () => showProfilePhotoOptions(
+    return CustomScrollView(
+      physics: const ClampingScrollPhysics(),
+      slivers: [
+        SliverToBoxAdapter(
+          child: _AccountCenterHeader(
+            name: name,
+            email: email,
+            location: location,
             profileImageUrl: profileImageUrl,
             isApprovedSupplier: isApprovedSupplier,
-          ),
-          onManageProfile: () => openScreen(
-            const ManageProfileScreen(),
+            isPendingSupplier: isPendingSupplier,
+            isRejectedSupplier: isRejectedSupplier,
+            isUploadingProfileImage: isUploadingProfileImage,
+            onBack: () => Navigator.pop(context),
+            onProfilePhotoTap: () => showProfilePhotoOptions(
+              profileImageUrl: profileImageUrl,
+              isApprovedSupplier: isApprovedSupplier,
+            ),
+            onManageProfile: () => openScreen(
+              const ManageProfileScreen(),
+            ),
           ),
         ),
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(
-              16,
-              10,
-              16,
-              28,
-            ),
-            children: [
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate([
               if (!isApprovedSupplier) ...[
                 _VendorToolsCard(
                   onBrowseSuppliers: () => openScreen(
@@ -883,9 +1019,7 @@ class _MeScreenState
                     ),
                   ),
                 ),
-                const SizedBox(
-                  height: 13,
-                ),
+                const SizedBox(height: 13),
               ],
               if (uid.isNotEmpty)
                 _VendorOrdersOverviewCard(
@@ -894,11 +1028,8 @@ class _MeScreenState
                     const MyOrdersScreen(),
                   ),
                 ),
-              const SizedBox(
-                height: 13,
-              ),
-              if (isApprovedSupplier &&
-                  uid.isNotEmpty) ...[
+              const SizedBox(height: 13),
+              if (isApprovedSupplier && uid.isNotEmpty) ...[
                 _SupplierCenterCard(
                   uid: uid,
                   onOpenDashboard: () => openScreen(
@@ -919,9 +1050,7 @@ class _MeScreenState
                     ),
                   ),
                 ),
-                const SizedBox(
-                  height: 13,
-                ),
+                const SizedBox(height: 13),
               ] else ...[
                 _SupplierUpgradeCard(
                   isPending: isPendingSupplier,
@@ -930,9 +1059,7 @@ class _MeScreenState
                     const SupplierActivationScreen(),
                   ),
                 ),
-                const SizedBox(
-                  height: 13,
-                ),
+                const SizedBox(height: 13),
               ],
               _AccountSettingsCard(
                 onAccountInformation: () => openScreen(
@@ -946,7 +1073,7 @@ class _MeScreenState
                 ),
                 onLogout: logout,
               ),
-            ],
+            ]),
           ),
         ),
       ],
@@ -1263,34 +1390,24 @@ class _AccountCenterHeader extends StatelessWidget {
                                 spacing: 7,
                                 runSpacing: 5,
                                 children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: accountColor.withAlpha(18),
-                                      borderRadius: BorderRadius.circular(99),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          accountIcon,
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        accountIcon,
+                                        color: accountColor,
+                                        size: 13,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        accountLabel,
+                                        style: TextStyle(
                                           color: accountColor,
-                                          size: 13,
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.w800,
                                         ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          accountLabel,
-                                          style: TextStyle(
-                                            color: accountColor,
-                                            fontSize: 9.5,
-                                            fontWeight: FontWeight.w800,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                                      ),
+                                    ],
                                   ),
                                   Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -1691,18 +1808,10 @@ class _VendorOrdersOverviewCard
               icon: Icons.receipt_long_rounded,
               actionLabel: 'View Orders',
               onActionTap: onOpenOrders,
-              child: Container(
+              child: Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(
-                    0xFFF1F8FC,
-                  ),
-                  borderRadius: BorderRadius.circular(
-                    18,
-                  ),
+                  horizontal: 4,
+                  vertical: 2,
                 ),
                 child: Row(
                   children: [
@@ -1883,87 +1992,6 @@ class _SupplierCenterCard
                       onActionTap: onOpenDashboard,
                       child: Column(
                         children: [
-                          if (pending >
-                              0) ...[
-                            Material(
-                              color: const Color(
-                                0xFFFFF7E8,
-                              ),
-                              borderRadius: BorderRadius.circular(
-                                17,
-                              ),
-                              child: InkWell(
-                                onTap: onOrders,
-                                borderRadius: BorderRadius.circular(
-                                  17,
-                                ),
-                                child: Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.all(
-                                    12,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(
-                                      17,
-                                    ),
-                                    border: Border.all(
-                                      color:
-                                          const Color(
-                                            0xFFFF7A1A,
-                                          ).withAlpha(
-                                            55,
-                                          ),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 40,
-                                        height: 40,
-                                        decoration: BoxDecoration(
-                                          color: const Color(
-                                            0xFFFF7A1A,
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            13,
-                                          ),
-                                        ),
-                                        child: const Icon(
-                                          Icons.notifications_active_outlined,
-                                          color: Colors.white,
-                                          size: 20,
-                                        ),
-                                      ),
-                                      const SizedBox(
-                                        width: 10,
-                                      ),
-                                      Expanded(
-                                        child: Text(
-                                          '$pending pending COD order'
-                                          '${pending == 1 ? '' : 's'}',
-                                          style: const TextStyle(
-                                            color: Color(0xFF102C44),
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w900,
-                                          ),
-                                        ),
-                                      ),
-                                      const Icon(
-                                        Icons.arrow_forward_rounded,
-                                        color: Color(
-                                          0xFFFF7A1A,
-                                        ),
-                                        size: 19,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(
-                              height: 13,
-                            ),
-                          ],
                           Row(
                             children: [
                               Expanded(
@@ -1998,20 +2026,12 @@ class _SupplierCenterCard
                             ],
                           ),
                           const SizedBox(
-                            height: 13,
+                            height: 11,
                           ),
-                          Container(
+                          Padding(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 12,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(
-                                0xFFF1F8FC,
-                              ),
-                              borderRadius: BorderRadius.circular(
-                                18,
-                              ),
+                              horizontal: 4,
+                              vertical: 2,
                             ),
                             child: Row(
                               children: [
@@ -2154,27 +2174,15 @@ class _SectionCard
         children: [
           Row(
             children: [
-              Container(
-                width: 39,
-                height: 39,
-                decoration: BoxDecoration(
-                  color: const Color(
-                    0xFFE8F8FD,
-                  ),
-                  borderRadius: BorderRadius.circular(
-                    13,
-                  ),
+              Icon(
+                icon,
+                color: const Color(
+                  0xFF0875D1,
                 ),
-                child: Icon(
-                  icon,
-                  color: const Color(
-                    0xFF0875D1,
-                  ),
-                  size: 20,
-                ),
+                size: 23,
               ),
               const SizedBox(
-                width: 10,
+                width: 11,
               ),
               Expanded(
                 child: Column(
@@ -2500,21 +2508,15 @@ class _SettingsTile
               ),
               child: Row(
                 children: [
-                  Container(
+                  SizedBox(
                     width: 39,
                     height: 39,
-                    decoration: BoxDecoration(
-                      color: color.withAlpha(
-                        17,
+                    child: Center(
+                      child: Icon(
+                        icon,
+                        color: color,
+                        size: 21,
                       ),
-                      borderRadius: BorderRadius.circular(
-                        13,
-                      ),
-                    ),
-                    child: Icon(
-                      icon,
-                      color: color,
-                      size: 19,
                     ),
                   ),
                   const SizedBox(

@@ -71,11 +71,17 @@ flutter:
     - assets/images/home_ocean_banner.png
     - assets/images/home_header_boat.png
     - assets/images/isdalink_logo.png
+    - assets/images/isdalink_logo_body.png
+    - assets/images/isdalink_logo_wave.png
+    - assets/images/isdalink_fish_mark.png
+    - assets/images/isdalink_wordmark.png
+    - assets/images/isdalink_wave.png
     - assets/images/Fish.png
     - assets/images/Store.png
     - assets/images/Store1.png
     - assets/images/productdetailwave.png
     - assets/images/order_center_caraga_header.png
+    - assets/images/auth_caraga_header.jpg
     - assets/images/supplier_application_header_bg.png
     - assets/images/supplier_analytics_header_bg.png
     - assets/images/vendor_analytics_header_bg.png

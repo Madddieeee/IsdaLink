@@ -20,6 +20,33 @@ class NotificationNavigationService {
       return false;
     }
 
+    final destination = destinationFor(data);
+
+    if (destination == null) {
+      return false;
+    }
+
+    navigator.push(MaterialPageRoute<void>(builder: (_) => destination));
+    return true;
+  }
+
+  static bool openFromContext({
+    required BuildContext context,
+    required Map<String, dynamic> data,
+  }) {
+    final destination = destinationFor(data);
+
+    if (destination == null) {
+      return false;
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => destination),
+    );
+    return true;
+  }
+
+  static Widget? destinationFor(Map<String, dynamic> data) {
     final type = _value(data, 'type').toLowerCase();
     final status = _value(data, 'status').toLowerCase();
     final orderId = _value(data, 'orderId');
@@ -29,45 +56,32 @@ class NotificationNavigationService {
     final grouped =
         _value(data, 'grouped').toLowerCase() == 'true' || unreadCount > 1;
 
-    Widget? destination;
-
     switch (type) {
       case 'new_order':
-        destination = SupplierCodOrdersScreen(
+        return SupplierCodOrdersScreen(
           initialOrderId: grouped ? '' : orderId,
         );
-        break;
       case 'order_status':
-        destination = MyOrdersScreen(initialOrderId: grouped ? '' : orderId);
-        break;
+        return MyOrdersScreen(initialOrderId: grouped ? '' : orderId);
       case 'stock_alert':
-        destination = const SupplierManageProductsScreen();
-        break;
+        return const SupplierManageProductsScreen();
       case 'admin_supplier_application':
-        destination = const AdminDashboardScreen();
-        break;
+        return const AdminDashboardScreen();
       case 'admin_supplier_change_request':
-        destination = subjectId.isEmpty
+        return subjectId.isEmpty
             ? const AdminDashboardScreen()
             : SupplierChangeRequestReviewScreen(supplierId: subjectId);
-        break;
       case 'supplier_profile_change':
-        destination = const SupplierProfileScreen();
-        break;
+        return const SupplierProfileScreen();
       case 'supplier_application_status':
-        destination = status == 'approved'
+        return status == 'approved'
             ? const SupplierProfileScreen()
-            : SupplierActivationScreen(rejectionNotificationId: notificationId);
-        break;
+            : SupplierActivationScreen(
+                rejectionNotificationId: notificationId,
+              );
+      default:
+        return null;
     }
-
-    if (destination == null) {
-      return false;
-    }
-
-    navigator.push(MaterialPageRoute<void>(builder: (_) => destination!));
-
-    return true;
   }
 
   static String _value(Map<String, dynamic> data, String key) {

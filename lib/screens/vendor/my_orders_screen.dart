@@ -415,24 +415,12 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                       const SizedBox(height: 16),
                       Row(
                         children: [
-                          Container(
-                            width: 46,
-                            height: 46,
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [Color(0xFF0875D1), Color(0xFF12B6D6)],
-                              ),
-                              borderRadius: BorderRadius.circular(15),
-                            ),
-                            child: Icon(
-                              isEditing
-                                  ? Icons.edit_note_rounded
-                                  : Icons.star_rounded,
-                              color: Colors.white,
-                              size: 24,
-                            ),
+                          Icon(
+                            isEditing
+                                ? Icons.edit_note_rounded
+                                : Icons.star_rounded,
+                            color: const Color(0xFF0875D1),
+                            size: 29,
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -489,20 +477,12 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                         ),
                         child: Row(
                           children: [
-                            Container(
-                              width: 39,
-                              height: 39,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(13),
-                              ),
-                              child: const Icon(
-                                Icons.storefront_rounded,
-                                color: Color(0xFF0875D1),
-                                size: 20,
-                              ),
+                            const Icon(
+                              Icons.storefront_rounded,
+                              color: Color(0xFF0875D1),
+                              size: 23,
                             ),
-                            const SizedBox(width: 10),
+                            const SizedBox(width: 11),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -793,20 +773,12 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
         ),
         child: Row(
           children: [
-            Container(
-              width: 37,
-              height: 37,
-              decoration: BoxDecoration(
-                color: const Color(0xFFEAF6FD),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.rate_review_outlined,
-                color: Color(0xFF0875D1),
-                size: 19,
-              ),
+            const Icon(
+              Icons.rate_review_outlined,
+              color: Color(0xFF0875D1),
+              size: 22,
             ),
-            const SizedBox(width: 9),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1108,18 +1080,10 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
       ),
       child: Column(
         children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: const Color(0xFFE8F8FD),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Icon(
-              Icons.receipt_long_outlined,
-              color: Color(0xFF0875D1),
-              size: 30,
-            ),
+          const Icon(
+            Icons.receipt_long_outlined,
+            color: Color(0xFF0875D1),
+            size: 36,
           ),
           const SizedBox(height: 12),
           Text(
@@ -1325,15 +1289,7 @@ class _DialogIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 38,
-      height: 38,
-      decoration: BoxDecoration(
-        color: color.withAlpha(18),
-        borderRadius: BorderRadius.circular(13),
-      ),
-      child: Icon(icon, color: color, size: 20),
-    );
+    return Icon(icon, color: color, size: 25);
   }
 }
 

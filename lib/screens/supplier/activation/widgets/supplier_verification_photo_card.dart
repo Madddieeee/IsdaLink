@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:isdalink/widgets/verification_evidence_image.dart';
 
-class SupplierVerificationPhotoCard extends StatelessWidget {
+class SupplierVerificationPhotoCard
+    extends
+        StatelessWidget {
   const SupplierVerificationPhotoCard({
     super.key,
     required this.title,
@@ -29,32 +31,56 @@ class SupplierVerificationPhotoCard extends StatelessWidget {
   final VoidCallback onRemove;
 
   bool get ready =>
-      (storagePath.trim().isNotEmpty || imageUrl.trim().isNotEmpty) &&
+      (storagePath.trim().isNotEmpty ||
+          imageUrl.trim().isNotEmpty) &&
       !uploading;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
     Widget preview;
 
-    if (localImage != null) {
-      preview = Image.file(File(localImage!.path), fit: BoxFit.cover);
-    } else if (storagePath.trim().isNotEmpty || imageUrl.trim().isNotEmpty) {
+    if (localImage !=
+        null) {
+      preview = Image.file(
+        File(
+          localImage!.path,
+        ),
+        fit: BoxFit.cover,
+      );
+    } else if (storagePath.trim().isNotEmpty ||
+        imageUrl.trim().isNotEmpty) {
       preview = VerificationEvidenceImage(
         storagePath: storagePath,
         legacyUrl: imageUrl,
         fit: BoxFit.cover,
       );
     } else {
-      preview = _Placeholder(permit: permit);
+      preview = _Placeholder(
+        permit: permit,
+      );
     }
 
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(
+        10,
+      ),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FBFD),
-        borderRadius: BorderRadius.circular(17),
+        color: const Color(
+          0xFFF8FBFD,
+        ),
+        borderRadius: BorderRadius.circular(
+          17,
+        ),
         border: Border.all(
-          color: ready ? const Color(0xFF77D7B7) : const Color(0xFFE1EBF2),
+          color: ready
+              ? const Color(
+                  0xFF77D7B7,
+                )
+              : const Color(
+                  0xFFE1EBF2,
+                ),
         ),
       ),
       child: Column(
@@ -62,7 +88,9 @@ class SupplierVerificationPhotoCard extends StatelessWidget {
           Row(
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(
+                  12,
+                ),
                 child: SizedBox(
                   width: 58,
                   height: 58,
@@ -72,7 +100,9 @@ class SupplierVerificationPhotoCard extends StatelessWidget {
                       preview,
                       if (uploading)
                         Container(
-                          color: Colors.black.withAlpha(90),
+                          color: Colors.black.withAlpha(
+                            90,
+                          ),
                           child: const Center(
                             child: CircularProgressIndicator(
                               color: Colors.white,
@@ -84,7 +114,9 @@ class SupplierVerificationPhotoCard extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 11),
+              const SizedBox(
+                width: 11,
+              ),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -95,7 +127,9 @@ class SupplierVerificationPhotoCard extends StatelessWidget {
                           child: Text(
                             title,
                             style: const TextStyle(
-                              color: Color(0xFF102C44),
+                              color: Color(
+                                0xFF102C44,
+                              ),
                               fontSize: 10.9,
                               fontWeight: FontWeight.w900,
                             ),
@@ -108,9 +142,15 @@ class SupplierVerificationPhotoCard extends StatelessWidget {
                           ),
                           decoration: BoxDecoration(
                             color: ready
-                                ? const Color(0xFFE7F8F1)
-                                : const Color(0xFFEAF7FB),
-                            borderRadius: BorderRadius.circular(99),
+                                ? const Color(
+                                    0xFFE7F8F1,
+                                  )
+                                : const Color(
+                                    0xFFEAF7FB,
+                                  ),
+                            borderRadius: BorderRadius.circular(
+                              99,
+                            ),
                           ),
                           child: Text(
                             uploading
@@ -120,8 +160,12 @@ class SupplierVerificationPhotoCard extends StatelessWidget {
                                 : 'Required',
                             style: TextStyle(
                               color: ready
-                                  ? const Color(0xFF147D64)
-                                  : const Color(0xFF146BFF),
+                                  ? const Color(
+                                      0xFF147D64,
+                                    )
+                                  : const Color(
+                                      0xFF146BFF,
+                                    ),
                               fontSize: 8.3,
                               fontWeight: FontWeight.w900,
                             ),
@@ -129,13 +173,17 @@ class SupplierVerificationPhotoCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(
+                      height: 4,
+                    ),
                     Text(
                       subtitle,
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: Color(0xFF7B8FA3),
+                        color: Color(
+                          0xFF7B8FA3,
+                        ),
                         fontSize: 9.5,
                         height: 1.3,
                         fontWeight: FontWeight.w600,
@@ -146,47 +194,84 @@ class SupplierVerificationPhotoCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(
+            height: 10,
+          ),
           Row(
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: uploading ? null : onUpload,
+                  onPressed: uploading
+                      ? null
+                      : onUpload,
                   icon: Icon(
-                    ready ? Icons.change_circle_outlined : Icons.upload_rounded,
+                    ready
+                        ? Icons.change_circle_outlined
+                        : Icons.upload_rounded,
                     size: 18,
                   ),
                   label: Text(
-                    ready ? 'Change Photo' : 'Upload Photo',
-                    style: const TextStyle(fontWeight: FontWeight.w900),
+                    ready
+                        ? 'Change Photo'
+                        : 'Upload Photo',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF087FCB),
+                    backgroundColor: const Color(
+                      0xFF087FCB,
+                    ),
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor: const Color(0xFF8BA6BD),
-                    minimumSize: const Size.fromHeight(40),
+                    disabledBackgroundColor: const Color(
+                      0xFF8BA6BD,
+                    ),
+                    minimumSize: const Size.fromHeight(
+                      40,
+                    ),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(
+                        12,
+                      ),
                     ),
                   ),
                 ),
               ),
-              if (localImage != null ||
+              if (localImage !=
+                      null ||
                   storagePath.trim().isNotEmpty ||
                   imageUrl.trim().isNotEmpty) ...[
-                const SizedBox(width: 9),
+                const SizedBox(
+                  width: 9,
+                ),
                 OutlinedButton(
-                  onPressed: uploading ? null : onRemove,
+                  onPressed: uploading
+                      ? null
+                      : onRemove,
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFD94A45),
-                    side: const BorderSide(color: Color(0xFFF0B8B5)),
-                    minimumSize: const Size(46, 40),
+                    foregroundColor: const Color(
+                      0xFFD94A45,
+                    ),
+                    side: const BorderSide(
+                      color: Color(
+                        0xFFF0B8B5,
+                      ),
+                    ),
+                    minimumSize: const Size(
+                      46,
+                      40,
+                    ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(
+                        12,
+                      ),
                     ),
                   ),
-                  child: const Icon(Icons.delete_outline_rounded, size: 19),
+                  child: const Icon(
+                    Icons.delete_outline_rounded,
+                    size: 19,
+                  ),
                 ),
               ],
             ],
@@ -197,19 +282,31 @@ class SupplierVerificationPhotoCard extends StatelessWidget {
   }
 }
 
-class _Placeholder extends StatelessWidget {
-  const _Placeholder({required this.permit});
+class _Placeholder
+    extends
+        StatelessWidget {
+  const _Placeholder({
+    required this.permit,
+  });
 
   final bool permit;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
     return Container(
-      color: const Color(0xFFEAF7FB),
+      color: const Color(
+        0xFFEAF7FB,
+      ),
       alignment: Alignment.center,
       child: Icon(
-        permit ? Icons.badge_outlined : Icons.storefront_outlined,
-        color: const Color(0xFF087FCB),
+        permit
+            ? Icons.badge_outlined
+            : Icons.storefront_outlined,
+        color: const Color(
+          0xFF087FCB,
+        ),
         size: 28,
       ),
     );

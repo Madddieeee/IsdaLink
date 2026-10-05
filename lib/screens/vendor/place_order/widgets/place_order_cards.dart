@@ -804,6 +804,187 @@ class ProductOrderCard extends StatelessWidget {
   }
 }
 
+
+class SupplierRequestCard extends StatelessWidget {
+  const SupplierRequestCard({
+    super.key,
+    required this.controller,
+    required this.selectedType,
+    required this.onTypeChanged,
+  });
+
+  final TextEditingController controller;
+  final String selectedType;
+  final ValueChanged<String> onTypeChanged;
+
+  static const requestTypes = <(String, String, IconData)>[
+    ('suki_tawad', 'Suki / Tawad', Icons.handshake_outlined),
+    ('handling', 'Handling', Icons.inventory_2_outlined),
+    ('delivery', 'Delivery', Icons.local_shipping_outlined),
+  ];
+
+  Widget requestChip({
+    required String value,
+    required String label,
+    required IconData icon,
+  }) {
+    final selected = selectedType == value;
+
+    return Material(
+      color: selected ? const Color(0xFFE7F5FF) : Colors.white,
+      borderRadius: BorderRadius.circular(99),
+      child: InkWell(
+        onTap: () => onTypeChanged(selected ? '' : value),
+        borderRadius: BorderRadius.circular(99),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(99),
+            border: Border.all(
+              color: selected
+                  ? const Color(0xFF0875D1)
+                  : const Color(0xFFD8E5ED),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 15,
+                color: selected
+                    ? const Color(0xFF0875D1)
+                    : const Color(0xFF667D8F),
+              ),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: TextStyle(
+                  color: selected
+                      ? const Color(0xFF0875D1)
+                      : const Color(0xFF52677A),
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CheckoutCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const CheckoutSectionTitle(
+            icon: Icons.chat_bubble_outline_rounded,
+            title: 'Message to Supplier',
+            trailing: _OptionalPill(),
+          ),
+          const SizedBox(height: 6),
+          const Padding(
+            padding: EdgeInsets.only(left: 44),
+            child: Text(
+              'Supplier sees this before accepting.',
+              style: TextStyle(
+                color: Color(0xFF7B8FA3),
+                fontSize: 9.4,
+                height: 1.3,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 7,
+            runSpacing: 7,
+            children: [
+              for (final type in requestTypes)
+                requestChip(value: type.$1, label: type.$2, icon: type.$3),
+            ],
+          ),
+          const SizedBox(height: 11),
+          TextField(
+            controller: controller,
+            minLines: 2,
+            maxLines: 3,
+            maxLength: 180,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: InputDecoration(
+              hintText: selectedType == 'suki_tawad'
+                  ? 'Suki ko, pwede po ba may tawad?'
+                  : selectedType == 'handling'
+                      ? 'Please pack the fish carefully.'
+                      : selectedType == 'delivery'
+                          ? 'Please call before delivery.'
+                          : 'Write a short message...',
+              hintStyle: const TextStyle(
+                color: Color(0xFF94A7B5),
+                fontSize: 10.3,
+                height: 1.35,
+                fontWeight: FontWeight.w600,
+              ),
+              counterText: '',
+              filled: true,
+              fillColor: const Color(0xFFF4F8FB),
+              contentPadding: const EdgeInsets.fromLTRB(13, 12, 13, 10),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: Color(0xFFDCE8EF)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: Color(0xFFDCE8EF)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(
+                  color: Color(0xFF0875D1),
+                  width: 1.4,
+                ),
+              ),
+            ),
+            style: const TextStyle(
+              color: Color(0xFF102C44),
+              fontSize: 10.8,
+              height: 1.35,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OptionalPill extends StatelessWidget {
+  const _OptionalPill();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F6F9),
+        borderRadius: BorderRadius.circular(99),
+      ),
+      child: const Text(
+        'OPTIONAL',
+        style: TextStyle(
+          color: Color(0xFF73899A),
+          fontSize: 7.8,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+}
+
 class PaymentDetailsCard extends StatelessWidget {
   const PaymentDetailsCard({
     super.key,
@@ -903,15 +1084,7 @@ class PaymentDetailsCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           summaryRow(
-            label: 'Unit price',
-            value: '₱${formatPrice(product.price)} / $cleanPriceUnit',
-          ),
-          summaryRow(
-            label: 'Quantity',
-            value: '$quantity ${product.quantityUnit}',
-          ),
-          summaryRow(
-            label: 'Merchandise subtotal',
+            label: 'Order subtotal',
             value: '₱${formatPrice(totalAmount)}',
           ),
           summaryRow(label: 'Payment method', value: 'Cash on Delivery'),

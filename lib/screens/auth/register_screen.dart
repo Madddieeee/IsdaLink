@@ -1,10 +1,8 @@
-import 'dart:ui' as ui;
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:isdalink/screens/home/home_screen.dart';
+import 'package:isdalink/screens/auth/registration_welcome_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -224,6 +222,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool obscurePassword = true;
   bool obscureConfirmPassword = true;
   bool submitted = false;
+  bool stepValidationAttempted = false;
+  int currentStep = 0;
 
   String? selectedProvince;
   String? selectedCity;
@@ -572,7 +572,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withAlpha(180),
+      barrierColor: Colors.black.withAlpha(120),
       builder: (sheetContext) {
         return _LocationPickerSearchHost(
           builder: (context, searchController, searchFocusNode) {
@@ -580,10 +580,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               builder: (context, setSheetState) {
                 final query = searchController.text.trim().toLowerCase();
                 final filteredOptions = options.where((option) {
-                  if (query.isEmpty) {
-                    return true;
-                  }
-
+                  if (query.isEmpty) return true;
                   return option.toLowerCase().contains(query);
                 }).toList();
 
@@ -593,18 +590,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   child: Container(
                     constraints: BoxConstraints(
-                      maxHeight: MediaQuery.of(sheetContext).size.height * 0.80,
+                      maxHeight: MediaQuery.of(sheetContext).size.height * 0.78,
                     ),
                     decoration: const BoxDecoration(
-                      color: Color(0xFF0B2435),
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(28),
-                      ),
+                      color: Colors.white,
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
                       boxShadow: [
                         BoxShadow(
-                          color: Color(0x7A000000),
-                          blurRadius: 34,
-                          offset: Offset(0, -12),
+                          color: Color(0x3000152A),
+                          blurRadius: 26,
+                          offset: Offset(0, -8),
                         ),
                       ],
                     ),
@@ -616,27 +611,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           width: 42,
                           height: 4,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF7790A2),
+                            color: const Color(0xFFD6E2E9),
                             borderRadius: BorderRadius.circular(99),
                           ),
                         ),
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(20, 16, 12, 14),
+                          padding: const EdgeInsets.fromLTRB(20, 14, 10, 12),
                           child: Row(
                             children: [
-                              Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF146BFF).withAlpha(38),
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                child: Icon(
-                                  icon,
-                                  color: const Color(0xFF89CAFF),
-                                  size: 23,
-                                ),
-                              ),
+                              Icon(icon, color: const Color(0xFF0875D1), size: 25),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
@@ -645,18 +628,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     Text(
                                       title,
                                       style: const TextStyle(
-                                        color: Colors.white,
+                                        color: Color(0xFF102C44),
                                         fontSize: 17,
                                         fontWeight: FontWeight.w900,
                                       ),
                                     ),
-                                    const SizedBox(height: 3),
+                                    const SizedBox(height: 2),
                                     Text(
                                       subtitle,
                                       style: const TextStyle(
-                                        color: Color(0xFF9EB5C5),
+                                        color: Color(0xFF718697),
                                         fontSize: 10.5,
-                                        fontWeight: FontWeight.w700,
+                                        height: 1.3,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                   ],
@@ -670,7 +654,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 },
                                 icon: const Icon(
                                   Icons.close_rounded,
-                                  color: Color(0xFFD5E4EF),
+                                  color: Color(0xFF536C7E),
                                 ),
                               ),
                             ],
@@ -678,30 +662,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         if (searchable)
                           Padding(
-                            padding: const EdgeInsets.fromLTRB(18, 0, 18, 13),
+                            padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
                             child: TextField(
                               controller: searchController,
                               focusNode: searchFocusNode,
                               autofocus: false,
                               style: const TextStyle(
-                                color: Colors.white,
+                                color: Color(0xFF102C44),
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
                               ),
                               textInputAction: TextInputAction.search,
-                              onChanged: (_) {
-                                setSheetState(() {});
-                              },
+                              onChanged: (_) => setSheetState(() {}),
                               decoration: InputDecoration(
                                 hintText: 'Search city or municipality',
                                 hintStyle: const TextStyle(
-                                  color: Color(0xFF7F98AA),
+                                  color: Color(0xFF8A9CA9),
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                 ),
                                 prefixIcon: const Icon(
                                   Icons.search_rounded,
-                                  color: Color(0xFF8DB7D3),
+                                  color: Color(0xFF0875D1),
                                 ),
                                 suffixIcon: searchController.text.isEmpty
                                     ? null
@@ -713,32 +695,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                         },
                                         icon: const Icon(
                                           Icons.close_rounded,
-                                          color: Color(0xFFA9BFCD),
+                                          color: Color(0xFF7A90A1),
                                         ),
                                       ),
                                 filled: true,
-                                fillColor: const Color(0xFF071C2A),
+                                fillColor: const Color(0xFFF3F7FA),
                                 contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 15,
-                                  vertical: 14,
+                                  horizontal: 14,
+                                  vertical: 13,
                                 ),
                                 enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(15),
+                                  borderRadius: BorderRadius.circular(16),
                                   borderSide: const BorderSide(
-                                    color: Color(0x3D8DB7D3),
+                                    color: Color(0xFFD7E4EC),
                                   ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(16),
                                   borderSide: const BorderSide(
-                                    color: Color(0xFF32A9FF),
+                                    color: Color(0xFF0875D1),
                                     width: 1.5,
                                   ),
                                 ),
                               ),
                             ),
                           ),
-                        Divider(height: 1, color: Colors.white.withAlpha(16)),
+                        const Divider(height: 1, color: Color(0xFFE7EEF3)),
                         Flexible(
                           child: filteredOptions.isEmpty
                               ? const Padding(
@@ -748,15 +730,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     children: [
                                       Icon(
                                         Icons.search_off_rounded,
-                                        color: Color(0xFF7892A5),
-                                        size: 38,
+                                        color: Color(0xFF8A9CA9),
+                                        size: 36,
                                       ),
-                                      SizedBox(height: 10),
+                                      SizedBox(height: 9),
                                       Text(
                                         'No matching location found.',
                                         style: TextStyle(
-                                          color: Color(0xFFA9BFCD),
-                                          fontSize: 12,
+                                          color: Color(0xFF718697),
+                                          fontSize: 11.5,
                                           fontWeight: FontWeight.w700,
                                         ),
                                       ),
@@ -765,16 +747,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 )
                               : ListView.separated(
                                   shrinkWrap: true,
-                                  padding: const EdgeInsets.fromLTRB(
-                                    12,
-                                    8,
-                                    12,
-                                    20,
-                                  ),
+                                  padding: const EdgeInsets.fromLTRB(12, 6, 12, 18),
                                   itemCount: filteredOptions.length,
-                                  separatorBuilder: (context, index) {
-                                    return const SizedBox(height: 3);
-                                  },
+                                  separatorBuilder: (context, index) => const Divider(
+                                    height: 1,
+                                    color: Color(0xFFEAF0F4),
+                                  ),
                                   itemBuilder: (context, index) {
                                     final option = filteredOptions[index];
                                     final isSelected = option == selectedValue;
@@ -786,25 +764,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                           searchFocusNode.unfocus();
                                           Navigator.pop(sheetContext, option);
                                         },
-                                        borderRadius: BorderRadius.circular(15),
+                                        borderRadius: BorderRadius.circular(14),
                                         child: AnimatedContainer(
-                                          duration: const Duration(
-                                            milliseconds: 170,
-                                          ),
+                                          duration: const Duration(milliseconds: 150),
                                           padding: const EdgeInsets.symmetric(
                                             horizontal: 14,
-                                            vertical: 14,
+                                            vertical: 12,
                                           ),
                                           decoration: BoxDecoration(
                                             color: isSelected
-                                                ? const Color(0xFF0A5162)
+                                                ? const Color(0xFFEAF5FD)
                                                 : Colors.transparent,
-                                            borderRadius: BorderRadius.circular(
-                                              15,
-                                            ),
+                                            borderRadius: BorderRadius.circular(14),
                                             border: Border.all(
                                               color: isSelected
-                                                  ? const Color(0xFF29BDE3)
+                                                  ? const Color(0xFF8BC8F2)
                                                   : Colors.transparent,
                                             ),
                                           ),
@@ -812,51 +786,41 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                             children: [
                                               Expanded(
                                                 child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
                                                   children: [
                                                     Text(
                                                       option,
                                                       style: TextStyle(
-                                                        color: Colors.white,
+                                                        color: const Color(0xFF102C44),
                                                         fontSize: 12.5,
                                                         fontWeight: isSelected
                                                             ? FontWeight.w900
-                                                            : FontWeight.w700,
+                                                            : FontWeight.w800,
                                                       ),
                                                     ),
-                                                    if (optionSubtitleBuilder !=
-                                                        null) ...[
-                                                      const SizedBox(height: 3),
+                                                    if (optionSubtitleBuilder != null) ...[
+                                                      const SizedBox(height: 2),
                                                       Text(
-                                                        optionSubtitleBuilder(
-                                                          option,
-                                                        ),
+                                                        optionSubtitleBuilder(option),
                                                         style: const TextStyle(
-                                                          color: Color(
-                                                            0xFF88A2B4,
-                                                          ),
+                                                          color: Color(0xFF7A90A1),
                                                           fontSize: 9.5,
-                                                          fontWeight:
-                                                              FontWeight.w700,
+                                                          fontWeight: FontWeight.w600,
                                                         ),
                                                       ),
                                                     ],
                                                   ],
                                                 ),
                                               ),
-                                              if (isSelected)
-                                                const Icon(
-                                                  Icons.check_circle_rounded,
-                                                  color: Color(0xFF42D59B),
-                                                  size: 20,
-                                                )
-                                              else
-                                                const Icon(
-                                                  Icons.chevron_right_rounded,
-                                                  color: Color(0xFF718A9C),
-                                                  size: 20,
-                                                ),
+                                              Icon(
+                                                isSelected
+                                                    ? Icons.check_circle_rounded
+                                                    : Icons.chevron_right_rounded,
+                                                color: isSelected
+                                                    ? const Color(0xFF16A77A)
+                                                    : const Color(0xFF8A9CA9),
+                                                size: 20,
+                                              ),
                                             ],
                                           ),
                                         ),
@@ -968,212 +932,144 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black.withAlpha(190),
+      barrierColor: Colors.black.withAlpha(115),
       builder: (dialogContext) {
         return Dialog(
           backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 22),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(26),
-            child: BackdropFilter(
-              filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(18, 18, 18, 17),
-                decoration: BoxDecoration(
-                  color: const Color(0xF20A2334),
-                  borderRadius: BorderRadius.circular(26),
-                  border: Border.all(color: const Color(0x4D7EC9FF)),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x7A000000),
-                      blurRadius: 34,
-                      offset: Offset(0, 18),
-                    ),
-                  ],
+          insetPadding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 17),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(26),
+              border: Border.all(color: const Color(0xFFE0EAF0)),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x3000152A),
+                  blurRadius: 28,
+                  offset: Offset(0, 14),
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [Color(0xFF0D5D88), Color(0xFF124BD9)],
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withAlpha(28)),
+              ],
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.person_add_alt_1_rounded,
+                        color: Color(0xFF0875D1),
+                        size: 30,
                       ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withAlpha(28),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: Colors.white.withAlpha(30),
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.person_add_alt_1_rounded,
-                              color: Colors.white,
-                              size: 25,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Create Vendor Account?',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'Review the details that will be saved to your IsdaLink profile.',
-                                  style: TextStyle(
-                                    color: Color(0xFFD5E8F7),
-                                    fontSize: 10.5,
-                                    height: 1.35,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 13,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xA3071B2A),
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: Colors.white.withAlpha(18)),
-                      ),
-                      child: Column(
-                        children: [
-                          buildSummaryRow(
-                            icon: Icons.person_outline_rounded,
-                            label: 'Name',
-                            value: fullName,
-                          ),
-                          buildSummaryRow(
-                            icon: Icons.email_outlined,
-                            label: 'Email',
-                            value: email,
-                          ),
-                          buildSummaryRow(
-                            icon: Icons.phone_outlined,
-                            label: 'Phone',
-                            value: phone,
-                          ),
-                          buildSummaryRow(
-                            icon: Icons.location_on_outlined,
-                            label: 'Location',
-                            value: location,
-                            showDivider: false,
-                            highlight: true,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                      decoration: BoxDecoration(
-                        color: const Color(0x261C9BEA),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: const Color(0x4D58B9F2)),
-                      ),
-                      child: const Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(
-                            Icons.account_circle_outlined,
-                            color: Color(0xFF8ED0FF),
-                            size: 19,
-                          ),
-                          SizedBox(width: 9),
-                          Expanded(
-                            child: Text(
-                              'Your selected location will appear automatically in Account Center after registration.',
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Create your account?',
                               style: TextStyle(
-                                color: Color(0xFFC5DDEA),
-                                fontSize: 10.2,
+                                color: Color(0xFF102C44),
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            SizedBox(height: 3),
+                            Text(
+                              'Check your details before we save them.',
+                              style: TextStyle(
+                                color: Color(0xFF718697),
+                                fontSize: 10.8,
                                 height: 1.35,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              Navigator.pop(dialogContext, false);
-                            },
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFFD4E3ED),
-                              side: const BorderSide(color: Color(0x667FB3D4)),
-                              minimumSize: const Size.fromHeight(50),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                            icon: const Icon(Icons.edit_outlined, size: 18),
-                            label: const Text(
-                              'Review',
-                              style: TextStyle(fontWeight: FontWeight.w900),
-                            ),
-                          ),
+                          ],
                         ),
-                        const SizedBox(width: 11),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.pop(dialogContext, true);
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF176FFF),
-                              foregroundColor: Colors.white,
-                              minimumSize: const Size.fromHeight(50),
-                              elevation: 8,
-                              shadowColor: const Color(0x66146BFF),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                            icon: const Icon(Icons.check_rounded, size: 19),
-                            label: const Text(
-                              'Create',
-                              style: TextStyle(fontWeight: FontWeight.w900),
-                            ),
-                          ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF7FAFC),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: const Color(0xFFE2EBF0)),
+                    ),
+                    child: Column(
+                      children: [
+                        buildSummaryRow(
+                          icon: Icons.person_outline_rounded,
+                          label: 'Name',
+                          value: fullName,
+                        ),
+                        buildSummaryRow(
+                          icon: Icons.email_outlined,
+                          label: 'Email',
+                          value: email,
+                        ),
+                        buildSummaryRow(
+                          icon: Icons.phone_outlined,
+                          label: 'Phone',
+                          value: phone,
+                        ),
+                        buildSummaryRow(
+                          icon: Icons.location_on_outlined,
+                          label: 'Location',
+                          value: location,
+                          showDivider: false,
+                          highlight: true,
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(dialogContext, false),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFF536C7E),
+                            side: const BorderSide(color: Color(0xFFD1DFE8)),
+                            minimumSize: const Size.fromHeight(49),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: const Text(
+                            'Edit Details',
+                            style: TextStyle(fontWeight: FontWeight.w900),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.pop(dialogContext, true),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF0875D1),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            minimumSize: const Size.fromHeight(49),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: const Text(
+                            'Create Account',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontWeight: FontWeight.w900),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ),
@@ -1194,132 +1090,52 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: 11),
+          padding: const EdgeInsets.symmetric(vertical: 10),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: highlight
-                      ? const Color(0x2642D59B)
-                      : const Color(0x24146BFF),
-                  borderRadius: BorderRadius.circular(9),
-                ),
-                child: Icon(
-                  icon,
-                  color: highlight
-                      ? const Color(0xFF42D59B)
-                      : const Color(0xFF7BBEFF),
-                  size: 16,
-                ),
+              Icon(
+                icon,
+                color: highlight
+                    ? const Color(0xFF16A77A)
+                    : const Color(0xFF0875D1),
+                size: 18,
               ),
               const SizedBox(width: 10),
               SizedBox(
-                width: 54,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Text(
-                    label,
-                    style: const TextStyle(
-                      color: Color(0xFF819AAC),
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                    ),
+                width: 52,
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    color: Color(0xFF7A90A1),
+                    fontSize: 10,
+                    height: 1.35,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
               Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 5),
-                  child: Text(
-                    value,
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      color: highlight ? const Color(0xFFD8FFF1) : Colors.white,
-                      fontSize: 11.5,
-                      height: 1.35,
-                      fontWeight: FontWeight.w900,
-                    ),
+                child: Text(
+                  value,
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    color: highlight
+                        ? const Color(0xFF155D4C)
+                        : const Color(0xFF102C44),
+                    fontSize: 11.2,
+                    height: 1.35,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
               ),
             ],
           ),
         ),
-        if (showDivider) Divider(height: 1, color: Colors.white.withAlpha(16)),
+        if (showDivider) const Divider(height: 1, color: Color(0xFFE4ECF1)),
       ],
     );
   }
 
-  Future<void> showRegistrationSuccess() async {
-    final navigator = Navigator.of(context, rootNavigator: true);
-
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) {
-        return PopScope(
-          canPop: false,
-          child: Dialog(
-            backgroundColor: Colors.transparent,
-            insetPadding: const EdgeInsets.symmetric(horizontal: 56),
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(22, 23, 22, 22),
-              decoration: BoxDecoration(
-                color: const Color(0xFF0B2435),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white.withAlpha(25)),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x66000000),
-                    blurRadius: 28,
-                    offset: Offset(0, 16),
-                  ),
-                ],
-              ),
-              child: const Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.check_circle_rounded,
-                    color: Color(0xFF42D59B),
-                    size: 58,
-                  ),
-                  SizedBox(height: 13),
-                  Text(
-                    'Account Created',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  SizedBox(height: 5),
-                  Text(
-                    'Welcome to IsdaLink.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Color(0xFFAFC4D2),
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-
-    await Future<void>.delayed(const Duration(milliseconds: 900));
-
-    if (mounted && navigator.canPop()) {
-      navigator.pop();
-    }
-  }
 
   Future<void> createAccount() async {
     if (isLoading) {
@@ -1414,15 +1230,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
         return;
       }
 
-      await showRegistrationSuccess();
-
-      if (!mounted) {
-        return;
-      }
-
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        PageRouteBuilder<void>(
+          transitionDuration: const Duration(milliseconds: 560),
+          pageBuilder: (_, __, ___) => RegistrationWelcomeScreen(
+            fullName: fullName,
+          ),
+          transitionsBuilder: (_, animation, __, child) {
+            final curved = CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeInOutCubic,
+            );
+
+            return FadeTransition(
+              opacity: curved,
+              child: ScaleTransition(
+                scale: Tween<double>(begin: 0.985, end: 1).animate(curved),
+                child: child,
+              ),
+            );
+          },
+        ),
         (route) => false,
       );
     } on FirebaseAuthException catch (error) {
@@ -1483,613 +1312,82 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
   }
 
+
   InputDecoration inputStyle({
     required String label,
     required IconData icon,
     Widget? suffixIcon,
     bool isValid = false,
+    String? helperText,
   }) {
-    const radius = 16.0;
-
-    final effectiveSuffixIcon =
-        suffixIcon ??
-        (isValid
-            ? const Icon(
-                Icons.check_circle_rounded,
-                color: Color(0xFF42D59B),
-                size: 20,
-              )
-            : null);
-
-    final enabledBorderColor = isValid
-        ? const Color(0x9942D59B)
-        : const Color(0x557FB3D4);
+    const radius = 18.0;
 
     return InputDecoration(
       labelText: label,
+      helperText: helperText,
       labelStyle: const TextStyle(
-        color: Color(0xFFC5D6E2),
-        fontSize: 13,
+        color: Color(0xFF6F8597),
+        fontSize: 12.5,
         fontWeight: FontWeight.w700,
       ),
       floatingLabelStyle: const TextStyle(
-        color: Color(0xFF83C8FF),
+        color: Color(0xFF0875D1),
+        fontSize: 12.5,
         fontWeight: FontWeight.w900,
       ),
-      prefixIcon: Icon(icon, color: const Color(0xFFC5D6E2), size: 21),
-      suffixIcon: effectiveSuffixIcon,
+      helperStyle: const TextStyle(
+        color: Color(0xFF7A90A1),
+        fontSize: 10,
+        height: 1.25,
+        fontWeight: FontWeight.w600,
+      ),
+      prefixIcon: Icon(icon, color: const Color(0xFF0875D1), size: 21),
+      suffixIcon: suffixIcon ??
+          (isValid
+              ? const Icon(
+                  Icons.check_circle_rounded,
+                  color: Color(0xFF16A77A),
+                  size: 20,
+                )
+              : null),
       filled: true,
-      fillColor: const Color(0xE60A2638),
-      contentPadding: const EdgeInsets.symmetric(vertical: 17, horizontal: 16),
+      fillColor: const Color(0xFFF3F7FA),
+      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 15),
       errorMaxLines: 2,
       errorStyle: const TextStyle(
-        color: Color(0xFFFFA199),
-        fontSize: 11,
+        color: Color(0xFFC84238),
+        fontSize: 10.5,
+        height: 1.25,
         fontWeight: FontWeight.w700,
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(radius),
-        borderSide: BorderSide(color: enabledBorderColor),
+        borderSide: BorderSide(
+          color: isValid ? const Color(0xFF8FD7C1) : const Color(0xFFD7E4EC),
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(radius),
-        borderSide: const BorderSide(color: Color(0xFF32A9FF), width: 1.7),
+        borderSide: const BorderSide(color: Color(0xFF0875D1), width: 1.6),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(radius),
-        borderSide: const BorderSide(color: Color(0xFFFF756B), width: 1.2),
+        borderSide: const BorderSide(color: Color(0xFFE66B62), width: 1.2),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(radius),
-        borderSide: const BorderSide(color: Color(0xFFFF8B82), width: 1.7),
+        borderSide: const BorderSide(color: Color(0xFFD9544B), width: 1.5),
       ),
       disabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(radius),
-        borderSide: const BorderSide(color: Color(0x337FB3D4)),
-      ),
-    );
-  }
-
-  Widget buildLogo() {
-    return Container(
-      width: 52,
-      height: 52,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF1596FF), Color(0xFF155BFF)],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withAlpha(42)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x73146BFF),
-            blurRadius: 22,
-            offset: Offset(0, 9),
-          ),
-        ],
-      ),
-      child: const Icon(Icons.set_meal_rounded, color: Colors.white, size: 29),
-    );
-  }
-
-  Widget buildVendorAccountCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(13, 12, 13, 12),
-      decoration: BoxDecoration(
-        color: const Color(0xC20A2638),
-        borderRadius: BorderRadius.circular(19),
-        border: Border.all(color: Colors.white.withAlpha(26)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: const Color(0xFF146BFF).withAlpha(42),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(
-              Icons.shopping_basket_outlined,
-              color: Color(0xFF8EC8FF),
-              size: 22,
-            ),
-          ),
-          const SizedBox(width: 11),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Vendor Account',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                SizedBox(height: 3),
-                Text(
-                  'Browse suppliers and place COD orders. Supplier access can be requested later.',
-                  style: TextStyle(
-                    color: Color(0xFFB9CDDB),
-                    fontSize: 10.5,
-                    height: 1.35,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget buildPickerField({
-    required String label,
-    required String? value,
-    required IconData icon,
-    required VoidCallback? onTap,
-    required FormFieldValidator<String> validator,
-    required String fieldKey,
-    String? helperText,
-    String? displayValue,
-    bool enabled = true,
-  }) {
-    final visibleValue = displayValue ?? value;
-    final isValid = fieldIsValid(fieldKey);
-
-    return FormField<String>(
-      key: ValueKey(
-        '$label-$value-$visibleValue-$selectedProvince-$selectedCity-$submitted',
-      ),
-      initialValue: value,
-      validator: validator,
-      autovalidateMode: submitted
-          ? AutovalidateMode.onUserInteraction
-          : AutovalidateMode.disabled,
-      builder: (field) {
-        final hasError = field.hasError;
-        final borderColor = hasError
-            ? const Color(0xFFFF756B)
-            : isValid
-            ? const Color(0xFF42D59B)
-            : const Color(0xFF32A9FF);
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: enabled ? onTap : null,
-                borderRadius: BorderRadius.circular(18),
-                child: Ink(
-                  height: 58,
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  decoration: BoxDecoration(
-                    color: enabled
-                        ? const Color(0xE60A2638)
-                        : const Color(0xB3071C2B),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: borderColor,
-                      width: hasError || isValid ? 1.6 : 1.35,
-                    ),
-                    boxShadow: isValid
-                        ? const [
-                            BoxShadow(
-                              color: Color(0x1F42D59B),
-                              blurRadius: 12,
-                              offset: Offset(0, 5),
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 34,
-                        height: 34,
-                        decoration: BoxDecoration(
-                          color: isValid
-                              ? const Color(0x2442D59B)
-                              : const Color(0x24146BFF),
-                          borderRadius: BorderRadius.circular(11),
-                        ),
-                        child: Icon(
-                          icon,
-                          color: isValid
-                              ? const Color(0xFF62E3B2)
-                              : enabled
-                              ? const Color(0xFFC5D6E2)
-                              : const Color(0xFF6F8798),
-                          size: 19,
-                        ),
-                      ),
-                      const SizedBox(width: 11),
-                      Expanded(
-                        child: Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            Align(
-                              alignment: visibleValue == null
-                                  ? Alignment.centerLeft
-                                  : Alignment.bottomLeft,
-                              child: Padding(
-                                padding: EdgeInsets.only(
-                                  bottom: visibleValue == null ? 0 : 8,
-                                ),
-                                child: Text(
-                                  visibleValue ?? label,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: visibleValue == null
-                                        ? const Color(0xFFB8CBD9)
-                                        : visibleValue == 'Not required'
-                                        ? const Color(0xFFB8CBD9)
-                                        : Colors.white,
-                                    fontSize: visibleValue == null ? 13 : 12.5,
-                                    fontWeight: visibleValue == null
-                                        ? FontWeight.w700
-                                        : FontWeight.w900,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            if (visibleValue != null)
-                              Positioned(
-                                top: 5,
-                                left: 0,
-                                child: Text(
-                                  label,
-                                  style: TextStyle(
-                                    color: isValid
-                                        ? const Color(0xFF71E4B8)
-                                        : const Color(0xFF83C8FF),
-                                    fontSize: 9.5,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 7),
-                      if (isValid)
-                        const Icon(
-                          Icons.check_circle_rounded,
-                          color: Color(0xFF42D59B),
-                          size: 20,
-                        ),
-                      const SizedBox(width: 3),
-                      Icon(
-                        enabled
-                            ? Icons.keyboard_arrow_down_rounded
-                            : Icons.lock_outline_rounded,
-                        color: enabled
-                            ? const Color(0xFFC7D9E5)
-                            : const Color(0xFF6F8798),
-                        size: 21,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            if (helperText != null && !hasError)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 6, 8, 0),
-                child: Text(
-                  helperText,
-                  style: const TextStyle(
-                    color: Color(0xFF8FA6B7),
-                    fontSize: 10,
-                    height: 1.35,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            if (hasError)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 6, 8, 0),
-                child: Text(
-                  field.errorText!,
-                  style: const TextStyle(
-                    color: Color(0xFFFFA199),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget buildSectionHeader({
-    required int step,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 34,
-          height: 34,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF0E7FB3), Color(0xFF145BFF)],
-            ),
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x33146BFF),
-                blurRadius: 12,
-                offset: Offset(0, 5),
-              ),
-            ],
-          ),
-          child: Icon(icon, color: Colors.white, size: 19),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Color(0xFFE7F3FA),
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  color: Color(0xFF8EA7B8),
-                  fontSize: 9.8,
-                  height: 1.35,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-          decoration: BoxDecoration(
-            color: const Color(0x26146BFF),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: const Color(0x40146BFF)),
-          ),
-          child: Text(
-            'STEP $step',
-            style: const TextStyle(
-              color: Color(0xFF8FCBFF),
-              fontSize: 8.8,
-              letterSpacing: 0.5,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget buildFormDivider() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 17),
-      child: Row(
-        children: [
-          Expanded(
-            child: Divider(height: 1, color: Colors.white.withAlpha(17)),
-          ),
-          const SizedBox(width: 9),
-          Container(
-            width: 5,
-            height: 5,
-            decoration: const BoxDecoration(
-              color: Color(0xFF2D86CE),
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 9),
-          Expanded(
-            child: Divider(height: 1, color: Colors.white.withAlpha(17)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget buildProfileLocationPreview() {
-    if (locationPreview.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
-      decoration: BoxDecoration(
-        color: const Color(0x2442D59B),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0x7042D59B)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 35,
-            height: 35,
-            decoration: BoxDecoration(
-              color: const Color(0x2E42D59B),
-              borderRadius: BorderRadius.circular(11),
-            ),
-            child: const Icon(
-              Icons.account_circle_outlined,
-              color: Color(0xFF62E3B2),
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Profile location',
-                  style: TextStyle(
-                    color: Color(0xFFBDF3DE),
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  locationPreview,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                const Text(
-                  'This will appear automatically in Account Center.',
-                  style: TextStyle(
-                    color: Color(0xFFAED9CA),
-                    fontSize: 9.4,
-                    height: 1.3,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Icon(
-            Icons.check_circle_rounded,
-            color: Color(0xFF42D59B),
-            size: 20,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget buildRegistrationPrivacyNote() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-      decoration: BoxDecoration(
-        color: const Color(0x1F1C9BEA),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0x3D58B9F2)),
-      ),
-      child: const Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.verified_user_outlined,
-            color: Color(0xFF8ED0FF),
-            size: 18,
-          ),
-          SizedBox(width: 9),
-          Expanded(
-            child: Text(
-              'Your contact and location details are used for account identification and Cash on Delivery coordination.',
-              style: TextStyle(
-                color: Color(0xFFB8CFDD),
-                fontSize: 9.8,
-                height: 1.35,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget requirementChip({required bool isMet, required String label}) {
-    return Expanded(
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 8),
-        decoration: BoxDecoration(
-          color: isMet ? const Color(0x2442D59B) : const Color(0x2B587286),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isMet ? const Color(0x8042D59B) : const Color(0x335D7890),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              isMet
-                  ? Icons.check_circle_rounded
-                  : Icons.radio_button_unchecked_rounded,
-              color: isMet ? const Color(0xFF42D59B) : const Color(0xFF7892A5),
-              size: 15,
-            ),
-            const SizedBox(width: 5),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: isMet
-                      ? const Color(0xFFD6FFF0)
-                      : const Color(0xFFA6BAC8),
-                  fontSize: 9.6,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget buildPasswordRequirements() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(11, 10, 11, 10),
-      decoration: BoxDecoration(
-        color: const Color(0xB3071C2B),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Colors.white.withAlpha(18)),
-      ),
-      child: Row(
-        children: [
-          requirementChip(isMet: hasMinimumLength, label: '8+ chars'),
-          const SizedBox(width: 7),
-          requirementChip(isMet: hasLetter, label: 'Letter'),
-          const SizedBox(width: 7),
-          requirementChip(isMet: hasNumber, label: 'Number'),
-        ],
+        borderSide: const BorderSide(color: Color(0xFFE4EBF0)),
       ),
     );
   }
 
   Widget buildRegistrationError() {
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 220),
+      duration: const Duration(milliseconds: 200),
       child: registrationError == null
           ? const SizedBox.shrink()
           : Container(
@@ -2098,16 +1396,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
               margin: const EdgeInsets.only(bottom: 14),
               padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
               decoration: BoxDecoration(
-                color: const Color(0x36FF6B61),
+                color: const Color(0xFFFFF0EE),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0x8CFF7A70)),
+                border: Border.all(color: const Color(0xFFF0C2BD)),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Icon(
                     Icons.error_outline_rounded,
-                    color: Color(0xFFFFA199),
+                    color: Color(0xFFC84238),
                     size: 19,
                   ),
                   const SizedBox(width: 9),
@@ -2115,7 +1413,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: Text(
                       registrationError!,
                       style: const TextStyle(
-                        color: Color(0xFFFFD4D0),
+                        color: Color(0xFF8F332C),
                         fontSize: 11.5,
                         height: 1.35,
                         fontWeight: FontWeight.w800,
@@ -2128,556 +1426,907 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget buildRegistrationForm() {
-    return AutofillGroup(
-      child: Form(
-        key: formKey,
-        autovalidateMode: submitted
-            ? AutovalidateMode.onUserInteraction
-            : AutovalidateMode.disabled,
-        child: Column(
+  Widget buildPickerField({
+    required String label,
+    required String? value,
+    required IconData icon,
+    required VoidCallback? onTap,
+    required FormFieldValidator<String> validator,
+    required String fieldKey,
+    String? helperText,
+    bool enabled = true,
+  }) {
+    final isValid = fieldIsValid(fieldKey);
+
+    return FormField<String>(
+      key: ValueKey('$label-$value-$selectedProvince-$selectedCity-$currentStep'),
+      initialValue: value,
+      validator: validator,
+      autovalidateMode: (stepValidationAttempted || submitted)
+          ? AutovalidateMode.onUserInteraction
+          : AutovalidateMode.disabled,
+      builder: (field) {
+        final hasError = field.hasError;
+        final borderColor = hasError
+            ? const Color(0xFFE66B62)
+            : isValid
+                ? const Color(0xFF8FD7C1)
+                : const Color(0xFFD7E4EC);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            buildRegistrationError(),
-            buildSectionHeader(
-              step: 1,
-              icon: Icons.badge_outlined,
-              title: 'Personal details',
-              subtitle: 'Enter the information used to identify your account.',
-            ),
-            const SizedBox(height: 13),
-            TextFormField(
-              controller: fullNameController,
-              focusNode: fullNameFocusNode,
-              enabled: !isLoading,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-              ),
-              textCapitalization: TextCapitalization.words,
-              textInputAction: TextInputAction.next,
-              autofillHints: const [AutofillHints.name],
-              validator: validateFullName,
-              onChanged: (_) {
-                fieldChanged('fullName');
-              },
-              onFieldSubmitted: (_) {
-                emailFocusNode.requestFocus();
-              },
-              decoration: inputStyle(
-                label: 'Full Name',
-                icon: Icons.person_outline_rounded,
-                isValid: fieldIsValid('fullName'),
-              ),
-            ),
-            const SizedBox(height: 13),
-            TextFormField(
-              controller: emailController,
-              focusNode: emailFocusNode,
-              enabled: !isLoading,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-              ),
-              keyboardType: TextInputType.emailAddress,
-              textInputAction: TextInputAction.next,
-              autofillHints: const [AutofillHints.email],
-              autocorrect: false,
-              enableSuggestions: false,
-              validator: validateEmail,
-              onChanged: (_) {
-                fieldChanged('email');
-              },
-              onFieldSubmitted: (_) {
-                phoneFocusNode.requestFocus();
-              },
-              decoration: inputStyle(
-                label: 'Email Address',
-                icon: Icons.email_outlined,
-                isValid: fieldIsValid('email'),
-              ),
-            ),
-            const SizedBox(height: 13),
-            TextFormField(
-              controller: phoneController,
-              focusNode: phoneFocusNode,
-              enabled: !isLoading,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-              ),
-              keyboardType: TextInputType.phone,
-              textInputAction: TextInputAction.next,
-              autofillHints: const [AutofillHints.telephoneNumber],
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[0-9+\s-]')),
-                LengthLimitingTextInputFormatter(16),
-              ],
-              validator: validatePhone,
-              onChanged: (_) {
-                fieldChanged('phone');
-              },
-              onFieldSubmitted: (_) {
-                showProvincePicker();
-              },
-              decoration:
-                  inputStyle(
-                    label: 'Phone Number',
-                    icon: Icons.phone_outlined,
-                    isValid: fieldIsValid('phone'),
-                  ).copyWith(
-                    helperText: 'Example: 09171234567',
-                    helperStyle: const TextStyle(
-                      color: Color(0xFF829AAC),
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                    ),
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: enabled ? onTap : null,
+                borderRadius: BorderRadius.circular(18),
+                child: Ink(
+                  height: 62,
+                  padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 11),
+                  decoration: BoxDecoration(
+                    color: enabled
+                        ? const Color(0xFFF3F7FA)
+                        : const Color(0xFFF0F3F5),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: borderColor, width: 1.1),
                   ),
-            ),
-            buildFormDivider(),
-            buildSectionHeader(
-              step: 2,
-              icon: Icons.location_on_outlined,
-              title: 'Location in Caraga',
-              subtitle:
-                  'Choose your province and city or municipality for your profile.',
-            ),
-            const SizedBox(height: 13),
-            buildPickerField(
-              label: 'Province',
-              value: selectedProvince,
-              displayValue: provinceDisplayValue,
-              icon: Icons.map_outlined,
-              onTap: showProvincePicker,
-              validator: validateProvince,
-              fieldKey: 'province',
-              helperText: selectedProvince == null
-                  ? 'Choose one of Caraga’s five provinces.'
-                  : 'Used to filter the city and municipality choices.',
-            ),
-            const SizedBox(height: 11),
-            buildPickerField(
-              label: 'City or Municipality',
-              value: selectedCity,
-              icon: Icons.location_city_outlined,
-              onTap: showCityPicker,
-              validator: validateCity,
-              fieldKey: 'city',
-              helperText: selectedProvince == null
-                  ? 'Select a province first.'
-                  : selectedCity == null
-                  ? 'Tap to search all locations in $selectedProvince.'
-                  : '$selectedLocalityType in $selectedProvince.',
-              enabled: selectedProvince != null,
-            ),
-            if (locationPreview.isNotEmpty) ...[
-              const SizedBox(height: 11),
-              buildProfileLocationPreview(),
-            ],
-            buildFormDivider(),
-            buildSectionHeader(
-              step: 3,
-              icon: Icons.shield_outlined,
-              title: 'Account security',
-              subtitle: 'Create a secure password for your IsdaLink account.',
-            ),
-            const SizedBox(height: 13),
-            TextFormField(
-              controller: passwordController,
-              focusNode: passwordFocusNode,
-              enabled: !isLoading,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-              ),
-              obscureText: obscurePassword,
-              textInputAction: TextInputAction.next,
-              autofillHints: const [AutofillHints.newPassword],
-              autocorrect: false,
-              enableSuggestions: false,
-              validator: validatePassword,
-              onFieldSubmitted: (_) {
-                confirmPasswordFocusNode.requestFocus();
-              },
-              decoration: inputStyle(
-                label: 'Password',
-                icon: Icons.lock_outline_rounded,
-                suffixIcon: IconButton(
-                  tooltip: obscurePassword ? 'Show password' : 'Hide password',
-                  onPressed: isLoading
-                      ? null
-                      : () {
-                          setState(() {
-                            obscurePassword = !obscurePassword;
-                          });
-                        },
-                  icon: Icon(
-                    obscurePassword
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined,
-                    color: const Color(0xFFD5E4EF),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 9),
-            buildPasswordRequirements(),
-            const SizedBox(height: 13),
-            TextFormField(
-              controller: confirmPasswordController,
-              focusNode: confirmPasswordFocusNode,
-              enabled: !isLoading,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-              ),
-              obscureText: obscureConfirmPassword,
-              textInputAction: TextInputAction.done,
-              autofillHints: const [AutofillHints.newPassword],
-              autocorrect: false,
-              enableSuggestions: false,
-              validator: validateConfirmPassword,
-              onFieldSubmitted: (_) {
-                createAccount();
-              },
-              decoration: inputStyle(
-                label: 'Confirm Password',
-                icon: Icons.lock_reset_rounded,
-                suffixIcon: IconButton(
-                  tooltip: obscureConfirmPassword
-                      ? 'Show password'
-                      : 'Hide password',
-                  onPressed: isLoading
-                      ? null
-                      : () {
-                          setState(() {
-                            obscureConfirmPassword = !obscureConfirmPassword;
-                          });
-                        },
-                  icon: Icon(
-                    obscureConfirmPassword
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined,
-                    color: const Color(0xFFD5E4EF),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 14),
-            buildRegistrationPrivacyNote(),
-            const SizedBox(height: 14),
-            SizedBox(
-              width: double.infinity,
-              height: 53,
-              child: ElevatedButton(
-                onPressed: isLoading ? null : createAccount,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF176FFF),
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: const Color(0xFF315473),
-                  elevation: 8,
-                  shadowColor: const Color(0x73146BFF),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                child: isLoading
-                    ? const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: 19,
-                            height: 19,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2.2,
-                            ),
-                          ),
-                          SizedBox(width: 11),
-                          Text(
-                            'Creating Account...',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ],
-                      )
-                    : const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Create Account',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          SizedBox(width: 8),
-                          Icon(Icons.arrow_forward_rounded, size: 19),
-                        ],
+                  child: Row(
+                    children: [
+                      Icon(
+                        icon,
+                        color: enabled
+                            ? const Color(0xFF0875D1)
+                            : const Color(0xFF9AABB7),
+                        size: 22,
                       ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              label,
+                              style: const TextStyle(
+                                color: Color(0xFF718697),
+                                fontSize: 9.8,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 1),
+                            Text(
+                              value ?? 'Select $label',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: value == null
+                                    ? const Color(0xFF8B9CA8)
+                                    : const Color(0xFF102C44),
+                                fontSize: 13.2,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (!enabled)
+                        const Icon(
+                          Icons.lock_outline_rounded,
+                          color: Color(0xFF9AABB7),
+                          size: 20,
+                        )
+                      else if (isValid)
+                        const Icon(
+                          Icons.check_circle_rounded,
+                          color: Color(0xFF16A77A),
+                          size: 20,
+                        )
+                      else
+                        const Icon(
+                          Icons.expand_more_rounded,
+                          color: Color(0xFF60788A),
+                          size: 23,
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            if (field.hasError) ...[
+              const SizedBox(height: 5),
+              Padding(
+                padding: const EdgeInsets.only(left: 4),
+                child: Text(
+                  field.errorText!,
+                  style: const TextStyle(
+                    color: Color(0xFFC84238),
+                    fontSize: 10.2,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ] else if (helperText != null) ...[
+              const SizedBox(height: 5),
+              Padding(
+                padding: const EdgeInsets.only(left: 4),
+                child: Text(
+                  helperText,
+                  style: const TextStyle(
+                    color: Color(0xFF7A90A1),
+                    fontSize: 10,
+                    height: 1.25,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  Widget buildStepProgress() {
+    final stepLabel = currentStep == 0
+        ? 'Personal Details'
+        : currentStep == 1
+            ? 'Location'
+            : 'Security';
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            Text(
+              'Step ${currentStep + 1} of 3',
+              style: const TextStyle(
+                color: Color(0xFF0875D1),
+                fontSize: 11.2,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const Spacer(),
+            Text(
+              stepLabel,
+              style: const TextStyle(
+                color: Color(0xFF6C8293),
+                fontSize: 11.2,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 9),
+        Row(
+          children: List.generate(3, (index) {
+            final active = index <= currentStep;
+            return Expanded(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                height: 5,
+                margin: EdgeInsets.only(right: index == 2 ? 0 : 7),
+                decoration: BoxDecoration(
+                  color: active
+                      ? const Color(0xFF0875D1)
+                      : const Color(0xFFDCE6EC),
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+            );
+          }),
+        ),
+      ],
+    );
+  }
+
+  Widget buildStepHeading({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: const Color(0xFF0875D1), size: 27),
+        const SizedBox(width: 11),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Color(0xFF102C44),
+                  fontSize: 18.5,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  color: Color(0xFF718697),
+                  fontSize: 11,
+                  height: 1.32,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget buildRequirementLine({required bool met, required String label}) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          met ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+          color: met ? const Color(0xFF16A77A) : const Color(0xFF9EB0BC),
+          size: 16,
+        ),
+        const SizedBox(width: 5),
+        Text(
+          label,
+          style: TextStyle(
+            color: met ? const Color(0xFF147D64) : const Color(0xFF718697),
+            fontSize: 10.2,
+            fontWeight: met ? FontWeight.w800 : FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget buildPasswordRequirements() {
+    return Wrap(
+      spacing: 14,
+      runSpacing: 7,
+      children: [
+        buildRequirementLine(met: hasMinimumLength, label: '8+ characters'),
+        buildRequirementLine(met: hasLetter, label: 'Letter'),
+        buildRequirementLine(met: hasNumber, label: 'Number'),
+      ],
+    );
+  }
+
+  Widget buildPersonalStep() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        buildStepHeading(
+          icon: Icons.badge_outlined,
+          title: 'Personal Details',
+          subtitle: 'Tell us who you are and how we can contact you.',
+        ),
+        const SizedBox(height: 17),
+        TextFormField(
+          controller: fullNameController,
+          focusNode: fullNameFocusNode,
+          enabled: !isLoading,
+          style: const TextStyle(
+            color: Color(0xFF102C44),
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+          ),
+          textCapitalization: TextCapitalization.words,
+          textInputAction: TextInputAction.next,
+          autofillHints: const [AutofillHints.name],
+          validator: validateFullName,
+          onChanged: (_) => fieldChanged('fullName'),
+          onFieldSubmitted: (_) => emailFocusNode.requestFocus(),
+          decoration: inputStyle(
+            label: 'Full Name',
+            icon: Icons.person_outline_rounded,
+            isValid: fieldIsValid('fullName'),
+          ),
+        ),
+        const SizedBox(height: 14),
+        TextFormField(
+          controller: emailController,
+          focusNode: emailFocusNode,
+          enabled: !isLoading,
+          style: const TextStyle(
+            color: Color(0xFF102C44),
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+          ),
+          keyboardType: TextInputType.emailAddress,
+          textInputAction: TextInputAction.next,
+          autofillHints: const [AutofillHints.email],
+          autocorrect: false,
+          enableSuggestions: false,
+          validator: validateEmail,
+          onChanged: (_) => fieldChanged('email'),
+          onFieldSubmitted: (_) => phoneFocusNode.requestFocus(),
+          decoration: inputStyle(
+            label: 'Email Address',
+            icon: Icons.email_outlined,
+            isValid: fieldIsValid('email'),
+          ),
+        ),
+        const SizedBox(height: 14),
+        TextFormField(
+          controller: phoneController,
+          focusNode: phoneFocusNode,
+          enabled: !isLoading,
+          style: const TextStyle(
+            color: Color(0xFF102C44),
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+          ),
+          keyboardType: TextInputType.phone,
+          textInputAction: TextInputAction.done,
+          autofillHints: const [AutofillHints.telephoneNumber],
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'[0-9+\s-]')),
+            LengthLimitingTextInputFormatter(16),
+          ],
+          validator: validatePhone,
+          onChanged: (_) => fieldChanged('phone'),
+          decoration: inputStyle(
+            label: 'Phone Number',
+            icon: Icons.phone_outlined,
+            isValid: fieldIsValid('phone'),
+            helperText: 'Use 09XXXXXXXXX or +639XXXXXXXXX',
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget buildLocationStep() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        buildStepHeading(
+          icon: Icons.location_on_outlined,
+          title: 'Location',
+          subtitle: 'Choose your province and city or municipality in Caraga.',
+        ),
+        const SizedBox(height: 17),
+        buildPickerField(
+          label: 'Province',
+          value: selectedProvince,
+          icon: Icons.map_outlined,
+          onTap: showProvincePicker,
+          validator: validateProvince,
+          fieldKey: 'province',
+          helperText: 'Choose one of Caraga’s five provinces.',
+        ),
+        const SizedBox(height: 14),
+        buildPickerField(
+          label: 'City or Municipality',
+          value: selectedCity,
+          icon: Icons.location_city_outlined,
+          onTap: showCityPicker,
+          validator: validateCity,
+          fieldKey: 'city',
+          helperText: selectedProvince == null
+              ? 'Select a province first.'
+              : 'Choose your city or municipality.',
+          enabled: selectedProvince != null,
+        ),
+        if (locationPreview.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEAF8F3),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFBDE6D8)),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: Color(0xFF16A77A),
+                  size: 21,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    locationPreview,
+                    style: const TextStyle(
+                      color: Color(0xFF155D4C),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget buildSecurityStep() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        buildStepHeading(
+          icon: Icons.shield_outlined,
+          title: 'Account Security',
+          subtitle: 'Create a password you will use to sign in.',
+        ),
+        const SizedBox(height: 17),
+        TextFormField(
+          controller: passwordController,
+          focusNode: passwordFocusNode,
+          enabled: !isLoading,
+          style: const TextStyle(
+            color: Color(0xFF102C44),
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+          ),
+          obscureText: obscurePassword,
+          textInputAction: TextInputAction.next,
+          autofillHints: const [AutofillHints.newPassword],
+          autocorrect: false,
+          enableSuggestions: false,
+          validator: validatePassword,
+          onFieldSubmitted: (_) => confirmPasswordFocusNode.requestFocus(),
+          decoration: inputStyle(
+            label: 'Password',
+            icon: Icons.lock_outline_rounded,
+            suffixIcon: IconButton(
+              tooltip: obscurePassword ? 'Show password' : 'Hide password',
+              onPressed: isLoading
+                  ? null
+                  : () {
+                      setState(() {
+                        obscurePassword = !obscurePassword;
+                      });
+                    },
+              icon: Icon(
+                obscurePassword
+                    ? Icons.visibility_outlined
+                    : Icons.visibility_off_outlined,
+                color: const Color(0xFF60788A),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        buildPasswordRequirements(),
+        const SizedBox(height: 14),
+        TextFormField(
+          controller: confirmPasswordController,
+          focusNode: confirmPasswordFocusNode,
+          enabled: !isLoading,
+          style: const TextStyle(
+            color: Color(0xFF102C44),
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+          ),
+          obscureText: obscureConfirmPassword,
+          textInputAction: TextInputAction.done,
+          autofillHints: const [AutofillHints.newPassword],
+          autocorrect: false,
+          enableSuggestions: false,
+          validator: validateConfirmPassword,
+          onFieldSubmitted: (_) => createAccount(),
+          decoration: inputStyle(
+            label: 'Confirm Password',
+            icon: Icons.lock_reset_rounded,
+            isValid: fieldIsValid('confirmPassword'),
+            suffixIcon: IconButton(
+              tooltip: obscureConfirmPassword
+                  ? 'Show password'
+                  : 'Hide password',
+              onPressed: isLoading
+                  ? null
+                  : () {
+                      setState(() {
+                        obscureConfirmPassword = !obscureConfirmPassword;
+                      });
+                    },
+              icon: Icon(
+                obscureConfirmPassword
+                    ? Icons.visibility_outlined
+                    : Icons.visibility_off_outlined,
+                color: const Color(0xFF60788A),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        const Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              Icons.verified_user_outlined,
+              color: Color(0xFF0875D1),
+              size: 18,
+            ),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Your contact and location details are used for account identification and Cash on Delivery coordination.',
+                style: TextStyle(
+                  color: Color(0xFF718697),
+                  fontSize: 10.5,
+                  height: 1.35,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  bool validateCurrentStep() {
+    FocusScope.of(context).unfocus();
+
+    setState(() {
+      stepValidationAttempted = true;
+      registrationError = null;
+      if (currentStep == 0) {
+        touchedFields.addAll(['fullName', 'email', 'phone']);
+      } else if (currentStep == 1) {
+        touchedFields.addAll(['province', 'city']);
+      } else {
+        touchedFields.addAll(['password', 'confirmPassword']);
+      }
+    });
+
+    final formValid = formKey.currentState?.validate() ?? false;
+
+    if (!formValid) {
+      if (currentStep == 0) {
+        if (validateFullName(fullNameController.text) != null) {
+          fullNameFocusNode.requestFocus();
+        } else if (validateEmail(emailController.text) != null) {
+          emailFocusNode.requestFocus();
+        } else if (validatePhone(phoneController.text) != null) {
+          phoneFocusNode.requestFocus();
+        }
+      } else if (currentStep == 1) {
+        if (validateProvince(selectedProvince) != null) {
+          showProvincePicker();
+        } else if (validateCity(selectedCity) != null) {
+          showCityPicker();
+        }
+      } else if (validatePassword(passwordController.text) != null) {
+        passwordFocusNode.requestFocus();
+      } else if (validateConfirmPassword(confirmPasswordController.text) != null) {
+        confirmPasswordFocusNode.requestFocus();
+      }
+    }
+
+    return formValid;
+  }
+
+  void nextStep() {
+    if (isLoading || !validateCurrentStep()) {
+      return;
+    }
+
+    if (currentStep < 2) {
+      setState(() {
+        currentStep += 1;
+        stepValidationAttempted = false;
+        submitted = false;
+        registrationError = null;
+      });
+    }
+  }
+
+  void previousStep() {
+    if (isLoading) {
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+
+    if (currentStep > 0) {
+      setState(() {
+        currentStep -= 1;
+        stepValidationAttempted = false;
+        submitted = false;
+        registrationError = null;
+      });
+    } else {
+      Navigator.pop(context);
+    }
+  }
+
+  Widget buildStepBody() {
+    switch (currentStep) {
+      case 0:
+        return buildPersonalStep();
+      case 1:
+        return buildLocationStep();
+      default:
+        return buildSecurityStep();
+    }
+  }
+
+  Widget buildHeader() {
+    return Container(
+      height: 250,
+      decoration: const BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage('assets/images/auth_caraga_header.jpg'),
+          fit: BoxFit.cover,
+        ),
+      ),
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0x2200192D), Color(0xA8063B5E)],
+          ),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 25),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: isLoading ? null : previousStep,
+                        borderRadius: BorderRadius.circular(17),
+                        child: Ink(
+                          width: 46,
+                          height: 46,
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.16),
+                            borderRadius: BorderRadius.circular(17),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.24),
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.arrow_back_rounded,
+                            color: Colors.white,
+                            size: 25,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    ColorFiltered(
+                      colorFilter: const ColorFilter.mode(
+                        Colors.white,
+                        BlendMode.srcIn,
+                      ),
+                      child: Image.asset(
+                        'assets/images/isdalink_logo.png',
+                        width: 120,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                const Text(
+                  'CREATE YOUR ACCOUNT',
+                  style: TextStyle(
+                    color: Color(0xFFD8EBF7),
+                    fontSize: 10.5,
+                    letterSpacing: 1.45,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                const Text(
+                  'Join IsdaLink',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 29,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.45,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Create your vendor account in three quick steps.',
+                  style: TextStyle(
+                    color: Color(0xFFE5F0F6),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 
-  Widget buildTopBar() {
-    return ClipRect(
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(18, 6, 18, 8),
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xD6074263), Color(0xB5073450)],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Color(0x33000000),
-                blurRadius: 18,
-                offset: Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: isLoading
-                      ? null
-                      : () {
-                          Navigator.pop(context);
-                        },
-                  borderRadius: BorderRadius.circular(99),
-                  child: Ink(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(28),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white.withAlpha(24)),
-                    ),
-                    child: const Icon(
-                      Icons.arrow_back_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 11),
-              const Expanded(
-                child: Text(
-                  'Create Account',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 19.5,
-                    letterSpacing: -0.15,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-            ],
+  Widget buildActionButtons() {
+    final isLastStep = currentStep == 2;
+
+    return SizedBox(
+      height: 52,
+      child: ElevatedButton(
+        onPressed: isLoading
+            ? null
+            : isLastStep
+                ? createAccount
+                : nextStep,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF0875D1),
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: const Color(0xFFB9CBD7),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(17),
           ),
         ),
+        child: isLoading && isLastStep
+            ? const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2.2,
+                    ),
+                  ),
+                  SizedBox(width: 9),
+                  Text(
+                    'Creating Account...',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
+                  ),
+                ],
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    isLastStep ? 'Create Account' : 'Continue',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.arrow_forward_rounded, size: 20),
+                ],
+              ),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final keyboardOpen = mediaQuery.viewInsets.bottom > 0;
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.light,
         statusBarBrightness: Brightness.dark,
-        systemNavigationBarColor: Color(0xFF020712),
-        systemNavigationBarIconBrightness: Brightness.light,
-        systemNavigationBarDividerColor: Color(0xFF020712),
+        systemNavigationBarColor: Colors.white,
+        systemNavigationBarIconBrightness: Brightness.dark,
       ),
       child: Scaffold(
         resizeToAvoidBottomInset: true,
-        backgroundColor: const Color(0xFF020712),
+        backgroundColor: const Color(0xFFF5F8FA),
         body: GestureDetector(
-          onTap: () {
-            FocusScope.of(context).unfocus();
-          },
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: Image.asset(
-                  'assets/images/login_bg.jpg',
-                  fit: BoxFit.cover,
-                ),
-              ),
-              const Positioned.fill(
-                child: ColoredBox(color: Color(0xD0061A2A)),
-              ),
-              const Positioned.fill(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Color(0x57138CE7),
-                        Color(0xEA061725),
-                        Color(0xFF020712),
-                      ],
-                      stops: [0.0, 0.50, 1.0],
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: EdgeInsets.only(
+              bottom: keyboardOpen ? 12 : mediaQuery.padding.bottom + 8,
+            ),
+            child: Column(
+              children: [
+                buildHeader(),
+                Transform.translate(
+                  offset: const Offset(0, -26),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(18, 20, 18, 22),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFF5F8FA),
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(34)),
                     ),
-                  ),
-                ),
-              ),
-              SafeArea(
-                child: Column(
-                  children: [
-                    buildTopBar(),
-                    Expanded(
-                      child: SingleChildScrollView(
-                        keyboardDismissBehavior:
-                            ScrollViewKeyboardDismissBehavior.onDrag,
-                        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-                        child: Column(
+                    child: Column(
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.fromLTRB(17, 16, 17, 18),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(color: const Color(0xFFE0EAF0)),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x1000152A),
+                                blurRadius: 16,
+                                offset: Offset(0, 7),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              buildStepProgress(),
+                              const SizedBox(height: 17),
+                              buildRegistrationError(),
+                              AutofillGroup(
+                                child: Form(
+                                  key: formKey,
+                                  autovalidateMode:
+                                      (stepValidationAttempted || submitted)
+                                          ? AutovalidateMode.onUserInteraction
+                                          : AutovalidateMode.disabled,
+                                  child: AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 180),
+                                    child: KeyedSubtree(
+                                      key: ValueKey(currentStep),
+                                      child: buildStepBody(),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 18),
+                              buildActionButtons(),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            buildLogo(),
-                            const SizedBox(height: 12),
                             const Text(
-                              'Join IsdaLink',
+                              'Already have an account? ',
                               style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 25,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'Set up your vendor account in three simple steps.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Color(0xFFB8CBD9),
-                                fontSize: 11.5,
+                                color: Color(0xFF647C8F),
+                                fontSize: 12,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
-                            const SizedBox(height: 15),
-                            buildVendorAccountCard(),
-                            const SizedBox(height: 13),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(24),
-                              child: BackdropFilter(
-                                filter: ui.ImageFilter.blur(
-                                  sigmaX: 8,
-                                  sigmaY: 8,
+                            TextButton(
+                              onPressed: isLoading
+                                  ? null
+                                  : () => Navigator.pop(context),
+                              style: TextButton.styleFrom(
+                                foregroundColor: const Color(0xFF0875D1),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 2,
+                                  vertical: 4,
                                 ),
-                                child: Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.fromLTRB(
-                                    14,
-                                    16,
-                                    14,
-                                    15,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    gradient: const LinearGradient(
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                      colors: [
-                                        Color(0xF2071B2A),
-                                        Color(0xEA082536),
-                                      ],
-                                    ),
-                                    borderRadius: BorderRadius.circular(24),
-                                    border: Border.all(
-                                      color: const Color(0x3658B9F2),
-                                    ),
-                                    boxShadow: const [
-                                      BoxShadow(
-                                        color: Color(0x4D000000),
-                                        blurRadius: 28,
-                                        offset: Offset(0, 16),
-                                      ),
-                                      BoxShadow(
-                                        color: Color(0x19146BFF),
-                                        blurRadius: 20,
-                                        offset: Offset(0, 7),
-                                      ),
-                                    ],
-                                  ),
-                                  child: buildRegistrationForm(),
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              child: const Text(
+                                'Log In',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w900,
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 15),
-                            const Text(
-                              'By creating an account, you confirm that the information provided is accurate.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Color(0xFF8BA2B3),
-                                fontSize: 10.1,
-                                height: 1.45,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 11),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Text(
-                                  'Already have an account? ',
-                                  style: TextStyle(
-                                    color: Color(0xFFB8C9D6),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                TextButton(
-                                  onPressed: isLoading
-                                      ? null
-                                      : () {
-                                          Navigator.pop(context);
-                                        },
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: const Color(0xFF91CDFF),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 2,
-                                      vertical: 4,
-                                    ),
-                                    minimumSize: Size.zero,
-                                    tapTargetSize:
-                                        MaterialTapTargetSize.shrinkWrap,
-                                  ),
-                                  child: const Text(
-                                    'Log In',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w900,
-                                    ),
-                                  ),
-                                ),
-                              ],
                             ),
                           ],
                         ),
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

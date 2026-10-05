@@ -77,35 +77,6 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
     return 'Not activated';
   }
 
-  String get profileInitials {
-    final name = collapseSpaces(nameController.text);
-
-    if (name.isEmpty) {
-      return 'I';
-    }
-
-    final parts = name
-        .split(' ')
-        .where((part) => part.trim().isNotEmpty)
-        .toList();
-
-    if (parts.length == 1) {
-      final value = parts.first;
-
-      return value.substring(0, value.length >= 2 ? 2 : 1).toUpperCase();
-    }
-
-    return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
-  }
-
-  String get syncStatusLabel {
-    if (isSaving) {
-      return 'SAVING';
-    }
-
-    return hasChanges ? 'UNSAVED' : 'SYNCED';
-  }
-
   @override
   void initState() {
     super.initState();
@@ -420,30 +391,31 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
     String? helperText,
   }) {
     return InputDecoration(
-      labelText: label,
+      label: Container(
+        color: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFF146BFF),
+            fontSize: 11.2,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+      floatingLabelBehavior: FloatingLabelBehavior.always,
       helperText: helperText,
       helperStyle: const TextStyle(
         color: Color(0xFF8299AA),
         fontSize: 10,
         fontWeight: FontWeight.w600,
       ),
-      labelStyle: const TextStyle(
-        color: Color(0xFF7B8FA3),
-        fontSize: 12,
-        fontWeight: FontWeight.w700,
+      prefixIcon: Icon(
+        icon,
+        color: const Color(0xFF146BFF),
+        size: 21,
       ),
-      floatingLabelStyle: const TextStyle(
-        color: Color(0xFF146BFF),
-        fontWeight: FontWeight.w900,
-      ),
-      prefixIcon: Container(
-        margin: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: const Color(0xFFE5F4FD),
-          borderRadius: BorderRadius.circular(11),
-        ),
-        child: Icon(icon, color: const Color(0xFF146BFF), size: 20),
-      ),
+      prefixIconConstraints: const BoxConstraints(minWidth: 52),
       filled: true,
       fillColor: const Color(0xFFF2F7FB),
       contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 17),
@@ -472,258 +444,160 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
   }
 
   Widget header() {
-    final statusColor = hasChanges
-        ? const Color(0xFFFFB25A)
-        : const Color(0xFF42D59B);
+    final topPadding = MediaQuery.paddingOf(context).top;
+    final coverHeight = topPadding + 166;
 
-    return Container(
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF063B66), Color(0xFF075FAE), Color(0xFF146BFF)],
-          stops: [0.0, 0.52, 1.0],
-        ),
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(34)),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x24146BFF),
-            blurRadius: 24,
-            offset: Offset(0, 12),
-          ),
-        ],
-      ),
+    return SizedBox(
+      height: coverHeight,
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          Positioned(
-            top: -54,
-            right: -50,
-            child: Container(
-              width: 188,
-              height: 188,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withAlpha(10),
-                border: Border.all(color: Colors.white.withAlpha(18)),
-              ),
-            ),
-          ),
-          Positioned(
-            top: 62,
-            right: 22,
-            child: Container(
-              width: 82,
-              height: 82,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white.withAlpha(18)),
-              ),
+          Positioned.fill(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.asset(
+                  'assets/images/order_center_caraga_header.png',
+                  fit: BoxFit.cover,
+                  alignment: Alignment.center,
+                  errorBuilder: (_, _, _) => Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF075489), Color(0xFF079AC7)],
+                      ),
+                    ),
+                  ),
+                ),
+                const DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Color(0x52001E38), Color(0xC500294A)],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(18, 47, 18, 23),
+            padding: EdgeInsets.fromLTRB(18, topPadding + 8, 18, 35),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
                     Material(
-                      color: Colors.transparent,
+                      color: Colors.white.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(14),
                       child: InkWell(
-                        onTap: isSaving
-                            ? null
-                            : () {
-                                Navigator.pop(context);
-                              },
-                        borderRadius: BorderRadius.circular(99),
-                        child: Ink(
-                          width: 40,
-                          height: 40,
+                        onTap: isSaving ? null : () => Navigator.pop(context),
+                        borderRadius: BorderRadius.circular(14),
+                        child: Container(
+                          width: 46,
+                          height: 46,
+                          alignment: Alignment.center,
                           decoration: BoxDecoration(
-                            color: Colors.white.withAlpha(34),
-                            shape: BoxShape.circle,
+                            borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                              color: Colors.white.withAlpha(28),
+                              color: Colors.white.withValues(alpha: 0.20),
                             ),
                           ),
                           child: const Icon(
                             Icons.arrow_back_rounded,
                             color: Colors.white,
-                            size: 21,
+                            size: 24,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 11),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'MY ACCOUNT',
-                            style: TextStyle(
-                              color: Color(0xFFBCE8FF),
-                              fontSize: 9,
-                              letterSpacing: 1.35,
-                              fontWeight: FontWeight.w900,
-                            ),
+                    const Spacer(),
+                    ColorFiltered(
+                      colorFilter: const ColorFilter.mode(
+                        Colors.white,
+                        BlendMode.srcIn,
+                      ),
+                      child: Image.asset(
+                        'assets/images/isdalink_logo.png',
+                        width: 92,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, _, _) => const Text(
+                          'IsdaLink',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
                           ),
-                          SizedBox(height: 3),
-                          Text(
-                            'Account Information',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 22.5,
-                              letterSpacing: -0.2,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
+                const Spacer(),
                 const Text(
-                  'Manage the personal details used across your IsdaLink account.',
+                  'MY ACCOUNT',
                   style: TextStyle(
-                    color: Color(0xFFDDEFFF),
-                    fontSize: 11.5,
-                    height: 1.42,
-                    fontWeight: FontWeight.w600,
+                    color: Color(0xFFD7EEFA),
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.7,
                   ),
                 ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.fromLTRB(13, 13, 13, 13),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(31),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white.withAlpha(31)),
+                const SizedBox(height: 4),
+                const Text(
+                  'Account Information',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 26,
+                    height: 1,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.55,
                   ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 52,
-                        height: 52,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.white.withAlpha(90),
-                            width: 2,
-                          ),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x26000000),
-                              blurRadius: 12,
-                              offset: Offset(0, 6),
-                            ),
-                          ],
-                        ),
-                        child: Text(
-                          profileInitials,
-                          style: const TextStyle(
-                            color: Color(0xFF146BFF),
-                            fontSize: 17,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              nameController.text.trim().isEmpty
-                                  ? 'IsdaLink User'
-                                  : collapseSpaces(nameController.text),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              emailController.text,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Color(0xFFD7EAF8),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 7),
-                            Row(
-                              children: [
-                                Flexible(
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 5,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withAlpha(28),
-                                      borderRadius: BorderRadius.circular(99),
-                                      border: Border.all(
-                                        color: Colors.white.withAlpha(28),
-                                      ),
-                                    ),
-                                    child: Text(
-                                      accountLabel,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 8.8,
-                                        fontWeight: FontWeight.w900,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 9,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: statusColor.withAlpha(42),
-                          borderRadius: BorderRadius.circular(99),
-                          border: Border.all(color: statusColor.withAlpha(110)),
-                        ),
-                        child: Text(
-                          syncStatusLabel,
-                          style: TextStyle(
-                            color: hasChanges
-                                ? const Color(0xFFFFE0B8)
-                                : const Color(0xFFD9FFF0),
-                            fontSize: 8.4,
-                            letterSpacing: 0.55,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
-                    ],
+                ),
+                const SizedBox(height: 5),
+                const Text(
+                  'Manage your name, contact number, and account access.',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Color(0xFFE2F4FA),
+                    fontSize: 10.2,
+                    height: 1.2,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
           ),
+          const Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: 28,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Color(0xFFF7FAFC),
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(32),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
+    );
+  }
+
+  Widget bodyShell({required Widget child}) {
+    return Container(
+      width: double.infinity,
+      color: const Color(0xFFF7FAFC),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 22),
+      child: child,
     );
   }
 
@@ -735,20 +609,15 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFFE9F7FF), Color(0xFFDDF1FF)],
-            ),
-            borderRadius: BorderRadius.circular(14),
+        SizedBox(
+          width: 30,
+          height: 40,
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: Icon(icon, color: const Color(0xFF146BFF), size: 24),
           ),
-          child: Icon(icon, color: const Color(0xFF146BFF), size: 22),
         ),
-        const SizedBox(width: 11),
+        const SizedBox(width: 9),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -780,10 +649,10 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
 
   Widget personalDetailsCard() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 17, 16, 17),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(26),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: const Color(0xFFE1EBF2)),
         boxShadow: const [
           BoxShadow(
@@ -865,16 +734,18 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEAF7FB),
-                  borderRadius: BorderRadius.circular(12),
+              SizedBox(
+                width: 28,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 1),
+                  child: Icon(
+                    icon,
+                    color: const Color(0xFF146BFF),
+                    size: 21,
+                  ),
                 ),
-                child: Icon(icon, color: const Color(0xFF146BFF), size: 20),
               ),
-              const SizedBox(width: 11),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -914,17 +785,12 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
                 ),
               ),
               if (locked)
-                Container(
-                  width: 31,
-                  height: 31,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF2F7FB),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
+                const Padding(
+                  padding: EdgeInsets.only(top: 2, left: 8),
+                  child: Icon(
                     Icons.lock_outline_rounded,
                     color: Color(0xFF8BA0B1),
-                    size: 18,
+                    size: 19,
                   ),
                 ),
             ],
@@ -937,10 +803,10 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
 
   Widget accountAccessCard() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 17, 16, 8),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(26),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: const Color(0xFFE1EBF2)),
         boxShadow: const [
           BoxShadow(
@@ -989,68 +855,12 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
     );
   }
 
-  Widget syncCard() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEAF7FB),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF72C6F8).withAlpha(75)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: Colors.white.withAlpha(170),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.sync_rounded,
-              color: Color(0xFF146BFF),
-              size: 21,
-            ),
-          ),
-          const SizedBox(width: 11),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'PROFILE SYNC',
-                  style: TextStyle(
-                    color: Color(0xFF146BFF),
-                    fontSize: 8.8,
-                    letterSpacing: 0.6,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  isSupplierEnabled
-                      ? 'Saving updates Account Center. Your contact number also updates the supplier storefront; verified owner identity stays protected.'
-                      : supplierStatus == 'pending'
-                      ? 'Saving updates Account Center only. Submitted supplier verification details stay unchanged while under review.'
-                      : 'Saving updates the name and contact number shown in Account Center.',
-                  style: const TextStyle(
-                    color: Color(0xFF52677A),
-                    fontSize: 10.5,
-                    height: 1.38,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget saveButton() {
     final canSave = hasChanges && !isSaving;
+
+    if (!hasChanges && !isSaving) {
+      return const SizedBox.shrink();
+    }
 
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 16),
@@ -1081,17 +891,11 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
                     ),
                   )
                 : Icon(
-                    hasChanges
-                        ? Icons.save_rounded
-                        : Icons.check_circle_outline_rounded,
+                    Icons.save_rounded,
                     size: 20,
                   ),
             label: Text(
-              isSaving
-                  ? 'Saving Changes...'
-                  : hasChanges
-                  ? 'Save Changes'
-                  : 'Profile Up to Date',
+              isSaving ? 'Saving Changes...' : 'Save Changes',
               style: const TextStyle(
                 fontSize: 14.5,
                 fontWeight: FontWeight.w900,
@@ -1116,14 +920,14 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
 
   Widget loadingBody() {
     return const Scaffold(
-      backgroundColor: Color(0xFFF4F8FB),
+      backgroundColor: Color(0xFFF7FAFC),
       body: Center(child: CircularProgressIndicator(color: Color(0xFF146BFF))),
     );
   }
 
   Widget loggedOutBody() {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F8FB),
+      backgroundColor: const Color(0xFFF7FAFC),
       body: Center(
         child: Container(
           margin: const EdgeInsets.all(24),
@@ -1164,21 +968,28 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: const Color(0xFFF4F8FB),
+        backgroundColor: const Color(0xFFF7FAFC),
         body: Column(
           children: [
-            header(),
             Expanded(
-              child: ListView(
+              child: CustomScrollView(
+                physics: const ClampingScrollPhysics(),
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: const EdgeInsets.fromLTRB(18, 18, 18, 22),
-                children: [
-                  personalDetailsCard(),
-                  const SizedBox(height: 14),
-                  accountAccessCard(),
-                  const SizedBox(height: 14),
-                  syncCard(),
+                slivers: [
+                  SliverToBoxAdapter(child: header()),
+                  SliverToBoxAdapter(
+                    child: bodyShell(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          personalDetailsCard(),
+                          const SizedBox(height: 14),
+                          accountAccessCard(),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),

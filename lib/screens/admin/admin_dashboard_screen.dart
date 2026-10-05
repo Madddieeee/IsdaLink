@@ -7,7 +7,7 @@ import 'package:isdalink/screens/admin/widgets/admin_overview_card.dart';
 import 'package:isdalink/screens/admin/widgets/admin_section_title.dart';
 import 'package:isdalink/screens/admin/widgets/admin_status_cards.dart';
 import 'package:isdalink/screens/admin/widgets/admin_supplier_cards.dart';
-import 'package:isdalink/screens/welcome_screen.dart';
+import 'package:isdalink/screens/auth/login_screen.dart';
 import 'package:isdalink/services/admin_dashboard_service.dart';
 import 'package:isdalink/utils/app_error_message.dart';
 
@@ -40,7 +40,7 @@ class AdminDashboardScreen extends StatelessWidget {
 
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+      MaterialPageRoute(builder: (_) => const LoginScreen(showBackButton: false)),
       (route) => false,
     );
   }

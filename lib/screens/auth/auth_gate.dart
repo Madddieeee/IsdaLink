@@ -1,12 +1,12 @@
 import 'dart:math' as math;
-import 'dart:ui';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:isdalink/screens/admin/admin_dashboard_screen.dart';
+import 'package:isdalink/screens/auth/login_screen.dart';
 import 'package:isdalink/screens/home/home_screen.dart';
-import 'package:isdalink/screens/welcome_screen.dart';
 import 'package:isdalink/services/push_notification_service.dart';
 
 class AuthGate extends StatelessWidget {
@@ -20,11 +20,24 @@ class AuthGate extends StatelessWidget {
       builder: (context, snapshot) {
         final user = snapshot.data;
 
-        if (user == null) {
-          return const WelcomeScreen();
-        }
-
-        return _SignedInDestination(user: user);
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 320),
+          reverseDuration: const Duration(milliseconds: 240),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          transitionBuilder: (child, animation) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          child: user == null
+              ? const KeyedSubtree(
+                  key: ValueKey('signed-out'),
+                  child: LoginScreen(showBackButton: false),
+                )
+              : KeyedSubtree(
+                  key: ValueKey('signed-in'),
+                  child: _SignedInDestination(user: user),
+                ),
+        );
       },
     );
   }
@@ -39,13 +52,39 @@ class _SignedInDestination extends StatefulWidget {
   State<_SignedInDestination> createState() => _SignedInDestinationState();
 }
 
-class _SignedInDestinationState extends State<_SignedInDestination> {
-  late Future<String> _roleFuture;
+class _SignedInDestinationState extends State<_SignedInDestination>
+    with TickerProviderStateMixin {
+  late final AnimationController _handoffController;
+  late final AnimationController _loaderController;
+
+  String? _role;
+  Object? _loadError;
+  bool _resolving = true;
 
   @override
   void initState() {
     super.initState();
-    _roleFuture = _loadRole();
+
+    // The destination rises from the bottom instead of simply replacing the
+    // loading screen. Around one second is visible and premium without making
+    // successful logins feel artificially delayed.
+    _handoffController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1080),
+    );
+
+    _loaderController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1450),
+    )..repeat();
+
+    _handoffController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _loaderController.stop();
+      }
+    });
+
+    _resolveRole();
   }
 
   @override
@@ -53,25 +92,79 @@ class _SignedInDestinationState extends State<_SignedInDestination> {
     super.didUpdateWidget(oldWidget);
 
     if (oldWidget.user.uid != widget.user.uid) {
-      _roleFuture = _loadRole();
+      _handoffController.reset();
+      if (!_loaderController.isAnimating) {
+        _loaderController.repeat();
+      }
+      _role = null;
+      _loadError = null;
+      _resolving = true;
+      _resolveRole();
     }
   }
 
-  Future<String> _loadRole() async {
-    final userDocument = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(widget.user.uid)
-        .get();
+  Future<void> _resolveRole() async {
+    final requestedUid = widget.user.uid;
 
-    final userData = userDocument.data();
+    try {
+      final userDocument = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(requestedUid)
+          .get();
 
-    return (userData?['role'] ?? 'vendor').toString().trim().toLowerCase();
+      if (!mounted || widget.user.uid != requestedUid) {
+        return;
+      }
+
+      final userData = userDocument.data();
+      final role = (userData?['role'] ?? 'vendor')
+          .toString()
+          .trim()
+          .toLowerCase();
+
+      setState(() {
+        _role = role;
+        _loadError = null;
+        _resolving = false;
+      });
+
+      // Mount and lay out Home/Admin behind the Welcome Back layer first. This
+      // keeps the slide smooth even when the destination has a heavier first
+      // frame or starts Firestore streams immediately.
+      await WidgetsBinding.instance.endOfFrame;
+      await Future<void>.delayed(const Duration(milliseconds: 24));
+
+      if (!mounted || widget.user.uid != requestedUid) {
+        return;
+      }
+
+      await _handoffController.forward(from: 0);
+    } catch (error) {
+      if (!mounted || widget.user.uid != requestedUid) {
+        return;
+      }
+
+      setState(() {
+        _loadError = error;
+        _resolving = false;
+      });
+    }
   }
 
   void retry() {
+    _handoffController.reset();
+
+    if (!_loaderController.isAnimating) {
+      _loaderController.repeat();
+    }
+
     setState(() {
-      _roleFuture = _loadRole();
+      _role = null;
+      _loadError = null;
+      _resolving = true;
     });
+
+    _resolveRole();
   }
 
   Future<void> logout() async {
@@ -79,444 +172,176 @@ class _SignedInDestinationState extends State<_SignedInDestination> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<String>(
-      future: _roleFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const _SessionLoadingScreen();
-        }
-
-        if (snapshot.hasError) {
-          return _SessionErrorScreen(onRetry: retry, onLogout: logout);
-        }
-
-        final role = snapshot.data ?? 'vendor';
-
-        if (role == 'admin') {
-          return const AdminDashboardScreen();
-        }
-
-        return const HomeScreen();
-      },
-    );
-  }
-}
-
-class _SessionLoadingScreen extends StatefulWidget {
-  const _SessionLoadingScreen();
-
-  @override
-  State<_SessionLoadingScreen> createState() => _SessionLoadingScreenState();
-}
-
-class _SessionLoadingScreenState extends State<_SessionLoadingScreen>
-    with TickerProviderStateMixin {
-  late final AnimationController _sceneController;
-  late final AnimationController _pulseController;
-  late final AnimationController _progressController;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _sceneController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 7200),
-    )..repeat();
-
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2200),
-    )..repeat(reverse: true);
-
-    _progressController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1550),
-    )..repeat();
-  }
-
-  @override
   void dispose() {
-    _sceneController.dispose();
-    _pulseController.dispose();
-    _progressController.dispose();
+    _handoffController.dispose();
+    _loaderController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF061A28),
-      body: AnimatedBuilder(
-        animation: Listenable.merge([
-          _sceneController,
-          _pulseController,
-          _progressController,
-        ]),
-        builder: (context, child) {
-          final scene = _sceneController.value;
-          final pulse = _pulseController.value;
-          final progress = _progressController.value;
+    if (_loadError != null && _role == null) {
+      return _SessionErrorScreen(onRetry: retry, onLogout: logout);
+    }
 
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              _CinematicMarketBackground(scene: scene, pulse: pulse),
+    final destination = _role == null
+        ? null
+        : (_role == 'admin'
+              ? const AdminDashboardScreen()
+              : const HomeScreen());
+
+    return AnimatedBuilder(
+      animation: Listenable.merge([_handoffController, _loaderController]),
+      builder: (context, _) {
+        final raw = destination == null ? 0.0 : _handoffController.value;
+        final slide = const Cubic(0.16, 0.82, 0.18, 1.00).transform(raw);
+        final overlayExit = Curves.easeInOutCubic.transform(
+          (raw / 0.82).clamp(0.0, 1.0).toDouble(),
+        );
+        final size = MediaQuery.sizeOf(context);
+
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            if (destination != null)
               IgnorePointer(
-                child: CustomPaint(
-                  painter: _GlassAtmospherePainter(progress: scene),
+                ignoring: raw < 0.92,
+                child: Opacity(
+                  opacity: (0.34 + (0.66 * slide)).clamp(0.0, 1.0).toDouble(),
+                  child: Transform.translate(
+                    offset: Offset(0, size.height * 0.145 * (1 - slide)),
+                    child: destination,
+                  ),
                 ),
               ),
-              SafeArea(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final height = constraints.maxHeight;
-
-                    return Stack(
-                      children: [
-                        Positioned(
-                          right: 30,
-                          top:
-                              height * 0.12 + math.sin(scene * math.pi * 2) * 5,
-                          child: const _FloatingLens(
-                            diameter: 68,
-                            opacity: 0.10,
-                          ),
-                        ),
-                        Positioned(
-                          left: 28,
-                          bottom:
-                              height * 0.18 + math.cos(scene * math.pi * 2) * 6,
-                          child: const _FloatingLens(
-                            diameter: 34,
-                            opacity: 0.08,
-                          ),
-                        ),
-                        Align(
-                          alignment: const Alignment(0, -0.10),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 24),
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 360),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  _HeroMirrorBubble(pulse: pulse),
-                                  const SizedBox(height: 19),
-                                  const Text(
-                                    'IsdaLink',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 35,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: -0.45,
-                                      height: 1,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Fresh fish supply, connected.',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.70,
-                                      ),
-                                      fontSize: 13.3,
-                                      fontWeight: FontWeight.w600,
-                                      letterSpacing: 0.18,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 31),
-                                  _CompactMirrorSession(
-                                    progress: progress,
-                                    pulse: pulse,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          left: 0,
-                          right: 0,
-                          bottom: 24,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.lock_outline_rounded,
-                                size: 12.5,
-                                color: Colors.white.withValues(alpha: 0.36),
-                              ),
-                              const SizedBox(width: 7),
-                              Text(
-                                'Secure account session',
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.38),
-                                  fontSize: 10.6,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.24,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    );
-                  },
+            if (destination == null || raw < 1.0)
+              IgnorePointer(
+                ignoring: destination != null && raw > 0.30,
+                child: Opacity(
+                  opacity: (1 - overlayExit).clamp(0.0, 1.0).toDouble(),
+                  child: Transform.translate(
+                    offset: Offset(0, -26 * overlayExit),
+                    child: _WelcomeBackLoadingScreen(
+                      progress: _loaderController.value,
+                      waitingForRole: _resolving,
+                    ),
+                  ),
                 ),
               ),
-            ],
-          );
-        },
-      ),
+          ],
+        );
+      },
     );
   }
 }
 
-class _CinematicMarketBackground extends StatelessWidget {
-  const _CinematicMarketBackground({required this.scene, required this.pulse});
+class _WelcomeBackLoadingScreen extends StatelessWidget {
+  const _WelcomeBackLoadingScreen({
+    required this.progress,
+    required this.waitingForRole,
+  });
 
-  final double scene;
-  final double pulse;
+  final double progress;
+  final bool waitingForRole;
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Transform.scale(
-          scale: 1.055 + pulse * 0.012,
-          child: Transform.translate(
-            offset: Offset(
-              math.sin(scene * math.pi * 2) * 5,
-              math.cos(scene * math.pi * 2) * 3,
-            ),
-            child: Image.asset('assets/images/login_bg.jpg', fit: BoxFit.cover),
-          ),
-        ),
-        BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 1.6, sigmaY: 1.6),
-          child: const SizedBox.expand(),
-        ),
-        const DecoratedBox(
-          decoration: BoxDecoration(
+    final pulse = (math.sin(progress * math.pi * 2) + 1) / 2;
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Color(0xFFF4FAFD),
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+        systemNavigationBarColor: Color(0xFFF4FAFD),
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF4FAFD),
+        body: DecoratedBox(
+          decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Color(0xD90A1D2C), Color(0xB9082B3D), Color(0xE3094558)],
-              stops: [0.0, 0.46, 1.0],
+              colors: [Color(0xFFF9FCFE), Color(0xFFEEF8FC)],
             ),
           ),
-        ),
-        DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: RadialGradient(
-              center: const Alignment(0.0, -0.15),
-              radius: 0.95,
-              colors: [
-                Colors.white.withValues(alpha: 0.055),
-                Colors.transparent,
-              ],
-            ),
-          ),
-        ),
-        const DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-              colors: [
-                Color(0x26000000),
-                Colors.transparent,
-                Color(0x26000000),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _HeroMirrorBubble extends StatelessWidget {
-  const _HeroMirrorBubble({required this.pulse});
-
-  final double pulse;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 126,
-      height: 126,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Container(
-            width: 126,
-            height: 126,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  const Color(
-                    0xFF9BE8FF,
-                  ).withValues(alpha: 0.11 + pulse * 0.035),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-          ),
-          ClipOval(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-              child: Container(
-                width: 106,
-                height: 106,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Colors.white.withValues(alpha: 0.19),
-                      const Color(0xFFB8EEFF).withValues(alpha: 0.08),
-                      Colors.white.withValues(alpha: 0.045),
+          child: SafeArea(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 28),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 360),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Transform.translate(
+                        offset: Offset(0, -2.5 * pulse),
+                        child: Container(
+                          width: 96,
+                          height: 96,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
+                            border: Border.all(
+                              color: const Color(0xFFD9EDF6),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(
+                                  0xFF1784C7,
+                                ).withValues(alpha: 0.09 + (0.035 * pulse)),
+                                blurRadius: 28,
+                                offset: const Offset(0, 12),
+                              ),
+                            ],
+                          ),
+                          alignment: Alignment.center,
+                          child: Image.asset(
+                            'assets/images/isdalink_fish_mark.png',
+                            width: 62,
+                            height: 58,
+                            fit: BoxFit.contain,
+                            cacheWidth: 180,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      const Text(
+                        'Welcome back',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Color(0xFF0B2F49),
+                          fontSize: 28,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.55,
+                          height: 1.05,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        waitingForRole
+                            ? 'Preparing your IsdaLink home…'
+                            : 'Opening your dashboard…',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Color(0xFF718899),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          height: 1.35,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: 132,
+                        height: 24,
+                        child: CustomPaint(
+                          painter: _WaterlinePainter(progress: progress),
+                        ),
+                      ),
                     ],
                   ),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.22),
-                    width: 1.1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(
-                        0xFF44C9FF,
-                      ).withValues(alpha: 0.15 + pulse * 0.05),
-                      blurRadius: 30,
-                      spreadRadius: 2,
-                    ),
-                  ],
                 ),
-                child: Stack(
-                  children: [
-                    Positioned(
-                      top: 13,
-                      left: 18,
-                      child: Container(
-                        width: 37,
-                        height: 14,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(99),
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.white.withValues(alpha: 0.42),
-                              Colors.white.withValues(alpha: 0.04),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    Center(
-                      child: Container(
-                        width: 67,
-                        height: 67,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(22),
-                          gradient: const LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Color(0xFF3AAFFF),
-                              Color(0xFF1578FF),
-                              Color(0xFF0C5FDC),
-                            ],
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(
-                                0xFF3ABFFF,
-                              ).withValues(alpha: 0.25 + pulse * 0.08),
-                              blurRadius: 20,
-                              spreadRadius: 1,
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.set_meal_rounded,
-                          color: Colors.white,
-                          size: 35,
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      right: 13,
-                      bottom: 20,
-                      child: Container(
-                        width: 11,
-                        height: 11,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.10),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.19),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CompactMirrorSession extends StatelessWidget {
-  const _CompactMirrorSession({required this.progress, required this.pulse});
-
-  final double progress;
-  final double pulse;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 70,
-      height: 70,
-      child: _OrbitFishReload(progress: progress, pulse: pulse),
-    );
-  }
-}
-
-class _OrbitFishReload extends StatelessWidget {
-  const _OrbitFishReload({required this.progress, required this.pulse});
-
-  final double progress;
-  final double pulse;
-
-  @override
-  Widget build(BuildContext context) {
-    final fishTurns = (progress * 1.05) % 1.0;
-
-    return SizedBox(
-      width: 56,
-      height: 56,
-      child: Transform.rotate(
-        angle: fishTurns * math.pi * 2,
-        child: Transform.translate(
-          offset: const Offset(0, -16),
-          child: Transform.rotate(
-            angle: math.pi / 2,
-            child: Opacity(
-              opacity: 0.94,
-              child: CustomPaint(
-                size: const Size(18, 12),
-                painter: _MiniOrbitFishPainter(shimmer: pulse),
               ),
             ),
           ),
@@ -526,191 +351,61 @@ class _OrbitFishReload extends StatelessWidget {
   }
 }
 
-class _MiniOrbitFishPainter extends CustomPainter {
-  const _MiniOrbitFishPainter({required this.shimmer});
-
-  final double shimmer;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final body = Path()
-      ..moveTo(size.width * 0.20, size.height * 0.50)
-      ..cubicTo(
-        size.width * 0.34,
-        size.height * 0.16,
-        size.width * 0.75,
-        size.height * 0.18,
-        size.width * 0.88,
-        size.height * 0.50,
-      )
-      ..cubicTo(
-        size.width * 0.75,
-        size.height * 0.82,
-        size.width * 0.34,
-        size.height * 0.84,
-        size.width * 0.20,
-        size.height * 0.50,
-      )
-      ..close();
-
-    final tail = Path()
-      ..moveTo(size.width * 0.21, size.height * 0.50)
-      ..lineTo(size.width * 0.02, size.height * 0.20)
-      ..quadraticBezierTo(
-        size.width * 0.08,
-        size.height * 0.50,
-        size.width * 0.02,
-        size.height * 0.80,
-      )
-      ..close();
-
-    canvas.drawPath(
-      tail,
-      Paint()
-        ..shader = const LinearGradient(
-          colors: [Color(0x806ADAF6), Color(0xD0D4F8FF)],
-        ).createShader(Offset.zero & size),
-    );
-
-    canvas.drawPath(
-      body,
-      Paint()
-        ..shader = const LinearGradient(
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-          colors: [Color(0x9970DDF6), Color(0xD7E3FBFF), Color(0xFFFFFFFF)],
-        ).createShader(Offset.zero & size),
-    );
-
-    canvas.drawPath(
-      body,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 0.7
-        ..color = Colors.white.withValues(alpha: 0.18),
-    );
-
-    canvas.drawOval(
-      Rect.fromLTWH(
-        size.width * 0.44,
-        size.height * 0.26,
-        size.width * 0.22,
-        size.height * 0.10,
-      ),
-      Paint()..color = Colors.white.withValues(alpha: 0.10 + shimmer * 0.10),
-    );
-
-    canvas.drawCircle(
-      Offset(size.width * 0.77, size.height * 0.42),
-      1.2,
-      Paint()..color = const Color(0xFF0A3042),
-    );
-    canvas.drawCircle(
-      Offset(size.width * 0.782, size.height * 0.40),
-      0.38,
-      Paint()..color = Colors.white,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _MiniOrbitFishPainter oldDelegate) {
-    return oldDelegate.shimmer != shimmer;
-  }
-}
-
-class _FloatingLens extends StatelessWidget {
-  const _FloatingLens({required this.diameter, required this.opacity});
-
-  final double diameter;
-  final double opacity;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipOval(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-        child: Container(
-          width: diameter,
-          height: diameter,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white.withValues(alpha: opacity + 0.07),
-                Colors.white.withValues(alpha: opacity * 0.28),
-              ],
-            ),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.15),
-              width: 0.8,
-            ),
-          ),
-          child: Stack(
-            children: [
-              Positioned(
-                top: diameter * 0.15,
-                left: diameter * 0.18,
-                child: Container(
-                  width: diameter * 0.32,
-                  height: diameter * 0.13,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(99),
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.white.withValues(alpha: 0.28),
-                        Colors.white.withValues(alpha: 0.03),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _GlassAtmospherePainter extends CustomPainter {
-  const _GlassAtmospherePainter({required this.progress});
+class _WaterlinePainter extends CustomPainter {
+  const _WaterlinePainter({required this.progress});
 
   final double progress;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final particlePaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.085);
+    final basePaint = Paint()
+      ..color = const Color(0xFFD4EBF5)
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
 
-    for (var i = 0; i < 13; i++) {
-      final x = ((i * 83.0) + progress * 31) % size.width;
-      final y = ((i * 127.0) - progress * 43) % size.height;
+    final accentPaint = Paint()
+      ..color = const Color(0xFF1784C7)
+      ..strokeWidth = 2.4
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
 
-      canvas.drawCircle(Offset(x, y), i % 4 == 0 ? 1.15 : 0.65, particlePaint);
+    Path wave({required double phase, required double amplitude}) {
+      final path = Path();
+      const steps = 42;
+
+      for (var i = 0; i <= steps; i++) {
+        final x = size.width * i / steps;
+        final y = size.height * 0.52 +
+            math.sin((i / steps * math.pi * 2.35) + phase) * amplitude;
+
+        if (i == 0) {
+          path.moveTo(x, y);
+        } else {
+          path.lineTo(x, y);
+        }
+      }
+
+      return path;
     }
 
-    final glowRect = Rect.fromCenter(
-      center: Offset(size.width * 0.78, size.height * 0.88),
-      width: size.width * 0.70,
-      height: size.width * 0.70,
+    canvas.drawPath(
+      wave(phase: progress * math.pi * 2, amplitude: 2.7),
+      basePaint,
     );
 
-    canvas.drawOval(
-      glowRect,
-      Paint()
-        ..shader = RadialGradient(
-          colors: [
-            const Color(0xFF64D8F1).withValues(alpha: 0.045),
-            Colors.transparent,
-          ],
-        ).createShader(glowRect),
+    final revealWidth = size.width * (0.30 + (0.54 * progress));
+    canvas.save();
+    canvas.clipRect(Rect.fromLTWH(0, 0, revealWidth, size.height));
+    canvas.drawPath(
+      wave(phase: progress * math.pi * 2 + 0.55, amplitude: 3.1),
+      accentPaint,
     );
+    canvas.restore();
   }
 
   @override
-  bool shouldRepaint(covariant _GlassAtmospherePainter oldDelegate) {
+  bool shouldRepaint(covariant _WaterlinePainter oldDelegate) {
     return oldDelegate.progress != progress;
   }
 }
@@ -812,10 +507,18 @@ class _BrandMark extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: const Color(0xFF146BFF),
+        color: const Color(0xFFF1F9FD),
         borderRadius: BorderRadius.circular(compact ? 17 : 20),
+        border: Border.all(color: const Color(0xFFD7EAF4)),
       ),
-      child: Icon(Icons.set_meal, color: Colors.white, size: compact ? 30 : 40),
+      alignment: Alignment.center,
+      child: Image.asset(
+        'assets/images/isdalink_fish_mark.png',
+        width: compact ? 38 : 48,
+        height: compact ? 36 : 44,
+        fit: BoxFit.contain,
+        cacheWidth: 150,
+      ),
     );
   }
 }

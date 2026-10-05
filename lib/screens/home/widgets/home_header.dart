@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:isdalink/screens/home/widgets/home_notification_button.dart';
 
 class HomeHeader extends StatelessWidget {
   const HomeHeader({
@@ -6,6 +7,8 @@ class HomeHeader extends StatelessWidget {
     required this.onLogout,
     required this.onSearchTap,
     this.onProfileTap,
+    this.onNotificationsTap,
+    this.userId = '',
     this.onSuppliersTap,
     this.onFishStocksTap,
     this.onActiveOrdersTap,
@@ -14,6 +17,8 @@ class HomeHeader extends StatelessWidget {
   final VoidCallback onLogout;
   final VoidCallback onSearchTap;
   final VoidCallback? onProfileTap;
+  final VoidCallback? onNotificationsTap;
+  final String userId;
   final VoidCallback? onSuppliersTap;
   final VoidCallback? onFishStocksTap;
   final VoidCallback? onActiveOrdersTap;
@@ -108,6 +113,8 @@ class HomeHeader extends StatelessWidget {
                         compact: compact,
                         screenWidth: screenWidth,
                         onProfileTap: onProfileTap,
+                        onNotificationsTap: onNotificationsTap,
+                        userId: userId,
                       ),
                     ),
                     Align(
@@ -133,11 +140,15 @@ class _TopBrandRow extends StatelessWidget {
     required this.compact,
     required this.screenWidth,
     required this.onProfileTap,
+    required this.onNotificationsTap,
+    required this.userId,
   });
 
   final bool compact;
   final double screenWidth;
   final VoidCallback? onProfileTap;
+  final VoidCallback? onNotificationsTap;
+  final String userId;
 
   @override
   Widget build(BuildContext context) {
@@ -201,15 +212,12 @@ class _TopBrandRow extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _RegionLabel(compact: compact),
-                SizedBox(width: compact ? 5 : 7),
-                _HeaderActionButton(
-                  tooltip: 'Notifications',
-                  icon: Icons.notifications_none_rounded,
-                  onTap: null,
+                HomeNotificationButton(
+                  userId: userId,
+                  onTap: onNotificationsTap ?? () {},
                   compact: compact,
                 ),
-                SizedBox(width: compact ? 5 : 7),
+                SizedBox(width: compact ? 6 : 8),
                 _HeaderActionButton(
                   tooltip: 'My profile',
                   icon: Icons.person_rounded,
@@ -304,56 +312,6 @@ class _MessageUnderlinePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _MessageUnderlinePainter oldDelegate) => false;
-}
-
-class _RegionLabel extends StatelessWidget {
-  const _RegionLabel({required this.compact});
-
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: compact ? 39 : 43,
-      padding: EdgeInsets.symmetric(horizontal: compact ? 9 : 12),
-      decoration: BoxDecoration(
-        color: Colors.white.withAlpha(242),
-        borderRadius: BorderRadius.circular(999),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x12002440),
-            blurRadius: 6,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.location_on_rounded,
-            color: const Color(0xFF0B3658),
-            size: compact ? 15 : 17,
-          ),
-          SizedBox(width: compact ? 3 : 5),
-          Text(
-            'Caraga',
-            style: TextStyle(
-              color: const Color(0xFF0B3658),
-              fontSize: compact ? 9.6 : 10.4,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          SizedBox(width: compact ? 1 : 2),
-          Icon(
-            Icons.keyboard_arrow_down_rounded,
-            color: const Color(0xFF0B3658),
-            size: compact ? 15 : 17,
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _HeaderActionButton extends StatelessWidget {

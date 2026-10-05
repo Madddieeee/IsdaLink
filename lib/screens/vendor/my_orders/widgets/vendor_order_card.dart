@@ -82,6 +82,19 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
     }
   }
 
+  String requestLabel(String type) {
+    switch (type.trim()) {
+      case 'suki_tawad':
+        return 'Suki / Tawad request';
+      case 'handling':
+        return 'Handling request';
+      case 'delivery':
+        return 'Delivery note';
+      default:
+        return 'Message to supplier';
+    }
+  }
+
   Color statusColor(String status) {
     switch (status.toLowerCase()) {
       case 'pending':
@@ -233,28 +246,22 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
   Widget statusChip(String status) {
     final color = statusColor(status);
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withAlpha(18),
-        borderRadius: BorderRadius.circular(99),
-        border: Border.all(color: color.withAlpha(45)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(statusIcon(status), color: color, size: 11),
-          const SizedBox(width: 4),
-          Text(
-            displayStatus(status),
-            style: TextStyle(
-              color: color,
-              fontSize: 8.7,
-              fontWeight: FontWeight.w900,
-            ),
+    // Status is informational, not an action. Keep it visually clear without
+    // wrapping it in a pill/card that could be mistaken for a button.
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(statusIcon(status), color: color, size: 12),
+        const SizedBox(width: 4),
+        Text(
+          displayStatus(status),
+          style: TextStyle(
+            color: color,
+            fontSize: 8.9,
+            fontWeight: FontWeight.w900,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -342,27 +349,12 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
           ),
           child: Row(
             children: [
-              Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withAlpha(42),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  statusIcon(orderStatus),
-                  color: Colors.white,
-                  size: 15,
-                ),
+              Icon(
+                statusIcon(orderStatus),
+                color: color,
+                size: 20,
               ),
-              const SizedBox(width: 9),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   statusMessage(orderStatus),
@@ -404,29 +396,16 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
         ? const Color(0xFFFF7A1A)
         : const Color(0xFFD32F2F);
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FBFD),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: const Color(0xFFE3EDF3)),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
       child: Row(
         children: [
-          Container(
-            width: 31,
-            height: 31,
-            decoration: BoxDecoration(
-              color: const Color(0xFFE8F8FD),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(
-              Icons.payments_outlined,
-              color: Color(0xFF0875D1),
-              size: 16,
-            ),
+          const Icon(
+            Icons.payments_outlined,
+            color: Color(0xFF0875D1),
+            size: 20,
           ),
-          const SizedBox(width: 9),
+          const SizedBox(width: 10),
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -538,17 +517,12 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
     final color = statusColor(status);
 
     if (isStoppedStatus(status)) {
-      return Container(
-        padding: const EdgeInsets.all(11),
-        decoration: BoxDecoration(
-          color: color.withAlpha(10),
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: color.withAlpha(28)),
-        ),
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 5),
         child: Row(
           children: [
-            Icon(statusIcon(status), color: color, size: 17),
-            const SizedBox(width: 8),
+            Icon(statusIcon(status), color: color, size: 18),
+            const SizedBox(width: 9),
             Expanded(
               child: Text(
                 statusMessage(status),
@@ -567,13 +541,8 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
 
     final index = progressIndex(status);
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(10, 11, 10, 9),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF3F9FD),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: const Color(0xFFDDEBF3)),
-      ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(2, 7, 2, 2),
       child: Row(
         children: [
           progressStep(
@@ -605,27 +574,13 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
     final color = statusColor(orderStatus);
     final stateLabel = displayStatus(orderStatus);
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(11, 10, 11, 10),
-      decoration: BoxDecoration(
-        color: color.withAlpha(8),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: color.withAlpha(28)),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 5),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 31,
-            height: 31,
-            decoration: BoxDecoration(
-              color: color.withAlpha(17),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(statusIcon(orderStatus), color: color, size: 16),
-          ),
-          const SizedBox(width: 9),
+          Icon(statusIcon(orderStatus), color: color, size: 20),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -758,6 +713,13 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
       'To be paid on delivery',
     );
 
+    final orderRequestType = getString(data, 'orderRequestType', '');
+    final orderRequestMessage = getString(data, 'orderRequestMessage', '');
+    final hasOrderRequest =
+        data['hasOrderRequest'] == true ||
+        orderRequestType.isNotEmpty ||
+        orderRequestMessage.isNotEmpty;
+
     final orderStatus = getString(data, 'orderStatus', 'Pending');
 
     final reviewSubmitted = data['reviewSubmitted'] == true;
@@ -799,20 +761,12 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
               color: Colors.white,
               child: Row(
                 children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: color.withAlpha(18),
-                      borderRadius: BorderRadius.circular(11),
-                    ),
-                    child: Icon(
-                      statusIcon(orderStatus),
-                      color: color,
-                      size: 16,
-                    ),
+                  Icon(
+                    statusIcon(orderStatus),
+                    color: color,
+                    size: 21,
                   ),
-                  const SizedBox(width: 9),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -935,6 +889,58 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
                           height: 1.3,
                           fontWeight: FontWeight.w800,
                         ),
+                      ),
+                    ),
+                  ],
+                  if (hasOrderRequest) ...[
+                    const SizedBox(height: 9),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0F8FD),
+                        borderRadius: BorderRadius.circular(13),
+                        border: Border.all(color: const Color(0xFFD7EAF5)),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(
+                            Icons.chat_bubble_outline_rounded,
+                            color: Color(0xFF0875D1),
+                            size: 16,
+                          ),
+                          const SizedBox(width: 7),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  requestLabel(orderRequestType),
+                                  style: const TextStyle(
+                                    color: Color(0xFF102C44),
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                if (orderRequestMessage.isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    orderRequestMessage,
+                                    maxLines: 3,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: Color(0xFF62798B),
+                                      fontSize: 8.8,
+                                      height: 1.3,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],

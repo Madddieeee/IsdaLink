@@ -14,13 +14,15 @@ import 'package:isdalink/screens/home/widgets/home_section_header.dart';
 import 'package:isdalink/screens/home/widgets/recent_fish_posts.dart';
 import 'package:isdalink/screens/home/widgets/recommended_supplier_card.dart';
 import 'package:isdalink/screens/home/widgets/home_market_showcase.dart';
+import 'package:isdalink/screens/home/widgets/home_notification_button.dart';
+import 'package:isdalink/screens/notifications/notification_center_screen.dart';
 import 'package:isdalink/screens/profile/me_screen.dart';
 import 'package:isdalink/screens/vendor/browse_suppliers_screen.dart';
 import 'package:isdalink/screens/vendor/latest_fish_stocks_screen.dart';
 import 'package:isdalink/screens/vendor/my_orders_screen.dart';
 import 'package:isdalink/screens/vendor/product_details_screen.dart';
 import 'package:isdalink/screens/vendor/supplier_details_screen.dart';
-import 'package:isdalink/screens/welcome_screen.dart';
+import 'package:isdalink/screens/auth/login_screen.dart';
 import 'package:isdalink/services/favorite_supplier_service.dart';
 import 'package:isdalink/services/home_stock_service.dart';
 import 'package:isdalink/services/search_history_service.dart';
@@ -45,7 +47,7 @@ class HomeScreen extends StatelessWidget {
 
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+      MaterialPageRoute(builder: (_) => const LoginScreen(showBackButton: false)),
       (route) => false,
     );
   }
@@ -108,6 +110,13 @@ class HomeScreen extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const MeScreen()),
+    );
+  }
+
+  void openNotifications(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const NotificationCenterScreen()),
     );
   }
 
@@ -574,7 +583,9 @@ class HomeScreen extends StatelessWidget {
       backgroundColor: const Color(0xFFF4FAFF),
       body: _HomeScrollChrome(
         statusBarHeight: statusBarHeight,
+        userId: currentUser?.uid ?? '',
         onSearchTap: () => openHomeSearch(context),
+        onNotificationsTap: () => openNotifications(context),
         child: Column(
           children: [
             Expanded(
@@ -588,6 +599,8 @@ class HomeScreen extends StatelessWidget {
                         onLogout: () => logout(context),
                         onSearchTap: () => openHomeSearch(context),
                         onProfileTap: () => openMe(context),
+                        onNotificationsTap: () => openNotifications(context),
+                        userId: currentUser?.uid ?? '',
                         onActiveOrdersTap: () => openMyOrders(context),
                       ),
                       Padding(
@@ -670,12 +683,16 @@ class HomeScreen extends StatelessWidget {
 class _HomeScrollChrome extends StatefulWidget {
   const _HomeScrollChrome({
     required this.statusBarHeight,
+    required this.userId,
     required this.onSearchTap,
+    required this.onNotificationsTap,
     required this.child,
   });
 
   final double statusBarHeight;
+  final String userId;
   final VoidCallback onSearchTap;
+  final VoidCallback onNotificationsTap;
   final Widget child;
 
   @override
@@ -772,9 +789,10 @@ class _HomeScrollChromeState extends State<_HomeScrollChrome> {
                               ),
                             ),
                             const Spacer(),
-                            const _PinnedHeaderCircleButton(
-                              icon: Icons.notifications_none_rounded,
-                              onTap: null,
+                            HomeNotificationButton(
+                              userId: widget.userId,
+                              onTap: widget.onNotificationsTap,
+                              pinned: true,
                             ),
                             const SizedBox(width: 8),
                             _PinnedHeaderSearchButton(
@@ -791,30 +809,6 @@ class _HomeScrollChromeState extends State<_HomeScrollChrome> {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _PinnedHeaderCircleButton extends StatelessWidget {
-  const _PinnedHeaderCircleButton({required this.icon, required this.onTap});
-
-  final IconData icon;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: const Color(0xFFEAF7FB),
-      shape: const CircleBorder(side: BorderSide(color: Color(0xFFCDE7F0))),
-      child: InkWell(
-        onTap: onTap,
-        customBorder: const CircleBorder(),
-        child: SizedBox(
-          width: 38,
-          height: 38,
-          child: Icon(icon, color: const Color(0xFF075C9B), size: 19),
-        ),
-      ),
     );
   }
 }

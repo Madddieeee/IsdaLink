@@ -375,6 +375,26 @@ class _SupplierCodOrdersScreenState extends State<SupplierCodOrdersScreen> {
       'productName',
       'fishName',
     ], fallback: 'Fish Product');
+    final orderRequestType = firstString(
+      data,
+      const ['orderRequestType'],
+      fallback: '',
+    );
+    final orderRequestMessage = firstString(
+      data,
+      const ['orderRequestMessage'],
+      fallback: '',
+    );
+    final hasOrderRequest =
+        data['hasOrderRequest'] == true ||
+        orderRequestType.isNotEmpty ||
+        orderRequestMessage.isNotEmpty;
+    final orderRequestLabel = switch (orderRequestType) {
+      'suki_tawad' => 'Suki / Tawad request',
+      'handling' => 'Handling request',
+      'delivery' => 'Delivery note',
+      _ => 'Buyer request',
+    };
 
     if (requestedQuantity <= 0) {
       return null;
@@ -445,6 +465,66 @@ class _SupplierCodOrdersScreenState extends State<SupplierCodOrdersScreen> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
+                    if (hasOrderRequest) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.fromLTRB(11, 10, 11, 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF0F8FD),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFFD7EAF5)),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(
+                              Icons.chat_bubble_outline_rounded,
+                              color: Color(0xFF0875D1),
+                              size: 17,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    orderRequestLabel,
+                                    style: const TextStyle(
+                                      color: Color(0xFF102C44),
+                                      fontSize: 10.2,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                  if (orderRequestMessage.isNotEmpty) ...[
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      orderRequestMessage,
+                                      style: const TextStyle(
+                                        color: Color(0xFF52677A),
+                                        fontSize: 9.2,
+                                        height: 1.35,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                  const SizedBox(height: 4),
+                                  const Text(
+                                    'Accepting keeps the system COD total based on the listed price and fulfilled quantity.',
+                                    style: TextStyle(
+                                      color: Color(0xFF7B8FA3),
+                                      fontSize: 8.3,
+                                      height: 1.3,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 16),
                     Container(
                       padding: const EdgeInsets.all(13),

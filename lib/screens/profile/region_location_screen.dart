@@ -1030,220 +1030,160 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
   }
 
   Widget header() {
-    final hasLocation = selectedCity != null;
-    final statusLabel = hasChanges
-        ? 'UNSAVED'
-        : hasLocation
-        ? 'SYNCED'
-        : 'SET LOCATION';
+    final topPadding = MediaQuery.paddingOf(context).top;
+    final coverHeight = topPadding + 166;
 
-    return Container(
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF063B66), Color(0xFF075FAE), Color(0xFF146BFF)],
-          stops: [0.0, 0.52, 1.0],
-        ),
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(34)),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x24146BFF),
-            blurRadius: 24,
-            offset: Offset(0, 12),
-          ),
-        ],
-      ),
+    return SizedBox(
+      height: coverHeight,
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          Positioned(
-            top: -54,
-            right: -50,
-            child: Container(
-              width: 188,
-              height: 188,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withAlpha(10),
-                border: Border.all(color: Colors.white.withAlpha(18)),
-              ),
-            ),
-          ),
-          Positioned(
-            top: 58,
-            right: 20,
-            child: Container(
-              width: 84,
-              height: 84,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white.withAlpha(18)),
-              ),
+          Positioned.fill(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.asset(
+                  'assets/images/order_center_caraga_header.png',
+                  fit: BoxFit.cover,
+                  alignment: Alignment.center,
+                  errorBuilder: (_, _, _) => Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF075489), Color(0xFF079AC7)],
+                      ),
+                    ),
+                  ),
+                ),
+                const DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Color(0x52001E38), Color(0xC500294A)],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(18, 47, 18, 24),
+            padding: EdgeInsets.fromLTRB(18, topPadding + 8, 18, 35),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
                     Material(
-                      color: Colors.transparent,
+                      color: Colors.white.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(14),
                       child: InkWell(
-                        onTap: isSaving
-                            ? null
-                            : () {
-                                Navigator.pop(context);
-                              },
-                        borderRadius: BorderRadius.circular(99),
-                        child: Ink(
-                          width: 40,
-                          height: 40,
+                        onTap: isSaving ? null : () => Navigator.pop(context),
+                        borderRadius: BorderRadius.circular(14),
+                        child: Container(
+                          width: 46,
+                          height: 46,
+                          alignment: Alignment.center,
                           decoration: BoxDecoration(
-                            color: Colors.white.withAlpha(34),
-                            shape: BoxShape.circle,
+                            borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                              color: Colors.white.withAlpha(28),
+                              color: Colors.white.withValues(alpha: 0.20),
                             ),
                           ),
                           child: const Icon(
                             Icons.arrow_back_rounded,
                             color: Colors.white,
-                            size: 21,
+                            size: 24,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 11),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'MY ACCOUNT',
-                            style: TextStyle(
-                              color: Color(0xFFBCE8FF),
-                              fontSize: 9,
-                              letterSpacing: 1.35,
-                              fontWeight: FontWeight.w900,
-                            ),
+                    const Spacer(),
+                    ColorFiltered(
+                      colorFilter: const ColorFilter.mode(
+                        Colors.white,
+                        BlendMode.srcIn,
+                      ),
+                      child: Image.asset(
+                        'assets/images/isdalink_logo.png',
+                        width: 92,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, _, _) => const Text(
+                          'IsdaLink',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
                           ),
-                          SizedBox(height: 3),
-                          Text(
-                            'Region and Location',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 22.5,
-                              letterSpacing: -0.2,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 15),
+                const Spacer(),
                 const Text(
-                  'Manage the Caraga location displayed on your profile and used for COD coordination.',
+                  'MY ACCOUNT',
                   style: TextStyle(
-                    color: Color(0xFFDDEFFF),
-                    fontSize: 11.5,
-                    height: 1.42,
-                    fontWeight: FontWeight.w600,
+                    color: Color(0xFFD7EEFA),
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.7,
                   ),
                 ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.fromLTRB(13, 12, 13, 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(31),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white.withAlpha(31)),
+                const SizedBox(height: 4),
+                const Text(
+                  'Region and Location',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 26,
+                    height: 1,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.55,
                   ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 43,
-                        height: 43,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(31),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: const Icon(
-                          Icons.location_on_rounded,
-                          color: Colors.white,
-                          size: 23,
-                        ),
-                      ),
-                      const SizedBox(width: 11),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'PROFILE LOCATION',
-                              style: TextStyle(
-                                color: Color(0xFFBCE8FF),
-                                fontSize: 9,
-                                letterSpacing: 0.85,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              locationPreview,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12.5,
-                                height: 1.3,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 9,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: hasChanges
-                              ? const Color(0xFFFFB25A).withAlpha(42)
-                              : const Color(0xFF42D59B).withAlpha(40),
-                          borderRadius: BorderRadius.circular(99),
-                          border: Border.all(
-                            color: hasChanges
-                                ? const Color(0xFFFFC27A).withAlpha(105)
-                                : const Color(0xFF73E4B8).withAlpha(95),
-                          ),
-                        ),
-                        child: Text(
-                          statusLabel,
-                          style: TextStyle(
-                            color: hasChanges
-                                ? const Color(0xFFFFE0B8)
-                                : const Color(0xFFD9FFF0),
-                            fontSize: 8.5,
-                            letterSpacing: 0.65,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
-                    ],
+                ),
+                const SizedBox(height: 5),
+                const Text(
+                  'Manage your profile location and COD delivery details.',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Color(0xFFE2F4FA),
+                    fontSize: 10.2,
+                    height: 1.2,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
           ),
+          const Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: 28,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Color(0xFFF7FAFC),
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(32),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
+    );
+  }
+
+  Widget bodyShell({required Widget child}) {
+    return Container(
+      width: double.infinity,
+      color: const Color(0xFFF7FAFC),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 22),
+      child: child,
     );
   }
 
@@ -1255,20 +1195,15 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFFE9F7FF), Color(0xFFDDF1FF)],
-            ),
-            borderRadius: BorderRadius.circular(14),
+        SizedBox(
+          width: 30,
+          height: 40,
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: Icon(icon, color: const Color(0xFF146BFF), size: 24),
           ),
-          child: Icon(icon, color: const Color(0xFF146BFF), size: 22),
         ),
-        const SizedBox(width: 11),
+        const SizedBox(width: 9),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1299,30 +1234,23 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
   }
 
   Widget lockedRegionTile() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(13, 12, 13, 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF1F7FB),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE1EBF2)),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 39,
-            height: 39,
-            decoration: BoxDecoration(
-              color: const Color(0xFFE5F4FD),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.public_rounded,
-              color: Color(0xFF146BFF),
-              size: 21,
+          const SizedBox(
+            width: 28,
+            child: Padding(
+              padding: EdgeInsets.only(top: 2),
+              child: Icon(
+                Icons.public_rounded,
+                color: Color(0xFF146BFF),
+                size: 21,
+              ),
             ),
           ),
-          const SizedBox(width: 11),
+          const SizedBox(width: 10),
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1331,8 +1259,8 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
                   'REGION',
                   style: TextStyle(
                     color: Color(0xFF7B8FA3),
-                    fontSize: 9,
-                    letterSpacing: 0.6,
+                    fontSize: 8.8,
+                    letterSpacing: 0.55,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -1341,24 +1269,30 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
                   'Caraga Region',
                   style: TextStyle(
                     color: Color(0xFF102C44),
-                    fontSize: 12.5,
+                    fontSize: 12,
+                    height: 1.3,
                     fontWeight: FontWeight.w900,
+                  ),
+                ),
+                SizedBox(height: 3),
+                Text(
+                  'IsdaLink currently supports locations within Caraga.',
+                  style: TextStyle(
+                    color: Color(0xFF7B8FA3),
+                    fontSize: 9.5,
+                    height: 1.35,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
           ),
-          Container(
-            width: 31,
-            height: 31,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(
+          const Padding(
+            padding: EdgeInsets.only(top: 2, left: 8),
+            child: Icon(
               Icons.lock_outline_rounded,
               color: Color(0xFF8BA0B1),
-              size: 18,
+              size: 19,
             ),
           ),
         ],
@@ -1534,8 +1468,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
       decoration: InputDecoration(
         labelText: 'Detailed delivery address',
         hintText: 'Block, street, barangay, house, or landmark',
-        helperText:
-            'Required. Province and city are saved separately from this address.',
+        helperText: 'Add a street, barangay, block, house, or landmark.',
         prefixIcon: const Icon(
           Icons.home_work_outlined,
           color: Color(0xFF146BFF),
@@ -1584,7 +1517,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
           children: [
             sectionHeader(
               title: 'Location Details',
-              subtitle: 'Keep the location shown in Account Center accurate.',
+              subtitle: 'Update the location used on your profile and for COD orders.',
               icon: Icons.location_on_outlined,
             ),
             const SizedBox(height: 17),
@@ -1597,7 +1530,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
               onTap: showProvincePicker,
               validator: validateProvince,
               emptyDisplay: 'Select province',
-              helperText: 'Choose one of Caraga Region’s five provinces.',
+              helperText: 'Select your province.',
             ),
             const SizedBox(height: 12),
             pickerField(
@@ -1608,7 +1541,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
               validator: validateCity,
               helperText: selectedProvince == null
                   ? 'Select a province first.'
-                  : 'Search within $selectedProvince.',
+                  : 'Select your city or municipality.',
             ),
             const SizedBox(height: 14),
             deliveryAddressField(),
@@ -1628,7 +1561,9 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
   }
 
   Widget saveButton() {
-    final canSave = hasChanges && !isSaving;
+    if (!hasChanges && !isSaving) {
+      return const SizedBox.shrink();
+    }
 
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 16),
@@ -1648,7 +1583,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
           width: double.infinity,
           height: 53,
           child: ElevatedButton.icon(
-            onPressed: canSave ? saveLocation : null,
+            onPressed: isSaving ? null : saveLocation,
             icon: isSaving
                 ? const SizedBox(
                     width: 19,
@@ -1658,18 +1593,9 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
                       color: Colors.white,
                     ),
                   )
-                : Icon(
-                    hasChanges
-                        ? Icons.save_rounded
-                        : Icons.check_circle_outline_rounded,
-                    size: 20,
-                  ),
+                : const Icon(Icons.save_rounded, size: 20),
             label: Text(
-              isSaving
-                  ? 'Saving Location...'
-                  : hasChanges
-                  ? 'Save Location'
-                  : 'Location Up to Date',
+              isSaving ? 'Saving Location...' : 'Save Changes',
               style: const TextStyle(
                 fontSize: 14.5,
                 fontWeight: FontWeight.w900,
@@ -1680,7 +1606,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
               disabledBackgroundColor: const Color(0xFFDCE7EF),
               foregroundColor: Colors.white,
               disabledForegroundColor: const Color(0xFF7B8FA3),
-              elevation: canSave ? 7 : 0,
+              elevation: isSaving ? 0 : 7,
               shadowColor: const Color(0x55146BFF),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -1703,7 +1629,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
   Widget build(BuildContext context) {
     if (currentUser == null) {
       return const Scaffold(
-        backgroundColor: Color(0xFFF4F8FB),
+        backgroundColor: Color(0xFFF7FAFC),
         body: Center(
           child: Text(
             'Please log in first to manage your location.',
@@ -1728,14 +1654,22 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: const Color(0xFFF4F8FB),
+        backgroundColor: const Color(0xFFF7FAFC),
         body: Column(
           children: [
-            header(),
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(18, 18, 18, 22),
-                children: [locationCard()],
+              child: CustomScrollView(
+                physics: const ClampingScrollPhysics(),
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                slivers: [
+                  SliverToBoxAdapter(child: header()),
+                  SliverToBoxAdapter(
+                    child: bodyShell(
+                      child: locationCard(),
+                    ),
+                  ),
+                ],
               ),
             ),
             saveButton(),
