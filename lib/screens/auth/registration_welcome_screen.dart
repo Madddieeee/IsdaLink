@@ -56,8 +56,8 @@ class _RegistrationWelcomeScreenState extends State<RegistrationWelcomeScreen>
       context,
       PageRouteBuilder<void>(
         transitionDuration: const Duration(milliseconds: 520),
-        pageBuilder: (_, __, ___) => const HomeScreen(),
-        transitionsBuilder: (_, animation, __, child) {
+        pageBuilder: (_, _, _) => const HomeScreen(),
+        transitionsBuilder: (_, animation, _, child) {
           final curved = CurvedAnimation(
             parent: animation,
             curve: Curves.easeInOutCubic,

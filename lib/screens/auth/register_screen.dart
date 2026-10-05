@@ -1234,10 +1234,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
         context,
         PageRouteBuilder<void>(
           transitionDuration: const Duration(milliseconds: 560),
-          pageBuilder: (_, __, ___) => RegistrationWelcomeScreen(
+          pageBuilder: (_, _, _) => RegistrationWelcomeScreen(
             fullName: fullName,
           ),
-          transitionsBuilder: (_, animation, __, child) {
+          transitionsBuilder: (_, animation, _, child) {
             final curved = CurvedAnimation(
               parent: animation,
               curve: Curves.easeInOutCubic,
