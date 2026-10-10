@@ -63,7 +63,7 @@ class FishStockService {
       'not_applicable',
     ).toLowerCase();
 
-    if (role != 'supplier' && supplierStatus != 'approved') {
+    if (role != 'supplier' || supplierStatus != 'approved') {
       throw StateError(
         'Supplier approval is required before posting fish stock.',
       );

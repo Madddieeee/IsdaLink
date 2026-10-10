@@ -31,7 +31,10 @@ class AuthGate extends StatelessWidget {
           child: user == null
               ? const KeyedSubtree(
                   key: ValueKey('signed-out'),
-                  child: LoginScreen(showBackButton: false),
+                  child: LoginScreen(
+                    showBackButton: false,
+                    authGateManaged: true,
+                  ),
                 )
               : KeyedSubtree(
                   key: ValueKey('signed-in'),
@@ -283,9 +286,7 @@ class _WelcomeBackLoadingScreen extends StatelessWidget {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: Colors.white,
-                            border: Border.all(
-                              color: const Color(0xFFD9EDF6),
-                            ),
+                            border: Border.all(color: const Color(0xFFD9EDF6)),
                             boxShadow: [
                               BoxShadow(
                                 color: const Color(
@@ -376,7 +377,8 @@ class _WaterlinePainter extends CustomPainter {
 
       for (var i = 0; i <= steps; i++) {
         final x = size.width * i / steps;
-        final y = size.height * 0.52 +
+        final y =
+            size.height * 0.52 +
             math.sin((i / steps * math.pi * 2.35) + phase) * amplitude;
 
         if (i == 0) {

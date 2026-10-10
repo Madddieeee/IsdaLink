@@ -479,16 +479,12 @@ class SupplierOrderCard extends StatelessWidget {
       'deliveryAddress',
       'location',
     ], fallback: 'Caraga Region');
-    final orderRequestType = firstString(
-      data,
-      const ['orderRequestType'],
-      fallback: '',
-    );
-    final orderRequestMessage = firstString(
-      data,
-      const ['orderRequestMessage'],
-      fallback: '',
-    );
+    final orderRequestType = firstString(data, const [
+      'orderRequestType',
+    ], fallback: '');
+    final orderRequestMessage = firstString(data, const [
+      'orderRequestMessage',
+    ], fallback: '');
     final hasOrderRequest =
         data['hasOrderRequest'] == true ||
         orderRequestType.isNotEmpty ||
@@ -518,6 +514,15 @@ class SupplierOrderCard extends StatelessWidget {
       'totalAmount',
       'grandTotal',
     ]);
+    final tawadRequested = data['tawadRequested'] == true;
+    final tawadStatus = firstString(data, const [
+      'tawadStatus',
+    ], fallback: tawadRequested ? 'Pending' : '');
+    final listedUnitPrice = firstDouble(data, const [
+      'listedUnitPrice',
+      'unitPrice',
+    ]);
+    final offeredUnitPrice = firstDouble(data, const ['tawadOfferedUnitPrice']);
     final paymentMethod = firstString(data, const [
       'paymentMethod',
     ], fallback: 'COD');
@@ -535,6 +540,10 @@ class SupplierOrderCard extends StatelessWidget {
     final accepted = status == 'accepted';
     final delivered = status == 'delivered';
     final cancelled = status == 'cancelled';
+    final pendingTawad = tawadRequested && pending;
+    final displayedTotal = pendingTawad
+        ? offeredUnitPrice * requestedQuantity
+        : totalAmount;
 
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 180),
@@ -661,8 +670,9 @@ class SupplierOrderCard extends StatelessWidget {
                       const SizedBox(width: 6),
                       metric(
                         icon: Icons.payments_outlined,
-                        label: 'ORDER TOTAL',
-                        value: '₱${OrderHelpers.formatNumber(totalAmount)}',
+                        label: pendingTawad ? 'TAWAD TOTAL' : 'ORDER TOTAL',
+                        value:
+                            '₱${OrderHelpers.formatNumber(displayedTotal)}',
                         valueColor: const Color(0xFF0875D1),
                       ),
                       const SizedBox(width: 6),
@@ -673,6 +683,59 @@ class SupplierOrderCard extends StatelessWidget {
                       ),
                     ],
                   ),
+                  if (tawadRequested) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.fromLTRB(11, 10, 11, 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF8FD),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFB7DDF3)),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(
+                            Icons.handshake_outlined,
+                            color: Color(0xFF0875D1),
+                            size: 19,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  pendingTawad
+                                      ? 'Tawad price offer'
+                                      : 'Tawad $tawadStatus',
+                                  style: const TextStyle(
+                                    color: Color(0xFF102C44),
+                                    fontSize: 10.2,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  pendingTawad
+                                      ? 'Vendor offers ₱${OrderHelpers.formatNumber(offeredUnitPrice)} per $quantityUnit instead of ₱${OrderHelpers.formatNumber(listedUnitPrice)}. '
+                                            'Accept to use the offer. Decline to cancel the order.'
+                                      : 'Agreed price: ₱${OrderHelpers.formatNumber(offeredUnitPrice)} per $quantityUnit.',
+                                  style: const TextStyle(
+                                    color: Color(0xFF52677A),
+                                    fontSize: 9.2,
+                                    height: 1.35,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   if (partialFulfillment) ...[
                     const SizedBox(height: 8),
                     Container(
@@ -766,9 +829,11 @@ class SupplierOrderCard extends StatelessWidget {
                                   ),
                                 ],
                                 const SizedBox(height: 4),
-                                const Text(
-                                  'Review this request before accepting. Any tawad or discount is not applied automatically to the COD total.',
-                                  style: TextStyle(
+                                Text(
+                                  pendingTawad
+                                      ? 'Buyer message only. Use Accept Tawad or Decline Tawad below to decide the price offer.'
+                                      : 'Review this buyer request before accepting the order.',
+                                  style: const TextStyle(
                                     color: Color(0xFF7B8FA3),
                                     fontSize: 8.2,
                                     height: 1.3,
@@ -964,14 +1029,16 @@ class SupplierOrderCard extends StatelessWidget {
                     Row(
                       children: [
                         actionButton(
-                          label: 'Decline',
+                          label: tawadRequested ? 'Decline Tawad' : 'Decline',
                           icon: Icons.close_rounded,
                           onPressed: isBusy ? null : onCancel,
                           primary: false,
                         ),
                         const SizedBox(width: 9),
                         actionButton(
-                          label: 'Accept Order',
+                          label: tawadRequested
+                              ? 'Accept Tawad'
+                              : 'Accept Order',
                           icon: Icons.check_rounded,
                           onPressed: isBusy ? null : onAccept,
                           primary: true,

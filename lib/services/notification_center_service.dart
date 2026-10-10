@@ -4,7 +4,10 @@ class NotificationCenterService {
   const NotificationCenterService();
 
   Stream<DocumentSnapshot<Map<String, dynamic>>> userStream(String userId) {
-    return FirebaseFirestore.instance.collection('users').doc(userId).snapshots();
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .snapshots();
   }
 
   bool hasSupplierAccess(Map<String, dynamic>? userData) {
@@ -18,7 +21,7 @@ class NotificationCenterService {
         .trim()
         .toLowerCase();
 
-    return role == 'supplier' || supplierStatus == 'approved';
+    return role == 'supplier' && supplierStatus == 'approved';
   }
 
   String categoryOf(Map<String, dynamic> data) {
@@ -70,7 +73,9 @@ class NotificationCenterService {
   int unreadCount(
     Iterable<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
   ) {
-    return documents.where((document) => document.data()['isRead'] != true).length;
+    return documents
+        .where((document) => document.data()['isRead'] != true)
+        .length;
   }
 
   Future<void> markRead(

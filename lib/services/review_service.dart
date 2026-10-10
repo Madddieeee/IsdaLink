@@ -3,14 +3,45 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:isdalink/utils/order_helpers.dart';
 
 class ReviewInput {
-  const ReviewInput({required this.rating, required this.comment});
+  const ReviewInput({
+    required this.rating,
+    required this.comment,
+    this.photoUrls = const <String>[],
+  });
 
   final int rating;
   final String comment;
+  final List<String> photoUrls;
 }
 
 class ReviewService {
   const ReviewService();
+
+  static const int maxReviewPhotos = 3;
+
+  List<String> validatedPhotoUrls(List<String> values) {
+    final result = <String>[];
+    for (final rawValue in values) {
+      final value = rawValue.trim();
+      if (value.isEmpty || result.contains(value)) {
+        continue;
+      }
+      final uri = Uri.tryParse(value);
+      if (uri == null ||
+          uri.scheme != 'https' ||
+          uri.host != 'res.cloudinary.com' ||
+          !uri.pathSegments.contains('bxcgv4uz')) {
+        throw Exception(
+          'A review photo link is invalid. Please upload it again.',
+        );
+      }
+      result.add(value);
+    }
+    if (result.length > maxReviewPhotos) {
+      throw Exception('You can attach up to 3 review photos.');
+    }
+    return List<String>.unmodifiable(result);
+  }
 
   int getIntValue(Map<String, dynamic> data, String key, int fallback) {
     final value = data[key];
@@ -119,6 +150,7 @@ class ReviewService {
       );
 
       final reviewText = input.comment.trim();
+      final photoUrls = validatedPhotoUrls(input.photoUrls);
 
       transaction.set(reviewReference, {
         'orderId': orderDocument.id,
@@ -129,6 +161,7 @@ class ReviewService {
         'productName': productName,
         'rating': input.rating,
         'comment': reviewText,
+        'photoUrls': photoUrls,
         'createdAt': FieldValue.serverTimestamp(),
       });
 
@@ -136,6 +169,7 @@ class ReviewService {
         'reviewSubmitted': true,
         'reviewRating': input.rating,
         'reviewComment': reviewText,
+        'reviewPhotoUrls': photoUrls,
         'reviewedAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
@@ -252,10 +286,12 @@ class ReviewService {
       );
 
       final reviewText = input.comment.trim();
+      final photoUrls = validatedPhotoUrls(input.photoUrls);
 
       transaction.update(reviewReference, {
         'rating': input.rating,
         'comment': reviewText,
+        'photoUrls': photoUrls,
         'edited': true,
         'updatedAt': FieldValue.serverTimestamp(),
       });
@@ -264,6 +300,7 @@ class ReviewService {
         'reviewSubmitted': true,
         'reviewRating': input.rating,
         'reviewComment': reviewText,
+        'reviewPhotoUrls': photoUrls,
         'reviewUpdatedAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:isdalink/services/notification_center_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:isdalink/utils/order_helpers.dart';
 import 'package:isdalink/utils/stock_state.dart';
@@ -25,16 +26,7 @@ class VendorOrderService {
   Future<void> markNotificationsRead(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> notifications,
   ) async {
-    final batch = FirebaseFirestore.instance.batch();
-
-    for (final notification in notifications) {
-      batch.update(notification.reference, {
-        'isRead': true,
-        'readAt': FieldValue.serverTimestamp(),
-      });
-    }
-
-    await batch.commit();
+    await const NotificationCenterService().markAllRead(notifications);
   }
 
   Future<void> cancelPendingOrder({
@@ -79,6 +71,7 @@ class VendorOrderService {
       );
 
       final stockDeducted = orderData['stockDeducted'] == true;
+      final tawadRequested = orderData['tawadRequested'] == true;
 
       transaction.update(document.reference, {
         'orderStatus': 'Cancelled',
@@ -86,6 +79,8 @@ class VendorOrderService {
         'stockRestored': restorationProcessed,
         'stockRestorePending': stockDeducted && !restorationProcessed,
         'cancelledBy': 'vendor',
+        if (tawadRequested) 'tawadStatus': 'Withdrawn',
+        if (tawadRequested) 'tawadWithdrawnAt': FieldValue.serverTimestamp(),
         'cancelledAt': FieldValue.serverTimestamp(),
         if (restorationProcessed) 'restoredAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),

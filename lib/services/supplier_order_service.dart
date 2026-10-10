@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:isdalink/utils/order_helpers.dart';
 import 'package:isdalink/utils/stock_state.dart';
+import 'package:isdalink/utils/tawad_pricing.dart';
 
 class SupplierOrderService {
   const SupplierOrderService();
@@ -97,6 +98,7 @@ class SupplierOrderService {
       'unit',
     );
     final acceptedQuantity = fulfilledQuantity ?? requestedQuantity;
+    final tawadRequested = orderData['tawadRequested'] == true;
 
     final notificationReference = FirebaseFirestore.instance
         .collection('notifications')
@@ -106,7 +108,11 @@ class SupplierOrderService {
       'vendorId': vendorId,
       'userId': vendorId,
       'orderId': orderId,
-      'title': notificationTitle(newStatus),
+      'title': tawadRequested && newStatus.toLowerCase() == 'accepted'
+          ? 'Tawad Order Accepted'
+          : tawadRequested && newStatus.toLowerCase() == 'cancelled'
+          ? 'Tawad Order Declined'
+          : notificationTitle(newStatus),
       'message': notificationMessage(
         orderId: orderId,
         status: newStatus,
@@ -182,6 +188,7 @@ class SupplierOrderService {
       }
 
       if (newStatus.toLowerCase() == 'cancelled') {
+        final tawadRequested = orderData['tawadRequested'] == true;
         final restorationProcessed = await restoreStockIfNeeded(
           transaction: transaction,
           orderData: orderData,
@@ -195,6 +202,8 @@ class SupplierOrderService {
           'stockRestorePending':
               orderData['stockDeducted'] == true && !restorationProcessed,
           'cancelledBy': 'supplier',
+          if (tawadRequested) 'tawadStatus': 'Declined',
+          if (tawadRequested) 'tawadDeclinedAt': FieldValue.serverTimestamp(),
           'cancelledAt': FieldValue.serverTimestamp(),
           'restoredAt': restorationProcessed
               ? FieldValue.serverTimestamp()
@@ -235,11 +244,17 @@ class SupplierOrderService {
             );
           }
 
-          final unitPrice = OrderHelpers.getDoubleValue(orderData, 'unitPrice');
+          final tawadRequested = orderData['tawadRequested'] == true;
+          final unitPrice = TawadPricing.acceptedUnitPrice(orderData);
+          if (unitPrice <= 0) {
+            throw StateError('This order has an invalid Tawad price.');
+          }
 
           transaction.update(orderReference, {
             'orderStatus': 'Accepted',
             'paymentStatus': 'To be paid on delivery',
+            'unitPrice': unitPrice,
+            'totalAmount': unitPrice * requestedQuantity,
             'fulfilledQuantity': acceptedQuantity,
             'unfulfilledQuantity': unfulfilledQuantity,
             'fulfilledTotalAmount': unitPrice * acceptedQuantity,
@@ -248,6 +263,8 @@ class SupplierOrderService {
             'fulfillmentStatus': partialFulfillment ? 'partial' : 'full',
             'partialStockRestored': partialFulfillment,
             'partialRestoredQuantity': unfulfilledQuantity,
+            if (tawadRequested) 'tawadStatus': 'Accepted',
+            if (tawadRequested) 'tawadAcceptedAt': FieldValue.serverTimestamp(),
             if (partialFulfillment)
               'partialRestoredAt': FieldValue.serverTimestamp(),
             'acceptedAt': FieldValue.serverTimestamp(),

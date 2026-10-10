@@ -33,7 +33,7 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
   User? get currentUser => FirebaseAuth.instance.currentUser;
 
   bool get isSupplierEnabled {
-    return role == 'supplier' || supplierStatus == 'approved';
+    return role == 'supplier' && supplierStatus == 'approved';
   }
 
   bool get hasChanges {

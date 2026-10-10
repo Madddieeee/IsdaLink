@@ -100,6 +100,15 @@ class CloudinaryUploadService {
           (segments[1] == 'profile' || segments[1] == 'cover');
     }
 
+    final reviewPrefix = '${CloudinaryConfig.reviewPhotoFolder}/';
+    if (normalized.startsWith(reviewPrefix)) {
+      final remainder = normalized.substring(reviewPrefix.length);
+      final segments = remainder.split('/');
+      return segments.length == 2 &&
+          _isSafeFolderSegment(segments[0]) &&
+          _isSafeFolderSegment(segments[1]);
+    }
+
     final verificationPrefix =
         '${CloudinaryConfig.supplierVerificationFolder}/';
     if (!normalized.startsWith(verificationPrefix)) {

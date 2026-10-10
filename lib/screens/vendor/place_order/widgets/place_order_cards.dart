@@ -434,8 +434,10 @@ class ProductOrderCard extends StatelessWidget {
     required this.onDecrease,
     required this.onIncrease,
     required this.onEnterQuantity,
+    this.lockedQuantity = false,
   });
 
+  final bool lockedQuantity;
   final Supplier supplier;
   final String supplierImageUrl;
   final FishProduct product;
@@ -476,8 +478,9 @@ class ProductOrderCard extends StatelessWidget {
     );
   }
 
-  bool get canDecrease => quantity > 1;
-  bool get canIncrease => quantity < product.availableQuantity;
+  bool get canDecrease => !lockedQuantity && quantity > 1;
+  bool get canIncrease =>
+      !lockedQuantity && quantity < product.availableQuantity;
 
   String formatNumber(double value) {
     if (value % 1 == 0) {
@@ -728,7 +731,9 @@ class ProductOrderCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        quantity >= product.availableQuantity.floor()
+                        lockedQuantity
+                            ? 'Agreed Tawad quantity.'
+                            : quantity >= product.availableQuantity.floor()
                             ? 'Maximum available selected.'
                             : 'Choose the amount to reserve.',
                         style: TextStyle(
@@ -754,7 +759,7 @@ class ProductOrderCard extends StatelessWidget {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(10),
                   child: InkWell(
-                    onTap: onEnterQuantity,
+                    onTap: lockedQuantity ? null : onEnterQuantity,
                     borderRadius: BorderRadius.circular(10),
                     child: Container(
                       width: 78,
@@ -779,12 +784,14 @@ class ProductOrderCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 3),
-                          const Icon(
-                            Icons.edit_outlined,
-                            color: Color(0xFF0875D1),
-                            size: 12,
-                          ),
+                          if (!lockedQuantity) ...[
+                            const SizedBox(width: 3),
+                            const Icon(
+                              Icons.edit_outlined,
+                              color: Color(0xFF0875D1),
+                              size: 12,
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -804,7 +811,6 @@ class ProductOrderCard extends StatelessWidget {
   }
 }
 
-
 class SupplierRequestCard extends StatelessWidget {
   const SupplierRequestCard({
     super.key,
@@ -818,7 +824,6 @@ class SupplierRequestCard extends StatelessWidget {
   final ValueChanged<String> onTypeChanged;
 
   static const requestTypes = <(String, String, IconData)>[
-    ('suki_tawad', 'Suki / Tawad', Icons.handshake_outlined),
     ('handling', 'Handling', Icons.inventory_2_outlined),
     ('delivery', 'Delivery', Icons.local_shipping_outlined),
   ];
@@ -915,13 +920,11 @@ class SupplierRequestCard extends StatelessWidget {
             maxLength: 180,
             textCapitalization: TextCapitalization.sentences,
             decoration: InputDecoration(
-              hintText: selectedType == 'suki_tawad'
-                  ? 'Suki ko, pwede po ba may tawad?'
-                  : selectedType == 'handling'
-                      ? 'Please pack the fish carefully.'
-                      : selectedType == 'delivery'
-                          ? 'Please call before delivery.'
-                          : 'Write a short message...',
+              hintText: selectedType == 'handling'
+                  ? 'Please pack the fish carefully.'
+                  : selectedType == 'delivery'
+                  ? 'Please call before delivery.'
+                  : 'Write a short message...',
               hintStyle: const TextStyle(
                 color: Color(0xFF94A7B5),
                 fontSize: 10.3,
@@ -985,17 +988,100 @@ class _OptionalPill extends StatelessWidget {
   }
 }
 
+class TawadOfferCard extends StatelessWidget {
+  const TawadOfferCard({
+    super.key,
+    required this.controller,
+    required this.listedUnitPrice,
+    required this.quantity,
+    required this.quantityUnit,
+  });
+
+  final TextEditingController controller;
+  final double listedUnitPrice;
+  final int quantity;
+  final String quantityUnit;
+
+  String money(double value) =>
+      value % 1 == 0 ? value.toStringAsFixed(0) : value.toStringAsFixed(2);
+
+  @override
+  Widget build(BuildContext context) {
+    final offer = double.tryParse(controller.text.trim().replaceAll(',', ''));
+    final valid = offer != null && offer > 0 && offer < listedUnitPrice;
+
+    return CheckoutCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const CheckoutSectionTitle(
+            icon: Icons.handshake_outlined,
+            title: 'Tawad Price Offer',
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Listed price: ₱${money(listedUnitPrice)} per $quantityUnit. '
+            'Enter the exact unit price you want the supplier to accept.',
+            style: const TextStyle(
+              color: Color(0xFF62798B),
+              fontSize: 9.7,
+              height: 1.4,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: controller,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(
+                RegExp(r'^\d{0,8}(\.\d{0,2})?'),
+              ),
+            ],
+            decoration: InputDecoration(
+              labelText: 'Your offer per $quantityUnit',
+              prefixText: '₱ ',
+              hintText: 'Example: 4500',
+              filled: true,
+              fillColor: const Color(0xFFF4F8FB),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+          const SizedBox(height: 9),
+          Text(
+            valid
+                ? 'Proposed total: ₱${money(offer * quantity)}. The supplier must accept this exact price; declining closes the order.'
+                : 'The offer must be greater than zero and lower than the listed price.',
+            style: TextStyle(
+              color: valid ? const Color(0xFF16845E) : const Color(0xFFB86500),
+              fontSize: 9.4,
+              height: 1.35,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class PaymentDetailsCard extends StatelessWidget {
   const PaymentDetailsCard({
     super.key,
     required this.product,
     required this.quantity,
     required this.totalAmount,
+    this.tawadPending = false,
+    this.listedTotalAmount,
   });
 
   final FishProduct product;
   final int quantity;
   final double totalAmount;
+  final bool tawadPending;
+  final double? listedTotalAmount;
 
   String formatNumber(double value) {
     if (value % 1 == 0) {
@@ -1084,13 +1170,18 @@ class PaymentDetailsCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           summaryRow(
-            label: 'Order subtotal',
+            label: tawadPending ? 'Proposed Tawad total' : 'Order subtotal',
             value: '₱${formatPrice(totalAmount)}',
           ),
+          if (tawadPending && listedTotalAmount != null)
+            summaryRow(
+              label: 'Original listed total',
+              value: '₱${formatPrice(listedTotalAmount!)}',
+            ),
           summaryRow(label: 'Payment method', value: 'Cash on Delivery'),
           const Divider(height: 22, color: Color(0xFFE0EBF2)),
           summaryRow(
-            label: 'Total payment',
+            label: tawadPending ? 'Total if accepted' : 'Total payment',
             value: '₱${formatPrice(totalAmount)}',
             strong: true,
           ),

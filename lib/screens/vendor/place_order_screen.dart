@@ -11,6 +11,7 @@ import 'package:isdalink/screens/vendor/place_order/widgets/place_order_cards.da
 import 'package:isdalink/screens/vendor/place_order/widgets/place_order_header.dart';
 import 'package:isdalink/services/place_order_service.dart';
 import 'package:isdalink/utils/app_error_message.dart';
+import 'package:isdalink/utils/tawad_pricing.dart';
 
 class PlaceOrderScreen extends StatefulWidget {
   const PlaceOrderScreen({
@@ -20,6 +21,7 @@ class PlaceOrderScreen extends StatefulWidget {
     this.stockId = '',
     this.supplierId = '',
     this.initialQuantity = 1,
+    this.initialTawad = false,
   });
 
   final Supplier supplier;
@@ -27,6 +29,7 @@ class PlaceOrderScreen extends StatefulWidget {
   final String stockId;
   final String supplierId;
   final int initialQuantity;
+  final bool initialTawad;
 
   @override
   State<PlaceOrderScreen> createState() => _PlaceOrderScreenState();
@@ -37,7 +40,9 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
   final TextEditingController buyerNameController = TextEditingController();
   final TextEditingController buyerPhoneController = TextEditingController();
   final TextEditingController buyerAddressController = TextEditingController();
-  final TextEditingController supplierRequestController = TextEditingController();
+  final TextEditingController supplierRequestController =
+      TextEditingController();
+  final TextEditingController tawadPriceController = TextEditingController();
   final ScrollController checkoutScrollController = ScrollController();
   final GlobalKey buyerDetailsKey = GlobalKey();
 
@@ -57,7 +62,15 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
   String supplierStoreImageUrl = '';
   String supplierRequestType = '';
 
-  double get totalAmount => widget.product.price * quantity;
+  bool get isTawadOrder => widget.initialTawad;
+  double? get tawadOfferedUnitPrice =>
+      TawadPricing.parseOfferedUnitPrice(tawadPriceController.text);
+  double get displayedUnitPrice => TawadPricing.pendingDisplayUnitPrice(
+    requested: isTawadOrder,
+    listedUnitPrice: widget.product.price,
+    offeredUnitPrice: tawadOfferedUnitPrice,
+  );
+  double get totalAmount => displayedUnitPrice * quantity;
   bool get hasDetailedDeliveryAddress =>
       !isGeneralLocationOnly(buyerAddressController.text);
   bool get hasSavedDeliveryPin =>
@@ -69,8 +82,6 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
 
   String get supplierRequestLabel {
     switch (supplierRequestType.trim()) {
-      case 'suki_tawad':
-        return 'Suki / Tawad';
       case 'handling':
         return 'Handling request';
       case 'delivery':
@@ -167,6 +178,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
     buyerNameController.addListener(handleBuyerFieldChanged);
     buyerPhoneController.addListener(handleBuyerFieldChanged);
     buyerAddressController.addListener(handleBuyerFieldChanged);
+    tawadPriceController.addListener(handleTawadPriceChanged);
     loadBuyerDetails();
     loadSupplierStoreImage();
   }
@@ -176,6 +188,8 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
     buyerNameController.removeListener(handleBuyerFieldChanged);
     buyerPhoneController.removeListener(handleBuyerFieldChanged);
     buyerAddressController.removeListener(handleBuyerFieldChanged);
+    tawadPriceController.removeListener(handleTawadPriceChanged);
+    tawadPriceController.dispose();
     buyerNameController.dispose();
     buyerPhoneController.dispose();
     buyerAddressController.dispose();
@@ -584,6 +598,10 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
     showMessage('Delivery location saved for future orders.');
   }
 
+  void handleTawadPriceChanged() {
+    if (mounted) setState(() {});
+  }
+
   void decreaseQuantity() {
     if (quantity > 1) {
       setState(() {
@@ -912,7 +930,9 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                           ),
                           const Divider(height: 22, color: Color(0xFFD8E5ED)),
                           _ConfirmationRow(
-                            label: 'Total payment',
+                            label: isTawadOrder
+                                ? 'Proposed total if accepted'
+                                : 'Total payment',
                             value: '₱${formatPrice(totalAmount)}',
                             strong: true,
                           ),
@@ -984,9 +1004,9 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                               Icons.arrow_forward_rounded,
                               size: 17,
                             ),
-                            label: const Text(
-                              'Place Order',
-                              style: TextStyle(
+                            label: Text(
+                              isTawadOrder ? 'Send Tawad Order' : 'Place Order',
+                              style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w900,
                               ),
@@ -1047,6 +1067,16 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
       return;
     }
 
+    final tawadError = TawadPricing.validationMessage(
+      requested: isTawadOrder,
+      listedUnitPrice: widget.product.price,
+      offeredUnitPrice: tawadOfferedUnitPrice,
+    );
+    if (tawadError != null) {
+      showMessage(tawadError, isError: true);
+      return;
+    }
+
     if (!validateBuyerDetails()) return;
 
     final profileSaved = await saveVendorDeliveryDetails(
@@ -1080,6 +1110,8 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
         buyerAddress: fullDeliveryAddress,
         orderRequestType: supplierRequestType.trim(),
         orderRequestMessage: supplierRequestController.text.trim(),
+        tawadRequested: isTawadOrder,
+        tawadOfferedUnitPrice: tawadOfferedUnitPrice,
         deliveryLatitude: deliveryLatitude!,
         deliveryLongitude: deliveryLongitude!,
         deliveryProvince: buyerProvince,
@@ -1253,7 +1285,9 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                 ),
                 const SizedBox(height: 9),
                 Text(
-                  hasSupplierRequest
+                  isTawadOrder
+                      ? '${widget.product.name} and your exact Tawad offer were sent to ${widget.supplier.name}. The supplier can accept the offered price or decline the whole order.'
+                      : hasSupplierRequest
                       ? '${widget.product.name} and your request were sent to ${widget.supplier.name}. The supplier can review them before accepting or declining the order.'
                       : '${widget.product.name} was sent to ${widget.supplier.name}. You can follow the supplier response in My Orders.',
                   textAlign: TextAlign.center,
@@ -1294,7 +1328,9 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                         ),
                       const Divider(height: 20, color: Color(0xFFDDE8EF)),
                       _ConfirmationRow(
-                        label: 'Total payment',
+                        label: isTawadOrder
+                            ? 'Proposed total'
+                            : 'Total payment',
                         value: '₱${formatPrice(totalAmount)}',
                         strong: true,
                       ),
@@ -1407,6 +1443,8 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
         ? 'Add Delivery Address'
         : !hasSavedDeliveryPin
         ? 'Set Delivery Pin'
+        : isTawadOrder
+        ? 'Send Tawad Order'
         : 'Place Order';
     final actionIcon = isEditingBuyer
         ? Icons.save_outlined
@@ -1537,71 +1575,80 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
       ),
       child: Scaffold(
         backgroundColor: const Color(0xFFF4F8FB),
-      resizeToAvoidBottomInset: true,
-      body: ListView(
-        controller: checkoutScrollController,
-        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        physics: const ClampingScrollPhysics(),
-        padding: EdgeInsets.zero,
-        children: [
-          const PlaceOrderHeader(),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
-            child: Column(
-              children: [
-                KeyedSubtree(
-                  key: buyerDetailsKey,
-                  child: BuyerDetailsCard(
-                    nameController: buyerNameController,
-                    phoneController: buyerPhoneController,
-                    addressController: buyerAddressController,
-                    isLoading: isLoadingBuyer,
-                    errorMessage: buyerLoadError,
-                    deliveryLatitude: deliveryLatitude,
-                    deliveryLongitude: deliveryLongitude,
-                    province: buyerProvince,
-                    locality: buyerLocality,
-                    displayAddress: fullDeliveryAddress,
-                    hasDetailedAddress: hasDetailedDeliveryAddress,
-                    isEditing: isEditingBuyer,
-                    isSaving: isSavingBuyer,
-                    onEdit: beginEditingBuyerDetails,
-                    onCancel: cancelEditingBuyerDetails,
-                    onSave: () {
-                      saveVendorDeliveryDetails();
-                    },
-                    onChooseDeliveryPin: chooseDeliveryReferencePin,
-                    canSave: hasBuyerChanges,
+        resizeToAvoidBottomInset: true,
+        body: ListView(
+          controller: checkoutScrollController,
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          physics: const ClampingScrollPhysics(),
+          padding: EdgeInsets.zero,
+          children: [
+            const PlaceOrderHeader(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
+              child: Column(
+                children: [
+                  KeyedSubtree(
+                    key: buyerDetailsKey,
+                    child: BuyerDetailsCard(
+                      nameController: buyerNameController,
+                      phoneController: buyerPhoneController,
+                      addressController: buyerAddressController,
+                      isLoading: isLoadingBuyer,
+                      errorMessage: buyerLoadError,
+                      deliveryLatitude: deliveryLatitude,
+                      deliveryLongitude: deliveryLongitude,
+                      province: buyerProvince,
+                      locality: buyerLocality,
+                      displayAddress: fullDeliveryAddress,
+                      hasDetailedAddress: hasDetailedDeliveryAddress,
+                      isEditing: isEditingBuyer,
+                      isSaving: isSavingBuyer,
+                      onEdit: beginEditingBuyerDetails,
+                      onCancel: cancelEditingBuyerDetails,
+                      onSave: () {
+                        saveVendorDeliveryDetails();
+                      },
+                      onChooseDeliveryPin: chooseDeliveryReferencePin,
+                      canSave: hasBuyerChanges,
+                    ),
                   ),
-                ),
-                ProductOrderCard(
-                  supplier: widget.supplier,
-                  supplierImageUrl: supplierStoreImageUrl,
-                  product: widget.product,
-                  quantity: quantity,
-                  onDecrease: decreaseQuantity,
-                  onIncrease: increaseQuantity,
-                  onEnterQuantity: enterSpecificQuantity,
-                ),
-                SupplierRequestCard(
-                  controller: supplierRequestController,
-                  selectedType: supplierRequestType,
-                  onTypeChanged: (value) {
-                    setState(() {
-                      supplierRequestType = value;
-                    });
-                  },
-                ),
-                PaymentDetailsCard(
-                  product: widget.product,
-                  quantity: quantity,
-                  totalAmount: totalAmount,
-                ),
-              ],
+                  ProductOrderCard(
+                    supplier: widget.supplier,
+                    supplierImageUrl: supplierStoreImageUrl,
+                    product: widget.product,
+                    quantity: quantity,
+                    onDecrease: decreaseQuantity,
+                    onIncrease: increaseQuantity,
+                    onEnterQuantity: enterSpecificQuantity,
+                  ),
+                  if (isTawadOrder)
+                    TawadOfferCard(
+                      controller: tawadPriceController,
+                      listedUnitPrice: widget.product.price,
+                      quantity: quantity,
+                      quantityUnit: widget.product.quantityUnit,
+                    ),
+                  SupplierRequestCard(
+                    controller: supplierRequestController,
+                    selectedType: supplierRequestType,
+                    onTypeChanged: (value) {
+                      setState(() {
+                        supplierRequestType = value;
+                      });
+                    },
+                  ),
+                  PaymentDetailsCard(
+                    product: widget.product,
+                    quantity: quantity,
+                    totalAmount: totalAmount,
+                    tawadPending: isTawadOrder,
+                    listedTotalAmount: widget.product.price * quantity,
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
         bottomNavigationBar: checkoutBottomBar(),
       ),
     );

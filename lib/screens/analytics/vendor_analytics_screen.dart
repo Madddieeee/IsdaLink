@@ -8,10 +8,12 @@ import 'package:isdalink/screens/analytics/analytics_screen.dart';
 /// calculations consistent with supplier analytics without mixing navigation
 /// code for the two roles.
 class VendorAnalyticsScreen extends StatelessWidget {
-  const VendorAnalyticsScreen({super.key});
+  const VendorAnalyticsScreen({super.key, this.onBack});
+
+  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) {
-    return const AnalyticsScreen(mode: AnalyticsMode.vendor);
+    return AnalyticsScreen(mode: AnalyticsMode.vendor, onBack: onBack);
   }
 }

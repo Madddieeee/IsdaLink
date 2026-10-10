@@ -460,7 +460,7 @@ class SupplierDashboardScreen extends StatelessWidget {
     final collapsedHeight = topPadding + toolbarHeight;
 
     return SliverAppBar(
-      pinned: true,
+      pinned: false,
       floating: false,
       snap: false,
       stretch: false,

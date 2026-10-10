@@ -1,0 +1,12 @@
+{
+  "name": "isdalink-security-regression",
+  "private": true,
+  "scripts": {
+    "test": "firebase emulators:exec --only firestore --project demo-isdalink-audit \"node security_regression.cjs\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "6.0.0",
+    "firebase": "13.0.0",
+    "firebase-tools": "14.12.0"
+  }
+}

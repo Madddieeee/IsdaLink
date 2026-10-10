@@ -1,3 +1,4 @@
+import 'package:isdalink/screens/auth/auth_gate.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,10 +7,14 @@ import 'package:isdalink/screens/auth/register_screen.dart';
 class LoginScreen extends StatefulWidget {
   const LoginScreen({
     this.showBackButton = true,
+    this.authGateManaged = false,
     super.key,
   });
 
   final bool showBackButton;
+
+  /// True when AuthGate is already listening above this login screen.
+  final bool authGateManaged;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -169,10 +174,19 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      // AuthGate owns role loading and the polished Welcome Back -> Home
-      // handoff. Keeping navigation in one place prevents a second Firestore
-      // read and avoids the old double-navigation/loading flash after login.
       signedIn = true;
+
+      if (!mounted) return;
+
+      // Logout and Welcome can open Login as a standalone route. Restore
+      // AuthGate there so it can resolve the role and show Home or Admin.
+      // When the gate already owns Login, its auth listener handles the handoff.
+      if (!widget.authGateManaged) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute<void>(builder: (_) => const AuthGate()),
+          (route) => false,
+        );
+      }
     } on FirebaseAuthException catch (error) {
       final message = authenticationErrorMessage(error);
 
@@ -187,9 +201,8 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (_) {
       setAuthenticationError('Unable to sign in right now. Please try again.');
     } finally {
-      // On success, keep the button in its Signing In state until AuthGate
-      // swaps this screen for the Welcome Back transition. On failures, restore
-      // the form immediately so the user can correct the details.
+      // A successful sign-in is handed to either the existing AuthGate or the
+      // restored gate route. On failure, restore the form for another attempt.
       if (mounted && !signedIn) {
         setState(() {
           isLoading = false;
@@ -336,7 +349,10 @@ class _LoginScreenState extends State<LoginScreen> {
       suffixIcon: suffixIcon,
       filled: true,
       fillColor: const Color(0xFFF4F8FB),
-      contentPadding: const EdgeInsets.symmetric(vertical: 13.5, horizontal: 16),
+      contentPadding: const EdgeInsets.symmetric(
+        vertical: 13.5,
+        horizontal: 16,
+      ),
       errorMaxLines: 2,
       errorStyle: const TextStyle(
         color: Color(0xFFC84238),
@@ -621,11 +637,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return const Row(
       children: [
         Expanded(
-          child: Divider(
-            height: 1,
-            thickness: 1,
-            color: Color(0xFFDCE8EF),
-          ),
+          child: Divider(height: 1, thickness: 1, color: Color(0xFFDCE8EF)),
         ),
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 14),
@@ -640,11 +652,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
         Expanded(
-          child: Divider(
-            height: 1,
-            thickness: 1,
-            color: Color(0xFFDCE8EF),
-          ),
+          child: Divider(height: 1, thickness: 1, color: Color(0xFFDCE8EF)),
         ),
       ],
     );
@@ -810,9 +818,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       offset: const Offset(0, -overlap),
                       child: Container(
                         width: double.infinity,
-                        constraints: BoxConstraints(
-                          minHeight: cardMinHeight,
-                        ),
+                        constraints: BoxConstraints(minHeight: cardMinHeight),
                         padding: EdgeInsets.fromLTRB(
                           24,
                           keyboardOpen ? 24 : 30,
@@ -848,8 +854,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 const SizedBox(height: 14),
                                 Wrap(
                                   alignment: WrapAlignment.center,
-                                  crossAxisAlignment:
-                                      WrapCrossAlignment.center,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
                                   children: [
                                     const Text(
                                       'New to IsdaLink? ',
@@ -860,11 +865,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ),
                                     ),
                                     TextButton(
-                                      onPressed:
-                                          isBusy ? null : openRegistration,
+                                      onPressed: isBusy
+                                          ? null
+                                          : openRegistration,
                                       style: TextButton.styleFrom(
-                                        foregroundColor:
-                                            const Color(0xFF0875D1),
+                                        foregroundColor: const Color(
+                                          0xFF0875D1,
+                                        ),
                                         backgroundColor: Colors.transparent,
                                         overlayColor: Colors.transparent,
                                         shadowColor: Colors.transparent,
@@ -905,5 +912,4 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
-
 }

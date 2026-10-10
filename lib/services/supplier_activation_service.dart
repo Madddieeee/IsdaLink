@@ -195,7 +195,7 @@ class SupplierActivationService {
         activeReason == reason &&
         (rejectedAtMillis == 0 ||
             createdAtMillis == 0 ||
-            (createdAtMillis - rejectedAtMillis).abs() <= 300000);
+            createdAtMillis == rejectedAtMillis);
 
     if (ownerId != user.uid ||
         applicationId != user.uid ||
@@ -255,9 +255,8 @@ class SupplierActivationService {
     required User user,
     required SupplierApplicationInput input,
   }) async {
-    // Refresh the Firebase Auth token before Firestore evaluates the
-    // application transaction. This is especially important after an admin
-    // rejection because the app may still hold an older cached ID token.
+    // Refresh the email claim before validating the authenticated application.
+    // Supplier approval/rejection is read from Firestore, not token claims.
     await user.getIdToken(true);
 
     _validateApplication(user: user, input: input);
@@ -373,7 +372,9 @@ class SupplierActivationService {
         'supportedUnits': FieldValue.delete(),
         'status': 'pending',
         if (currentStatus == 'rejected' ||
-            currentStatus == 'declined') ...<String, dynamic>{
+            currentStatus == 'declined' ||
+            currentProfileStatus == 'rejected' ||
+            currentProfileStatus == 'declined') ...<String, dynamic>{
           'rejectionReason': FieldValue.delete(),
           'rejectedBy': FieldValue.delete(),
           'rejectedAt': FieldValue.delete(),
@@ -417,7 +418,8 @@ class SupplierActivationService {
         input.ownerAddress.trim().length > 180) {
       throw StateError('Enter a valid owner address.');
     }
-    if (!_emailPattern.hasMatch(email) ||
+    if (email.length > 254 ||
+        !_emailPattern.hasMatch(email) ||
         authenticatedEmail.isEmpty ||
         email.toLowerCase() != authenticatedEmail.toLowerCase()) {
       throw StateError('Use the email address registered to this account.');
@@ -450,10 +452,20 @@ class SupplierActivationService {
     if (permitPath.isEmpty && !permitUrl.startsWith('https://')) {
       throw StateError('Upload a valid business permit photo.');
     }
-    if (permitPath.isNotEmpty && !permitPath.startsWith(expectedPermitPrefix)) {
+    if (permitPath.length > 500 ||
+        (permitPath.isNotEmpty &&
+            (!permitPath.startsWith(expectedPermitPrefix) ||
+                permitPath.substring(expectedPermitPrefix.length).isEmpty ||
+                permitPath
+                    .substring(expectedPermitPrefix.length)
+                    .contains('/')))) {
       throw StateError('Upload the business permit again for this account.');
     }
-    if (!input.storePhotoUrl.trim().startsWith('https://')) {
+    if (permitUrl.length > 2048) {
+      throw StateError('Upload the business permit photo again.');
+    }
+    if (input.storePhotoUrl.trim().length > 2048 ||
+        !input.storePhotoUrl.trim().startsWith('https://')) {
       throw StateError('Upload a valid verification store photo.');
     }
   }

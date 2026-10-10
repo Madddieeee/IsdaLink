@@ -375,16 +375,17 @@ class _SupplierCodOrdersScreenState extends State<SupplierCodOrdersScreen> {
       'productName',
       'fishName',
     ], fallback: 'Fish Product');
-    final orderRequestType = firstString(
+    final tawadRequested = data['tawadRequested'] == true;
+    final tawadOfferedUnitPrice = OrderHelpers.getDoubleValue(
       data,
-      const ['orderRequestType'],
-      fallback: '',
+      'tawadOfferedUnitPrice',
     );
-    final orderRequestMessage = firstString(
-      data,
-      const ['orderRequestMessage'],
-      fallback: '',
-    );
+    final orderRequestType = firstString(data, const [
+      'orderRequestType',
+    ], fallback: '');
+    final orderRequestMessage = firstString(data, const [
+      'orderRequestMessage',
+    ], fallback: '');
     final hasOrderRequest =
         data['hasOrderRequest'] == true ||
         orderRequestType.isNotEmpty ||
@@ -444,8 +445,10 @@ class _SupplierCodOrdersScreenState extends State<SupplierCodOrdersScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    const Text(
-                      'Accept COD Order',
+                    Text(
+                      tawadRequested
+                          ? 'Accept Tawad Offer'
+                          : 'Accept COD Order',
                       style: TextStyle(
                         color: Color(0xFF102C44),
                         fontSize: 17,
@@ -456,7 +459,8 @@ class _SupplierCodOrdersScreenState extends State<SupplierCodOrdersScreen> {
                     Text(
                       '$productName requested: '
                       '${OrderHelpers.formatNumber(requestedQuantity)} '
-                      '$quantityUnit',
+                      '$quantityUnit'
+                      '${tawadRequested ? ' at ₱${OrderHelpers.formatNumber(tawadOfferedUnitPrice)} per $quantityUnit' : ''}',
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: Color(0xFF657C8E),
@@ -509,9 +513,11 @@ class _SupplierCodOrdersScreenState extends State<SupplierCodOrdersScreen> {
                                     ),
                                   ],
                                   const SizedBox(height: 4),
-                                  const Text(
-                                    'Accepting keeps the system COD total based on the listed price and fulfilled quantity.',
-                                    style: TextStyle(
+                                  Text(
+                                    tawadRequested
+                                        ? 'Accepting uses the offered price. To refuse, go back and tap Decline Tawad.'
+                                        : 'Accepting keeps the system COD total based on the listed price and fulfilled quantity.',
+                                    style: const TextStyle(
                                       color: Color(0xFF7B8FA3),
                                       fontSize: 8.3,
                                       height: 1.3,
@@ -694,6 +700,7 @@ class _SupplierCodOrdersScreenState extends State<SupplierCodOrdersScreen> {
       'productName',
       'fishName',
     ], fallback: 'this fish product');
+    final tawadRequested = data['tawadRequested'] == true;
 
     late final String title;
     late final String message;
@@ -704,10 +711,13 @@ class _SupplierCodOrdersScreenState extends State<SupplierCodOrdersScreen> {
 
     switch (newStatus.toLowerCase()) {
       case 'accepted':
-        title = 'Accept this COD order?';
-        message =
-            'Confirm that you can fulfill the requested $productName quantity. The vendor will be notified.';
-        confirmLabel = 'Accept Order';
+        title = tawadRequested
+            ? 'Accept this Tawad offer?'
+            : 'Accept this COD order?';
+        message = tawadRequested
+            ? 'The $productName order will use the vendor\'s offered unit price. The vendor will be notified.'
+            : 'Confirm that you can fulfill the requested $productName quantity. The vendor will be notified.';
+        confirmLabel = tawadRequested ? 'Accept Tawad' : 'Accept Order';
         icon = Icons.check_circle_outline_rounded;
         color = const Color(0xFF146BFF);
         destructive = false;
@@ -722,10 +732,13 @@ class _SupplierCodOrdersScreenState extends State<SupplierCodOrdersScreen> {
         destructive = false;
         break;
       case 'cancelled':
-        title = 'Cancel this COD order?';
-        message =
-            'The vendor will be notified and any reserved stock will be returned to the supplier inventory.';
-        confirmLabel = 'Cancel Order';
+        title = tawadRequested
+            ? 'Decline this Tawad offer?'
+            : 'Cancel this COD order?';
+        message = tawadRequested
+            ? 'Declining closes the whole transaction. The vendor will be notified and all reserved stock will be returned.'
+            : 'The vendor will be notified and any reserved stock will be returned to the supplier inventory.';
+        confirmLabel = tawadRequested ? 'Decline Order' : 'Cancel Order';
         icon = Icons.cancel_outlined;
         color = const Color(0xFFD94A45);
         destructive = true;

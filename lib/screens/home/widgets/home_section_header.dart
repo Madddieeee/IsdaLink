@@ -30,13 +30,9 @@ class HomeSectionHeader extends StatelessWidget {
           ? CrossAxisAlignment.start
           : CrossAxisAlignment.center,
       children: [
-        Container(
+        SizedBox(
           width: 32,
           height: 32,
-          decoration: BoxDecoration(
-            color: const Color(0xFFE4F6FC),
-            borderRadius: BorderRadius.circular(10),
-          ),
           child: assetIconPath != null && assetIconPath!.trim().isNotEmpty
               ? Padding(
                   padding: const EdgeInsets.all(4),

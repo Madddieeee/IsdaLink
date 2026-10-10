@@ -292,6 +292,7 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
     final selected = await showModalBottomSheet<_FishStockSortOption>(
       context: context,
       useSafeArea: true,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black.withAlpha(150),
       builder: (sheetContext) {
@@ -324,22 +325,12 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
                 ),
                 child: Row(
                   children: [
-                    Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? const Color(0xFF087AC0).withAlpha(18)
-                            : const Color(0xFFF2F6F9),
-                        borderRadius: BorderRadius.circular(11),
-                      ),
-                      child: Icon(
-                        icon,
-                        size: 19,
-                        color: isSelected
-                            ? const Color(0xFF087AC0)
-                            : const Color(0xFF6F8798),
-                      ),
+                    Icon(
+                      icon,
+                      size: 22,
+                      color: isSelected
+                          ? const Color(0xFF087AC0)
+                          : const Color(0xFF6F8798),
                     ),
                     const SizedBox(width: 11),
                     Expanded(
@@ -380,88 +371,98 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
           );
         }
 
-        return Container(
-          padding: const EdgeInsets.fromLTRB(18, 10, 18, 22),
-          decoration: const BoxDecoration(
-            color: Color(0xFFF7FAFC),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        return ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.85,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 42,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFBED0DC),
-                  borderRadius: BorderRadius.circular(99),
-                ),
-              ),
-              const SizedBox(height: 15),
-              const Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Color(0xFFF7FAFC),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: SafeArea(
+              top: false,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(18, 10, 18, 22),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFBED0DC),
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    const Row(
                       children: [
-                        Text(
-                          'Sort fish stocks',
-                          style: TextStyle(
-                            color: Color(0xFF102C44),
-                            fontSize: 17,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        SizedBox(height: 3),
-                        Text(
-                          'Choose how marketplace listings are ordered.',
-                          style: TextStyle(
-                            color: Color(0xFF7B8FA3),
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Sort fish stocks',
+                                style: TextStyle(
+                                  color: Color(0xFF102C44),
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              SizedBox(height: 3),
+                              Text(
+                                'Choose how marketplace listings are ordered.',
+                                style: TextStyle(
+                                  color: Color(0xFF7B8FA3),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 14),
+                    option(
+                      value: _FishStockSortOption.newest,
+                      icon: Icons.schedule_rounded,
+                      title: 'Newest',
+                      subtitle: 'Recently posted or restocked listings first.',
+                    ),
+                    const SizedBox(height: 7),
+                    option(
+                      value: _FishStockSortOption.priceLowHigh,
+                      icon: Icons.south_rounded,
+                      title: 'Price: low to high',
+                      subtitle: 'Lower listed prices appear first.',
+                    ),
+                    const SizedBox(height: 7),
+                    option(
+                      value: _FishStockSortOption.priceHighLow,
+                      icon: Icons.north_rounded,
+                      title: 'Price: high to low',
+                      subtitle: 'Higher listed prices appear first.',
+                    ),
+                    const SizedBox(height: 7),
+                    option(
+                      value: _FishStockSortOption.mostStock,
+                      icon: Icons.inventory_2_rounded,
+                      title: 'Most stock available',
+                      subtitle: 'Listings with more available quantity first.',
+                    ),
+                    const SizedBox(height: 7),
+                    option(
+                      value: _FishStockSortOption.fishName,
+                      icon: Icons.sort_by_alpha_rounded,
+                      title: 'Fish name',
+                      subtitle: 'Browse listings alphabetically by fish name.',
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 14),
-              option(
-                value: _FishStockSortOption.newest,
-                icon: Icons.schedule_rounded,
-                title: 'Newest',
-                subtitle: 'Recently posted or restocked listings first.',
-              ),
-              const SizedBox(height: 7),
-              option(
-                value: _FishStockSortOption.priceLowHigh,
-                icon: Icons.south_rounded,
-                title: 'Price: low to high',
-                subtitle: 'Lower listed prices appear first.',
-              ),
-              const SizedBox(height: 7),
-              option(
-                value: _FishStockSortOption.priceHighLow,
-                icon: Icons.north_rounded,
-                title: 'Price: high to low',
-                subtitle: 'Higher listed prices appear first.',
-              ),
-              const SizedBox(height: 7),
-              option(
-                value: _FishStockSortOption.mostStock,
-                icon: Icons.inventory_2_rounded,
-                title: 'Most stock available',
-                subtitle: 'Listings with more available quantity first.',
-              ),
-              const SizedBox(height: 7),
-              option(
-                value: _FishStockSortOption.fishName,
-                icon: Icons.sort_by_alpha_rounded,
-                title: 'Fish name',
-                subtitle: 'Browse listings alphabetically by fish name.',
-              ),
-            ],
+            ),
           ),
         );
       },
@@ -476,11 +477,10 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
     });
   }
 
-  Widget _statusCard({
+  Widget _statusMetric({
     required String value,
     required String label,
     required Widget icon,
-    required Color iconBackground,
     Color? valueColor,
   }) {
     return Expanded(
@@ -503,16 +503,7 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: iconBackground,
-                borderRadius: BorderRadius.circular(11),
-              ),
-              alignment: Alignment.center,
-              child: icon,
-            ),
+            SizedBox(width: 34, height: 28, child: Center(child: icon)),
             const SizedBox(height: 5),
             FittedBox(
               fit: BoxFit.scaleDown,
@@ -631,44 +622,17 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
                           filterQuality: FilterQuality.high,
                           errorBuilder: (context, error, stackTrace) =>
                               const Text(
-                            'IsdaLink',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
+                                'IsdaLink',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
                         ),
                       ),
                       const Spacer(),
-                      Container(
-                        height: 42,
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(36),
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(color: Colors.white.withAlpha(72)),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.location_on_rounded,
-                              color: Colors.white,
-                              size: 17,
-                            ),
-                            SizedBox(width: 5),
-                            Text(
-                              'Caraga',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      const SizedBox(width: 42),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -733,18 +697,10 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
             ),
             child: Row(
               children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEAF7FC),
-                    borderRadius: BorderRadius.circular(11),
-                  ),
-                  child: const Icon(
-                    Icons.search_rounded,
-                    color: Color(0xFF0875D1),
-                    size: 21,
-                  ),
+                const Icon(
+                  Icons.search_rounded,
+                  color: Color(0xFF0875D1),
+                  size: 21,
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -813,14 +769,13 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
           const SizedBox(height: 14),
           Row(
             children: [
-              _statusCard(
+              _statusMetric(
                 value: '$availableCount',
                 label: 'Fish stocks',
                 icon: _fishMarketplaceIcon(),
-                iconBackground: const Color(0xFFEAF5FD),
               ),
               const SizedBox(width: 10),
-              _statusCard(
+              _statusMetric(
                 value: '$activeSupplierCount',
                 label: 'Suppliers',
                 icon: const Icon(
@@ -828,10 +783,9 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
                   color: Color(0xFF0A73D8),
                   size: 18,
                 ),
-                iconBackground: const Color(0xFFE8F5FC),
               ),
               const SizedBox(width: 10),
-              _statusCard(
+              _statusMetric(
                 value: 'COD',
                 label: 'Payment',
                 icon: const Icon(
@@ -839,7 +793,6 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
                   color: Color(0xFFE79A13),
                   size: 18,
                 ),
-                iconBackground: const Color(0xFFFFF4DB),
                 valueColor: const Color(0xFF082E50),
               ),
             ],
@@ -917,7 +870,9 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
     required int unseenCount,
   }) {
     final query = searchQuery.trim();
-    final title = query.isEmpty ? 'Available Fish Stocks' : 'Results for “$query”';
+    final title = query.isEmpty
+        ? 'Available Fish Stocks'
+        : 'Results for “$query”';
     final subtitle = query.isEmpty
         ? '$totalCount available listing${totalCount == 1 ? '' : 's'} from verified suppliers across Caraga.'
         : '$visibleCount matching listing${visibleCount == 1 ? '' : 's'} found.';
@@ -1391,10 +1346,7 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
                 availableCount: availableDocuments.length,
                 activeSupplierCount: activeSupplierIds.length,
                 section: section,
-                content: stockGrid(
-                  visibleDocuments,
-                  supplierImageUrlsById,
-                ),
+                content: stockGrid(visibleDocuments, supplierImageUrlsById),
               );
             },
           );

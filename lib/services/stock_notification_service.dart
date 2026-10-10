@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:isdalink/services/notification_center_service.dart';
 import 'package:isdalink/utils/order_helpers.dart';
 import 'package:isdalink/utils/stock_state.dart';
 
@@ -183,20 +184,7 @@ class StockNotificationService {
   Future<void> markNotificationsRead(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> notifications,
   ) async {
-    if (notifications.isEmpty) {
-      return;
-    }
-
-    final batch = FirebaseFirestore.instance.batch();
-
-    for (final notification in notifications) {
-      batch.update(notification.reference, {
-        'isRead': true,
-        'readAt': FieldValue.serverTimestamp(),
-      });
-    }
-
-    await batch.commit();
+    await const NotificationCenterService().markAllRead(notifications);
   }
 
   int createdAtMillis(QueryDocumentSnapshot<Map<String, dynamic>> document) {

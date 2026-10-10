@@ -189,11 +189,70 @@ class PushNotificationService {
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          content: Text(body.isEmpty ? title : '$title\n$body'),
+          content: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE5F4FC),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.notifications_active_outlined,
+                  color: Color(0xFF0875D1),
+                  size: 21,
+                ),
+              ),
+              const SizedBox(width: 11),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF102C44),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    if (body.isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        body,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFF52677A),
+                          fontSize: 10.5,
+                          height: 1.3,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
           behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 6),
+          backgroundColor: const Color(0xFFF8FCFF),
+          elevation: 10,
+          margin: const EdgeInsets.fromLTRB(12, 0, 12, 14),
+          padding: const EdgeInsets.fromLTRB(12, 11, 8, 11),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+            side: const BorderSide(color: Color(0xFFD7EAF5)),
+          ),
+          duration: const Duration(seconds: 5),
           action: SnackBarAction(
-            label: 'View',
+            label: 'Open',
+            textColor: const Color(0xFF0875D1),
             onPressed: () {
               unawaited(_handleInteraction(message));
             },

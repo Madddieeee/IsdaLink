@@ -1,0 +1,16 @@
+'use strict';
+const fs = require('fs');
+const path = require('path');
+const vm = require('vm');
+const assert = require('assert/strict');
+const source = fs.readFileSync(path.join(__dirname, 'import_historical_transactions.js'), 'utf8');
+const start = source.indexOf('function parseSourceOrderId(');
+const end = source.indexOf('function canonicalRecord(', start);
+if (start < 0 || end < 0) throw new Error('Identity parser not found');
+const context = vm.createContext({clean: v => String(v ?? '').trim(), Buffer});
+vm.runInContext(source.slice(start, end), context);
+for (const v of ['', null, undefined]) assert.equal(context.parseSourceOrderId(v, 2), null);
+assert.equal(context.parseSourceOrderId(' order123 ', 2), 'order123');
+for (const v of ['a/b', '.', '..', 'x'.repeat(1501)]) assert.throws(() => context.parseSourceOrderId(v, 2));
+assert.match(source, /sourceOrderId: parseSourceOrderId\(field\(row, 'source_order_id'\), rowNumber\)/);
+console.log('PASS: 8 actual importer identity parser cases plus field wiring; no Firestore access or writes.');

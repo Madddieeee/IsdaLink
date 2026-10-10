@@ -912,7 +912,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
     );
 
     if (message.toLowerCase().contains('permission')) {
-      return 'We couldn’t submit the application because the account session or saved profile is out of date. Sign out, sign in again, and retry.';
+      return 'The application was not accepted by the server. Your details are still here. Please ask the IsdaLink administrator to check the application rules.';
     }
 
     return message;

@@ -30,8 +30,24 @@ import 'package:isdalink/services/push_notification_service.dart';
 import 'package:isdalink/services/supplier_browse_service.dart';
 import 'package:isdalink/utils/app_error_message.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int selectedTab = 0;
+  final Set<int> visitedTabs = {0};
+
+  void selectTab(int index) {
+    if (selectedTab == index) return;
+    setState(() {
+      selectedTab = index;
+      visitedTabs.add(index);
+    });
+  }
 
   SupplierBrowseService get supplierService => const SupplierBrowseService();
   HomeStockService get stockService => const HomeStockService();
@@ -47,16 +63,15 @@ class HomeScreen extends StatelessWidget {
 
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => const LoginScreen(showBackButton: false)),
+      MaterialPageRoute(
+        builder: (_) => const LoginScreen(showBackButton: false),
+      ),
       (route) => false,
     );
   }
 
   void openAnalytics(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const VendorAnalyticsScreen()),
-    );
+    selectTab(2);
   }
 
   void openBrowseSuppliers(BuildContext context) {
@@ -93,10 +108,7 @@ class HomeScreen extends StatelessWidget {
   }
 
   void openMyOrders(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const MyOrdersScreen()),
-    );
+    selectTab(1);
   }
 
   void openLatestFishStocks(BuildContext context) {
@@ -107,10 +119,7 @@ class HomeScreen extends StatelessWidget {
   }
 
   void openMe(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const MeScreen()),
-    );
+    selectTab(3);
   }
 
   void openNotifications(BuildContext context) {
@@ -162,7 +171,7 @@ class HomeScreen extends StatelessWidget {
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return ListView(
-              padding: const EdgeInsets.only(left: 16, right: 4),
+              padding: const EdgeInsets.only(left: 16, right: 16),
               scrollDirection: Axis.horizontal,
               children: [
                 homeSupplierMessageCard(
@@ -207,7 +216,7 @@ class HomeScreen extends StatelessWidget {
                 allApprovedSuppliers.isNotEmpty && recommendationPool.isEmpty;
 
             return ListView(
-              padding: const EdgeInsets.only(left: 16, right: 4),
+              padding: const EdgeInsets.only(left: 16, right: 16),
               scrollDirection: Axis.horizontal,
               children: [
                 homeSupplierMessageCard(
@@ -572,8 +581,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget homePage(BuildContext context) {
     final statusBarHeight = MediaQuery.paddingOf(context).top;
     final homeHeaderHeight = MediaQuery.sizeOf(context).width <= 400
         ? 260.0
@@ -629,7 +637,7 @@ class HomeScreen extends StatelessWidget {
                                 onBrowseFishStocks: () =>
                                     openLatestFishStocks(context),
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 20),
                               Padding(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 16,
@@ -641,9 +649,9 @@ class HomeScreen extends StatelessWidget {
                                   onViewAll: () => openBrowseSuppliers(context),
                                 ),
                               ),
-                              const SizedBox(height: 3),
+                              const SizedBox(height: 10),
                               recommendedSuppliersList(context),
-                              const SizedBox(height: 12),
+                              const SizedBox(height: 24),
                               RecentFishPosts(
                                 onViewAll: () => openLatestFishStocks(context),
                                 onProductTap:
@@ -667,13 +675,46 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
             ),
-            HomeBottomNavWithBadge(
-              userId: currentUser?.uid,
-              onMyOrders: () => openMyOrders(context),
-              onAnalytics: () => openAnalytics(context),
-              onMe: () => openMe(context),
-            ),
           ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: selectedTab == 0,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && selectedTab != 0) selectTab(0);
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF4FAFF),
+        body: IndexedStack(
+          index: selectedTab,
+          children: [
+            homePage(context),
+            if (visitedTabs.contains(1))
+              MyOrdersScreen(onBack: () => selectTab(0))
+            else
+              const SizedBox.shrink(),
+            if (visitedTabs.contains(2))
+              VendorAnalyticsScreen(onBack: () => selectTab(0))
+            else
+              const SizedBox.shrink(),
+            if (visitedTabs.contains(3))
+              MeScreen(onBack: () => selectTab(0))
+            else
+              const SizedBox.shrink(),
+          ],
+        ),
+        bottomNavigationBar: HomeBottomNavWithBadge(
+          userId: currentUser?.uid,
+          selectedIndex: selectedTab,
+          onHome: () => selectTab(0),
+          onMyOrders: () => selectTab(1),
+          onAnalytics: () => selectTab(2),
+          onMe: () => selectTab(3),
         ),
       ),
     );
@@ -980,12 +1021,16 @@ class HomeBottomNavWithBadge extends StatelessWidget {
   const HomeBottomNavWithBadge({
     super.key,
     required this.userId,
+    this.selectedIndex = 0,
+    this.onHome,
     required this.onMyOrders,
     required this.onAnalytics,
     required this.onMe,
   });
 
   final String? userId;
+  final int selectedIndex;
+  final VoidCallback? onHome;
   final VoidCallback onMyOrders;
   final VoidCallback onAnalytics;
   final VoidCallback onMe;
@@ -1029,6 +1074,8 @@ class HomeBottomNavWithBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     if (userId == null || userId!.trim().isEmpty) {
       return HomeBottomNav(
+        selectedIndex: selectedIndex,
+        onHome: onHome,
         activeOrderCount: 0,
         supplierNotificationCount: 0,
         onMyOrders: onMyOrders,
@@ -1070,6 +1117,8 @@ class HomeBottomNavWithBadge extends StatelessWidget {
                     : 0;
 
                 return HomeBottomNav(
+                  selectedIndex: selectedIndex,
+                  onHome: onHome,
                   activeOrderCount: vendorCount,
                   supplierNotificationCount:
                       supplierPendingCount + stockNotificationCount,
@@ -1895,10 +1944,10 @@ class _HomeSearchSheetState extends State<HomeSearchSheet> {
     // Fish-stock documents only cache basic supplier text, so using the
     // supplierProfiles document here keeps the marketplace avatar, name,
     // location, and Product Details supplier identity consistent everywhere.
-    final supplierProfilesById = <
-      String,
-      QueryDocumentSnapshot<Map<String, dynamic>>
-    >{for (final document in approvedSuppliers) document.id: document};
+    final supplierProfilesById =
+        <String, QueryDocumentSnapshot<Map<String, dynamic>>>{
+          for (final document in approvedSuppliers) document.id: document,
+        };
 
     final isBrowsing = normalizedQuery.isEmpty;
     final showHorizontalBrowseSections =
@@ -2015,8 +2064,7 @@ class _HomeSearchSheetState extends State<HomeSearchSheet> {
               ownerStore: ownerStore,
               isFavorite: isFavorite,
               favoriteBusy:
-                  favoriteSnapshot.connectionState ==
-                      ConnectionState.waiting &&
+                  favoriteSnapshot.connectionState == ConnectionState.waiting &&
                   !favoriteSnapshot.hasData,
               onFavoriteTap: ownerStore
                   ? null
@@ -2138,11 +2186,7 @@ class _HomeSearchSheetState extends State<HomeSearchSheet> {
           ),
           const SizedBox(height: 11),
           if (showHorizontalBrowseSections)
-            buildHorizontalCards(
-              cards: fishCards,
-              height: 126,
-              width: 306,
-            )
+            buildHorizontalCards(cards: fishCards, height: 126, width: 306)
           else
             ...fishCards,
           const SizedBox(height: 12),
@@ -2195,11 +2239,7 @@ class _HomeSearchSheetState extends State<HomeSearchSheet> {
           ),
           const SizedBox(height: 11),
           if (showHorizontalBrowseSections)
-            buildHorizontalCards(
-              cards: supplierCards,
-              height: 118,
-              width: 306,
-            )
+            buildHorizontalCards(cards: supplierCards, height: 118, width: 306)
           else
             ...supplierCards,
         ],
@@ -2358,9 +2398,7 @@ class _HomeSearchSheetState extends State<HomeSearchSheet> {
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.only(top: 9),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                ),
+                decoration: const BoxDecoration(color: Colors.white),
                 child: Column(
                   children: [
                     Container(
@@ -2529,7 +2567,9 @@ class _HomeSearchSheetState extends State<HomeSearchSheet> {
                                             });
                                           },
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(16),
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
                                           ),
                                           itemBuilder: (context) => const [
                                             PopupMenuItem(
@@ -2554,7 +2594,8 @@ class _HomeSearchSheetState extends State<HomeSearchSheet> {
                                             height: 40,
                                             decoration: BoxDecoration(
                                               color: const Color(0xFFEAF7FB),
-                                              borderRadius: BorderRadius.circular(13),
+                                              borderRadius:
+                                                  BorderRadius.circular(13),
                                             ),
                                             child: const Icon(
                                               Icons.tune_rounded,
@@ -2789,7 +2830,10 @@ class HomeSearchSectionLabel extends StatelessWidget {
             ),
             child: Text(
               actionLabel!,
-              style: const TextStyle(fontSize: 8.8, fontWeight: FontWeight.w900),
+              style: const TextStyle(
+                fontSize: 8.8,
+                fontWeight: FontWeight.w900,
+              ),
             ),
           ),
           const SizedBox(width: 4),

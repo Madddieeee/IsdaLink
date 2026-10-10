@@ -163,7 +163,7 @@ function parseDate(value, fieldName, rowNumber, required = true) {
 
   const date = new Date(`${text}T00:00:00.000Z`);
 
-  if (Number.isNaN(date.getTime())) {
+  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== text) {
     throw new Error(
       `Row ${rowNumber}: ${fieldName} is not a valid date: "${text}".`,
     );
@@ -316,6 +316,17 @@ function validateOneToOneMappings(mapping) {
       uidToHistoricalId.set(uid, historicalId);
     }
   }
+}
+
+// Optional explicit link to a live orders document; never derive it from a date.
+function parseSourceOrderId(value, rowNumber) {
+  const id = clean(value);
+  if (!id) return null;
+  if (id.includes('/') || id === '.' || id === '..' ||
+      Buffer.byteLength(id, 'utf8') > 1500) {
+    throw new Error(`Row ${rowNumber}: invalid source_order_id.`);
+  }
+  return id;
 }
 
 function canonicalRecord(row, rowNumber, mapping, sourceFile) {
@@ -471,6 +482,7 @@ function canonicalRecord(row, rowNumber, mapping, sourceFile) {
 
   return {
     transactionId,
+    sourceOrderId: parseSourceOrderId(field(row, 'source_order_id'), rowNumber),
     sourceIndex: optionalNumber(field(row, 'index')),
     transactionDate: transactionDate.timestamp,
     transactionDateIso: transactionDate.text,

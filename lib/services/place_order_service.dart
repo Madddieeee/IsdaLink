@@ -6,6 +6,7 @@ import 'package:isdalink/models/supplier.dart';
 import 'package:isdalink/services/stock_notification_service.dart';
 import 'package:isdalink/utils/order_helpers.dart';
 import 'package:isdalink/utils/stock_state.dart';
+import 'package:isdalink/utils/tawad_pricing.dart';
 
 class PlaceOrderResult {
   const PlaceOrderResult({
@@ -107,6 +108,8 @@ class PlaceOrderService {
     String buyerAddress = '',
     String orderRequestType = '',
     String orderRequestMessage = '',
+    bool tawadRequested = false,
+    double? tawadOfferedUnitPrice,
     required double deliveryLatitude,
     required double deliveryLongitude,
     required String deliveryProvince,
@@ -176,14 +179,9 @@ class PlaceOrderService {
         ? buyerAddress.trim()
         : savedVendorAddress;
 
-    const allowedRequestTypes = <String>{
-      'suki_tawad',
-      'handling',
-      'delivery',
-    };
-    final normalizedRequestType = allowedRequestTypes.contains(
-      orderRequestType.trim(),
-    )
+    const allowedRequestTypes = <String>{'handling', 'delivery'};
+    final normalizedRequestType =
+        allowedRequestTypes.contains(orderRequestType.trim())
         ? orderRequestType.trim()
         : '';
     final normalizedRequestMessage = orderRequestMessage.trim().length > 180
@@ -191,6 +189,15 @@ class PlaceOrderService {
         : orderRequestMessage.trim();
     final hasOrderRequest =
         normalizedRequestType.isNotEmpty || normalizedRequestMessage.isNotEmpty;
+
+    final tawadError = TawadPricing.validationMessage(
+      requested: tawadRequested,
+      listedUnitPrice: product.price,
+      offeredUnitPrice: tawadOfferedUnitPrice,
+    );
+    if (tawadError != null) {
+      throw StateError(tawadError);
+    }
 
     final stockReference = FirebaseFirestore.instance
         .collection('fishStocks')
@@ -243,6 +250,16 @@ class PlaceOrderService {
         throw Exception(
           'You cannot place an order from your own supplier store.',
         );
+      }
+
+      final listedUnitPrice = OrderHelpers.getDoubleValue(stockData, 'price');
+      final latestTawadError = TawadPricing.validationMessage(
+        requested: tawadRequested,
+        listedUnitPrice: listedUnitPrice,
+        offeredUnitPrice: tawadOfferedUnitPrice,
+      );
+      if (latestTawadError != null) {
+        throw StateError(latestTawadError);
       }
 
       final realSupplierName = OrderHelpers.getStringValue(
@@ -319,9 +336,20 @@ class PlaceOrderService {
         'orderRequestMessage': normalizedRequestMessage,
         'quantity': quantity,
         'quantityUnit': product.quantityUnit,
-        'unitPrice': product.price,
+        // Until the supplier accepts, the enforceable COD amount remains the
+        // listing amount. The offered amount is stored separately and can be
+        // applied only by the supplier's exact Tawad acceptance transition.
+        'unitPrice': listedUnitPrice,
+        'listedUnitPrice': listedUnitPrice,
+        'tawadRequested': tawadRequested,
+        'tawadStatus': tawadRequested ? 'Pending' : 'Not requested',
+        if (tawadRequested) ...{
+          'tawadOfferedUnitPrice': tawadOfferedUnitPrice,
+          'tawadOfferedTotalAmount': tawadOfferedUnitPrice! * quantity,
+          'tawadRequestedAt': FieldValue.serverTimestamp(),
+        },
         'priceUnit': product.priceUnit,
-        'totalAmount': product.price * quantity,
+        'totalAmount': listedUnitPrice * quantity,
         'paymentMethod': 'COD',
         'paymentStatus': 'To be paid on delivery',
         'orderStatus': 'Pending',
@@ -341,9 +369,11 @@ class PlaceOrderService {
           'userId': realSupplierId,
           'supplierId': realSupplierId,
           'orderId': orderReference.id,
-          'title': 'New COD Order',
+          'title': tawadRequested ? 'New Tawad COD Order' : 'New COD Order',
           'message': hasOrderRequest
               ? 'Order #$orderCode: $finalVendorName ordered ${OrderHelpers.formatNumber(quantity.toDouble())} ${product.quantityUnit} of ${product.name} and added a buyer request.'
+              : tawadRequested
+              ? 'Order #$orderCode: $finalVendorName offered ₱${OrderHelpers.formatNumber(tawadOfferedUnitPrice!)} per ${product.quantityUnit} for ${OrderHelpers.formatNumber(quantity.toDouble())} ${product.quantityUnit} of ${product.name}. Accept the exact offer or decline the order.'
               : 'Order #$orderCode: $finalVendorName ordered ${OrderHelpers.formatNumber(quantity.toDouble())} ${product.quantityUnit} of ${product.name}.',
           'type': 'new_order',
           'status': 'Pending',

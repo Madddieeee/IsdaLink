@@ -24,7 +24,10 @@ class MeScreen
         StatefulWidget {
   const MeScreen({
     super.key,
+    this.onBack,
   });
+
+  final VoidCallback? onBack;
 
   @override
   State<
@@ -600,7 +603,7 @@ class _MeScreenState
 
     final approved =
         role ==
-            'supplier' ||
+            'supplier' &&
         supplierStatus ==
             'approved';
     final alreadySeen =
@@ -965,7 +968,7 @@ class _MeScreenState
 
     final isApprovedSupplier =
         role ==
-            'supplier' ||
+            'supplier' &&
         supplierStatus ==
             'approved';
     final isPendingSupplier =
@@ -988,7 +991,7 @@ class _MeScreenState
             isPendingSupplier: isPendingSupplier,
             isRejectedSupplier: isRejectedSupplier,
             isUploadingProfileImage: isUploadingProfileImage,
-            onBack: () => Navigator.pop(context),
+            onBack: widget.onBack ?? () => Navigator.pop(context),
             onProfilePhotoTap: () => showProfilePhotoOptions(
               profileImageUrl: profileImageUrl,
               isApprovedSupplier: isApprovedSupplier,

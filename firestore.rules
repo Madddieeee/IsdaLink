@@ -71,6 +71,44 @@ service cloud.firestore {
         || data.get('orderStatus', '') == 'completed';
     }
 
+    function validReviewPhotoUrls(photoUrls) {
+      return photoUrls is list
+        && photoUrls.size() <= 3
+        && (
+          photoUrls.size() < 1
+          || (
+            photoUrls[0] is string
+            && photoUrls[0].size() > 0
+            && photoUrls[0].size() <= 2048
+            && photoUrls[0].matches(
+              'https://res[.]cloudinary[.]com/bxcgv4uz/.*'
+            )
+          )
+        )
+        && (
+          photoUrls.size() < 2
+          || (
+            photoUrls[1] is string
+            && photoUrls[1].size() > 0
+            && photoUrls[1].size() <= 2048
+            && photoUrls[1].matches(
+              'https://res[.]cloudinary[.]com/bxcgv4uz/.*'
+            )
+          )
+        )
+        && (
+          photoUrls.size() < 3
+          || (
+            photoUrls[2] is string
+            && photoUrls[2].size() > 0
+            && photoUrls[2].size() <= 2048
+            && photoUrls[2].matches(
+              'https://res[.]cloudinary[.]com/bxcgv4uz/.*'
+            )
+          )
+        );
+    }
+
     function isPublicApprovedSupplier(data) {
       return signedIn() && data.get('status', '') == 'approved';
     }
@@ -109,383 +147,232 @@ service cloud.firestore {
     }
 
     function validAgusanDelNortePin(latitude, longitude, city) {
-      return (city == 'Buenavista'
-          && locationInBounds(
-            latitude, longitude, 8.751580, 125.230037, 8.991506, 125.509430
-          )
-        )
-        || (city == 'Butuan City'
-          && locationInBounds(
-            latitude, longitude, 8.740690, 125.455216, 9.056310, 125.743619
-          )
-        )
-        || (city == 'Carmen'
-          && locationInBounds(
-            latitude, longitude, 8.854489, 125.213400, 9.028491, 125.312384
-          )
-        )
-        || (city == 'City of Cabadbaran'
-          && locationInBounds(
-            latitude, longitude, 9.057913, 125.512221, 9.230395, 125.775509
-          )
-        )
-        || (city == 'Jabonga'
-          && locationInBounds(
-            latitude, longitude, 9.285986, 125.445348, 9.462061, 125.753410
-          )
-        )
-        || (city == 'Kitcharao'
-          && locationInBounds(
-            latitude, longitude, 9.369201, 125.547441, 9.470886, 125.752423
-          )
-        )
-        || (city == 'Las Nieves'
-          && locationInBounds(
-            latitude, longitude, 8.690628, 125.230037, 8.768590, 125.677411
-          )
-        )
-        || (city == 'Magallanes'
-          && locationInBounds(
-            latitude, longitude, 9.026259, 125.525767, 9.073992, 125.579208
-          )
-        )
-        || (city == 'Nasipit'
-          && locationInBounds(
-            latitude, longitude, 8.854489, 125.275885, 8.999486, 125.398590
-          )
-        )
-        || (city == 'Remedios T. Romualdez'
-          && locationInBounds(
-            latitude, longitude, 9.026259, 125.551145, 9.094860, 125.757086
-          )
-        )
-        || (city == 'Santiago'
-          && locationInBounds(
-            latitude, longitude, 9.208370, 125.516002, 9.315524, 125.766331
-          )
-        )
-        || (city == 'Tubay'
-          && locationInBounds(
-            latitude, longitude, 9.131576, 125.488375, 9.320970, 125.634949
-          )
-        );
+      return (city in ['Buenavista', 'Butuan City', 'Carmen', 'City of Cabadbaran', 'Jabonga', 'Kitcharao']
+        ? (city in ['Buenavista', 'Butuan City', 'Carmen']
+          ? (city in ['Buenavista']
+            ? (city == 'Buenavista'
+              && locationInBounds(latitude, longitude, 8.751580, 125.230037, 8.991506, 125.509430))
+            : (city in ['Butuan City']
+              ? (city == 'Butuan City'
+                && locationInBounds(latitude, longitude, 8.740690, 125.455216, 9.056310, 125.743619))
+              : (city == 'Carmen'
+                && locationInBounds(latitude, longitude, 8.854489, 125.213400, 9.028491, 125.312384))))
+          : (city in ['City of Cabadbaran']
+            ? (city == 'City of Cabadbaran'
+              && locationInBounds(latitude, longitude, 9.057913, 125.512221, 9.230395, 125.775509))
+            : (city in ['Jabonga']
+              ? (city == 'Jabonga'
+                && locationInBounds(latitude, longitude, 9.285986, 125.445348, 9.462061, 125.753410))
+              : (city == 'Kitcharao'
+                && locationInBounds(latitude, longitude, 9.369201, 125.547441, 9.470886, 125.752423)))))
+        : (city in ['Las Nieves', 'Magallanes', 'Nasipit']
+          ? (city in ['Las Nieves']
+            ? (city == 'Las Nieves'
+              && locationInBounds(latitude, longitude, 8.690628, 125.230037, 8.768590, 125.677411))
+            : (city in ['Magallanes']
+              ? (city == 'Magallanes'
+                && locationInBounds(latitude, longitude, 9.026259, 125.525767, 9.073992, 125.579208))
+              : (city == 'Nasipit'
+                && locationInBounds(latitude, longitude, 8.854489, 125.275885, 8.999486, 125.398590))))
+          : (city in ['Remedios T. Romualdez']
+            ? (city == 'Remedios T. Romualdez'
+              && locationInBounds(latitude, longitude, 9.026259, 125.551145, 9.094860, 125.757086))
+            : (city in ['Santiago']
+              ? (city == 'Santiago'
+                && locationInBounds(latitude, longitude, 9.208370, 125.516002, 9.315524, 125.766331))
+              : (city == 'Tubay'
+                && locationInBounds(latitude, longitude, 9.131576, 125.488375, 9.320970, 125.634949))))));
     }
 
     function validAgusanDelSurPin(latitude, longitude, city) {
-      return (city == 'Bunawan'
-          && locationInBounds(
-            latitude, longitude, 8.101518, 125.886409, 8.275236, 126.189982
-          )
-        )
-        || (city == 'City of Bayugan'
-          && locationInBounds(
-            latitude, longitude, 8.600227, 125.657239, 8.895713, 125.940096
-          )
-        )
-        || (city == 'Esperanza'
-          && locationInBounds(
-            latitude, longitude, 8.470070, 125.239561, 8.748743, 125.804581
-          )
-        )
-        || (city == 'La Paz'
-          && locationInBounds(
-            latitude, longitude, 8.156342, 125.300693, 8.362269, 125.902409
-          )
-        )
-        || (city == 'Loreto'
-          && locationInBounds(
-            latitude, longitude, 7.943381, 125.371389, 8.275236, 125.913692
-          )
-        )
-        || (city == 'Prosperidad'
-          && locationInBounds(
-            latitude, longitude, 8.495595, 125.787541, 8.841130, 126.008246
-          )
-        )
-        || (city == 'Rosario'
-          && locationInBounds(
-            latitude, longitude, 8.255369, 125.880722, 8.455829, 126.177178
-          )
-        )
-        || (city == 'San Francisco'
-          && locationInBounds(
-            latitude, longitude, 8.330962, 125.845837, 8.607765, 126.063090
-          )
-        )
-        || (city == 'San Luis'
-          && locationInBounds(
-            latitude, longitude, 8.303562, 125.239561, 8.623169, 125.819575
-          )
-        )
-        || (city == 'Santa Josefa'
-          && locationInBounds(
-            latitude, longitude, 7.944304, 125.955055, 8.117518, 126.073375
-          )
-        )
-        || (city == 'Sibagat'
-          && locationInBounds(
-            latitude, longitude, 8.744793, 125.657239, 9.171620, 125.903900
-          )
-        )
-        || (city == 'Talacogon'
-          && locationInBounds(
-            latitude, longitude, 8.312260, 125.536585, 8.546719, 125.915613
-          )
-        )
-        || (city == 'Trento'
-          && locationInBounds(
-            latitude, longitude, 7.944304, 125.976416, 8.196573, 126.265053
-          )
-        )
-        || (city == 'Veruela'
-          && locationInBounds(
-            latitude, longitude, 7.943381, 125.769268, 8.131063, 125.992416
-          )
-        );
+      return (city in ['Bunawan', 'City of Bayugan', 'Esperanza', 'La Paz', 'Loreto', 'Prosperidad', 'Rosario']
+        ? (city in ['Bunawan', 'City of Bayugan', 'Esperanza']
+          ? (city in ['Bunawan']
+            ? (city == 'Bunawan'
+              && locationInBounds(latitude, longitude, 8.101518, 125.886409, 8.275236, 126.189982))
+            : (city in ['City of Bayugan']
+              ? (city == 'City of Bayugan'
+                && locationInBounds(latitude, longitude, 8.600227, 125.657239, 8.895713, 125.940096))
+              : (city == 'Esperanza'
+                && locationInBounds(latitude, longitude, 8.470070, 125.239561, 8.748743, 125.804581))))
+          : (city in ['La Paz', 'Loreto']
+            ? (city in ['La Paz']
+              ? (city == 'La Paz'
+                && locationInBounds(latitude, longitude, 8.156342, 125.300693, 8.362269, 125.902409))
+              : (city == 'Loreto'
+                && locationInBounds(latitude, longitude, 7.943381, 125.371389, 8.275236, 125.913692)))
+            : (city in ['Prosperidad']
+              ? (city == 'Prosperidad'
+                && locationInBounds(latitude, longitude, 8.495595, 125.787541, 8.841130, 126.008246))
+              : (city == 'Rosario'
+                && locationInBounds(latitude, longitude, 8.255369, 125.880722, 8.455829, 126.177178)))))
+        : (city in ['San Francisco', 'San Luis', 'Santa Josefa']
+          ? (city in ['San Francisco']
+            ? (city == 'San Francisco'
+              && locationInBounds(latitude, longitude, 8.330962, 125.845837, 8.607765, 126.063090))
+            : (city in ['San Luis']
+              ? (city == 'San Luis'
+                && locationInBounds(latitude, longitude, 8.303562, 125.239561, 8.623169, 125.819575))
+              : (city == 'Santa Josefa'
+                && locationInBounds(latitude, longitude, 7.944304, 125.955055, 8.117518, 126.073375))))
+          : (city in ['Sibagat', 'Talacogon']
+            ? (city in ['Sibagat']
+              ? (city == 'Sibagat'
+                && locationInBounds(latitude, longitude, 8.744793, 125.657239, 9.171620, 125.903900))
+              : (city == 'Talacogon'
+                && locationInBounds(latitude, longitude, 8.312260, 125.536585, 8.546719, 125.915613)))
+            : (city in ['Trento']
+              ? (city == 'Trento'
+                && locationInBounds(latitude, longitude, 7.944304, 125.976416, 8.196573, 126.265053))
+              : (city == 'Veruela'
+                && locationInBounds(latitude, longitude, 7.943381, 125.769268, 8.131063, 125.992416))))));
     }
 
     function validDinagatIslandsPin(latitude, longitude, city) {
-      return (city == 'Basilisa'
-          && locationInBounds(
-            latitude, longitude, 9.981560, 125.468710, 10.165739, 125.627455
-          )
-        )
-        || (city == 'Cagdianao'
-          && locationInBounds(
-            latitude, longitude, 9.844500, 125.603437, 10.194983, 125.714772
-          )
-        )
-        || (city == 'Dinagat'
-          && locationInBounds(
-            latitude, longitude, 9.931606, 125.526712, 10.005629, 125.646196
-          )
-        )
-        || (city == 'Libjo'
-          && locationInBounds(
-            latitude, longitude, 10.112733, 125.482835, 10.285352, 125.669892
-          )
-        )
-        || (city == 'Loreto'
-          && locationInBounds(
-            latitude, longitude, 10.238929, 125.455340, 10.479595, 125.689633
-          )
-        )
-        || (city == 'San Jose'
-          && locationInBounds(
-            latitude, longitude, 9.988351, 125.560625, 10.058334, 125.645513
-          )
-        )
-        || (city == 'Tubajon'
-          && locationInBounds(
-            latitude, longitude, 10.200037, 125.505872, 10.356805, 125.664870
-          )
-        );
+      return (city in ['Basilisa', 'Cagdianao', 'Dinagat']
+        ? (city in ['Basilisa']
+          ? (city == 'Basilisa'
+            && locationInBounds(latitude, longitude, 9.981560, 125.468710, 10.165739, 125.627455))
+          : (city in ['Cagdianao']
+            ? (city == 'Cagdianao'
+              && locationInBounds(latitude, longitude, 9.844500, 125.603437, 10.194983, 125.714772))
+            : (city == 'Dinagat'
+              && locationInBounds(latitude, longitude, 9.931606, 125.526712, 10.005629, 125.646196))))
+        : (city in ['Libjo', 'Loreto']
+          ? (city in ['Libjo']
+            ? (city == 'Libjo'
+              && locationInBounds(latitude, longitude, 10.112733, 125.482835, 10.285352, 125.669892))
+            : (city == 'Loreto'
+              && locationInBounds(latitude, longitude, 10.238929, 125.455340, 10.479595, 125.689633)))
+          : (city in ['San Jose']
+            ? (city == 'San Jose'
+              && locationInBounds(latitude, longitude, 9.988351, 125.560625, 10.058334, 125.645513))
+            : (city == 'Tubajon'
+              && locationInBounds(latitude, longitude, 10.200037, 125.505872, 10.356805, 125.664870)))));
     }
 
     function validSurigaoDelNortePin(latitude, longitude, city) {
-      return (city == 'Alegria'
-          && locationInBounds(
-            latitude, longitude, 9.421680, 125.543009, 9.548939, 125.708172
-          )
-        )
-        || (city == 'Bacuag'
-          && locationInBounds(
-            latitude, longitude, 9.497800, 125.581172, 9.628302, 125.693173
-          )
-        )
-        || (city == 'Burgos'
-          && locationInBounds(
-            latitude, longitude, 9.961719, 126.049294, 10.048595, 126.105061
-          )
-        )
-        || (city == 'City of Surigao'
-          && locationInBounds(
-            latitude, longitude, 9.657185, 125.418133, 9.925173, 125.740596
-          )
-        )
-        || (city == 'Claver'
-          && locationInBounds(
-            latitude, longitude, 9.318040, 125.690865, 9.593277, 125.891799
-          )
-        )
-        || (city == 'Dapa'
-          && locationInBounds(
-            latitude, longitude, 9.679377, 125.957999, 9.808324, 126.125450
-          )
-        )
-        || (city == 'Del Carmen'
-          && locationInBounds(
-            latitude, longitude, 9.772423, 125.884029, 9.926761, 126.060770
-          )
-        )
-        || (city == 'General Luna'
-          && locationInBounds(
-            latitude, longitude, 9.749418, 126.084340, 9.852773, 126.174928
-          )
-        )
-        || (city == 'Gigaquit'
-          && locationInBounds(
-            latitude, longitude, 9.397130, 125.626789, 9.609682, 125.740698
-          )
-        )
-        || (city == 'Mainit'
-          && locationInBounds(
-            latitude, longitude, 9.439851, 125.442027, 9.625960, 125.614401
-          )
-        )
-        || (city == 'Malimono'
-          && locationInBounds(
-            latitude, longitude, 9.431441, 125.383695, 9.666498, 125.480637
-          )
-        )
-        || (city == 'Pilar'
-          && locationInBounds(
-            latitude, longitude, 9.791856, 126.041906, 9.928616, 126.128616
-          )
-        )
-        || (city == 'Placer'
-          && locationInBounds(
-            latitude, longitude, 9.585080, 125.525795, 9.714639, 125.668473
-          )
-        )
-        || (city == 'San Benito'
-          && locationInBounds(
-            latitude, longitude, 9.899551, 125.930375, 9.992812, 126.056001
-          )
-        )
-        || (city == 'San Francisco'
-          && locationInBounds(
-            latitude, longitude, 9.649145, 125.383695, 9.793454, 125.445936
-          )
-        )
-        || (city == 'San Isidro'
-          && locationInBounds(
-            latitude, longitude, 9.882530, 126.021775, 9.979439, 126.122232
-          )
-        )
-        || (city == 'Santa Monica'
-          && locationInBounds(
-            latitude, longitude, 9.962424, 126.017228, 10.070544, 126.079460
-          )
-        )
-        || (city == 'Sison'
-          && locationInBounds(
-            latitude, longitude, 9.605250, 125.428050, 9.705444, 125.548527
-          )
-        )
-        || (city == 'Socorro'
-          && locationInBounds(
-            latitude, longitude, 9.552243, 125.888850, 9.768417, 125.998319
-          )
-        )
-        || (city == 'Tagana-an'
-          && locationInBounds(
-            latitude, longitude, 9.641405, 125.525369, 9.773575, 125.713209
-          )
-        )
-        || (city == 'Tubod'
-          && locationInBounds(
-            latitude, longitude, 9.532918, 125.527047, 9.614970, 125.612500
-          )
-        );
+      return (city in ['Alegria', 'Bacuag', 'Burgos', 'City of Surigao', 'Claver', 'Dapa', 'Del Carmen', 'General Luna', 'Gigaquit', 'Mainit']
+        ? (city in ['Alegria', 'Bacuag', 'Burgos', 'City of Surigao', 'Claver']
+          ? (city in ['Alegria', 'Bacuag']
+            ? (city in ['Alegria']
+              ? (city == 'Alegria'
+                && locationInBounds(latitude, longitude, 9.421680, 125.543009, 9.548939, 125.708172))
+              : (city == 'Bacuag'
+                && locationInBounds(latitude, longitude, 9.497800, 125.581172, 9.628302, 125.693173)))
+            : (city in ['Burgos']
+              ? (city == 'Burgos'
+                && locationInBounds(latitude, longitude, 9.961719, 126.049294, 10.048595, 126.105061))
+              : (city in ['City of Surigao']
+                ? (city == 'City of Surigao'
+                  && locationInBounds(latitude, longitude, 9.657185, 125.418133, 9.925173, 125.740596))
+                : (city == 'Claver'
+                  && locationInBounds(latitude, longitude, 9.318040, 125.690865, 9.593277, 125.891799)))))
+          : (city in ['Dapa', 'Del Carmen']
+            ? (city in ['Dapa']
+              ? (city == 'Dapa'
+                && locationInBounds(latitude, longitude, 9.679377, 125.957999, 9.808324, 126.125450))
+              : (city == 'Del Carmen'
+                && locationInBounds(latitude, longitude, 9.772423, 125.884029, 9.926761, 126.060770)))
+            : (city in ['General Luna']
+              ? (city == 'General Luna'
+                && locationInBounds(latitude, longitude, 9.749418, 126.084340, 9.852773, 126.174928))
+              : (city in ['Gigaquit']
+                ? (city == 'Gigaquit'
+                  && locationInBounds(latitude, longitude, 9.397130, 125.626789, 9.609682, 125.740698))
+                : (city == 'Mainit'
+                  && locationInBounds(latitude, longitude, 9.439851, 125.442027, 9.625960, 125.614401))))))
+        : (city in ['Malimono', 'Pilar', 'Placer', 'San Benito', 'San Francisco']
+          ? (city in ['Malimono', 'Pilar']
+            ? (city in ['Malimono']
+              ? (city == 'Malimono'
+                && locationInBounds(latitude, longitude, 9.431441, 125.383695, 9.666498, 125.480637))
+              : (city == 'Pilar'
+                && locationInBounds(latitude, longitude, 9.791856, 126.041906, 9.928616, 126.128616)))
+            : (city in ['Placer']
+              ? (city == 'Placer'
+                && locationInBounds(latitude, longitude, 9.585080, 125.525795, 9.714639, 125.668473))
+              : (city in ['San Benito']
+                ? (city == 'San Benito'
+                  && locationInBounds(latitude, longitude, 9.899551, 125.930375, 9.992812, 126.056001))
+                : (city == 'San Francisco'
+                  && locationInBounds(latitude, longitude, 9.649145, 125.383695, 9.793454, 125.445936)))))
+          : (city in ['San Isidro', 'Santa Monica', 'Sison']
+            ? (city in ['San Isidro']
+              ? (city == 'San Isidro'
+                && locationInBounds(latitude, longitude, 9.882530, 126.021775, 9.979439, 126.122232))
+              : (city in ['Santa Monica']
+                ? (city == 'Santa Monica'
+                  && locationInBounds(latitude, longitude, 9.962424, 126.017228, 10.070544, 126.079460))
+                : (city == 'Sison'
+                  && locationInBounds(latitude, longitude, 9.605250, 125.428050, 9.705444, 125.548527))))
+            : (city in ['Socorro']
+              ? (city == 'Socorro'
+                && locationInBounds(latitude, longitude, 9.552243, 125.888850, 9.768417, 125.998319))
+              : (city in ['Tagana-an']
+                ? (city == 'Tagana-an'
+                  && locationInBounds(latitude, longitude, 9.641405, 125.525369, 9.773575, 125.713209))
+                : (city == 'Tubod'
+                  && locationInBounds(latitude, longitude, 9.532918, 125.527047, 9.614970, 125.612500)))))));
     }
 
     function validSurigaoDelSurPin(latitude, longitude, city) {
-      return (city == 'Barobo'
-          && locationInBounds(
-            latitude, longitude, 8.436658, 125.992117, 8.607765, 126.362020
-          )
-        )
-        || (city == 'Bayabas'
-          && locationInBounds(
-            latitude, longitude, 8.888563, 126.208085, 9.023458, 126.316829
-          )
-        )
-        || (city == 'Cagwait'
-          && locationInBounds(
-            latitude, longitude, 8.839071, 126.208864, 8.957070, 126.336770
-          )
-        )
-        || (city == 'Cantilan'
-          && locationInBounds(
-            latitude, longitude, 9.230570, 125.735439, 9.407343, 126.014754
-          )
-        )
-        || (city == 'Carmen'
-          && locationInBounds(
-            latitude, longitude, 9.085480, 125.767498, 9.254041, 126.032011
-          )
-        )
-        || (city == 'Carrascal'
-          && locationInBounds(
-            latitude, longitude, 9.297530, 125.735439, 9.504016, 125.996708
-          )
-        )
-        || (city == 'City of Bislig'
-          && locationInBounds(
-            latitude, longitude, 8.050979, 126.146967, 8.309547, 126.457228
-          )
-        )
-        || (city == 'City of Tandag'
-          && locationInBounds(
-            latitude, longitude, 8.982375, 126.046569, 9.154480, 126.227614
-          )
-        )
-        || (city == 'Cortes'
-          && locationInBounds(
-            latitude, longitude, 9.132936, 126.064749, 9.317303, 126.211016
-          )
-        )
-        || (city == 'Hinatuan'
-          && locationInBounds(
-            latitude, longitude, 8.236580, 126.157051, 8.555111, 126.396251
-          )
-        )
-        || (city == 'Lanuza'
-          && locationInBounds(
-            latitude, longitude, 9.073232, 125.858155, 9.291991, 126.166348
-          )
-        )
-        || (city == 'Lianga'
-          && locationInBounds(
-            latitude, longitude, 8.555767, 125.962289, 8.801478, 126.188722
-          )
-        )
-        || (city == 'Lingig'
-          && locationInBounds(
-            latitude, longitude, 7.925008, 126.219791, 8.250712, 126.459292
-          )
-        )
-        || (city == 'Madrid'
-          && locationInBounds(
-            latitude, longitude, 9.181577, 125.747234, 9.294737, 126.029396
-          )
-        )
-        || (city == 'Marihatag'
-          && locationInBounds(
-            latitude, longitude, 8.759944, 126.080150, 8.876779, 126.342148
-          )
-        )
-        || (city == 'San Agustin'
-          && locationInBounds(
-            latitude, longitude, 8.683465, 126.133132, 8.810095, 126.258442
-          )
-        )
-        || (city == 'San Miguel'
-          && locationInBounds(
-            latitude, longitude, 8.731795, 125.863041, 9.093403, 126.099700
-          )
-        )
-        || (city == 'Tagbina'
-          && locationInBounds(
-            latitude, longitude, 8.280009, 126.055895, 8.518690, 126.294822
-          )
-        )
-        || (city == 'Tago'
-          && locationInBounds(
-            latitude, longitude, 8.846151, 126.031491, 9.093730, 126.250260
-          )
-        );
+      return (city in ['Barobo', 'Bayabas', 'Cagwait', 'Cantilan', 'Carmen', 'Carrascal', 'City of Bislig', 'City of Tandag', 'Cortes']
+        ? (city in ['Barobo', 'Bayabas', 'Cagwait', 'Cantilan']
+          ? (city in ['Barobo', 'Bayabas']
+            ? (city in ['Barobo']
+              ? (city == 'Barobo'
+                && locationInBounds(latitude, longitude, 8.436658, 125.992117, 8.607765, 126.362020))
+              : (city == 'Bayabas'
+                && locationInBounds(latitude, longitude, 8.888563, 126.208085, 9.023458, 126.316829)))
+            : (city in ['Cagwait']
+              ? (city == 'Cagwait'
+                && locationInBounds(latitude, longitude, 8.839071, 126.208864, 8.957070, 126.336770))
+              : (city == 'Cantilan'
+                && locationInBounds(latitude, longitude, 9.230570, 125.735439, 9.407343, 126.014754))))
+          : (city in ['Carmen', 'Carrascal']
+            ? (city in ['Carmen']
+              ? (city == 'Carmen'
+                && locationInBounds(latitude, longitude, 9.085480, 125.767498, 9.254041, 126.032011))
+              : (city == 'Carrascal'
+                && locationInBounds(latitude, longitude, 9.297530, 125.735439, 9.504016, 125.996708)))
+            : (city in ['City of Bislig']
+              ? (city == 'City of Bislig'
+                && locationInBounds(latitude, longitude, 8.050979, 126.146967, 8.309547, 126.457228))
+              : (city in ['City of Tandag']
+                ? (city == 'City of Tandag'
+                  && locationInBounds(latitude, longitude, 8.982375, 126.046569, 9.154480, 126.227614))
+                : (city == 'Cortes'
+                  && locationInBounds(latitude, longitude, 9.132936, 126.064749, 9.317303, 126.211016))))))
+        : (city in ['Hinatuan', 'Lanuza', 'Lianga', 'Lingig', 'Madrid']
+          ? (city in ['Hinatuan', 'Lanuza']
+            ? (city in ['Hinatuan']
+              ? (city == 'Hinatuan'
+                && locationInBounds(latitude, longitude, 8.236580, 126.157051, 8.555111, 126.396251))
+              : (city == 'Lanuza'
+                && locationInBounds(latitude, longitude, 9.073232, 125.858155, 9.291991, 126.166348)))
+            : (city in ['Lianga']
+              ? (city == 'Lianga'
+                && locationInBounds(latitude, longitude, 8.555767, 125.962289, 8.801478, 126.188722))
+              : (city in ['Lingig']
+                ? (city == 'Lingig'
+                  && locationInBounds(latitude, longitude, 7.925008, 126.219791, 8.250712, 126.459292))
+                : (city == 'Madrid'
+                  && locationInBounds(latitude, longitude, 9.181577, 125.747234, 9.294737, 126.029396)))))
+          : (city in ['Marihatag', 'San Agustin']
+            ? (city in ['Marihatag']
+              ? (city == 'Marihatag'
+                && locationInBounds(latitude, longitude, 8.759944, 126.080150, 8.876779, 126.342148))
+              : (city == 'San Agustin'
+                && locationInBounds(latitude, longitude, 8.683465, 126.133132, 8.810095, 126.258442)))
+            : (city in ['San Miguel']
+              ? (city == 'San Miguel'
+                && locationInBounds(latitude, longitude, 8.731795, 125.863041, 9.093403, 126.099700))
+              : (city in ['Tagbina']
+                ? (city == 'Tagbina'
+                  && locationInBounds(latitude, longitude, 8.280009, 126.055895, 8.518690, 126.294822))
+                : (city == 'Tago'
+                  && locationInBounds(latitude, longitude, 8.846151, 126.031491, 9.093730, 126.250260)))))));
     }
 
     function validCaragaLocationSelection(province, city) {
@@ -585,10 +472,8 @@ service cloud.firestore {
     }
 
     function validCaragaLocationPin(latitude, longitude, province, city) {
-      // Each province-specific function validates both the locality name and
-      // its coordinate bounds. Repeating validCaragaLocationSelection here
-      // pushes valid supplier applications over the 1,000-expression limit
-      // without adding another security check.
+      // Locality dispatch preserves all reviewed bounds. Only the selected
+      // locality evaluates its coordinate comparisons.
       return latitude is number
         && longitude is number
         && province is string
@@ -699,24 +584,88 @@ service cloud.firestore {
         && !data.keys().hasAny(['supportedUnits']);
     }
 
+    // The profile write validates the full schema once. The account copy must
+    // contain every required field and exactly match each submitted value.
     function supplierApplicationMatchesProfile(application, profile) {
-      return application.get('ownerName', '') == profile.get('ownerName', '')
-        && application.get('email', '') == profile.get('email', '')
-        && application.get('contactNumber', '')
-          == profile.get('contactNumber', '')
-        && application.get('storeName', '') == profile.get('storeName', '')
-        && application.get('storeLocation', '')
-          == profile.get('storeLocation', '')
-        && application.get('businessPermitNumber', '')
-          == profile.get('businessPermitNumber', '')
-        && application.get('businessPermitStoragePath', '')
-          == profile.get('businessPermitStoragePath', '')
-        && application.get('businessPermitUrl', '')
-          == profile.get('businessPermitUrl', '')
-        && application.get('storePhotoUrl', '')
-          == profile.get('storePhotoUrl', '')
-        && application.get('submittedAt', null)
-          == profile.get('submittedAt', null);
+      return application is map
+        && application.keys().hasAll([
+          'ownerName',
+          'ownerAddress',
+          'email',
+          'contactNumber',
+          'phone',
+          'storeName',
+          'supplierName',
+          'businessName',
+          'supplierType',
+          'region',
+          'storeProvince',
+          'storeCityMunicipality',
+          'storeAddress',
+          'storeLatitude',
+          'storeLongitude',
+          'location',
+          'storeLocation',
+          'primaryMarketArea',
+          'serviceArea',
+          'description',
+          'businessPermitNumber',
+          'businessPermitUrl',
+          'businessPermitStoragePath',
+          'storePhotoUrl',
+          'hasBusinessPermit',
+          'hasStorePhoto',
+          'verificationStatus',
+          'paymentMethod',
+          'applicationVersion',
+          'submittedAt'
+        ])
+        && application.keys().hasOnly([
+          'ownerName',
+          'ownerAddress',
+          'email',
+          'contactNumber',
+          'phone',
+          'storeName',
+          'supplierName',
+          'businessName',
+          'supplierType',
+          'region',
+          'storeProvince',
+          'storeCityMunicipality',
+          'storeAddress',
+          'storeLatitude',
+          'storeLongitude',
+          'location',
+          'storeLocation',
+          'primaryMarketArea',
+          'serviceArea',
+          'description',
+          'businessPermitNumber',
+          'businessPermitUrl',
+          'businessPermitStoragePath',
+          'storePhotoUrl',
+          'hasBusinessPermit',
+          'hasStorePhoto',
+          'verificationStatus',
+          'paymentMethod',
+          'applicationVersion',
+          'submittedAt',
+          'accountCreatedAt'
+        ])
+        && profile.keys().hasAll(application.keys())
+        && application.diff(profile).changedKeys().size() == 0;
+    }
+
+    function validSupplierApplicationAccountLink(supplierId) {
+      // A genuine status transition forces the users rule to validate the
+      // complete matching application copy in this same atomic request.
+      return exists(userPath(supplierId))
+        && get(userPath(supplierId)).data.get('supplierStatus', 'not_applicable')
+          in ['', 'draft', 'not_applicable', 'rejected', 'declined']
+        && getAfter(userPath(supplierId)).data.get('role', '') == 'vendor'
+        && getAfter(userPath(supplierId)).data.get('supplierStatus', '')
+          == 'pending';
     }
 
     function validUserLocationUpdate() {
@@ -791,10 +740,6 @@ service cloud.firestore {
                 == 'pending'
               && request.resource.data.get('updatedAt', null) is timestamp
               && request.resource.data.get('supplierApplication', {}) is map
-              && validSupplierApplicationCore(
-                request.resource.data.get('supplierApplication', {}),
-                userId
-              )
               && request.resource.data.get('supplierLocation', '')
                 == request.resource.data.get(
                   'supplierApplication', {}
@@ -996,6 +941,7 @@ service cloud.firestore {
         && request.resource.data.get('uid', '') == supplierId
         && request.resource.data.get('status', '') == 'pending'
         && validSupplierApplicationCore(request.resource.data, supplierId)
+          && validSupplierApplicationAccountLink(supplierId)
         && request.resource.data.get('createdAt', null) is timestamp
         && request.resource.data.get('updatedAt', null) is timestamp
         && request.resource.data.keys().hasOnly([
@@ -1042,12 +988,20 @@ service cloud.firestore {
           'approvedAt'
         ]);
 
-      allow update: if validAdminSupplierProfileUpdate(supplierId)
-        || validOwnerStorefrontBrandingUpdate(supplierId)
-        || validOwnerSupplierProfileUpdate(supplierId)
-        || validInitialSupplierApplication(supplierId)
-        || validSupplierReapplication(supplierId)
-        || validReviewAggregateUpdate(supplierId);
+      // Dispatch by actor/status before entering the expensive validators.
+      // Reapplications must not evaluate approved-store or review validators.
+      allow update: if signedIn() && (
+        isAdmin()
+          ? validAdminSupplierProfileUpdate(supplierId)
+          : (currentUid() == supplierId
+            ? (resource.data.get('status', '') == 'approved'
+              ? (validOwnerStorefrontBrandingUpdate(supplierId)
+                || validOwnerSupplierProfileUpdate(supplierId))
+              : (resource.data.get('status', '') in ['rejected', 'declined']
+                ? validSupplierReapplication(supplierId)
+                : validInitialSupplierApplication(supplierId)))
+            : validReviewAggregateUpdate(supplierId))
+      );
 
       allow delete: if false;
 
@@ -1452,6 +1406,7 @@ service cloud.firestore {
           && request.resource.data.get('uid', supplierId) == supplierId
           && request.resource.data.get('status', '') == 'pending'
           && validSupplierApplicationCore(request.resource.data, supplierId)
+          && validSupplierApplicationAccountLink(supplierId)
           && request.resource.data.get('rating', 0)
               == resource.data.get('rating', 0)
           && request.resource.data.get('reviews', 0)
@@ -1522,6 +1477,7 @@ service cloud.firestore {
           && request.resource.data.get('uid', supplierId) == supplierId
           && request.resource.data.get('status', '') == 'pending'
           && validSupplierApplicationCore(request.resource.data, supplierId)
+          && validSupplierApplicationAccountLink(supplierId)
           && request.resource.data.get('createdAt', null) is timestamp
           && request.resource.data.get('updatedAt', null) is timestamp
           && request.resource.data.get('rating', 0)
@@ -2175,7 +2131,8 @@ service cloud.firestore {
 
       allow create: if validCodOrderCreate(orderId);
 
-      allow update: if validVendorCancellation(orderId)
+      allow update: if validSupplierTawadDecline(orderId)
+        || validVendorCancellation(orderId)
         || validSupplierOrderTransition(orderId)
         || validNewReviewOrderUpdate(orderId)
         || validEditedReviewOrderUpdate(orderId);
@@ -2187,6 +2144,15 @@ service cloud.firestore {
         let beforeStock = get(stockPath(stockId)).data;
         let afterStock = getAfter(stockPath(stockId)).data;
         let orderedQuantity = request.resource.data.get('quantity', 0);
+        let listedPrice = beforeStock.get('price', 0);
+        let tawadRequested = request.resource.data.get(
+          'tawadRequested',
+          false
+        );
+        let offeredPrice = request.resource.data.get(
+          'tawadOfferedUnitPrice',
+          0
+        );
 
         return signedIn()
           && stockId is string
@@ -2202,15 +2168,24 @@ service cloud.firestore {
               == beforeStock.get('productName', '')
           && request.resource.data.get('quantityUnit', '')
               == beforeStock.get('quantityUnit', '')
-          && request.resource.data.get('unitPrice', -1)
+          && request.resource.data.get('listedUnitPrice', beforeStock.get('price', -2))
               == beforeStock.get('price', -2)
+          && request.resource.data.get('unitPrice', -1) == listedPrice
+          && request.resource.data.get('totalAmount', -1)
+            == listedPrice * orderedQuantity
+          && (
+            tawadRequested != true
+            || (
+              request.resource.data.get('tawadStatus', '') == 'Pending'
+              && offeredPrice > 0
+              && offeredPrice < listedPrice
+            )
+          )
           && orderedQuantity is number
           && orderedQuantity > 0
           && beforeStock.get('quantity', 0) >= orderedQuantity
           && beforeStock.get('status', 'available') != 'unavailable'
           && beforeStock.get('isActive', true) == true
-          && request.resource.data.get('totalAmount', -1)
-              == beforeStock.get('price', 0) * orderedQuantity
           && request.resource.data.get('paymentMethod', '') == 'COD'
           && validDeliveryReferencePin(request.resource.data)
           && request.resource.data.get('paymentStatus', '')
@@ -2248,10 +2223,26 @@ service cloud.firestore {
             'stockRestored',
             'stockRestorePending',
             'cancelledBy',
+              'tawadStatus',
+              'tawadWithdrawnAt',
             'cancelledAt',
             'restoredAt',
             'updatedAt'
           ])
+          && (
+            (
+              resource.data.get('tawadRequested', false) != true
+              && request.resource.data.get('tawadStatus', '')
+                == resource.data.get('tawadStatus', '')
+              && request.resource.data.get('tawadWithdrawnAt', null)
+                == resource.data.get('tawadWithdrawnAt', null)
+            )
+            || (
+              request.resource.data.get('tawadStatus', '') == 'Withdrawn'
+              && request.resource.data.get('tawadWithdrawnAt', null)
+                == request.time
+            )
+          )
           && validCancellationRestoration(orderId);
       }
 
@@ -2270,6 +2261,8 @@ service cloud.firestore {
               && changedOnly([
                 'orderStatus',
                 'paymentStatus',
+                'unitPrice',
+                'totalAmount',
                 'fulfilledQuantity',
                 'unfulfilledQuantity',
                 'fulfilledTotalAmount',
@@ -2279,6 +2272,8 @@ service cloud.firestore {
                 'partialStockRestored',
                 'partialRestoredQuantity',
                 'partialRestoredAt',
+                'tawadStatus',
+                'tawadAcceptedAt',
                 'acceptedAt',
                 'updatedAt'
               ])
@@ -2312,13 +2307,54 @@ service cloud.firestore {
                 'stockRestored',
                 'stockRestorePending',
                 'cancelledBy',
+                'tawadStatus',
+                'tawadDeclinedAt',
                 'cancelledAt',
                 'restoredAt',
                 'updatedAt'
               ])
+              && (
+                (
+                  resource.data.get('tawadRequested', false) != true
+                  && request.resource.data.get('tawadStatus', '')
+                    == resource.data.get('tawadStatus', '')
+                  && request.resource.data.get('tawadDeclinedAt', null)
+                    == resource.data.get('tawadDeclinedAt', null)
+                )
+                || (
+                  request.resource.data.get('tawadStatus', '') == 'Declined'
+                  && request.resource.data.get('tawadDeclinedAt', null)
+                    == request.time
+                )
+              )
               && validCancellationRestoration(orderId)
             )
           );
+      }
+
+      function validSupplierTawadDecline(orderId) {
+        return signedIn()
+          && resource.data.get('supplierId', '') == currentUid()
+          && resource.data.get('orderStatus', '') == 'Pending'
+          && resource.data.get('tawadRequested', false) == true
+          && resource.data.get('tawadStatus', '') == 'Pending'
+          && request.resource.data.get('orderStatus', '') == 'Cancelled'
+          && request.resource.data.get('paymentStatus', '') == 'Cancelled'
+          && request.resource.data.get('cancelledBy', '') == 'supplier'
+          && request.resource.data.get('tawadStatus', '') == 'Declined'
+          && changedOnly([
+            'orderStatus',
+            'paymentStatus',
+            'stockRestored',
+            'stockRestorePending',
+            'cancelledBy',
+            'tawadStatus',
+            'tawadDeclinedAt',
+            'cancelledAt',
+            'restoredAt',
+            'updatedAt'
+          ])
+          && validCancellationRestoration(orderId);
       }
 
       function validSupplierAcceptance(orderId) {
@@ -2331,7 +2367,10 @@ service cloud.firestore {
           'unfulfilledQuantity',
           0
         );
-        let unitPrice = resource.data.get('unitPrice', 0);
+        let tawadRequested = resource.data.get('tawadRequested', false);
+        let unitPrice = tawadRequested
+          ? resource.data.get('tawadOfferedUnitPrice', 0)
+          : resource.data.get('unitPrice', 0);
         let expectedTotal = unitPrice * fulfilled;
         let partial = fulfilled < ordered;
         let stockId = resource.data.get('stockId', '');
@@ -2342,6 +2381,24 @@ service cloud.firestore {
           && fulfilled > 0
           && fulfilled <= ordered
           && unfulfilled == ordered - fulfilled
+          && request.resource.data.get('unitPrice', -1) == unitPrice
+          && request.resource.data.get('totalAmount', -1)
+            == unitPrice * ordered
+          && (
+            (
+              tawadRequested != true
+              && request.resource.data.get('tawadStatus', '')
+                == resource.data.get('tawadStatus', '')
+              && request.resource.data.get('tawadAcceptedAt', null)
+                == resource.data.get('tawadAcceptedAt', null)
+            )
+            || (
+              resource.data.get('tawadStatus', '') == 'Pending'
+              && request.resource.data.get('tawadStatus', '') == 'Accepted'
+              && request.resource.data.get('tawadAcceptedAt', null)
+                == request.time
+            )
+          )
           && request.resource.data.get('reservedQuantity', 0)
             == fulfilled
           && request.resource.data.get('fulfilledTotalAmount', -1)
@@ -2443,12 +2500,15 @@ service cloud.firestore {
               == afterReview.get('rating', 0)
           && request.resource.data.get('reviewComment', '')
               == afterReview.get('comment', '')
+          && request.resource.data.get('reviewPhotoUrls', [])
+              == afterReview.get('photoUrls', [])
           && request.resource.data.get('reviewedAt', null) is timestamp
           && request.resource.data.get('updatedAt', null) is timestamp
           && changedOnly([
             'reviewSubmitted',
             'reviewRating',
             'reviewComment',
+            'reviewPhotoUrls',
             'reviewedAt',
             'updatedAt'
           ]);
@@ -2473,12 +2533,15 @@ service cloud.firestore {
               == afterReview.get('rating', 0)
           && request.resource.data.get('reviewComment', '')
               == afterReview.get('comment', '')
+          && request.resource.data.get('reviewPhotoUrls', [])
+              == afterReview.get('photoUrls', [])
           && request.resource.data.get('reviewUpdatedAt', null) is timestamp
           && request.resource.data.get('updatedAt', null) is timestamp
           && changedOnly([
             'reviewSubmitted',
             'reviewRating',
             'reviewComment',
+            'reviewPhotoUrls',
             'reviewUpdatedAt',
             'updatedAt'
           ]);
@@ -2557,6 +2620,7 @@ service cloud.firestore {
             'productName',
             'rating',
             'comment',
+            'photoUrls',
             'createdAt'
           ])
           && request.resource.data.get('orderId', '') == orderId
@@ -2573,11 +2637,16 @@ service cloud.firestore {
           && rating <= 5
           && request.resource.data.get('comment', '') is string
           && request.resource.data.get('comment', '').size() <= 300
+          && validReviewPhotoUrls(
+            request.resource.data.get('photoUrls', [])
+          )
           && request.resource.data.get('createdAt', null) is timestamp
           && afterOrder.get('reviewSubmitted', false) == true
           && afterOrder.get('reviewRating', 0) == rating
           && afterOrder.get('reviewComment', '')
             == request.resource.data.get('comment', '')
+          && afterOrder.get('reviewPhotoUrls', [])
+            == request.resource.data.get('photoUrls', [])
           && newCount == oldCount + 1
           && newTotal == oldTotal + rating
           && afterSupplier.get('rating', 0) == newTotal / newCount
@@ -2616,11 +2685,15 @@ service cloud.firestore {
           && rating <= 5
           && request.resource.data.get('comment', '') is string
           && request.resource.data.get('comment', '').size() <= 300
+          && validReviewPhotoUrls(
+            request.resource.data.get('photoUrls', [])
+          )
           && request.resource.data.get('edited', false) == true
           && request.resource.data.get('updatedAt', null) is timestamp
           && changedOnly([
             'rating',
             'comment',
+            'photoUrls',
             'edited',
             'updatedAt'
           ])
@@ -2628,6 +2701,8 @@ service cloud.firestore {
           && afterOrder.get('reviewRating', 0) == rating
           && afterOrder.get('reviewComment', '')
             == request.resource.data.get('comment', '')
+          && afterOrder.get('reviewPhotoUrls', [])
+            == request.resource.data.get('photoUrls', [])
           && afterSupplier.get('reviews', 0) == reviewCount
           && reviewCount > 0
           && newTotal
@@ -2645,10 +2720,17 @@ service cloud.firestore {
       allow read: if notificationOwnedByCurrentUser(resource.data)
         || isAdmin();
 
-      allow create: if validAdminDecisionNotification()
-        || validNewOrderNotification(notificationId)
-        || validOrderStatusNotification()
-        || validStockAlertNotification();
+      allow create: if signedIn() && (
+        request.resource.data.get('type', '') in [
+          'supplier_application_status', 'supplier_profile_change'
+        ] ? validAdminDecisionNotification()
+        : request.resource.data.get('type', '') == 'new_order'
+          ? validNewOrderNotification(notificationId)
+        : request.resource.data.get('type', '') == 'order_status'
+          ? validOrderStatusNotification()
+        : request.resource.data.get('type', '') == 'stock_alert'
+          ? validStockAlertNotification() : false
+      );
 
       allow update: if notificationOwnedByCurrentUser(resource.data)
           && request.resource.data.get('isRead', false) == true
@@ -2798,15 +2880,32 @@ service cloud.firestore {
           );
       }
 
+      function validClientNotificationEnvelope() {
+        return hasNoServerPushFields(request.resource.data)
+          && request.resource.data.get('isRead', true) == false
+          && request.resource.data.get('createdAt', null) == request.time
+          && request.resource.data.get('title', '') is string
+          && request.resource.data.get('title', '').size() >= 3
+          && request.resource.data.get('title', '').size() <= 100
+          && request.resource.data.get('message', '') is string
+          && request.resource.data.get('message', '').size() >= 3
+          && request.resource.data.get('message', '').size() <= 1000;
+      }
+
       function validNewOrderNotification(notificationId) {
         let orderId = request.resource.data.get('orderId', '');
         let afterOrder = getAfter(orderPath(orderId)).data;
 
         return signedIn()
-          && hasNoServerPushFields(request.resource.data)
+          && validClientNotificationEnvelope()
+          && request.resource.data.keys().hasOnly([
+            'notificationId', 'userId', 'supplierId', 'orderId', 'title',
+            'message', 'type', 'status', 'isRead', 'createdAt'
+          ])
           && request.resource.data.get('type', '') == 'new_order'
           && orderId is string
           && orderId.size() > 0
+          && !exists(orderPath(orderId))
           && existsAfter(orderPath(orderId))
           && afterOrder.get('vendorId', '') == currentUid()
           && request.resource.data.get('supplierId', '')
@@ -2826,8 +2925,15 @@ service cloud.firestore {
         let afterOrder = getAfter(orderPath(orderId)).data;
 
         return signedIn()
-          && hasNoServerPushFields(request.resource.data)
+          && validClientNotificationEnvelope()
+          && request.resource.data.keys().hasOnly([
+            'vendorId', 'userId', 'orderId', 'title', 'message',
+            'type', 'status', 'isRead', 'createdAt'
+          ])
           && request.resource.data.get('type', '') == 'order_status'
+          && exists(orderPath(orderId))
+          && get(orderPath(orderId)).data.get('orderStatus', '')
+            != afterOrder.get('orderStatus', '')
           && orderId is string
           && orderId.size() > 0
           && existsAfter(orderPath(orderId))
@@ -2846,8 +2952,20 @@ service cloud.firestore {
         let afterStock = getAfter(stockPath(stockId)).data;
 
         return signedIn()
-          && hasNoServerPushFields(request.resource.data)
+          && validClientNotificationEnvelope()
+          && request.resource.data.keys().hasOnly([
+            'supplierId', 'userId', 'stockId', 'productName', 'title',
+            'message', 'stockStatus', 'sourceOrderId', 'type',
+            'severity', 'isRead', 'createdAt'
+          ])
           && request.resource.data.get('type', '') == 'stock_alert'
+          && request.resource.data.get('stockStatus', '')
+            in ['lowStock', 'outOfStock']
+          && exists(stockPath(stockId))
+          && afterStock.get('lastLowStockNotificationAt', null) == request.time
+          && get(stockPath(stockId)).data.get(
+            'lastLowStockNotificationAt', null
+          ) != afterStock.get('lastLowStockNotificationAt', null)
           && stockId is string
           && stockId.size() > 0
           && existsAfter(stockPath(stockId))

@@ -349,11 +349,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
           ),
           child: Row(
             children: [
-              Icon(
-                statusIcon(orderStatus),
-                color: color,
-                size: 20,
-              ),
+              Icon(statusIcon(orderStatus), color: color, size: 20),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -706,6 +702,16 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
     final totalAmount = fulfilledTotalAmount > 0
         ? fulfilledTotalAmount
         : originalTotalAmount;
+    final tawadRequested = data['tawadRequested'] == true;
+    final tawadStatus = getString(
+      data,
+      'tawadStatus',
+      tawadRequested ? 'Pending' : '',
+    );
+    final tawadOfferedUnitPrice = OrderHelpers.getDoubleValue(
+      data,
+      'tawadOfferedUnitPrice',
+    );
 
     final paymentStatus = getString(
       data,
@@ -761,11 +767,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
               color: Colors.white,
               child: Row(
                 children: [
-                  Icon(
-                    statusIcon(orderStatus),
-                    color: color,
-                    size: 21,
-                  ),
+                  Icon(statusIcon(orderStatus), color: color, size: 21),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
@@ -866,6 +868,42 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
                       ),
                     ],
                   ),
+                  if (tawadRequested) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 9,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF8FD),
+                        borderRadius: BorderRadius.circular(13),
+                        border: Border.all(color: const Color(0xFFB7DDF3)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.handshake_outlined,
+                            color: Color(0xFF0875D1),
+                            size: 17,
+                          ),
+                          const SizedBox(width: 7),
+                          Expanded(
+                            child: Text(
+                              'Tawad $tawadStatus · Your offer: '
+                              '₱${formatMoney(tawadOfferedUnitPrice)} per $quantityUnit',
+                              style: const TextStyle(
+                                color: Color(0xFF102C44),
+                                fontSize: 9.2,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   if (partialFulfillment) ...[
                     const SizedBox(height: 8),
                     Container(

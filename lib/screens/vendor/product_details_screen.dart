@@ -423,6 +423,7 @@ class ProductDetailsScreen extends StatelessWidget {
     Supplier activeSupplier,
     FishProduct activeProduct, {
     int initialQuantity = 1,
+    bool initialTawad = false,
   }) {
     final currentUid = FirebaseAuth.instance.currentUser?.uid;
 
@@ -461,6 +462,7 @@ class ProductDetailsScreen extends StatelessWidget {
             stockId: stockId,
             supplierId: supplierId,
             initialQuantity: initialQuantity,
+            initialTawad: initialTawad,
           );
         },
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -2416,13 +2418,9 @@ class ProductDetailsScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Row(
               children: [
-                Container(
+                SizedBox(
                   width: 31,
                   height: 31,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEAF7FD),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
                   child: Icon(icon, color: const Color(0xFF087AC0), size: 16),
                 ),
                 const SizedBox(width: 11),
@@ -2523,86 +2521,11 @@ class ProductDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget polishedQuantitySelector({
-    required FishProduct activeProduct,
-    required int quantity,
-    required VoidCallback onDecrease,
-    required VoidCallback onIncrease,
-    required bool ownerListing,
-  }) {
-    if (ownerListing || activeProduct.availableQuantity <= 0) {
-      return const SizedBox.shrink();
-    }
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 14, 18, 5),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.inventory_2_outlined,
-            color: Color(0xFF0B476A),
-            size: 20,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Quantity (${activeProduct.quantityUnit})',
-              style: const TextStyle(
-                color: Color(0xFF102C44),
-                fontSize: 13,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
-          Container(
-            height: 45,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFD9EAF3)),
-            ),
-            child: Row(
-              children: [
-                IconButton(
-                  onPressed: quantity > 1 ? onDecrease : null,
-                  icon: const Icon(Icons.remove_rounded, size: 19),
-                  color: const Color(0xFF087AC0),
-                  disabledColor: const Color(0xFFB7C5CF),
-                ),
-                SizedBox(
-                  width: 35,
-                  child: Text(
-                    '$quantity',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Color(0xFF102C44),
-                      fontSize: 15,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  onPressed: quantity < activeProduct.availableQuantity.floor()
-                      ? onIncrease
-                      : null,
-                  icon: const Icon(Icons.add_rounded, size: 20),
-                  color: const Color(0xFF087AC0),
-                  disabledColor: const Color(0xFFB7C5CF),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget polishedBottomOrderBar(
     BuildContext context,
     Supplier activeSupplier,
     FishProduct activeProduct, {
     required bool ownerListing,
-    required int quantity,
   }) {
     final isOutOfStock = activeProduct.availableQuantity <= 0;
 
@@ -2622,12 +2545,7 @@ class ProductDetailsScreen extends StatelessWidget {
         ? () => openManageProducts(context)
         : isOutOfStock
         ? null
-        : () => openCheckout(
-            context,
-            activeSupplier,
-            activeProduct,
-            initialQuantity: quantity,
-          );
+        : () => openCheckout(context, activeSupplier, activeProduct);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 9, 14, 10),
@@ -2647,28 +2565,57 @@ class ProductDetailsScreen extends StatelessWidget {
         child: SizedBox(
           height: 52,
           width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: primaryAction,
-            icon: Icon(primaryIcon, size: 19),
-            label: Text(
-              primaryLabel,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 12.2,
-                fontWeight: FontWeight.w900,
+          child: Row(
+            children: [
+              if (!ownerListing &&
+                  !isOutOfStock &&
+                  stockId.trim().isNotEmpty &&
+                  supplierId.trim().isNotEmpty) ...[
+                OutlinedButton.icon(
+                  onPressed: () => openCheckout(
+                    context,
+                    activeSupplier,
+                    activeProduct,
+                    initialTawad: true,
+                  ),
+                  icon: const Icon(Icons.handshake_outlined, size: 17),
+                  label: const Text('Tawad'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF0875D1),
+                    side: const BorderSide(color: Color(0xFF0875D1)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 9),
+              ],
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: primaryAction,
+                  icon: Icon(primaryIcon, size: 19),
+                  label: Text(
+                    primaryLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12.2,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF087AC0),
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: const Color(0xFFCAD6E0),
+                    disabledForegroundColor: const Color(0xFF718391),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                  ),
+                ),
               ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF087AC0),
-              foregroundColor: Colors.white,
-              disabledBackgroundColor: const Color(0xFFCAD6E0),
-              disabledForegroundColor: const Color(0xFF718391),
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
-              ),
-            ),
+            ],
           ),
         ),
       ),
@@ -2684,88 +2631,48 @@ class ProductDetailsScreen extends StatelessWidget {
     final updatedLabel = listingDateLabel(listingDate(stockData));
     final ownerListing = isOwnListing(stockData);
 
-    var selectedQuantity = 1;
-
-    return StatefulBuilder(
-      builder: (context, setLocalState) {
-        final maxQuantity = activeProduct.availableQuantity.floor();
-        if (maxQuantity > 0 && selectedQuantity > maxQuantity) {
-          selectedQuantity = maxQuantity;
-        }
-        if (selectedQuantity < 1) {
-          selectedQuantity = 1;
-        }
-
-        return AnnotatedRegion<SystemUiOverlayStyle>(
-          value: const SystemUiOverlayStyle(
-            statusBarColor: Color(0xFF0B476A),
-            statusBarIconBrightness: Brightness.light,
-            statusBarBrightness: Brightness.dark,
-          ),
-          child: Scaffold(
-            backgroundColor: const Color(0xFFF4F8FB),
-            body: CustomScrollView(
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                physics: const ClampingScrollPhysics(),
-                slivers: [
-                  polishedProductSliverAppBar(context, activeProduct),
-                  SliverToBoxAdapter(
-                    child: polishedProductOverview(
-                      activeProduct,
-                      updatedLabel: updatedLabel,
-                    ),
-                  ),
-                  if (ownerListing)
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-                        child: ownerListingNotice(),
-                      ),
-                    ),
-                  SliverToBoxAdapter(
-                    child: polishedSupplierCard(context, activeSupplier),
-                  ),
-                  SliverToBoxAdapter(
-                    child: polishedProductInformation(activeProduct),
-                  ),
-                  SliverToBoxAdapter(
-                    child: polishedQuantitySelector(
-                      activeProduct: activeProduct,
-                      quantity: selectedQuantity,
-                      ownerListing: ownerListing,
-                      onDecrease: () {
-                        if (selectedQuantity <= 1) {
-                          return;
-                        }
-                        setLocalState(() {
-                          selectedQuantity--;
-                        });
-                      },
-                      onIncrease: () {
-                        if (selectedQuantity >=
-                            activeProduct.availableQuantity.floor()) {
-                          return;
-                        }
-                        setLocalState(() {
-                          selectedQuantity++;
-                        });
-                      },
-                    ),
-                  ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 22)),
-                ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Color(0xFF0B476A),
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF4F8FB),
+        body: CustomScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          physics: const ClampingScrollPhysics(),
+          slivers: [
+            polishedProductSliverAppBar(context, activeProduct),
+            SliverToBoxAdapter(
+              child: polishedProductOverview(
+                activeProduct,
+                updatedLabel: updatedLabel,
               ),
-            bottomNavigationBar: polishedBottomOrderBar(
-              context,
-              activeSupplier,
-              activeProduct,
-              ownerListing: ownerListing,
-              quantity: selectedQuantity,
             ),
-          ),
-        );
-      },
+            if (ownerListing)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                  child: ownerListingNotice(),
+                ),
+              ),
+            SliverToBoxAdapter(
+              child: polishedSupplierCard(context, activeSupplier),
+            ),
+            SliverToBoxAdapter(
+              child: polishedProductInformation(activeProduct),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 22)),
+          ],
+        ),
+        bottomNavigationBar: polishedBottomOrderBar(
+          context,
+          activeSupplier,
+          activeProduct,
+          ownerListing: ownerListing,
+        ),
+      ),
     );
   }
 

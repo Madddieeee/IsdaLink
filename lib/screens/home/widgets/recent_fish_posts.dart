@@ -61,7 +61,7 @@ class RecentFishPosts extends StatelessWidget {
 
   Widget errorList(Object error) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+      margin: const EdgeInsets.only(left: 16, right: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -107,7 +107,7 @@ class RecentFishPosts extends StatelessWidget {
     return SizedBox(
       height: 232,
       child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.only(left: 16, right: 16),
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
         itemCount: 2,
@@ -131,7 +131,7 @@ class RecentFishPosts extends StatelessWidget {
 
   Widget emptyList() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 14),
+      margin: const EdgeInsets.only(left: 16, right: 16),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -400,7 +400,7 @@ class RecentFishPosts extends StatelessWidget {
                     onViewAll: onViewAll,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 10),
                 body,
               ],
             );

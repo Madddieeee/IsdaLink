@@ -97,6 +97,69 @@ class _SupplierReviewsSectionState extends State<SupplierReviewsSection> {
     );
   }
 
+  List<String> photoUrlsOf(Map<String, dynamic> data) {
+    final values = data['photoUrls'];
+    if (values is! List) {
+      return const <String>[];
+    }
+
+    return values
+        .whereType<String>()
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty)
+        .take(3)
+        .toList(growable: false);
+  }
+
+  void showReviewPhoto(String photoUrl) {
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withAlpha(220),
+      builder: (dialogContext) {
+        return Dialog(
+          insetPadding: const EdgeInsets.all(16),
+          backgroundColor: Colors.transparent,
+          child: Stack(
+            children: [
+              InteractiveViewer(
+                minScale: 0.8,
+                maxScale: 4,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: Image.network(
+                    photoUrl,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        height: 280,
+                        color: Colors.white,
+                        alignment: Alignment.center,
+                        child: const Text('This review photo is unavailable.'),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Material(
+                  color: Colors.black.withAlpha(175),
+                  shape: const CircleBorder(),
+                  child: IconButton(
+                    tooltip: 'Close photo',
+                    onPressed: () => Navigator.pop(dialogContext),
+                    icon: const Icon(Icons.close_rounded, color: Colors.white),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget emptyReviews() {
     return Container(
       width: double.infinity,
@@ -149,6 +212,7 @@ class _SupplierReviewsSectionState extends State<SupplierReviewsSection> {
     );
 
     final comment = OrderHelpers.getStringValue(data, 'comment', '');
+    final photoUrls = photoUrlsOf(data);
 
     final rating = OrderHelpers.getDoubleValue(
       data,
@@ -228,7 +292,7 @@ class _SupplierReviewsSectionState extends State<SupplierReviewsSection> {
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
-              productName,
+              'Purchased fish: $productName',
               style: const TextStyle(
                 color: Color(0xFF52677A),
                 fontSize: 9.7,
@@ -245,6 +309,50 @@ class _SupplierReviewsSectionState extends State<SupplierReviewsSection> {
                 fontSize: 11.3,
                 height: 1.4,
                 fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+          if (photoUrls.isNotEmpty) ...[
+            const SizedBox(height: 11),
+            SizedBox(
+              height: 92,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: photoUrls.length,
+                separatorBuilder: (context, index) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  final photoUrl = photoUrls[index];
+                  return Semantics(
+                    button: true,
+                    label:
+                        'Open received fish photo ${index + 1} of ${photoUrls.length}',
+                    child: InkWell(
+                      onTap: () => showReviewPhoto(photoUrl),
+                      borderRadius: BorderRadius.circular(13),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(13),
+                        child: Image.network(
+                          photoUrl,
+                          width: 92,
+                          height: 92,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              width: 92,
+                              height: 92,
+                              color: const Color(0xFFE7EEF3),
+                              alignment: Alignment.center,
+                              child: const Icon(
+                                Icons.broken_image_outlined,
+                                color: Color(0xFF7B8FA3),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ],

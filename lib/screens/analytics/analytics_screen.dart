@@ -1,5 +1,17 @@
 import 'dart:math' as math;
 
+import '../../analytics/forecast_comparison.dart';
+import '../../analytics/forecast_display.dart';
+import '../../analytics/forecast_target.dart';
+import '../../analytics/forecast_engine.dart';
+export '../../analytics/forecast_engine.dart' show PeriodPoint;
+import '../../analytics/analytics_metrics.dart';
+import '../../analytics/analytics_ranking.dart';
+import '../../analytics/analytics_record.dart';
+import '../../analytics/analytics_identity.dart';
+import '../../analytics/analytics_record_set.dart';
+export '../../analytics/forecast_comparison.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -12,15 +24,23 @@ enum AnalyticsPeriod { weekly, monthly }
 enum SupplierAnalyticsTab { summary, accuracy, guidance, products }
 
 class AnalyticsScreen extends StatefulWidget {
-  const AnalyticsScreen({super.key, this.mode = AnalyticsMode.vendor});
+  const AnalyticsScreen({
+    super.key,
+    this.mode = AnalyticsMode.vendor,
+    this.onBack,
+  });
 
   final AnalyticsMode mode;
+  final VoidCallback? onBack;
 
   @override
   State<AnalyticsScreen> createState() => _AnalyticsScreenState();
 }
 
-class _AnalyticsScreenState extends State<AnalyticsScreen> {
+class _AnalyticsScreenState extends State<AnalyticsScreen>
+    with AnalyticsForecastEngine {
+  @override
+  bool get forecastMonthly => selectedPeriod == AnalyticsPeriod.monthly;
   AnalyticsPeriod selectedPeriod = AnalyticsPeriod.weekly;
   SupplierAnalyticsTab selectedSupplierTab = SupplierAnalyticsTab.summary;
   String? selectedSeriesKey;
@@ -57,8 +77,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   String get roleLabel => isSupplier ? 'SUPPLIER SIDE' : 'VENDOR SIDE';
 
   String get subtitle => isSupplier
-      ? 'Sales trends, forecasts, stock alerts, and product insights from validated historical records and completed COD orders.'
-      : 'Purchase trends, forecasts, and restocking insights from validated historical records and completed COD orders.';
+      ? 'Sales insights from eligible transactions in closed periods. Inventory supports current stock alerts.'
+      : 'Purchase insights from eligible transactions in closed periods.';
 
   String get amountLabel => isSupplier ? 'Sales' : 'Amount';
 
@@ -157,60 +177,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return 0;
   }
 
-  DateTime orderDate(Map<String, dynamic> data) {
-    const keys = [
-      // Analytics is grouped by the transaction/order date, not by the
-      // completion date. Completion timestamps remain fallback values for
-      // legacy records that do not yet store a separate transaction date.
-      'transactionDate',
-      'orderDate',
-      'createdAt',
-      'completedAt',
-      'deliveredAt',
-      'updatedAt',
-    ];
-
-    for (final key in keys) {
-      final value = data[key];
-
-      if (value is Timestamp) {
-        return value.toDate().toLocal();
-      }
-
-      if (value is DateTime) {
-        return value.toLocal();
-      }
-
-      if (value is String) {
-        final parsed = DateTime.tryParse(value);
-
-        if (parsed != null) {
-          return parsed.toLocal();
-        }
-      }
-    }
-
-    return DateTime.now();
-  }
-
-  bool isCompletedOrder(Map<String, dynamic> data) {
-    final status = firstString(data, const [
-      'orderStatus',
-      'status',
-    ], fallback: 'pending').toLowerCase();
-
-    return status == 'completed' || status == 'delivered';
-  }
-
-  double completedAmount(Map<String, dynamic> data) {
-    return firstPositiveDouble(data, const [
-      'validatedTotalAmount',
-      'fulfilledTotalAmount',
-      'totalAmount',
-      'grandTotal',
-    ]);
-  }
-
   String normalizeAnalyticsUnit(String rawUnit) {
     final normalized = rawUnit
         .trim()
@@ -244,118 +210,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   String analyticsProductKey(String productName) {
     return productName.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
-  }
-
-  bool isEligibleHistoricalTransaction(Map<String, dynamic> data) {
-    final analyticsEligible = data['analyticsEligible'];
-
-    if (analyticsEligible is bool && !analyticsEligible) {
-      return false;
-    }
-
-    final orderStatus = firstString(data, const [
-      'orderStatus',
-      'order_status',
-    ], fallback: '').toLowerCase();
-
-    final validationStatus = firstString(data, const [
-      'validationStatus',
-      'validation_status',
-    ], fallback: '').toLowerCase();
-
-    return orderStatus == 'completed' && validationStatus == 'validated';
-  }
-
-  DateTime historicalTransactionDate(Map<String, dynamic> data) {
-    const keys = ['transactionDate', 'transaction_date', 'transactionDateIso'];
-
-    for (final key in keys) {
-      final value = data[key];
-
-      if (value is Timestamp) {
-        return value.toDate().toLocal();
-      }
-
-      if (value is DateTime) {
-        return value.toLocal();
-      }
-
-      if (value is String) {
-        final parsed = DateTime.tryParse(value.trim());
-
-        if (parsed != null) {
-          return parsed.toLocal();
-        }
-      }
-    }
-
-    return DateTime.now();
-  }
-
-  List<_OrderLine> extractHistoricalLines(Map<String, dynamic> data) {
-    if (!isEligibleHistoricalTransaction(data)) {
-      return const [];
-    }
-
-    final quantity = firstPositiveDouble(data, const [
-      'quantityFulfilled',
-      'quantity_fulfilled',
-    ]);
-
-    if (quantity <= 0) {
-      return const [];
-    }
-
-    final productName = firstString(data, const [
-      'productName',
-      'fishProduct',
-      'fish_product',
-    ], fallback: 'Fish Product');
-
-    final quantityUnit = normalizeAnalyticsUnit(
-      firstString(data, const [
-        'quantityUnit',
-        'quantity_unit',
-      ], fallback: 'kilogram'),
-    );
-
-    var amount = firstPositiveDouble(data, const [
-      'totalAmount',
-      'totalAmountPhp',
-      'total_amount_php',
-    ]);
-
-    if (amount <= 0) {
-      final unitPrice = firstPositiveDouble(data, const [
-        'unitPrice',
-        'unitPricePhp',
-        'unit_price_php',
-      ]);
-      amount = unitPrice * quantity;
-    }
-
-    return [
-      _OrderLine(
-        productId: analyticsProductKey(productName),
-        productName: productName,
-        quantityUnit: quantityUnit,
-        emoji: '🐟',
-        quantity: quantity,
-        amount: amount,
-      ),
-    ];
-  }
-
-  DateTime periodStart(DateTime date) {
-    if (selectedPeriod == AnalyticsPeriod.monthly) {
-      return DateTime(date.year, date.month);
-    }
-
-    final normalized = DateTime(date.year, date.month, date.day);
-
-    return normalized.subtract(
-      Duration(days: normalized.weekday - DateTime.monday),
-    );
   }
 
   String periodKey(DateTime date) {
@@ -393,168 +247,44 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return '${months[date.month - 1]} ${date.day}';
   }
 
-  List<_OrderLine> extractOrderLines(Map<String, dynamic> order) {
-    final rawItems = order['items'] ?? order['orderItems'];
-
-    if (rawItems is List && rawItems.isNotEmpty) {
-      final lines = <_OrderLine>[];
-
-      for (final rawItem in rawItems) {
-        if (rawItem is! Map) {
-          continue;
-        }
-
-        final item = Map<String, dynamic>.from(rawItem);
-        final quantity = firstPositiveDouble(item, const [
-          'validatedFulfilledQuantity',
-          'fulfilledQuantity',
-          'quantity',
-        ]);
-
-        if (quantity <= 0) {
-          continue;
-        }
-
-        final productName = firstString(item, const [
-          'productName',
-          'fishName',
-          'name',
-        ], fallback: 'Fish Product');
-
-        final productId = firstString(item, const [
-          'productId',
-          'fishStockId',
-          'stockId',
-        ], fallback: productName.toLowerCase());
-
-        final quantityUnit = normalizeAnalyticsUnit(
-          firstString(item, const [
-            'quantityUnit',
-            'unit',
-            'unitType',
-          ], fallback: 'kilogram'),
-        );
-
-        final emoji = firstString(item, const [
-          'productEmoji',
-          'emoji',
-        ], fallback: '🐟');
-
-        var amount = firstPositiveDouble(item, const [
-          'validatedTotalAmount',
-          'fulfilledTotalAmount',
-          'lineTotal',
-          'subtotal',
-          'totalAmount',
-        ]);
-
-        if (amount <= 0) {
-          final price = firstPositiveDouble(item, const [
-            'price',
-            'unitPrice',
-            'pricePerUnit',
-          ]);
-          amount = price * quantity;
-        }
-
-        lines.add(
-          _OrderLine(
-            productId: productId,
-            productName: productName,
-            quantityUnit: quantityUnit,
-            emoji: emoji,
-            quantity: quantity,
-            amount: amount,
-          ),
-        );
-      }
-
-      if (lines.isNotEmpty) {
-        return lines;
-      }
-    }
-
-    final quantity = firstPositiveDouble(order, const [
-      'validatedFulfilledQuantity',
-      'fulfilledQuantity',
-      'quantity',
-    ]);
-
-    if (quantity <= 0) {
-      return const [];
-    }
-
-    final productName = firstString(order, const [
-      'productName',
-      'fishName',
-      'name',
-    ], fallback: 'Fish Product');
-
-    final productId = firstString(order, const [
-      'productId',
-      'fishStockId',
-      'stockId',
-    ], fallback: productName.toLowerCase());
-
-    final quantityUnit = normalizeAnalyticsUnit(
-      firstString(order, const [
-        'quantityUnit',
-        'unit',
-        'unitType',
-      ], fallback: 'kilogram'),
+  EligibleAnalyticsRecord? validatedRecord(
+    Map<String, dynamic> data,
+    AnalyticsSource source,
+  ) {
+    // Convert Firestore instants only; date-only strings keep their meaning.
+    final input = data.map(
+      (key, value) =>
+          MapEntry(key, value is Timestamp ? value.toDate() : value),
     );
-
-    final emoji = firstString(order, const [
-      'productEmoji',
-      'emoji',
-    ], fallback: '🐟');
-
-    return [
-      _OrderLine(
-        productId: productId,
-        productName: productName,
-        quantityUnit: quantityUnit,
-        emoji: emoji,
-        quantity: quantity,
-        amount: completedAmount(order),
-      ),
-    ];
+    return eligibleAnalyticsRecord(
+      input,
+      source: source,
+      supplier: isSupplier,
+      accountUid: currentUser?.uid ?? '',
+    );
   }
 
   AnalyticsData buildAnalyticsData({
+    DateTime? now,
     required List<QueryDocumentSnapshot<Map<String, dynamic>>> orders,
     required List<QueryDocumentSnapshot<Map<String, dynamic>>>
     historicalTransactions,
     required List<QueryDocumentSnapshot<Map<String, dynamic>>> stocks,
   }) {
-    final completedOrders = orders
-        .where((document) => isCompletedOrder(document.data()))
-        .toList();
-
-    final eligibleHistorical = historicalTransactions
-        .where((document) => isEligibleHistoricalTransaction(document.data()))
-        .toList();
-
-    double totalAmount = 0;
-    var includedLiveCompletedOrders = 0;
-    var includedHistoricalTransactions = 0;
+    final analyticsNow = now ?? DateTime.now();
 
     final productMap = <String, ProductSummary>{};
     final productPeriodMap = <String, Map<String, PeriodPoint>>{};
     final quantityUnits = <String>{};
 
-    void addLine({
-      required _OrderLine line,
-      required DateTime date,
-      required double fallbackAmount,
-    }) {
+    void addLine({required _OrderLine line, required DateTime date}) {
       final normalizedUnit = normalizeAnalyticsUnit(line.quantityUnit);
       final normalizedProductName = analyticsProductKey(line.productName);
       final productKey = '$normalizedProductName|$normalizedUnit';
 
       quantityUnits.add(normalizedUnit);
 
-      final lineAmount = line.amount > 0 ? line.amount : fallbackAmount;
+      final lineAmount = line.amount;
       final existingProduct = productMap[productKey];
 
       productMap[productKey] = ProductSummary(
@@ -565,6 +295,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         quantity: (existingProduct?.quantity ?? 0) + line.quantity,
         amount: (existingProduct?.amount ?? 0) + lineAmount,
         transactionCount: (existingProduct?.transactionCount ?? 0) + 1,
+        hasCompleteAmounts:
+            (existingProduct?.hasCompleteAmounts ?? true) &&
+            line.hasKnownAmount,
       );
 
       final dateKey = periodKey(date);
@@ -579,84 +312,60 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         quantity: (existingPoint?.quantity ?? 0) + line.quantity,
         amount: (existingPoint?.amount ?? 0) + lineAmount,
         transactionCount: (existingPoint?.transactionCount ?? 0) + 1,
+        hasCompleteAmounts:
+            (existingPoint?.hasCompleteAmounts ?? true) && line.hasKnownAmount,
       );
     }
 
-    // Live operational orders.
-    for (final document in completedOrders) {
-      final data = document.data();
-      final date = periodStart(orderDate(data));
-
-      // Supplier analytics only closes a period after the week/month ends.
-      // This keeps the in-progress period out of summary totals, forecasts,
-      // accuracy evaluation, rankings, and restocking guidance.
-      if (isSupplier && sameAnalyticsPeriod(date, DateTime.now())) {
-        continue;
-      }
-
-      final lines = extractOrderLines(data);
-      final orderTotal = completedAmount(data);
-      final lineTotals = lines.fold<double>(
-        0,
-        (total, line) => total + line.amount,
-      );
-
-      totalAmount += orderTotal > 0 ? orderTotal : lineTotals;
-      includedLiveCompletedOrders++;
-
-      for (final line in lines) {
+    void includeRecord(EligibleAnalyticsRecord record) {
+      final date = periodStart(record.date);
+      for (final line in record.lines) {
         addLine(
-          line: line,
           date: date,
-          fallbackAmount: lines.length == 1 ? orderTotal : 0,
+          line: _OrderLine(
+            productId: analyticsProductKey(line.productName),
+            productName: line.productName,
+            quantityUnit: line.unit,
+            emoji: line.emoji,
+            quantity: line.quantity,
+            amount: line.amount ?? 0,
+            hasKnownAmount: line.amount != null,
+          ),
         );
       }
     }
 
-    // Historical field records imported from the verified Transaction Log.
-    // The source manual defines transaction_date as the analytics grouping
-    // date and quantity_fulfilled as the completed purchase/sale quantity.
-    for (final document in eligibleHistorical) {
-      final data = document.data();
-      final date = periodStart(historicalTransactionDate(data));
-
-      if (isSupplier && sameAnalyticsPeriod(date, DateTime.now())) {
-        continue;
-      }
-
-      final lines = extractHistoricalLines(data);
-
-      if (lines.isEmpty) {
-        continue;
-      }
-
-      final historicalTotal = firstPositiveDouble(data, const [
-        'totalAmount',
-        'totalAmountPhp',
-        'total_amount_php',
-      ]);
-
-      final lineTotals = lines.fold<double>(
-        0,
-        (total, line) => total + line.amount,
-      );
-
-      totalAmount += historicalTotal > 0 ? historicalTotal : lineTotals;
-      includedHistoricalTransactions++;
-
-      for (final line in lines) {
-        addLine(line: line, date: date, fallbackAmount: historicalTotal);
-      }
+    final identityResult = closedAnalyticsRecordSet(
+      [
+        for (final document in orders)
+          AnalyticsIdentityRecord(
+            documentId: document.id,
+            source: AnalyticsSource.live,
+            data: document.data(),
+            record: validatedRecord(document.data(), AnalyticsSource.live),
+          ),
+        for (final document in historicalTransactions)
+          AnalyticsIdentityRecord(
+            documentId: document.id,
+            source: AnalyticsSource.historical,
+            data: document.data(),
+            record: validatedRecord(
+              document.data(),
+              AnalyticsSource.historical,
+            ),
+          ),
+      ],
+      now: analyticsNow,
+      monthly: forecastMonthly,
+    );
+    final totals = AnalyticsRecordTotals(identityResult.records);
+    for (final input in identityResult.records) {
+      includeRecord(input.record!);
     }
 
     final products = productMap.values.toList();
-    final mixedUnits = quantityUnits.length > 1;
-
-    products.sort(
-      mixedUnits
-          ? (a, b) => b.amount.compareTo(a.amount)
-          : (a, b) => b.quantity.compareTo(a.quantity),
-    );
+    final ranking = analyticsRankingBasis(products);
+    products.sort((a, b) => compareAnalyticsRankingSeries(a, b, ranking));
 
     final productSeries = <String, List<PeriodPoint>>{};
 
@@ -690,16 +399,26 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
     final quantities = selectedPoints.map((point) => point.quantity).toList();
 
-    final simpleForecast = simpleMovingAverageForecast(selectedPoints);
-    final seasonalForecast = seasonalMovingAverageForecast(selectedPoints);
-    final simpleEvaluation = evaluateSimpleMovingAverage(selectedPoints);
-    final seasonalEvaluation = evaluateSeasonalMovingAverage(selectedPoints);
-    final selectedMethod = selectForecastMethod(
+    final forecastTarget = targetForPoints(selectedPoints, now: analyticsNow);
+    final modelPoints = selectedPoints
+        .where((point) => point.date.isBefore(forecastTarget.date))
+        .toList();
+    final simpleForecast = simpleMovingAverageForTarget(
+      precedingPoints: modelPoints,
+      targetDate: forecastTarget.date,
+    );
+    final seasonalForecast = seasonalMovingAverageForTarget(
+      precedingPoints: modelPoints,
+      targetDate: forecastTarget.date,
+    );
+    final comparison = evaluateMethods(
+      modelPoints,
       simpleForecast: simpleForecast,
       seasonalForecast: seasonalForecast,
-      simpleEvaluation: simpleEvaluation,
-      seasonalEvaluation: seasonalEvaluation,
     );
+    final simpleEvaluation = comparison.simpleEvaluation;
+    final seasonalEvaluation = comparison.seasonalEvaluation;
+    final selectedMethod = comparison.selection;
     final variabilityValue = variability(quantities);
 
     final rankingUnit = quantityUnits.isEmpty
@@ -707,21 +426,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         : isSupplier
         ? supplierUnitLabel(quantityUnits.first)
         : quantityUnits.first;
-    final rankingBasis = mixedUnits
-        ? 'Ranked by completed transaction amount because fish-and-unit series use different units.'
-        : 'Ranked by completed quantity within $rankingUnit.';
+    final rankingBasis = analyticsRankingDescription(ranking, rankingUnit);
 
     return AnalyticsData(
-      completedOrders: isSupplier
-          ? includedLiveCompletedOrders + includedHistoricalTransactions
-          : completedOrders.length + eligibleHistorical.length,
-      liveCompletedOrders: isSupplier
-          ? includedLiveCompletedOrders
-          : completedOrders.length,
-      historicalTransactions: isSupplier
-          ? includedHistoricalTransactions
-          : eligibleHistorical.length,
-      totalAmount: totalAmount,
+      completedOrders: totals.count,
+      liveCompletedOrders: totals.liveCount,
+      historicalTransactions: totals.historicalCount,
+      identityConflicts: identityResult.conflictingRecords,
+      totalAmount: totals.knownAmount,
+      hasCompleteAmounts: totals.hasCompleteAmounts,
       products: products,
       selectedProduct: selectedProduct,
       selectedPoints: selectedPoints,
@@ -735,376 +448,51 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       suggestions: buildSuggestions(
         products: products,
         productSeries: productSeries,
+        now: analyticsNow,
       ),
       stockAlerts: buildStockAlerts(stocks),
     );
   }
 
-  int get smaWindow {
-    return selectedPeriod == AnalyticsPeriod.weekly ? 4 : 3;
+  AnalyticsForecastTarget targetForPoints(
+    List<PeriodPoint> points, {
+    DateTime? now,
+  }) => analyticsForecastTarget(
+    now: now ?? DateTime.now(),
+    monthly: selectedPeriod == AnalyticsPeriod.monthly,
+    historicalPeriod:
+        points.any(
+          (point) =>
+              selectedSupplierPeriodStart != null &&
+              sameAnalyticsPeriod(point.date, selectedSupplierPeriodStart!),
+        )
+        ? selectedSupplierPeriodStart
+        : null,
+  );
+
+  String targetDescription(List<PeriodPoint> points) {
+    final target = targetForPoints(points);
+    return '${target.historical ? 'Historical forecast' : 'Current $periodNoun forecast'} · ${supplierPeriodRange(target.date)}';
   }
 
-  int get seasonalInterval {
-    return selectedPeriod == AnalyticsPeriod.weekly ? 4 : 12;
-  }
-
-  int get seasonalComparablePeriods {
-    return selectedPeriod == AnalyticsPeriod.weekly ? 3 : 2;
-  }
-
-  int get seasonalMinimumPrecedingPeriods {
-    return seasonalInterval * seasonalComparablePeriods;
-  }
-
-  String get periodName {
-    return selectedPeriod == AnalyticsPeriod.weekly ? 'weekly' : 'monthly';
-  }
-
-  DateTime shiftAnalyticsPeriod(DateTime date, int offset) {
-    final start = periodStart(date);
-
-    if (selectedPeriod == AnalyticsPeriod.monthly) {
-      return DateTime(start.year, start.month + offset);
-    }
-
-    return start.add(Duration(days: 7 * offset));
-  }
-
-  bool sameAnalyticsPeriod(DateTime left, DateTime right) {
-    final leftStart = periodStart(left);
-    final rightStart = periodStart(right);
-
-    return leftStart.year == rightStart.year &&
-        leftStart.month == rightStart.month &&
-        leftStart.day == rightStart.day;
-  }
-
-  PeriodPoint? pointForAnalyticsPeriod(
-    List<PeriodPoint> points,
-    DateTime targetDate,
-  ) {
-    for (final point in points) {
-      if (sameAnalyticsPeriod(point.date, targetDate)) {
-        return point;
+  int availableForecastPeriods(List<PeriodPoint> points, int requiredPeriods) {
+    final target = targetForPoints(points).date;
+    var count = 0;
+    for (var offset = 1; offset <= requiredPeriods; offset++) {
+      if (pointForAnalyticsPeriod(
+            points,
+            shiftAnalyticsPeriod(target, -offset),
+          ) ==
+          null) {
+        break;
       }
+      count++;
     }
-
-    return null;
+    return count;
   }
 
-  double meanOf(List<double> values) {
-    if (values.isEmpty) {
-      return 0;
-    }
-
-    return values.fold<double>(0, (total, value) => total + value) /
-        values.length;
-  }
-
-  ForecastResult simpleMovingAverageForTarget({
-    required List<PeriodPoint> precedingPoints,
-    required DateTime targetDate,
-  }) {
-    final values = <double>[];
-
-    for (var offset = smaWindow; offset >= 1; offset--) {
-      final expectedDate = shiftAnalyticsPeriod(targetDate, -offset);
-      final point = pointForAnalyticsPeriod(precedingPoints, expectedDate);
-
-      if (point == null) {
-        return ForecastResult.unavailable(
-          reason:
-              'Requires $smaWindow consecutive preceding $periodName periods.',
-        );
-      }
-
-      values.add(point.quantity);
-    }
-
-    return ForecastResult.available(meanOf(values));
-  }
-
-  ForecastResult simpleMovingAverageForecast(List<PeriodPoint> points) {
-    if (points.isEmpty) {
-      return ForecastResult.unavailable(
-        reason: 'No completed periods are available.',
-      );
-    }
-
-    final targetDate = shiftAnalyticsPeriod(points.last.date, 1);
-
-    return simpleMovingAverageForTarget(
-      precedingPoints: points,
-      targetDate: targetDate,
-    );
-  }
-
-  ForecastResult seasonalMovingAverageForTarget({
-    required List<PeriodPoint> precedingPoints,
-    required DateTime targetDate,
-  }) {
-    // The final configuration requires not only the comparable lags but the
-    // full preceding-history coverage: 12 weekly periods or 24 monthly
-    // periods before the target.
-    for (var offset = 1; offset <= seasonalMinimumPrecedingPeriods; offset++) {
-      final expectedDate = shiftAnalyticsPeriod(targetDate, -offset);
-
-      if (pointForAnalyticsPeriod(precedingPoints, expectedDate) == null) {
-        return ForecastResult.unavailable(
-          reason: selectedPeriod == AnalyticsPeriod.weekly
-              ? 'Requires 12 consecutive preceding weekly observations before the three 4-week seasonal comparisons can be evaluated.'
-              : 'Requires 24 consecutive preceding monthly observations before the two 12-month seasonal comparisons can be evaluated.',
-        );
-      }
-    }
-
-    final comparableValues = <double>[];
-
-    for (
-      var comparableIndex = 1;
-      comparableIndex <= seasonalComparablePeriods;
-      comparableIndex++
-    ) {
-      final expectedDate = shiftAnalyticsPeriod(
-        targetDate,
-        -(seasonalInterval * comparableIndex),
-      );
-
-      final point = pointForAnalyticsPeriod(precedingPoints, expectedDate);
-
-      if (point == null) {
-        return ForecastResult.unavailable(
-          reason: selectedPeriod == AnalyticsPeriod.weekly
-              ? 'Requires 3 comparable weekly observations spaced 4 weeks apart, with at least 12 preceding weeks.'
-              : 'Requires 2 comparable monthly observations spaced 12 months apart, with at least 24 preceding months.',
-        );
-      }
-
-      comparableValues.add(point.quantity);
-    }
-
-    return ForecastResult.available(meanOf(comparableValues));
-  }
-
-  ForecastResult seasonalMovingAverageForecast(List<PeriodPoint> points) {
-    if (points.isEmpty) {
-      return ForecastResult.unavailable(
-        reason: 'No completed periods are available.',
-      );
-    }
-
-    final targetDate = shiftAnalyticsPeriod(points.last.date, 1);
-
-    return seasonalMovingAverageForTarget(
-      precedingPoints: points,
-      targetDate: targetDate,
-    );
-  }
-
-  ForecastEvaluation evaluateSimpleMovingAverage(List<PeriodPoint> points) {
-    return evaluateForecastMethod(
-      points: points,
-      method: ForecastingMethod.simpleMovingAverage,
-    );
-  }
-
-  ForecastEvaluation evaluateSeasonalMovingAverage(List<PeriodPoint> points) {
-    return evaluateForecastMethod(
-      points: points,
-      method: ForecastingMethod.seasonalMovingAverage,
-    );
-  }
-
-  ForecastEvaluation evaluateForecastMethod({
-    required List<PeriodPoint> points,
-    required ForecastingMethod method,
-  }) {
-    final absoluteErrors = <double>[];
-    final percentageErrors = <double>[];
-    var zeroActualMapeExclusions = 0;
-
-    for (var index = 0; index < points.length; index++) {
-      final target = points[index];
-      final preceding = points.sublist(0, index);
-
-      final forecast = switch (method) {
-        ForecastingMethod.simpleMovingAverage => simpleMovingAverageForTarget(
-          precedingPoints: preceding,
-          targetDate: target.date,
-        ),
-        ForecastingMethod.seasonalMovingAverage =>
-          seasonalMovingAverageForTarget(
-            precedingPoints: preceding,
-            targetDate: target.date,
-          ),
-      };
-
-      if (!forecast.hasValue) {
-        continue;
-      }
-
-      final actual = target.quantity;
-      final absoluteError = (actual - forecast.value).abs();
-
-      // MAE keeps every otherwise valid actual-versus-forecast pair,
-      // including a valid target period whose actual quantity equals zero.
-      absoluteErrors.add(absoluteError);
-
-      // MAPE excludes zero actuals because the actual value is the
-      // denominator. The exclusion is counted and surfaced in the UI.
-      if (actual == 0) {
-        zeroActualMapeExclusions++;
-      } else {
-        percentageErrors.add(absoluteError / actual.abs() * 100);
-      }
-    }
-
-    if (absoluteErrors.isEmpty) {
-      final reason = method == ForecastingMethod.simpleMovingAverage
-          ? 'No target period yet has $smaWindow valid preceding $periodName observations for one-period-ahead SMA evaluation.'
-          : selectedPeriod == AnalyticsPeriod.weekly
-          ? 'No target period yet has the 12 preceding weeks needed for three 4-week seasonal comparisons.'
-          : 'No target period yet has the 24 preceding months needed for two 12-month seasonal comparisons.';
-
-      return ForecastEvaluation.unavailable(reason: reason);
-    }
-
-    final mae = meanOf(absoluteErrors);
-
-    final hasMape = percentageErrors.isNotEmpty;
-    final mape = hasMape ? meanOf(percentageErrors) : 0.0;
-
-    return ForecastEvaluation.available(
-      mape: mape,
-      mae: mae,
-      hasMape: hasMape,
-      maePairCount: absoluteErrors.length,
-      mapePairCount: percentageErrors.length,
-      zeroActualMapeExclusions: zeroActualMapeExclusions,
-      reason: hasMape
-          ? ''
-          : 'MAPE is unavailable because every valid evaluation pair has an actual quantity of zero. MAE remains valid.',
-    );
-  }
-
-  ForecastMethodSelection selectForecastMethod({
-    required ForecastResult simpleForecast,
-    required ForecastResult seasonalForecast,
-    required ForecastEvaluation simpleEvaluation,
-    required ForecastEvaluation seasonalEvaluation,
-  }) {
-    final simpleEligible =
-        simpleForecast.hasValue &&
-        simpleEvaluation.hasMae &&
-        simpleEvaluation.hasMape;
-
-    final seasonalEligible =
-        seasonalForecast.hasValue &&
-        seasonalEvaluation.hasMae &&
-        seasonalEvaluation.hasMape;
-
-    if (simpleEligible && !seasonalEligible) {
-      return ForecastMethodSelection.selected(
-        method: ForecastingMethod.simpleMovingAverage,
-        forecast: simpleForecast.value,
-        reason:
-            'Simple Moving Average is the only method currently eligible for accuracy-based selection.',
-      );
-    }
-
-    if (!simpleEligible && seasonalEligible) {
-      return ForecastMethodSelection.selected(
-        method: ForecastingMethod.seasonalMovingAverage,
-        forecast: seasonalForecast.value,
-        reason:
-            'Seasonal Moving Average is the only method currently eligible for accuracy-based selection.',
-      );
-    }
-
-    if (!simpleEligible && !seasonalEligible) {
-      return ForecastMethodSelection.unavailable(
-        reason:
-            'A selected method will appear when at least one forecast has a valid MAPE evaluation.',
-      );
-    }
-
-    const tolerance = 0.0000001;
-    final mapeDifference = (simpleEvaluation.mape - seasonalEvaluation.mape)
-        .abs();
-
-    if (mapeDifference > tolerance) {
-      if (simpleEvaluation.mape < seasonalEvaluation.mape) {
-        return ForecastMethodSelection.selected(
-          method: ForecastingMethod.simpleMovingAverage,
-          forecast: simpleForecast.value,
-          reason: 'Selected because it has the lower MAPE.',
-        );
-      }
-
-      return ForecastMethodSelection.selected(
-        method: ForecastingMethod.seasonalMovingAverage,
-        forecast: seasonalForecast.value,
-        reason: 'Selected because it has the lower MAPE.',
-      );
-    }
-
-    final maeDifference = (simpleEvaluation.mae - seasonalEvaluation.mae).abs();
-
-    if (maeDifference > tolerance) {
-      if (simpleEvaluation.mae < seasonalEvaluation.mae) {
-        return ForecastMethodSelection.selected(
-          method: ForecastingMethod.simpleMovingAverage,
-          forecast: simpleForecast.value,
-          reason:
-              'MAPE is tied, so Simple Moving Average is selected by the lower MAE.',
-        );
-      }
-
-      return ForecastMethodSelection.selected(
-        method: ForecastingMethod.seasonalMovingAverage,
-        forecast: seasonalForecast.value,
-        reason:
-            'MAPE is tied, so Seasonal Moving Average is selected by the lower MAE.',
-      );
-    }
-
-    // The controlling analytics configuration defines lower MAE as the
-    // tie-break after MAPE, but it does not define a third tie-break when
-    // both measures are exactly equal. Do not invent one.
-    return ForecastMethodSelection.unavailable(
-      reason:
-          'MAPE and MAE are tied for both eligible methods, so no method is automatically preferred.',
-    );
-  }
-
-  double roundForecastQuantity(double value) {
-    final nonNegative = math.max(0, value).toDouble();
-
-    return (nonNegative * 100).roundToDouble() / 100;
-  }
-
-  double variability(List<double> values) {
-    if (values.length < 2) {
-      return 0;
-    }
-
-    final mean =
-        values.fold<double>(0, (total, value) => total + value) / values.length;
-
-    if (mean == 0) {
-      return 0;
-    }
-
-    // Final analytics configuration uses the sample standard deviation,
-    // therefore variance is divided by n - 1 rather than n.
-    final variance =
-        values
-            .map((value) => math.pow(value - mean, 2).toDouble())
-            .fold<double>(0, (total, value) => total + value) /
-        (values.length - 1);
-
-    return math.sqrt(variance) / mean * 100;
-  }
+  double? variability(List<double> values) =>
+      analyticsCoefficientOfVariation(values);
 
   List<StockAlert> buildStockAlerts(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> stocks,
@@ -1161,31 +549,41 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   List<RestockingSuggestion> buildSuggestions({
     required List<ProductSummary> products,
     required Map<String, List<PeriodPoint>> productSeries,
+    DateTime? now,
   }) {
     final suggestions = <RestockingSuggestion>[];
 
     for (final product in products) {
       final points = productSeries[product.seriesKey] ?? const <PeriodPoint>[];
 
-      final simple = simpleMovingAverageForecast(points);
-      final seasonal = seasonalMovingAverageForecast(points);
-      final simpleEvaluation = evaluateSimpleMovingAverage(points);
-      final seasonalEvaluation = evaluateSeasonalMovingAverage(points);
-
-      final selection = selectForecastMethod(
+      final target = analyticsForecastTarget(
+        now: now ?? DateTime.now(),
+        monthly: selectedPeriod == AnalyticsPeriod.monthly,
+      );
+      final simple = simpleMovingAverageForTarget(
+        precedingPoints: points,
+        targetDate: target.date,
+      );
+      final seasonal = seasonalMovingAverageForTarget(
+        precedingPoints: points,
+        targetDate: target.date,
+      );
+      final comparison = evaluateMethods(
+        points,
         simpleForecast: simple,
         seasonalForecast: seasonal,
-        simpleEvaluation: simpleEvaluation,
-        seasonalEvaluation: seasonalEvaluation,
       );
+      final simpleEvaluation = comparison.simpleEvaluation;
+      final seasonalEvaluation = comparison.seasonalEvaluation;
+      final selection = comparison.selection;
 
       if (!selection.hasSelection) {
         continue;
       }
 
-      final suggestedQuantity = roundForecastQuantity(selection.forecast);
+      final suggestedQuantity = selection.forecast;
 
-      if (suggestedQuantity <= 0) {
+      if (!suggestedQuantity.isFinite || suggestedQuantity <= 0) {
         continue;
       }
 
@@ -1193,21 +591,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           selection.method == ForecastingMethod.simpleMovingAverage
           ? simpleEvaluation
           : seasonalEvaluation;
-      final seriesVariability = variability(
-        points.map((point) => point.quantity).toList(),
-      );
-      final cautionReasons = <String>[];
-
-      if (selectedEvaluation.hasMape && selectedEvaluation.mape > 50) {
-        cautionReasons.add('high forecast error');
-      }
-      if (seriesVariability > 25) {
-        cautionReasons.add('high sales variability');
-      }
-      if (selectedEvaluation.mapePairCount < 4) {
-        cautionReasons.add('limited evaluation history');
-      }
-
       suggestions.add(
         RestockingSuggestion(
           productName: product.productName,
@@ -1215,7 +598,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           quantityUnit: product.quantityUnit,
           suggestedQuantity: suggestedQuantity,
           selectedMethod: selection.method!,
-          cautionReason: cautionReasons.join(', '),
+          targetDate: target.date,
+          evaluationNote: analyticsEvaluationHistory(selectedEvaluation),
         ),
       );
     }
@@ -1250,11 +634,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return '₱${value.toStringAsFixed(0)}';
   }
 
-  int get simpleRequiredPeriods =>
-      selectedPeriod == AnalyticsPeriod.weekly ? 4 : 3;
+  int get simpleRequiredPeriods => smaWindow;
 
-  int get seasonalRequiredPeriods =>
-      selectedPeriod == AnalyticsPeriod.weekly ? 12 : 24;
+  int get seasonalRequiredPeriods => seasonalMinimumPrecedingPeriods;
 
   String get periodNoun =>
       selectedPeriod == AnalyticsPeriod.weekly ? 'week' : 'month';
@@ -1337,9 +719,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         padding: const EdgeInsets.only(left: 12),
         child: _HeaderButton(
           icon: Icons.arrow_back_rounded,
-          onTap: () {
-            Navigator.pop(context);
-          },
+          onTap: widget.onBack ?? () => Navigator.pop(context),
         ),
       ),
       leadingWidth: 56,
@@ -1478,7 +858,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                           _HeaderMetric(
                             icon: Icons.receipt_long_outlined,
                             value: '${data.completedOrders}',
-                            label: 'Completed',
+                            label: 'Records',
                           ),
                           Container(
                             width: 1,
@@ -1497,7 +877,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                           ),
                           _HeaderMetric(
                             icon: Icons.payments_outlined,
-                            value: formatCurrency(data.totalAmount),
+                            value: data.hasCompleteAmounts
+                                ? formatCurrency(data.totalAmount)
+                                : '—',
                             label: amountLabel,
                           ),
                         ],
@@ -2381,9 +1763,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               const SizedBox(width: 7),
               snapshotMetric(
                 icon: Icons.auto_graph_rounded,
-                label: 'Next forecast',
+                label: targetDescription(data.selectedPoints),
                 value: hasForecast
-                    ? '${formatNumber(data.selectedMethod.forecast)} ${product.quantityUnit}'
+                    ? '${formatForecastEstimate(data.selectedMethod.forecast)} ${product.quantityUnit}'
                     : 'Pending',
                 accent: const Color(0xFF159C74),
               ),
@@ -2518,7 +1900,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               child: Row(
                 children: [
                   const Text(
-                    'NEXT PERIOD',
+                    'TARGET ESTIMATE',
                     style: TextStyle(
                       color: Color(0xFF7B8FA3),
                       fontSize: 7.7,
@@ -2528,7 +1910,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   ),
                   const Spacer(),
                   Text(
-                    '${formatNumber(result.value)} $unit',
+                    '${formatForecastEstimate(result.value)} $unit',
                     style: const TextStyle(
                       color: Color(0xFF0875D1),
                       fontSize: 13.4,
@@ -2551,7 +1933,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 ),
                 const Spacer(),
                 Text(
-                  remaining == 0 ? 'Calculating' : '$remaining more needed',
+                  remaining == 0 ? 'Unavailable' : '$remaining more needed',
                   style: const TextStyle(
                     color: Color(0xFF7B8FA3),
                     fontSize: 8.5,
@@ -2651,7 +2033,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         data.simpleForecast.hasValue &&
         data.seasonalForecast.hasValue &&
         data.simpleEvaluation.hasMape &&
-        data.seasonalEvaluation.hasMape;
+        data.seasonalEvaluation.hasMape &&
+        data.simpleEvaluation.commonTargets;
 
     Widget cell(
       String text, {
@@ -2807,6 +2190,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               ],
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            child: Text(
+              bothMethodsEligible
+                  ? 'Common targets: MAPE ${data.simpleEvaluation.mapePairCount}; MAE ${data.simpleEvaluation.maePairCount}.'
+                  : 'Separate method histories; no direct comparison.',
+              style: const TextStyle(fontSize: 8, color: Color(0xFF627B8E)),
+            ),
+          ),
           row(
             method: 'Simple\nMoving Average',
             forecastingMethod: ForecastingMethod.simpleMovingAverage,
@@ -2906,6 +2298,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     Text(
                       selection.hasSelection
                           ? forecastingMethodLabel(selection.method!)
+                          : !data.simpleForecast.hasValue &&
+                                !data.seasonalForecast.hasValue
+                          ? 'Forecast unavailable'
                           : 'Method selection pending',
                       style: const TextStyle(
                         color: Color(0xFF102C44),
@@ -2928,7 +2323,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               ),
               if (selection.hasSelection)
                 Text(
-                  '${formatNumber(selection.forecast, decimals: 2)}\n$displayUnit',
+                  '${formatForecastEstimate(selection.forecast)}\n$displayUnit',
                   textAlign: TextAlign.right,
                   style: const TextStyle(
                     color: Color(0xFF087AC0),
@@ -2942,10 +2337,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         ),
         forecastEvaluationMatrix(data: data, unit: displayUnit),
         if (selectedEvaluation != null && selectedEvaluation.hasMape)
-          forecastReliabilityNote(
-            evaluation: selectedEvaluation,
-            variabilityValue: data.variability,
-          ),
+          forecastReliabilityNote(evaluation: selectedEvaluation),
         Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -2979,48 +2371,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  Widget forecastReliabilityNote({
-    required ForecastEvaluation evaluation,
-    required double variabilityValue,
-  }) {
-    String label;
-    String message;
-    Color color;
-
-    if (evaluation.mape <= 10) {
-      label = 'High forecast accuracy';
-      message =
-          'The selected method has a MAPE of ${evaluation.mape.toStringAsFixed(2)}%.';
-      color = const Color(0xFF147D64);
-    } else if (evaluation.mape <= 20) {
-      label = 'Good forecast accuracy';
-      message =
-          'The selected method has a MAPE of ${evaluation.mape.toStringAsFixed(2)}%.';
-      color = const Color(0xFF147D64);
-    } else if (evaluation.mape <= 50) {
-      label = 'Moderate forecast accuracy';
-      message =
-          'MAPE is ${evaluation.mape.toStringAsFixed(2)}%. Use the estimate with care.';
-      color = const Color(0xFFFF7A1A);
-    } else {
-      label = 'Low forecast accuracy';
-      message =
-          'MAPE is ${evaluation.mape.toStringAsFixed(2)}%. Use this estimate with caution.';
-      color = const Color(0xFFD32F2F);
-    }
-
-    final cautions = <String>[];
-    if (variabilityValue > 25) {
-      cautions.add('sales fluctuate considerably');
-    }
-    if (evaluation.mapePairCount < 4) {
-      cautions.add(
-        'only ${evaluation.mapePairCount} evaluation pair${evaluation.mapePairCount == 1 ? ' is' : 's are'} available',
-      );
-    }
-    if (cautions.isNotEmpty) {
-      message = '$message ${cautions.join(' and ')}.';
-    }
+  Widget forecastReliabilityNote({required ForecastEvaluation evaluation}) {
+    const label = 'Historical evaluation';
+    final message = analyticsEvaluationHistory(evaluation);
+    const color = Color(0xFF087AC0);
 
     return Container(
       width: double.infinity,
@@ -3034,15 +2388,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            evaluation.mape > 50 ||
-                    variabilityValue > 25 ||
-                    evaluation.mapePairCount < 4
-                ? Icons.warning_amber_rounded
-                : Icons.verified_outlined,
-            color: color,
-            size: 16,
-          ),
+          Icon(Icons.info_outline_rounded, color: color, size: 16),
           const SizedBox(width: 7),
           Expanded(
             child: Column(
@@ -3074,28 +2420,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  Widget variabilityPanel(double value) {
-    String label;
-    String message;
-    Color color;
-
-    if (value <= 0) {
-      label = 'Not enough data';
-      message = 'At least two completed periods are required.';
-      color = const Color(0xFF8BA0B1);
-    } else if (value <= 10) {
-      label = 'Low variability';
-      message = 'Coefficient of variation is 10% or less.';
-      color = const Color(0xFF147D64);
-    } else if (value <= 25) {
-      label = 'Moderate variability';
-      message = 'Coefficient of variation is above 10% through 25%.';
-      color = const Color(0xFFFF7A1A);
-    } else {
-      label = 'High variability';
-      message = 'Completed quantities fluctuate considerably.';
-      color = const Color(0xFFD32F2F);
-    }
+  Widget variabilityPanel(double? value) {
+    final label = value == null ? 'CV unavailable' : 'Coefficient of variation';
+    final message = analyticsVariabilityDescription(value);
+    const color = Color(0xFF087AC0);
 
     return Container(
       width: double.infinity,
@@ -3116,7 +2444,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               borderRadius: BorderRadius.circular(13),
             ),
             child: Text(
-              value <= 0 ? '--' : '${value.toStringAsFixed(1)}%',
+              value == null ? '--' : '${value.toStringAsFixed(1)}%',
               style: TextStyle(
                 color: color,
                 fontSize: 12,
@@ -3160,8 +2488,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       return const _CompactEmptyState(
         icon: Icons.notifications_none_rounded,
         title: 'No restocking suggestion yet',
-        subtitle:
-            'A suggestion appears after an eligible forecast method has an accuracy evaluation for the selected product-and-unit series.',
+        subtitle: 'Current planning requires recent consecutive closed periods and an accuracy-eligible method. Missing periods are not zero. Review History for past forecasts.',
       );
     }
 
@@ -3208,8 +2535,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     const SizedBox(height: 3),
                     Text(
                       isSupplier
-                          ? 'Estimated next-period demand: ${formatNumber(suggestion.suggestedQuantity, decimals: 2)} ${supplierUnitLabel(suggestion.quantityUnit)}.'
-                          : 'Estimated next-period requirement: ${formatNumber(suggestion.suggestedQuantity, decimals: 2)} ${suggestion.quantityUnit}.',
+                          ? 'Estimated sales for ${supplierPeriodRange(suggestion.targetDate)}: ${formatForecastEstimate(suggestion.suggestedQuantity)} ${supplierUnitLabel(suggestion.quantityUnit)}.'
+                          : 'Estimated purchases for ${supplierPeriodRange(suggestion.targetDate)}: ${formatForecastEstimate(suggestion.suggestedQuantity)} ${suggestion.quantityUnit}.',
                       style: const TextStyle(
                         color: Color(0xFF657C8E),
                         fontSize: 10.1,
@@ -3226,12 +2553,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    if (suggestion.cautionReason.isNotEmpty) ...[
+                    if (suggestion.evaluationNote.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(
-                        'Use as guidance only due to ${suggestion.cautionReason}.',
+                        suggestion.evaluationNote,
                         style: const TextStyle(
-                          color: Color(0xFFD36A12),
+                          color: Color(0xFF627B8E),
                           fontSize: 8.5,
                           height: 1.25,
                           fontWeight: FontWeight.w800,
@@ -3335,6 +2662,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   Widget topProducts(List<ProductSummary> products) {
+    final ranked =
+        analyticsRankingBasis(products) != AnalyticsRankingBasis.unavailable;
     return Column(
       children: products.take(5).toList().asMap().entries.map((entry) {
         final product = entry.value;
@@ -3348,24 +2677,25 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           ),
           child: Row(
             children: [
-              Container(
-                width: 30,
-                height: 18,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF146BFF).withAlpha(18),
-                  shape: BoxShape.circle,
-                ),
-                child: Text(
-                  '${entry.key + 1}',
-                  style: const TextStyle(
-                    color: Color(0xFF146BFF),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
+              if (ranked)
+                Container(
+                  width: 30,
+                  height: 18,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF146BFF).withAlpha(18),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    '${entry.key + 1}',
+                    style: const TextStyle(
+                      color: Color(0xFF146BFF),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 9),
+              if (ranked) const SizedBox(width: 9),
               Text(product.emoji, style: const TextStyle(fontSize: 21)),
               const SizedBox(width: 9),
               Expanded(
@@ -3395,7 +2725,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 ),
               ),
               Text(
-                formatCurrency(product.amount),
+                product.hasCompleteAmounts
+                    ? formatCurrency(product.amount)
+                    : 'Amount unavailable',
                 style: const TextStyle(
                   color: Color(0xFF0875D1),
                   fontSize: 11.2,
@@ -3450,8 +2782,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 const SizedBox(height: 3),
                 Text(
                   isSupplier
-                      ? '${data.historicalTransactions} validated historical sale${data.historicalTransactions == 1 ? '' : 's'} + ${data.liveCompletedOrders} completed live COD sale${data.liveCompletedOrders == 1 ? '' : 's'}. Inventory is used only for stock alerts.'
-                      : '${data.historicalTransactions} validated historical purchase${data.historicalTransactions == 1 ? '' : 's'} + ${data.liveCompletedOrders} completed live COD purchase${data.liveCompletedOrders == 1 ? '' : 's'}. Supplier-side sales are excluded.',
+                      ? 'Closed periods only: ${data.historicalTransactions} validated historical sale${data.historicalTransactions == 1 ? '' : 's'} + ${data.liveCompletedOrders} completed live COD sale${data.liveCompletedOrders == 1 ? '' : 's'}. Inventory is used only for stock alerts.'
+                      : 'Closed periods only: ${data.historicalTransactions} validated historical purchase${data.historicalTransactions == 1 ? '' : 's'} + ${data.liveCompletedOrders} completed live COD purchase${data.liveCompletedOrders == 1 ? '' : 's'}. Supplier-side sales are excluded.',
                   style: const TextStyle(
                     color: Color(0xFF587286),
                     fontSize: 9.3,
@@ -3567,9 +2899,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       width: double.infinity,
                       height: 50,
                       child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
+                        onPressed:
+                            widget.onBack ?? () => Navigator.pop(context),
                         icon: Icon(
                           isSupplier
                               ? Icons.receipt_long_outlined
@@ -3598,8 +2929,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 const SizedBox(height: 14),
                 sectionCard(
                   title: 'Stock Alerts',
-                  subtitle:
-                      'Current low-stock and out-of-stock listings still require attention.',
+                  subtitle: 'Current low-stock and out-of-stock listings still require attention.',
                   icon: Icons.inventory_2_outlined,
                   iconColor: const Color(0xFFFF7A1A),
                   child: stockAlerts(data.stockAlerts),
@@ -3651,6 +2981,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     }
 
     final end = start.add(const Duration(days: 6));
+    if (includeYear && start.year != end.year) {
+      return '${supplierMonthName(start.month)} ${start.day}, ${start.year}–${supplierMonthName(end.month)} ${end.day}, ${end.year}';
+    }
     final yearSuffix = includeYear ? ', ${end.year}' : '';
 
     if (start.month == end.month) {
@@ -3748,31 +3081,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return points;
   }
 
-  _SupplierForecastSnapshot supplierForecastSnapshot(AnalyticsData data) {
-    final points = supplierPointsThroughSelection(data);
-
-    if (points.isEmpty) {
-      return _SupplierForecastSnapshot(
-        selectedMethod: ForecastMethodSelection.unavailable(
-          reason: 'No completed periods are available.',
-        ),
-      );
-    }
-
-    final simple = simpleMovingAverageForecast(points);
-    final seasonal = seasonalMovingAverageForecast(points);
-    final simpleEvaluation = evaluateSimpleMovingAverage(points);
-    final seasonalEvaluation = evaluateSeasonalMovingAverage(points);
-
-    return _SupplierForecastSnapshot(
-      selectedMethod: selectForecastMethod(
-        simpleForecast: simple,
-        seasonalForecast: seasonal,
-        simpleEvaluation: simpleEvaluation,
-        seasonalEvaluation: seasonalEvaluation,
-      ),
-    );
-  }
+  _SupplierForecastSnapshot supplierForecastSnapshot(AnalyticsData data) =>
+      _SupplierForecastSnapshot(selectedMethod: data.selectedMethod);
 
   String supplierFullCurrency(double value) {
     final rounded = value.round().abs().toString();
@@ -3788,8 +3098,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return '${value < 0 ? '-' : ''}₱${buffer.toString()}';
   }
 
-  Widget supplierAnalyticsHeader() {
-    final topPadding = MediaQuery.of(context).padding.top;
+  Widget supplierAnalyticsHeader({bool topInsetHandled = false}) {
+    final topPadding = topInsetHandled
+        ? 0.0
+        : MediaQuery.of(context).padding.top;
     final delegate = _SupplierAnalyticsHeaderDelegate(
       topPadding: topPadding,
       onBack: () => Navigator.of(context).maybePop(),
@@ -3814,7 +3126,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  Widget supplierSummaryFilters(AnalyticsData data) {
+  Widget supplierSummaryFilters(AnalyticsData data, {bool includeFish = true}) {
     final selected = data.selectedProduct;
 
     return Row(
@@ -3867,68 +3179,69 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             ),
           ),
         ),
-        const SizedBox(width: 9),
-        Expanded(
-          flex: 6,
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: data.products.isEmpty
-                  ? null
-                  : () => showSeriesPicker(data),
-              borderRadius: BorderRadius.circular(14),
-              child: Ink(
-                height: 44,
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FBFD),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFE0EAF1)),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 30,
-                      height: 30,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEAF7FF),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        selected?.emoji ?? '🐟',
-                        style: const TextStyle(fontSize: 17),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
+        if (includeFish) const SizedBox(width: 9),
+        if (includeFish)
+          Expanded(
+            flex: 6,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: data.products.isEmpty
+                    ? null
+                    : () => showSeriesPicker(data),
+                borderRadius: BorderRadius.circular(14),
+                child: Ink(
+                  height: 44,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FBFD),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFE0EAF1)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 30,
+                        height: 30,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEAF7FF),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                         child: Text(
-                          selected == null
-                              ? 'Select fish'
-                              : '${selected.productName} · ${supplierUnitLabel(selected.quantityUnit)}',
-                          maxLines: 1,
-                          style: const TextStyle(
-                            color: Color(0xFF0B2470),
-                            fontSize: 11.0,
-                            fontWeight: FontWeight.w900,
+                          selected?.emoji ?? '🐟',
+                          style: const TextStyle(fontSize: 17),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            selected == null
+                                ? 'Select fish'
+                                : '${selected.productName} · ${supplierUnitLabel(selected.quantityUnit)}',
+                            maxLines: 1,
+                            style: const TextStyle(
+                              color: Color(0xFF0B2470),
+                              fontSize: 11.0,
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      color: Color(0xFF0B2470),
-                      size: 20,
-                    ),
-                  ],
+                      const Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: Color(0xFF0B2470),
+                        size: 20,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
       ],
     );
   }
@@ -4097,7 +3410,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       onTap: () {
                         setState(() {
                           selectedSupplierPeriodStart = point.date;
-                          selectedSupplierTab = SupplierAnalyticsTab.summary;
                           selectedSupplierChartBarIndex = null;
                         });
                         Navigator.pop(sheetContext);
@@ -4129,7 +3441,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         ),
                       ),
                       subtitle: Text(
-                        '${formatNumber(point.quantity)} ${supplierUnitLabel(product.quantityUnit)} · ${supplierFullCurrency(point.amount)}',
+                        '${formatNumber(point.quantity)} ${supplierUnitLabel(product.quantityUnit)} · ${point.hasCompleteAmounts ? supplierFullCurrency(point.amount) : 'Amount unavailable'}',
                         style: const TextStyle(
                           color: Color(0xFF73879C),
                           fontSize: 10.5,
@@ -4197,7 +3509,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               child: _SupplierSummaryMetric(
                 icon: Icons.payments_outlined,
                 label: isSupplier ? 'Sales' : 'Amount Spent',
-                value: point == null ? '—' : supplierFullCurrency(point.amount),
+                value: point == null || !point.hasCompleteAmounts
+                    ? '—'
+                    : supplierFullCurrency(point.amount),
                 valueFontSize: 20.5,
               ),
             ),
@@ -4338,13 +3652,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   Widget supplierForecastCard(AnalyticsData data) {
     final product = data.selectedProduct;
-    final selectedDate = supplierSelectedPeriodDate(data);
+    final target = targetForPoints(data.selectedPoints);
     final snapshot = supplierForecastSnapshot(data);
     final selection = snapshot.selectedMethod;
     final unit = supplierUnitLabel(product?.quantityUnit ?? 'unit');
-    final targetDate = selectedDate == null
-        ? null
-        : shiftAnalyticsPeriod(selectedDate, 1);
+    final targetDate = target.date;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 13),
@@ -4384,9 +3696,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      selectedPeriod == AnalyticsPeriod.weekly
-                          ? 'Next week forecast'
-                          : 'Next month forecast',
+                      target.historical
+                          ? 'Historical forecast'
+                          : 'Current $periodNoun forecast',
                       style: const TextStyle(
                         color: Color(0xFF0B2470),
                         fontSize: 15.2,
@@ -4400,9 +3712,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         spacing: 7,
                         children: [
                           Text(
-                            formatNumber(
-                              roundForecastQuantity(selection.forecast),
-                            ),
+                            formatForecastEstimate(selection.forecast),
                             style: const TextStyle(
                               color: Color(0xFF0B2470),
                               fontSize: 30,
@@ -4426,17 +3736,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       )
                     else
                       const Text(
-                        'Not available yet',
+                        'No selected forecast',
                         style: TextStyle(
                           color: Color(0xFF0B2470),
                           fontSize: 17.5,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
-                    if (targetDate != null) ...[
+                    ...[
                       const SizedBox(height: 3),
                       Text(
-                        supplierPeriodRange(targetDate, includeYear: false),
+                        supplierPeriodRange(targetDate),
                         style: const TextStyle(
                           color: Color(0xFF5871A1),
                           fontSize: 11.9,
@@ -4454,18 +3764,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           const SizedBox(height: 10),
           Text(
             selection.hasSelection && product != null
-                ? isSupplier
-                      ? 'Prepare about ${formatNumber(roundForecastQuantity(selection.forecast))} $unit${roundForecastQuantity(selection.forecast) == 1
-                            ? ''
-                            : unit == 'icebox'
-                            ? 'es'
-                            : 's'} of ${product.productName}.'
-                      : 'Plan for about ${formatNumber(roundForecastQuantity(selection.forecast))} $unit${roundForecastQuantity(selection.forecast) == 1
-                            ? ''
-                            : unit == 'icebox'
-                            ? 'es'
-                            : 's'} of ${product.productName} next period.'
-                : selection.reason,
+                ? target.historical
+                      ? 'Estimate after the selected historical period; not current planning advice.'
+                      : 'Estimated ${isSupplier ? 'sales' : 'purchases'} for ${supplierPeriodRange(targetDate)}. Use as planning guidance only.'
+                : !data.simpleForecast.hasValue &&
+                      !data.seasonalForecast.hasValue
+                ? target.historical
+                      ? 'Insufficient preceding completed-period history for this historical target.'
+                      : 'Insufficient recent completed-period history for current planning. Review History for past forecasts.'
+                : 'A method forecast is available in Accuracy; accuracy-based selection is pending. ${selection.reason}',
             style: const TextStyle(
               color: Color(0xFF5871A1),
               fontSize: 11.8,
@@ -4510,9 +3817,58 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
+  Widget supplierDateContext(
+    AnalyticsData data, {
+    bool currentPlanningOnly = false,
+    DateTime? now,
+  }) {
+    final target = currentPlanningOnly
+        ? analyticsForecastTarget(
+            now: now ?? DateTime.now(),
+            monthly: selectedPeriod == AnalyticsPeriod.monthly,
+          )
+        : targetForPoints(data.selectedPoints, now: now);
+    final recordedDate = supplierSelectedPeriodDate(data);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          target.historical ? 'Historical view' : 'Current planning',
+          style: const TextStyle(
+            color: Color(0xFF0877D8),
+            fontSize: 11.5,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 4),
+        if (currentPlanningOnly)
+          const Text(
+            'All fish · each quantity unit kept separate',
+            style: TextStyle(color: Color(0xFF5871A1), fontSize: 11.5),
+          )
+        else
+          Text(
+            recordedDate == null
+                ? 'No recorded closed period for this fish'
+                : '${target.historical ? 'Selected history' : 'Latest recorded period'}: ${supplierPeriodRange(recordedDate)}',
+            style: const TextStyle(color: Color(0xFF5871A1), fontSize: 11.5),
+          ),
+        const SizedBox(height: 4),
+        Text(
+          '${target.historical ? 'Historical forecast target' : 'Planning target'}: ${supplierPeriodRange(target.date)}',
+          style: const TextStyle(
+            color: Color(0xFF17346F),
+            fontSize: 11.5,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget supplierControlPanel(
     AnalyticsData data, {
-    bool includePeriodNavigation = false,
+    bool currentPlanningOnly = false,
   }) {
     return Container(
       padding: const EdgeInsets.all(10),
@@ -4530,12 +3886,33 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       ),
       child: Column(
         children: [
-          supplierSummaryFilters(data),
-          if (includePeriodNavigation) ...[
+          supplierSummaryFilters(data, includeFish: !currentPlanningOnly),
+          const SizedBox(height: 9),
+          const Divider(height: 1, color: Color(0xFFEDF2F6)),
+          const SizedBox(height: 9),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: supplierDateContext(
+              data,
+              currentPlanningOnly: currentPlanningOnly,
+            ),
+          ),
+          if (!currentPlanningOnly) ...[
             const SizedBox(height: 9),
             const Divider(height: 1, color: Color(0xFFEDF2F6)),
             const SizedBox(height: 9),
             supplierPeriodNavigation(data),
+            if (targetForPoints(data.selectedPoints).historical)
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => setState(() {
+                    selectedSupplierPeriodStart = null;
+                    selectedSupplierChartBarIndex = null;
+                  }),
+                  child: const Text('Current planning'),
+                ),
+              ),
           ],
         ],
       ),
@@ -4547,7 +3924,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 18),
       sliver: SliverList(
         delegate: SliverChildListDelegate([
-          supplierControlPanel(data, includePeriodNavigation: true),
+          supplierControlPanel(data),
           const SizedBox(height: 10),
           supplierSummaryMetrics(data),
           const SizedBox(height: 10),
@@ -4570,7 +3947,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         data.simpleForecast.hasValue &&
         data.seasonalForecast.hasValue &&
         data.simpleEvaluation.hasMape &&
-        data.seasonalEvaluation.hasMape;
+        data.seasonalEvaluation.hasMape &&
+        data.simpleEvaluation.commonTargets;
 
     return SliverPadding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 18),
@@ -4580,8 +3958,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           const SizedBox(height: 10),
           sectionCard(
             title: 'Forecast Methods',
-            subtitle:
-                'Compare the available forecasting methods for this series.',
+            subtitle: targetDescription(data.selectedPoints),
             icon: Icons.trending_up_rounded,
             compact: true,
             child: Column(
@@ -4594,7 +3971,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   result: data.simpleForecast,
                   unit: unit,
                   icon: Icons.show_chart_rounded,
-                  availablePeriods: data.selectedPoints.length,
+                  availablePeriods: availableForecastPeriods(
+                    data.selectedPoints,
+                    simpleRequiredPeriods,
+                  ),
                   requiredPeriods: simpleRequiredPeriods,
                   selected:
                       data.selectedMethod.method ==
@@ -4606,12 +3986,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 forecastMethodCard(
                   title: 'Seasonal Moving Average',
                   description: selectedPeriod == AnalyticsPeriod.weekly
-                      ? 'Uses comparable weekly observations across the 4-week seasonal cycle.'
-                      : 'Uses comparable monthly observations across annual seasonal cycles.',
+                      ? 'Uses configured offsets of 4, 8 and 12 weeks; requires all 12 preceding closed weeks.'
+                      : 'Uses configured offsets of 12 and 24 months; requires all 24 preceding closed months.',
                   result: data.seasonalForecast,
                   unit: unit,
                   icon: Icons.calendar_month_rounded,
-                  availablePeriods: data.selectedPoints.length,
+                  availablePeriods: availableForecastPeriods(
+                    data.selectedPoints,
+                    seasonalRequiredPeriods,
+                  ),
                   requiredPeriods: seasonalRequiredPeriods,
                   selected:
                       data.selectedMethod.method ==
@@ -4650,13 +4033,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 18),
       sliver: SliverList(
         delegate: SliverChildListDelegate([
-          supplierControlPanel(data),
+          supplierControlPanel(data, currentPlanningOnly: true),
           const SizedBox(height: 10),
           sectionCard(
             title: 'Restocking Guidance',
             subtitle: isSupplier
-                ? 'Suggested stock preparation for the next period.'
-                : 'Suggested purchase planning for the next period.',
+                ? 'Current $periodNoun sales estimates; decision support only.'
+                : 'Current $periodNoun purchase estimates; decision support only.',
             icon: Icons.assignment_outlined,
             compact: true,
             child: suggestions(data.suggestions),
@@ -4681,10 +4064,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 18),
       sliver: SliverList(
         delegate: SliverChildListDelegate([
-          supplierControlPanel(data),
-          const SizedBox(height: 10),
           sectionCard(
-            title: isSupplier ? 'Top-Selling Fish' : 'Top Purchased Fish',
+            title: analyticsRankingTitle(
+              analyticsRankingBasis(data.products),
+              supplier: isSupplier,
+            ),
             subtitle: data.rankingBasis,
             icon: Icons.inventory_2_outlined,
             compact: true,
@@ -4703,12 +4087,51 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       SupplierAnalyticsTab.products => supplierProductsTab(data),
     };
 
-    return CustomScrollView(
-      controller: _supplierScrollController,
-      primary: false,
-      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      physics: const ClampingScrollPhysics(),
-      slivers: [supplierAnalyticsHeader(), bodySliver],
+    return analyticsScrollArea(
+      CustomScrollView(
+        controller: _supplierScrollController,
+        primary: false,
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        physics: const ClampingScrollPhysics(),
+        slivers: [
+          supplierAnalyticsHeader(topInsetHandled: !isSupplier),
+          if (!isSupplier) vendorSectionNavigation(),
+          bodySliver,
+        ],
+      ),
+    );
+  }
+
+  Widget analyticsScrollArea(Widget child) {
+    if (isSupplier) {
+      return child;
+    }
+    // Reserve the system inset once, outside the scrollable Vendor content.
+    // SafeArea clears its child's top inset, so the hero and pinned tabs do
+    // not insert it again between the header and filters.
+    return ColoredBox(
+      color: const Color(0xFF0B3454),
+      child: SafeArea(
+        bottom: false,
+        child: ColoredBox(color: const Color(0xFFF4F8FB), child: child),
+      ),
+    );
+  }
+
+  Widget vendorSectionNavigation() {
+    return SliverPersistentHeader(
+      pinned: true,
+      delegate: _AnalyticsSectionHeader(
+        child: AnalyticsSectionTabs(
+          selectedTab: selectedSupplierTab,
+          onSelected: (tab) {
+            if (selectedSupplierTab != tab) {
+              setState(() => selectedSupplierTab = tab);
+            }
+            _scrollSupplierToTop();
+          },
+        ),
+      ),
     );
   }
 
@@ -4785,60 +4208,65 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   Widget supplierNoDataOverview(AnalyticsData data) {
-    return CustomScrollView(
-      physics: const ClampingScrollPhysics(),
-      slivers: [
-        supplierAnalyticsHeader(),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-          sliver: SliverList(
-            delegate: SliverChildListDelegate([
-              Container(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(color: const Color(0xFFD9E7F1)),
-                ),
-                child: Column(
-                  children: [
-                    const Icon(
-                      Icons.bar_chart_rounded,
-                      color: Color(0xFF0877D8),
-                      size: 42,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      isSupplier
-                          ? 'No completed sales history yet'
-                          : 'No completed purchase history yet',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Color(0xFF0B2470),
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
+    return analyticsScrollArea(
+      CustomScrollView(
+        controller: _supplierScrollController,
+        primary: false,
+        physics: const ClampingScrollPhysics(),
+        slivers: [
+          supplierAnalyticsHeader(topInsetHandled: !isSupplier),
+          if (!isSupplier) vendorSectionNavigation(),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                Container(
+                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(color: const Color(0xFFD9E7F1)),
+                  ),
+                  child: Column(
+                    children: [
+                      const Icon(
+                        Icons.bar_chart_rounded,
+                        color: Color(0xFF0877D8),
+                        size: 42,
                       ),
-                    ),
-                    const SizedBox(height: 7),
-                    Text(
-                      isSupplier
-                          ? 'Validated historical sales and completed COD orders will appear here once enough data is available.'
-                          : 'Validated historical purchases and completed COD orders will appear here once enough data is available.',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Color(0xFF6D8197),
-                        fontSize: 11.5,
-                        height: 1.4,
-                        fontWeight: FontWeight.w600,
+                      const SizedBox(height: 12),
+                      Text(
+                        isSupplier
+                            ? 'No completed sales history yet'
+                            : 'No completed purchase history yet',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Color(0xFF0B2470),
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 7),
+                      Text(
+                        isSupplier
+                            ? 'Validated historical sales and completed COD orders will appear here once enough data is available.'
+                            : 'Validated historical purchases and completed COD orders will appear here once enough data is available.',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Color(0xFF6D8197),
+                          fontSize: 11.5,
+                          height: 1.4,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ]),
+              ]),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -4873,8 +4301,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               child: _CompactEmptyState(
                 icon: Icons.error_outline_rounded,
                 title: 'Unable to load analytics',
-                subtitle:
-                    'Analytics could not be loaded right now. Refresh and try again.',
+                subtitle: 'Analytics could not be loaded right now. Refresh and try again.',
               ),
             ),
           ),
@@ -4884,11 +4311,27 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   Widget analyticsContent(AnalyticsData data) {
-    if (!data.hasTransactions) {
-      return supplierNoDataOverview(data);
-    }
-
-    return supplierAnalyticsContent(data);
+    final content =
+        data.hasTransactions ||
+            selectedSupplierTab == SupplierAnalyticsTab.guidance
+        ? supplierAnalyticsContent(data)
+        : supplierNoDataOverview(data);
+    if (data.identityConflicts == 0) return content;
+    return Column(
+      children: [
+        SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Text(
+              '${data.identityConflicts} linked records excluded because account details conflict or are missing. Check the source records.',
+              style: const TextStyle(color: Color(0xFF9A5200), fontSize: 12),
+            ),
+          ),
+        ),
+        Expanded(child: content),
+      ],
+    );
   }
 
   Widget loadingBody() {
@@ -4920,7 +4363,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F8FB),
-      bottomNavigationBar: supplierBottomNavigation(),
+      bottomNavigationBar: isSupplier ? supplierBottomNavigation() : null,
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: ordersStream(user.uid),
         builder: (context, orderSnapshot) {
@@ -4979,6 +4422,106 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       ),
     );
   }
+}
+
+/// Local Analytics sections; Vendor's main app navigation stays at the bottom.
+class AnalyticsSectionTabs extends StatelessWidget {
+  const AnalyticsSectionTabs({
+    super.key,
+    required this.selectedTab,
+    required this.onSelected,
+  });
+
+  final SupplierAnalyticsTab selectedTab;
+  final ValueChanged<SupplierAnalyticsTab> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    const items = [
+      (SupplierAnalyticsTab.summary, 'Summary'),
+      (SupplierAnalyticsTab.accuracy, 'Accuracy'),
+      (SupplierAnalyticsTab.guidance, 'Guidance'),
+      (SupplierAnalyticsTab.products, 'Products'),
+    ];
+    return ColoredBox(
+      color: const Color(0xFFF4F8FB),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+        child: Material(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          child: Row(
+            children: items.map((item) {
+              final selected = selectedTab == item.$1;
+              return Expanded(
+                child: Semantics(
+                  selected: selected,
+                  button: true,
+                  child: InkWell(
+                    key: ValueKey('analytics_section_${item.$1.name}'),
+                    onTap: () => onSelected(item.$1),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      height: 48,
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? const Color(0xFF0877D8)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          item.$2,
+                          maxLines: 1,
+                          style: TextStyle(
+                            color: selected
+                                ? Colors.white
+                                : const Color(0xFF5871A1),
+                            fontSize: 11.5,
+                            fontWeight: selected
+                                ? FontWeight.w900
+                                : FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AnalyticsSectionHeader extends SliverPersistentHeaderDelegate {
+  const _AnalyticsSectionHeader({required this.child});
+
+  final Widget child;
+
+  @override
+  double get minExtent => 60;
+
+  @override
+  double get maxExtent => minExtent;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return child;
+  }
+
+  @override
+  bool shouldRebuild(covariant _AnalyticsSectionHeader oldDelegate) =>
+      oldDelegate.child != child;
 }
 
 class _SupplierForecastSnapshot {
@@ -5575,6 +5118,8 @@ class _SupplierBarChartPainter extends CustomPainter {
 
 class AnalyticsData {
   const AnalyticsData({
+    this.hasCompleteAmounts = true,
+    this.identityConflicts = 0,
     required this.completedOrders,
     required this.liveCompletedOrders,
     required this.historicalTransactions,
@@ -5593,9 +5138,11 @@ class AnalyticsData {
     required this.stockAlerts,
   });
 
+  final int identityConflicts;
   final int completedOrders;
   final int liveCompletedOrders;
   final int historicalTransactions;
+  final bool hasCompleteAmounts;
   final double totalAmount;
   final List<ProductSummary> products;
   final ProductSummary? selectedProduct;
@@ -5606,7 +5153,7 @@ class AnalyticsData {
   final ForecastEvaluation simpleEvaluation;
   final ForecastEvaluation seasonalEvaluation;
   final ForecastMethodSelection selectedMethod;
-  final double variability;
+  final double? variability;
   final List<RestockingSuggestion> suggestions;
   final List<StockAlert> stockAlerts;
 
@@ -5639,7 +5186,7 @@ class AnalyticsData {
       selectedMethod: ForecastMethodSelection.unavailable(
         reason: 'No completed periods are available.',
       ),
-      variability: 0,
+      variability: null,
       suggestions: const [],
       stockAlerts: const [],
     );
@@ -5648,6 +5195,7 @@ class AnalyticsData {
 
 class _OrderLine {
   const _OrderLine({
+    this.hasKnownAmount = true,
     required this.productId,
     required this.productName,
     required this.quantityUnit,
@@ -5662,24 +5210,12 @@ class _OrderLine {
   final String emoji;
   final double quantity;
   final double amount;
+  final bool hasKnownAmount;
 }
 
-class PeriodPoint {
-  const PeriodPoint({
-    required this.date,
-    required this.quantity,
-    required this.amount,
-    this.transactionCount = 0,
-  });
-
-  final DateTime date;
-  final double quantity;
-  final double amount;
-  final int transactionCount;
-}
-
-class ProductSummary {
+class ProductSummary implements AnalyticsRankingSeries {
   const ProductSummary({
+    this.hasCompleteAmounts = true,
     required this.seriesKey,
     required this.productName,
     required this.quantityUnit,
@@ -5689,11 +5225,18 @@ class ProductSummary {
     required this.transactionCount,
   });
 
+  @override
   final String seriesKey;
+  @override
   final String productName;
+  @override
   final String quantityUnit;
   final String emoji;
+  @override
   final double quantity;
+  @override
+  final bool hasCompleteAmounts;
+  @override
   final double amount;
   final int transactionCount;
 }
@@ -5721,7 +5264,8 @@ class RestockingSuggestion {
     required this.quantityUnit,
     required this.suggestedQuantity,
     required this.selectedMethod,
-    required this.cautionReason,
+    required this.evaluationNote,
+    required this.targetDate,
   });
 
   final String productName;
@@ -5729,115 +5273,8 @@ class RestockingSuggestion {
   final String quantityUnit;
   final double suggestedQuantity;
   final ForecastingMethod selectedMethod;
-  final String cautionReason;
-}
-
-class ForecastResult {
-  const ForecastResult._({
-    required this.value,
-    required this.hasValue,
-    required this.reason,
-  });
-
-  final double value;
-  final bool hasValue;
-  final String reason;
-
-  factory ForecastResult.available(double value) {
-    return ForecastResult._(value: value, hasValue: true, reason: '');
-  }
-
-  factory ForecastResult.unavailable({required String reason}) {
-    return ForecastResult._(value: 0, hasValue: false, reason: reason);
-  }
-}
-
-enum ForecastingMethod { simpleMovingAverage, seasonalMovingAverage }
-
-class ForecastEvaluation {
-  const ForecastEvaluation._({
-    required this.mape,
-    required this.mae,
-    required this.hasMape,
-    required this.hasMae,
-    required this.maePairCount,
-    required this.mapePairCount,
-    required this.zeroActualMapeExclusions,
-    required this.reason,
-  });
-
-  final double mape;
-  final double mae;
-  final bool hasMape;
-  final bool hasMae;
-  final int maePairCount;
-  final int mapePairCount;
-  final int zeroActualMapeExclusions;
-  final String reason;
-
-  factory ForecastEvaluation.available({
-    required double mape,
-    required double mae,
-    required bool hasMape,
-    required int maePairCount,
-    required int mapePairCount,
-    required int zeroActualMapeExclusions,
-    required String reason,
-  }) {
-    return ForecastEvaluation._(
-      mape: mape,
-      mae: mae,
-      hasMape: hasMape,
-      hasMae: true,
-      maePairCount: maePairCount,
-      mapePairCount: mapePairCount,
-      zeroActualMapeExclusions: zeroActualMapeExclusions,
-      reason: reason,
-    );
-  }
-
-  factory ForecastEvaluation.unavailable({required String reason}) {
-    return ForecastEvaluation._(
-      mape: 0,
-      mae: 0,
-      hasMape: false,
-      hasMae: false,
-      maePairCount: 0,
-      mapePairCount: 0,
-      zeroActualMapeExclusions: 0,
-      reason: reason,
-    );
-  }
-}
-
-class ForecastMethodSelection {
-  const ForecastMethodSelection._({
-    required this.method,
-    required this.forecast,
-    required this.reason,
-  });
-
-  final ForecastingMethod? method;
-  final double forecast;
-  final String reason;
-
-  bool get hasSelection => method != null;
-
-  factory ForecastMethodSelection.selected({
-    required ForecastingMethod method,
-    required double forecast,
-    required String reason,
-  }) {
-    return ForecastMethodSelection._(
-      method: method,
-      forecast: forecast,
-      reason: reason,
-    );
-  }
-
-  factory ForecastMethodSelection.unavailable({required String reason}) {
-    return ForecastMethodSelection._(method: null, forecast: 0, reason: reason);
-  }
+  final String evaluationNote;
+  final DateTime targetDate;
 }
 
 class _HeaderButton extends StatelessWidget {
