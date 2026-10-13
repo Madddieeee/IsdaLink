@@ -29,6 +29,12 @@ class VendorOrderService {
     await const NotificationCenterService().markAllRead(notifications);
   }
 
+  Future<void> markNotificationRead(
+    QueryDocumentSnapshot<Map<String, dynamic>> notification,
+  ) async {
+    await const NotificationCenterService().markRead(notification);
+  }
+
   Future<void> cancelPendingOrder({
     required User user,
     required QueryDocumentSnapshot<Map<String, dynamic>> document,

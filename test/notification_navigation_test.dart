@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:isdalink/screens/profile/me_screen.dart';
 import 'package:isdalink/screens/supplier/activation/supplier_activation_screen.dart';
+import 'package:isdalink/screens/vendor/my_orders_screen.dart';
 import 'package:isdalink/services/notification_navigation_service.dart';
 
 void main() {
@@ -24,5 +25,20 @@ void main() {
         });
 
     expect(destination, isA<SupplierActivationScreen>());
+  });
+
+  test('delivered order notification opens the matching review prompt', () {
+    final destination = NotificationNavigationService.destinationFor(
+      const <String, dynamic>{
+        'type': 'order_status',
+        'status': 'Delivered',
+        'orderId': 'order-123',
+      },
+    );
+
+    expect(destination, isA<MyOrdersScreen>());
+    final ordersScreen = destination! as MyOrdersScreen;
+    expect(ordersScreen.initialOrderId, 'order-123');
+    expect(ordersScreen.initialReviewOrderId, 'order-123');
   });
 }

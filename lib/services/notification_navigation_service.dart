@@ -61,7 +61,12 @@ class NotificationNavigationService {
       case 'new_order':
         return SupplierCodOrdersScreen(initialOrderId: grouped ? '' : orderId);
       case 'order_status':
-        return MyOrdersScreen(initialOrderId: grouped ? '' : orderId);
+        final targetOrderId = grouped ? '' : orderId;
+        final needsReview = status == 'delivered' || status == 'completed';
+        return MyOrdersScreen(
+          initialOrderId: targetOrderId,
+          initialReviewOrderId: needsReview ? targetOrderId : '',
+        );
       case 'stock_alert':
         return const SupplierManageProductsScreen();
       case 'admin_supplier_application':

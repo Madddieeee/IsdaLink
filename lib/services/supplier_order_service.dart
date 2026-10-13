@@ -23,7 +23,7 @@ class SupplierOrderService {
         return 'Order Accepted';
       case 'delivered':
       case 'completed':
-        return 'Order Delivered';
+        return 'Review Your Order';
       case 'cancelled':
         return 'Order Cancelled';
       default:
@@ -59,7 +59,7 @@ class SupplierOrderService {
         return '$reference: Your $productName COD order was accepted by $supplierName.';
       case 'delivered':
       case 'completed':
-        return '$reference: Your $productName order was delivered and its COD payment was recorded by $supplierName.';
+        return '$reference: Your $productName order was delivered by $supplierName. Tap to rate your order and share your experience.';
       case 'cancelled':
         return '$reference: Your $productName order was cancelled by $supplierName. Any reserved stock was returned.';
       default:

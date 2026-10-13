@@ -18,9 +18,15 @@ import 'package:isdalink/utils/order_helpers.dart';
 import 'package:isdalink/utils/app_error_message.dart';
 
 class MyOrdersScreen extends StatefulWidget {
-  const MyOrdersScreen({super.key, this.initialOrderId = '', this.onBack});
+  const MyOrdersScreen({
+    super.key,
+    this.initialOrderId = '',
+    this.initialReviewOrderId = '',
+    this.onBack,
+  });
 
   final String initialOrderId;
+  final String initialReviewOrderId;
   final VoidCallback? onBack;
 
   @override
@@ -35,6 +41,75 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
   final SupplierBrowseService supplierBrowseService = SupplierBrowseService();
 
   String selectedFilter = 'All';
+  bool initialReviewPromptHandled = false;
+
+  Future<void> openOrderNotification(
+    QueryDocumentSnapshot<Map<String, dynamic>> notification,
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> orders,
+  ) async {
+    try {
+      await orderService.markNotificationRead(notification);
+    } catch (_) {
+      // The review action should remain available if marking read fails.
+    }
+
+    final data = notification.data();
+    final orderId = OrderHelpers.getStringValue(data, 'orderId', '').trim();
+    if (orderId.isEmpty || !mounted) {
+      return;
+    }
+
+    final matches = orders.where((order) => order.id == orderId).toList();
+    if (matches.isEmpty) {
+      showMessage('This order is no longer available.', isError: true);
+      return;
+    }
+
+    final order = matches.first;
+    final needsReview =
+        isCompletedStatus(statusOf(order)) &&
+        order.data()['reviewSubmitted'] != true;
+
+    setState(() {
+      selectedFilter = needsReview ? 'Completed' : 'All';
+    });
+
+    if (needsReview) {
+      await reviewCompletedOrder(order);
+    }
+  }
+
+  void openInitialReviewPrompt(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
+  ) {
+    if (initialReviewPromptHandled) {
+      return;
+    }
+
+    final orderId = widget.initialReviewOrderId.trim();
+    if (orderId.isEmpty) {
+      initialReviewPromptHandled = true;
+      return;
+    }
+
+    final matches = documents.where((order) => order.id == orderId).toList();
+    if (matches.isEmpty) {
+      return;
+    }
+
+    initialReviewPromptHandled = true;
+    final order = matches.first;
+    if (!isCompletedStatus(statusOf(order)) ||
+        order.data()['reviewSubmitted'] == true) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        reviewCompletedOrder(order);
+      }
+    });
+  }
 
   Future<void> openSupplierStore(
     QueryDocumentSnapshot<Map<String, dynamic>> orderDocument,
@@ -1340,6 +1415,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     required String vendorId,
     required List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
   }) {
+    openInitialReviewPrompt(documents);
     final orders = filteredOrders(documents);
 
     return orderCenterPage(
@@ -1354,7 +1430,12 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              OrderNotificationPanel(vendorId: vendorId, service: orderService),
+              OrderNotificationPanel(
+                vendorId: vendorId,
+                service: orderService,
+                onNotificationTap: (notification) =>
+                    openOrderNotification(notification, documents),
+              ),
               listHeading(orders.length),
               const SizedBox(height: 9),
               if (orders.isEmpty)

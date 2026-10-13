@@ -8,10 +8,13 @@ class OrderNotificationPanel extends StatelessWidget {
     super.key,
     required this.vendorId,
     required this.service,
+    required this.onNotificationTap,
   });
 
   final String vendorId;
   final VendorOrderService service;
+  final ValueChanged<QueryDocumentSnapshot<Map<String, dynamic>>>
+  onNotificationTap;
 
   Future<String> currentSupplierMessage(
     Map<String, dynamic> notification,
@@ -154,52 +157,75 @@ class OrderNotificationPanel extends StatelessWidget {
                   'Pending',
                 );
 
-                return Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(top: 8),
-                  padding: const EdgeInsets.all(11),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF4F8FB),
+                final needsReview =
+                    (status.toLowerCase() == 'delivered' ||
+                        status.toLowerCase() == 'completed') &&
+                    title == 'Review Your Order';
+
+                return Material(
+                  color: const Color(0xFFF4F8FB),
+                  borderRadius: BorderRadius.circular(14),
+                  child: InkWell(
+                    onTap: needsReview
+                        ? () => onNotificationTap(notification)
+                        : null,
                     borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        OrderHelpers.statusIcon(status),
-                        color: OrderHelpers.statusColor(status),
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              title,
-                              style: const TextStyle(
-                                color: Color(0xFF102C44),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            FutureBuilder<String>(
-                              future: currentSupplierMessage(data, message),
-                              initialData: message,
-                              builder: (context, messageSnapshot) => Text(
-                                messageSnapshot.data ?? message,
-                                style: const TextStyle(
-                                  color: Color(0xFF52677A),
-                                  fontSize: 11,
-                                  height: 1.35,
+                    child: Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(top: 8),
+                      padding: const EdgeInsets.all(11),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            needsReview
+                                ? Icons.rate_review_rounded
+                                : OrderHelpers.statusIcon(status),
+                            color: needsReview
+                                ? const Color(0xFFE59A00)
+                                : OrderHelpers.statusColor(status),
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  title,
+                                  style: const TextStyle(
+                                    color: Color(0xFF102C44),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w900,
+                                  ),
                                 ),
-                              ),
+                                const SizedBox(height: 3),
+                                FutureBuilder<String>(
+                                  future: currentSupplierMessage(data, message),
+                                  initialData: message,
+                                  builder: (context, messageSnapshot) => Text(
+                                    messageSnapshot.data ?? message,
+                                    style: const TextStyle(
+                                      color: Color(0xFF52677A),
+                                      fontSize: 11,
+                                      height: 1.35,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (needsReview) ...[
+                            const SizedBox(width: 4),
+                            const Icon(
+                              Icons.chevron_right_rounded,
+                              color: Color(0xFF87A0B4),
+                              size: 18,
                             ),
                           ],
-                        ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 );
               }),
