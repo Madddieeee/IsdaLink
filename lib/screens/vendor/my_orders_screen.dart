@@ -1433,8 +1433,10 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
               OrderNotificationPanel(
                 vendorId: vendorId,
                 service: orderService,
+                orders: documents,
                 onNotificationTap: (notification) =>
                     openOrderNotification(notification, documents),
+                onReviewOrder: reviewCompletedOrder,
               ),
               listHeading(orders.length),
               const SizedBox(height: 9),

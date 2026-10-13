@@ -17,6 +17,9 @@ void main() {
       expect(service, contains('Tap to rate your order'));
       expect(panel, contains('onNotificationTap'));
       expect(panel, contains('Icons.rate_review_rounded'));
+      expect(panel, contains("'Needs Review'"));
+      expect(panel, contains("data['reviewSubmitted'] != true"));
+      expect(panel, contains('unreadReviewOrderIds'));
     },
   );
 }
