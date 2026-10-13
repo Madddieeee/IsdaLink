@@ -207,8 +207,7 @@ class SupplierDashboardScreen extends StatelessWidget {
           content: Text(
             AppErrorMessage.from(
               error,
-              fallback:
-                  'Unable to open your supplier store right now. Please try again.',
+              fallback: 'Unable to open your supplier store right now. Please try again.',
             ),
           ),
           behavior: SnackBarBehavior.floating,
@@ -497,7 +496,7 @@ class SupplierDashboardScreen extends StatelessWidget {
             fit: StackFit.expand,
             children: [
               Image.asset(
-                'assets/images/home_header_boat.png',
+                'assets/images/isdalink_main_header.png',
                 fit: BoxFit.cover,
                 alignment: Alignment.center,
                 errorBuilder: (_, _, _) => Container(
@@ -519,12 +518,7 @@ class SupplierDashboardScreen extends StatelessWidget {
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [
-                      const Color(0xFF052D4D).withValues(alpha: 0.38),
-                      const Color(0xFF073F67).withValues(alpha: 0.50),
-                      const Color(0xFF075C89).withValues(alpha: 0.72),
-                    ],
-                    stops: const [0, 0.52, 1],
+                    colors: const [Color(0x5C001E38), Color(0xC900294A)],
                   ),
                 ),
               ),
@@ -1027,9 +1021,9 @@ class SupplierDashboardScreen extends StatelessWidget {
       builder: (context, constraints) {
         const spacing = 10.0;
         final cardWidth = (constraints.maxWidth - spacing) / 2;
-        final textScale = MediaQuery.textScalerOf(
-          context,
-        ).scale(1).clamp(1.0, 2.0);
+        final textScale = MediaQuery.textScalerOf(context)
+            .scale(1)
+            .clamp(1.0, 2.0);
         final cardHeight = 108 + ((textScale - 1) * 36);
 
         return GridView.count(
@@ -1437,8 +1431,7 @@ class SupplierDashboardScreen extends StatelessWidget {
                   child: Text(
                     AppErrorMessage.from(
                       stockSnapshot.error!,
-                      fallback:
-                          'Unable to load your supplier dashboard right now. Please try again.',
+                      fallback: 'Unable to load your supplier dashboard right now. Please try again.',
                     ),
                     textAlign: TextAlign.center,
                     style: const TextStyle(

@@ -1,24 +1,19 @@
 import 'package:flutter/material.dart';
 
 class BrowseSuppliersHeader extends StatelessWidget {
-  const BrowseSuppliersHeader({
-    super.key,
-    required this.onBack,
-  });
+  const BrowseSuppliersHeader({super.key, required this.onBack});
 
   final VoidCallback onBack;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF07517D),
-      ),
+      decoration: const BoxDecoration(color: Color(0xFF07517D)),
       child: Stack(
         children: [
           Positioned.fill(
             child: Image.asset(
-              'assets/images/order_center_caraga_header.png',
+              'assets/images/isdalink_main_header.png',
               fit: BoxFit.cover,
               alignment: Alignment.center,
               filterQuality: FilterQuality.high,
@@ -31,10 +26,7 @@ class BrowseSuppliersHeader extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    const Color(0xFF063B68).withAlpha(150),
-                    const Color(0xFF0A6FBA).withAlpha(92),
-                  ],
+                  colors: const [Color(0x5C001E38), Color(0xC900294A)],
                 ),
               ),
             ),
@@ -56,7 +48,7 @@ class BrowseSuppliersHeader extends StatelessWidget {
                       ColorFiltered(
                         colorFilter: const ColorFilter.mode(
                           Colors.white,
-                          BlendMode.srcIn,
+                          BlendMode.dst,
                         ),
                         child: Image.asset(
                           'assets/images/isdalink_logo.png',
@@ -144,10 +136,7 @@ class BrowseSuppliersHeader extends StatelessWidget {
 }
 
 class _HeaderCircleButton extends StatelessWidget {
-  const _HeaderCircleButton({
-    required this.icon,
-    required this.onTap,
-  });
+  const _HeaderCircleButton({required this.icon, required this.onTap});
 
   final IconData icon;
   final VoidCallback onTap;
@@ -156,9 +145,7 @@ class _HeaderCircleButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: Colors.white.withAlpha(34),
-      shape: CircleBorder(
-        side: BorderSide(color: Colors.white.withAlpha(74)),
-      ),
+      shape: CircleBorder(side: BorderSide(color: Colors.white.withAlpha(74))),
       child: InkWell(
         onTap: onTap,
         customBorder: const CircleBorder(),

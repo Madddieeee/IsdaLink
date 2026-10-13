@@ -349,13 +349,14 @@ class _RecommendedSupplierCardState extends State<RecommendedSupplierCard> {
                   const SizedBox(height: 6),
                   SizedBox(
                     width: double.infinity,
-                    height: 32,
+                    height: 34,
                     child: FilledButton(
                       onPressed: widget.onTap,
                       style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFFE2F5FD),
-                        foregroundColor: const Color(0xFF007FB5),
-                        elevation: 0,
+                        backgroundColor: const Color(0xFF078CC1),
+                        foregroundColor: Colors.white,
+                        elevation: 1,
+                        shadowColor: const Color(0x33004D70),
                         padding: EdgeInsets.zero,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -367,7 +368,7 @@ class _RecommendedSupplierCardState extends State<RecommendedSupplierCard> {
                           Text(
                             'View Store',
                             style: TextStyle(
-                              fontSize: 10.5,
+                              fontSize: 10.8,
                               fontWeight: FontWeight.w900,
                             ),
                           ),

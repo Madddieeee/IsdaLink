@@ -9,12 +9,14 @@ class HomeNotificationButton extends StatelessWidget {
     required this.onTap,
     this.compact = false,
     this.pinned = false,
+    this.roundedSquare = false,
   });
 
   final String userId;
   final VoidCallback onTap;
   final bool compact;
   final bool pinned;
+  final bool roundedSquare;
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +26,16 @@ class HomeNotificationButton extends StatelessWidget {
 
     Widget buildButton(int unreadCount) {
       final label = unreadCount > 9 ? '9+' : '$unreadCount';
+      final buttonShape = roundedSquare
+          ? RoundedRectangleBorder(borderRadius: BorderRadius.circular(13))
+          : CircleBorder(
+              side: pinned
+                  ? const BorderSide(color: Color(0xFFCDE7F0))
+                  : BorderSide.none,
+            );
+      final inkBorderRadius = roundedSquare
+          ? BorderRadius.circular(13)
+          : BorderRadius.circular(999);
 
       return Tooltip(
         message: unreadCount == 0
@@ -36,16 +48,12 @@ class HomeNotificationButton extends StatelessWidget {
               color: pinned
                   ? const Color(0xFFEAF7FB)
                   : Colors.white.withAlpha(242),
-              shape: CircleBorder(
-                side: pinned
-                    ? const BorderSide(color: Color(0xFFCDE7F0))
-                    : BorderSide.none,
-              ),
+              shape: buttonShape,
               elevation: pinned ? 0 : 0.5,
               shadowColor: const Color(0x16001D33),
               child: InkWell(
                 onTap: onTap,
-                customBorder: const CircleBorder(),
+                borderRadius: inkBorderRadius,
                 child: SizedBox(
                   width: size,
                   height: size,
@@ -64,7 +72,10 @@ class HomeNotificationButton extends StatelessWidget {
                 top: -2,
                 right: -3,
                 child: Container(
-                  constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                  constraints: const BoxConstraints(
+                    minWidth: 18,
+                    minHeight: 18,
+                  ),
                   padding: EdgeInsets.symmetric(
                     horizontal: unreadCount > 9 ? 4.5 : 4,
                   ),

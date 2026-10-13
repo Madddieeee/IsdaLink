@@ -286,17 +286,13 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
       }, SetOptions(merge: true));
 
       if (isSupplierEnabled) {
-        batch.set(
-          firestore.collection('supplierProfiles').doc(user.uid),
-          {
-            // Store contact is a low-risk supplier profile field.
-            // Verified owner identity remains unchanged after approval.
-            'phone': phone,
-            'contactNumber': phone,
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true),
-        );
+        batch.set(firestore.collection('supplierProfiles').doc(user.uid), {
+          // Store contact is a low-risk supplier profile field.
+          // Verified owner identity remains unchanged after approval.
+          'phone': phone,
+          'contactNumber': phone,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
       }
 
       await batch.commit();
@@ -326,8 +322,7 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
       showMessage(
         AppErrorMessage.from(
           error,
-          fallback:
-              'Something went wrong while saving your profile. Please try again.',
+          fallback: 'Something went wrong while saving your profile. Please try again.',
           allowBusinessMessage: true,
         ),
         isError: true,
@@ -410,11 +405,7 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
         fontSize: 10,
         fontWeight: FontWeight.w600,
       ),
-      prefixIcon: Icon(
-        icon,
-        color: const Color(0xFF146BFF),
-        size: 21,
-      ),
+      prefixIcon: Icon(icon, color: const Color(0xFF146BFF), size: 21),
       prefixIconConstraints: const BoxConstraints(minWidth: 52),
       filled: true,
       fillColor: const Color(0xFFF2F7FB),
@@ -457,7 +448,7 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
               fit: StackFit.expand,
               children: [
                 Image.asset(
-                  'assets/images/order_center_caraga_header.png',
+                  'assets/images/isdalink_main_header.png',
                   fit: BoxFit.cover,
                   alignment: Alignment.center,
                   errorBuilder: (_, _, _) => Container(
@@ -475,7 +466,7 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [Color(0x52001E38), Color(0xC500294A)],
+                      colors: [Color(0x5C001E38), Color(0xC900294A)],
                     ),
                   ),
                 ),
@@ -517,7 +508,7 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
                     ColorFiltered(
                       colorFilter: const ColorFilter.mode(
                         Colors.white,
-                        BlendMode.srcIn,
+                        BlendMode.dst,
                       ),
                       child: Image.asset(
                         'assets/images/isdalink_logo.png',
@@ -581,9 +572,7 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: Color(0xFFF7FAFC),
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(32),
-                ),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
               ),
             ),
           ),
@@ -738,11 +727,7 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
                 width: 28,
                 child: Padding(
                   padding: const EdgeInsets.only(top: 1),
-                  child: Icon(
-                    icon,
-                    color: const Color(0xFF146BFF),
-                    size: 21,
-                  ),
+                  child: Icon(icon, color: const Color(0xFF146BFF), size: 21),
                 ),
               ),
               const SizedBox(width: 10),
@@ -890,10 +875,7 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
                       color: Colors.white,
                     ),
                   )
-                : Icon(
-                    Icons.save_rounded,
-                    size: 20,
-                  ),
+                : Icon(Icons.save_rounded, size: 20),
             label: Text(
               isSaving ? 'Saving Changes...' : 'Save Changes',
               style: const TextStyle(

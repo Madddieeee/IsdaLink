@@ -558,7 +558,7 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
         children: [
           Positioned.fill(
             child: Image.asset(
-              'assets/images/order_center_caraga_header.png',
+              'assets/images/isdalink_main_header.png',
               fit: BoxFit.cover,
               alignment: Alignment.center,
               filterQuality: FilterQuality.high,
@@ -572,10 +572,7 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    const Color(0xFF063B68).withAlpha(150),
-                    const Color(0xFF0A6FBA).withAlpha(92),
-                  ],
+                  colors: const [Color(0x5C001E38), Color(0xC900294A)],
                 ),
               ),
             ),
@@ -612,7 +609,7 @@ class _LatestFishStocksScreenState extends State<LatestFishStocksScreen> {
                       ColorFiltered(
                         colorFilter: const ColorFilter.mode(
                           Colors.white,
-                          BlendMode.srcIn,
+                          BlendMode.dst,
                         ),
                         child: Image.asset(
                           'assets/images/isdalink_logo.png',

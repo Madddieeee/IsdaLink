@@ -17,7 +17,7 @@ class ManageProductsHeader extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             Image.asset(
-              'assets/images/home_header_boat.png',
+              'assets/images/isdalink_main_header.png',
               fit: BoxFit.cover,
               alignment: Alignment.center,
               errorBuilder: (_, _, _) => Container(
@@ -39,12 +39,7 @@ class ManageProductsHeader extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    const Color(0xFF052D4D).withValues(alpha: 0.38),
-                    const Color(0xFF073F67).withValues(alpha: 0.50),
-                    const Color(0xFF075C89).withValues(alpha: 0.72),
-                  ],
-                  stops: const [0, 0.52, 1],
+                  colors: const [Color(0x5C001E38), Color(0xC900294A)],
                 ),
               ),
             ),

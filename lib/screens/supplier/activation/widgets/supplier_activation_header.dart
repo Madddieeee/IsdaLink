@@ -180,7 +180,7 @@ class SupplierActivationHeader extends StatelessWidget {
                         ColorFiltered(
                           colorFilter: const ColorFilter.mode(
                             Colors.white,
-                            BlendMode.srcIn,
+                            BlendMode.dst,
                           ),
                           child: Image.asset(
                             'assets/images/isdalink_logo.png',

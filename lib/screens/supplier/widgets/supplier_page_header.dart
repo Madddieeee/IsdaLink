@@ -34,7 +34,7 @@ class SupplierPageHeader extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   Image.asset(
-                    'assets/images/home_header_boat.png',
+                    'assets/images/isdalink_main_header.png',
                     fit: BoxFit.cover,
                     alignment: Alignment.center,
                     errorBuilder: (_, _, _) => Container(
@@ -56,22 +56,12 @@ class SupplierPageHeader extends StatelessWidget {
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
-                        colors: [
-                          const Color(0xFF052D4D).withValues(alpha: 0.38),
-                          const Color(0xFF073F67).withValues(alpha: 0.50),
-                          const Color(0xFF075C89).withValues(alpha: 0.74),
-                        ],
-                        stops: const [0, 0.52, 1],
+                        colors: const [Color(0x5C001E38), Color(0xC900294A)],
                       ),
                     ),
                   ),
                   Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      16,
-                      topPadding + 10,
-                      16,
-                      22,
-                    ),
+                    padding: EdgeInsets.fromLTRB(16, topPadding + 10, 16, 22),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -90,7 +80,9 @@ class SupplierPageHeader extends StatelessWidget {
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(14),
                                     border: Border.all(
-                                      color: Colors.white.withValues(alpha: 0.20),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.20,
+                                      ),
                                     ),
                                   ),
                                   child: const Icon(
@@ -175,9 +167,7 @@ class SupplierPageHeader extends StatelessWidget {
               child: Container(
                 decoration: const BoxDecoration(
                   color: Color(0xFFF7FAFC),
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(36),
-                  ),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(36)),
                   boxShadow: [
                     BoxShadow(
                       color: Color(0x1800152A),

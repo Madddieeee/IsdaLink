@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:isdalink/screens/home/widgets/home_notification_button.dart';
 
 class HomeHeader extends StatelessWidget {
@@ -25,107 +26,77 @@ class HomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final compact = screenWidth <= 400;
+    final topPadding = MediaQuery.paddingOf(context).top;
+    final coverHeight = topPadding + 178;
 
-    return SizedBox(
-      height: compact ? 260 : 276,
-      child: DecoratedBox(
-        decoration: const BoxDecoration(color: Color(0xFF063A61)),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Color(0xFF06355F),
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+      child: SizedBox(
+        height: coverHeight,
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Positioned.fill(
-              child: Image.asset(
-                'assets/images/home_header_boat.png',
-                fit: BoxFit.cover,
-                alignment: const Alignment(0.60, -0.10),
-              ),
-            ),
-
-            // Darken the left side only so the boat stays visible while
-            // the hero text remains readable, like the approved reference.
-            const Positioned.fill(
-              child: DecoratedBox(
+            Image.asset(
+              'assets/images/isdalink_main_header.png',
+              fit: BoxFit.cover,
+              alignment: Alignment.center,
+              errorBuilder: (_, _, _) => const DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    stops: [0.0, 0.43, 0.74, 1.0],
-                    colors: [
-                      Color(0xE8063559),
-                      Color(0xB7085680),
-                      Color(0x580A7199),
-                      Color(0x180A7199),
-                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF06355F), Color(0xFF0875D1)],
                   ),
                 ),
               ),
             ),
-
-            // Small curved light brand area, instead of a full-width pale
-            // strip. This keeps the top much closer to the reference.
-            Positioned(
-              top: 0,
-              left: 0,
-              child: IgnorePointer(
-                child: ClipPath(
-                  clipper: _TopBrandWaveClipper(),
-                  child: Container(
-                    width: screenWidth * (compact ? 0.58 : 0.56),
-                    height: compact ? 100 : 106,
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Color(0xFFF9FDFF),
-                          Color(0xFFEAF8FE),
-                          Color(0xD7D8F2FC),
-                        ],
-                      ),
-                    ),
-                  ),
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0x5C001E38), Color(0xC900294A)],
                 ),
               ),
             ),
-
-            Positioned(
-              top: compact ? 106 : 112,
-              left: compact ? 26 : 32,
-              child: const _HeaderMessageText(),
-            ),
-
-            SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  compact ? 14 : 18,
-                  8,
-                  compact ? 14 : 18,
-                  30,
-                ),
-                child: Stack(
-                  children: [
-                    Align(
-                      alignment: Alignment.topCenter,
-                      child: _TopBrandRow(
-                        compact: compact,
-                        screenWidth: screenWidth,
-                        onProfileTap: onProfileTap,
-                        onNotificationsTap: onNotificationsTap,
-                        userId: userId,
-                      ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(18, topPadding + 10, 18, 38),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _TopBrandRow(
+                    onProfileTap: onProfileTap,
+                    onNotificationsTap: onNotificationsTap,
+                    userId: userId,
+                  ),
+                  const Spacer(),
+                  const Text(
+                    'FRESH FROM CARAGA',
+                    style: TextStyle(
+                      color: Color(0xFFD7EEFA),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.8,
                     ),
-                    Align(
-                      alignment: Alignment.bottomCenter,
-                      child: _HeaderSearch(
-                        onTap: onSearchTap,
-                        compact: compact,
-                      ),
+                  ),
+                  const SizedBox(height: 5),
+                  const _HeaderMessageText(),
+                  const SizedBox(height: 5),
+                  const Text(
+                    'Discover local suppliers and today\'s catch.',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Color(0xFFF1FAFF),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -137,95 +108,49 @@ class HomeHeader extends StatelessWidget {
 
 class _TopBrandRow extends StatelessWidget {
   const _TopBrandRow({
-    required this.compact,
-    required this.screenWidth,
     required this.onProfileTap,
     required this.onNotificationsTap,
     required this.userId,
   });
 
-  final bool compact;
-  final double screenWidth;
   final VoidCallback? onProfileTap;
   final VoidCallback? onNotificationsTap;
   final String userId;
 
   @override
   Widget build(BuildContext context) {
-    final horizontalPagePadding = compact ? 14.0 : 18.0;
-    final waveWidth = screenWidth * (compact ? 0.58 : 0.56);
-
     return SizedBox(
-      height: compact ? 62 : 66,
-      child: Stack(
-        clipBehavior: Clip.none,
+      height: 40,
+      child: Row(
         children: [
-          // Center the complete IsdaLink lockup inside the white wave itself,
-          // independent of the controls on the right.
-          Positioned(
-            left: -horizontalPagePadding,
-            top: compact ? -4 : -3,
-            width: waveWidth,
-            child: Transform.translate(
-              offset: const Offset(-12, 0),
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      width: compact ? 146 : 158,
-                      height: compact ? 42 : 46,
-                      child: Image.asset(
-                        'assets/images/isdalink_logo.png',
-                        fit: BoxFit.contain,
-                        alignment: Alignment.center,
-                        filterQuality: FilterQuality.high,
-                      ),
-                    ),
-                    Transform.translate(
-                      offset: const Offset(0, -2),
-                      child: Text(
-                        'Fresh Tides, Better Tomorrow',
-                        maxLines: 1,
-                        softWrap: false,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: const Color(0xFF174A70),
-                          fontSize: compact ? 7.4 : 8.0,
-                          height: 1.0,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.05,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+          Image.asset(
+            'assets/images/isdalink_logo.png',
+            width: 112,
+            height: 38,
+            fit: BoxFit.contain,
+            alignment: Alignment.centerLeft,
+            filterQuality: FilterQuality.high,
+            errorBuilder: (_, _, _) => const Text(
+              'IsdaLink',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
               ),
             ),
           ),
-
-          // Keep location and action controls aligned independently on the
-          // right so they never push the logo away from the wave center.
-          Align(
-            alignment: Alignment.topRight,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                HomeNotificationButton(
-                  userId: userId,
-                  onTap: onNotificationsTap ?? () {},
-                  compact: compact,
-                ),
-                SizedBox(width: compact ? 6 : 8),
-                _HeaderActionButton(
-                  tooltip: 'My profile',
-                  icon: Icons.person_rounded,
-                  onTap: onProfileTap,
-                  compact: compact,
-                ),
-              ],
-            ),
+          const Spacer(),
+          HomeNotificationButton(
+            userId: userId,
+            onTap: onNotificationsTap ?? () {},
+            compact: true,
+            roundedSquare: true,
+          ),
+          const SizedBox(width: 8),
+          _HeaderActionButton(
+            tooltip: 'My profile',
+            icon: Icons.person_rounded,
+            onTap: onProfileTap,
           ),
         ],
       ),
@@ -238,38 +163,21 @@ class _HeaderMessageText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Transform.rotate(
-      angle: -0.035,
-      alignment: Alignment.centerLeft,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text(
-            'Fresh fish.\nConnected in Caraga.',
-            textAlign: TextAlign.left,
-            maxLines: 2,
-            style: TextStyle(
-              color: Color(0xFFF8FCFF),
-              fontSize: 14.6,
-              height: 1.08,
-              fontWeight: FontWeight.w800,
-              fontStyle: FontStyle.italic,
-              letterSpacing: 0.08,
-              shadows: [
-                Shadow(
-                  color: Color(0x8600182B),
-                  blurRadius: 7,
-                  offset: Offset(0, 1.5),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 4),
-          const SizedBox(
-            width: 106,
-            height: 12,
-            child: CustomPaint(painter: _MessageUnderlinePainter()),
+    return const Text(
+      'Your local fish market',
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        color: Colors.white,
+        fontSize: 27,
+        height: 1,
+        fontWeight: FontWeight.w800,
+        letterSpacing: -0.35,
+        shadows: [
+          Shadow(
+            color: Color(0x6600182B),
+            blurRadius: 10,
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -277,78 +185,33 @@ class _HeaderMessageText extends StatelessWidget {
   }
 }
 
-class _MessageUnderlinePainter extends CustomPainter {
-  const _MessageUnderlinePainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0x99F7FCFF)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.6
-      ..strokeCap = StrokeCap.round;
-
-    final path = Path()
-      ..moveTo(size.width * 0.08, size.height * 0.66)
-      ..cubicTo(
-        size.width * 0.28,
-        size.height * 0.98,
-        size.width * 0.52,
-        size.height * 0.90,
-        size.width * 0.72,
-        size.height * 0.53,
-      )
-      ..cubicTo(
-        size.width * 0.82,
-        size.height * 0.34,
-        size.width * 0.91,
-        size.height * 0.30,
-        size.width * 0.97,
-        size.height * 0.38,
-      );
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _MessageUnderlinePainter oldDelegate) => false;
-}
-
 class _HeaderActionButton extends StatelessWidget {
   const _HeaderActionButton({
     required this.tooltip,
     required this.icon,
     required this.onTap,
-    required this.compact,
   });
 
   final String tooltip;
   final IconData icon;
   final VoidCallback? onTap;
-  final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    final size = compact ? 38.0 : 42.0;
-
     return Tooltip(
       message: tooltip,
       child: Material(
         color: Colors.white.withAlpha(242),
-        shape: const CircleBorder(),
+        borderRadius: BorderRadius.circular(13),
         elevation: 0.5,
         shadowColor: const Color(0x16001D33),
         child: InkWell(
           onTap: onTap,
-          customBorder: const CircleBorder(),
+          borderRadius: BorderRadius.circular(13),
           child: SizedBox(
-            width: size,
-            height: size,
-            child: Icon(
-              icon,
-              color: const Color(0xFF0B3658),
-              size: compact ? 19 : 21,
-            ),
+            width: 40,
+            height: 40,
+            child: Icon(icon, color: const Color(0xFF0B3658), size: 20),
           ),
         ),
       ),
@@ -356,86 +219,80 @@ class _HeaderActionButton extends StatelessWidget {
   }
 }
 
-class _HeaderSearch extends StatelessWidget {
-  const _HeaderSearch({required this.onTap, required this.compact});
+class HomeHeaderSearch extends StatelessWidget {
+  const HomeHeaderSearch({super.key, required this.onTap});
 
   final VoidCallback onTap;
-  final bool compact;
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width <= 400;
     final searchHeight = compact ? 47.0 : 50.0;
 
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(999),
-      elevation: 2.5,
-      shadowColor: const Color(0x26002036),
-      child: InkWell(
-        onTap: onTap,
+    return DecoratedBox(
+      decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(999),
-        child: SizedBox(
-          width: double.infinity,
-          height: searchHeight,
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: compact ? 16 : 18),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.search_rounded,
-                  color: const Color(0xFF123452),
-                  size: compact ? 23 : 25,
-                ),
-                SizedBox(width: compact ? 9 : 11),
-                Expanded(
-                  child: Text(
-                    'Search fish, suppliers, or locations...',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: const Color(0xFF8B97A4),
-                      fontSize: compact ? 10.6 : 11.4,
-                      fontWeight: FontWeight.w600,
+        border: Border.all(color: const Color(0xFF9CD6EA), width: 1.2),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x22004B73),
+            blurRadius: 14,
+            offset: Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(999),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(999),
+          child: SizedBox(
+            width: double.infinity,
+            height: searchHeight,
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: compact ? 15 : 17),
+              child: Row(
+                children: [
+                  Container(
+                    width: compact ? 31 : 33,
+                    height: compact ? 31 : 33,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFE4F5FC),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.search_rounded,
+                      color: const Color(0xFF007EAF),
+                      size: compact ? 19 : 20,
                     ),
                   ),
-                ),
-              ],
+                  SizedBox(width: compact ? 10 : 12),
+                  Expanded(
+                    child: Text(
+                      'Search fish, suppliers, or locations',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: const Color(0xFF506A7D),
+                        fontSize: compact ? 10.9 : 11.7,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    color: Color(0xFF1598C4),
+                    size: 14,
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
   }
-}
-
-class _TopBrandWaveClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final path = Path()
-      ..moveTo(0, 0)
-      ..lineTo(size.width, 0)
-      ..lineTo(size.width, size.height * 0.64)
-      ..cubicTo(
-        size.width * 0.86,
-        size.height * 0.94,
-        size.width * 0.64,
-        size.height * 1.00,
-        size.width * 0.43,
-        size.height * 0.92,
-      )
-      ..cubicTo(
-        size.width * 0.24,
-        size.height * 0.85,
-        size.width * 0.11,
-        size.height * 1.02,
-        0,
-        size.height * 0.95,
-      )
-      ..close();
-
-    return path;
-  }
-
-  @override
-  bool shouldReclip(covariant _TopBrandWaveClipper oldClipper) => false;
 }

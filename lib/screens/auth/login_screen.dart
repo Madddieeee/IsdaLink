@@ -587,7 +587,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget buildLoginWatermark() {
     return IgnorePointer(
       child: SizedBox(
-        height: 118,
+        height: 154,
         width: double.infinity,
         child: Stack(
           alignment: Alignment.bottomCenter,
@@ -595,7 +595,7 @@ class _LoginScreenState extends State<LoginScreen> {
             Align(
               alignment: Alignment.bottomCenter,
               child: Opacity(
-                opacity: 0.055,
+                opacity: 0.065,
                 child: ColorFiltered(
                   colorFilter: const ColorFilter.mode(
                     Color(0xFF16A9D8),
@@ -603,16 +603,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   child: Image.asset(
                     'assets/images/isdalink_wave.png',
-                    width: 310,
+                    width: 390,
                     fit: BoxFit.contain,
                   ),
                 ),
               ),
             ),
             Align(
-              alignment: const Alignment(0.70, 0.72),
+              alignment: const Alignment(0.62, 0.42),
               child: Opacity(
-                opacity: 0.055,
+                opacity: 0.065,
                 child: ColorFiltered(
                   colorFilter: const ColorFilter.mode(
                     Color(0xFF0875D1),
@@ -620,8 +620,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   child: Image.asset(
                     'assets/images/isdalink_fish_mark.png',
-                    width: 96,
-                    height: 96,
+                    width: 132,
+                    height: 132,
                     fit: BoxFit.contain,
                   ),
                 ),
@@ -665,7 +665,7 @@ class _LoginScreenState extends State<LoginScreen> {
         fit: StackFit.expand,
         children: [
           const Image(
-            image: AssetImage('assets/images/auth_caraga_header.jpg'),
+            image: AssetImage('assets/images/isdalink_main_header.png'),
             fit: BoxFit.cover,
             alignment: Alignment.center,
           ),
@@ -674,19 +674,14 @@ class _LoginScreenState extends State<LoginScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  Color(0x08001427),
-                  Color(0x22002642),
-                  Color(0x9A063C5F),
-                ],
-                stops: [0.0, 0.52, 1.0],
+                colors: [Color(0x5C001E38), Color(0xC900294A)],
               ),
             ),
           ),
           SafeArea(
             bottom: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 34),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -724,7 +719,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ColorFiltered(
                         colorFilter: const ColorFilter.mode(
                           Colors.white,
-                          BlendMode.srcIn,
+                          BlendMode.dst,
                         ),
                         child: Image.asset(
                           'assets/images/isdalink_logo.png',
@@ -780,10 +775,10 @@ class _LoginScreenState extends State<LoginScreen> {
     final keyboardOpen = mediaQuery.viewInsets.bottom > 0;
 
     final headerHeight = keyboardOpen
-        ? (mediaQuery.size.height * 0.27).clamp(205.0, 238.0).toDouble()
-        : (mediaQuery.size.height * 0.36).clamp(278.0, 338.0).toDouble();
+        ? (mediaQuery.size.height * 0.25).clamp(190.0, 220.0).toDouble()
+        : (mediaQuery.size.height * 0.32).clamp(252.0, 304.0).toDouble();
 
-    const overlap = 18.0;
+    const overlap = 26.0;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
@@ -795,18 +790,11 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       child: Scaffold(
         resizeToAvoidBottomInset: true,
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFF5F8FA),
         body: GestureDetector(
           onTap: () => FocusScope.of(context).unfocus(),
           child: LayoutBuilder(
             builder: (context, viewport) {
-              final cardMinHeight =
-                  viewport.maxHeight - headerHeight + overlap > 360
-                  ? viewport.maxHeight - headerHeight + overlap
-                  : 360.0;
-
-              final contentMinHeight = cardMinHeight - 58;
-
               return SingleChildScrollView(
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
@@ -818,88 +806,90 @@ class _LoginScreenState extends State<LoginScreen> {
                       offset: const Offset(0, -overlap),
                       child: Container(
                         width: double.infinity,
-                        constraints: BoxConstraints(minHeight: cardMinHeight),
                         padding: EdgeInsets.fromLTRB(
-                          24,
-                          keyboardOpen ? 24 : 30,
-                          24,
-                          keyboardOpen ? 22 : 28,
+                          18,
+                          keyboardOpen ? 17 : 20,
+                          18,
+                          keyboardOpen ? 18 : 22,
                         ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(36),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFF5F8FA),
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(34),
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(
-                                0xFF0B4F70,
-                              ).withValues(alpha: 0.08),
-                              blurRadius: 24,
-                              offset: const Offset(0, -5),
-                            ),
-                          ],
                         ),
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            minHeight: contentMinHeight,
-                          ),
-                          child: IntrinsicHeight(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                buildAuthenticationPanel(),
-                                const SizedBox(height: 22),
-                                buildAccountDivider(),
-                                const SizedBox(height: 14),
-                                Wrap(
-                                  alignment: WrapAlignment.center,
-                                  crossAxisAlignment: WrapCrossAlignment.center,
-                                  children: [
-                                    const Text(
-                                      'New to IsdaLink? ',
-                                      style: TextStyle(
-                                        color: Color(0xFF647C8F),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    TextButton(
-                                      onPressed: isBusy
-                                          ? null
-                                          : openRegistration,
-                                      style: TextButton.styleFrom(
-                                        foregroundColor: const Color(
-                                          0xFF0875D1,
-                                        ),
-                                        backgroundColor: Colors.transparent,
-                                        overlayColor: Colors.transparent,
-                                        shadowColor: Colors.transparent,
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 2,
-                                          vertical: 3,
-                                        ),
-                                        minimumSize: Size.zero,
-                                        tapTargetSize:
-                                            MaterialTapTargetSize.shrinkWrap,
-                                      ),
-                                      child: const Text(
-                                        'Create Account',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w900,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.fromLTRB(
+                                17,
+                                17,
+                                17,
+                                18,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(
+                                  color: const Color(0xFFE0EAF0),
                                 ),
-                                if (!keyboardOpen) ...[
-                                  const Spacer(),
-                                  buildLoginWatermark(),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Color(0x1000152A),
+                                    blurRadius: 16,
+                                    offset: Offset(0, 7),
+                                  ),
                                 ],
+                              ),
+                              child: buildAuthenticationPanel(),
+                            ),
+                            const SizedBox(height: 18),
+                            buildAccountDivider(),
+                            const SizedBox(height: 12),
+                            Wrap(
+                              alignment: WrapAlignment.center,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                const Text(
+                                  'New to IsdaLink? ',
+                                  style: TextStyle(
+                                    color: Color(0xFF647C8F),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: isBusy ? null : openRegistration,
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: const Color(0xFF0875D1),
+                                    backgroundColor: Colors.transparent,
+                                    overlayColor: Colors.transparent,
+                                    shadowColor: Colors.transparent,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 2,
+                                      vertical: 3,
+                                    ),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: const Text(
+                                    'Create Account',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ),
                               ],
                             ),
-                          ),
+                            if (!keyboardOpen) ...[
+                              const SizedBox(height: 16),
+                              buildLoginWatermark(),
+                            ],
+                          ],
                         ),
                       ),
                     ),

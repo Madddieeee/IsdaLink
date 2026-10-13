@@ -839,8 +839,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
           locality: city,
           initialLatitude: deliveryLatitude,
           initialLongitude: deliveryLongitude,
-          instructionText:
-              'Tap the map at your usual COD delivery location. This saved pin will be reused for future orders until you update it.',
+          instructionText: 'Tap the map at your usual COD delivery location. This saved pin will be reused for future orders until you update it.',
           markerTitle: 'Saved vendor delivery location',
           confirmButtonLabel: 'Save Delivery Pin',
         ),
@@ -970,8 +969,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
       showMessage(
         AppErrorMessage.from(
           error,
-          fallback:
-              'Something went wrong while saving your location. Please try again.',
+          fallback: 'Something went wrong while saving your location. Please try again.',
           allowBusinessMessage: true,
         ),
         isError: true,
@@ -1043,7 +1041,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
               fit: StackFit.expand,
               children: [
                 Image.asset(
-                  'assets/images/order_center_caraga_header.png',
+                  'assets/images/isdalink_main_header.png',
                   fit: BoxFit.cover,
                   alignment: Alignment.center,
                   errorBuilder: (_, _, _) => Container(
@@ -1061,7 +1059,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [Color(0x52001E38), Color(0xC500294A)],
+                      colors: [Color(0x5C001E38), Color(0xC900294A)],
                     ),
                   ),
                 ),
@@ -1103,7 +1101,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
                     ColorFiltered(
                       colorFilter: const ColorFilter.mode(
                         Colors.white,
-                        BlendMode.srcIn,
+                        BlendMode.dst,
                       ),
                       child: Image.asset(
                         'assets/images/isdalink_logo.png',
@@ -1167,9 +1165,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: Color(0xFFF7FAFC),
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(32),
-                ),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
               ),
             ),
           ),
@@ -1664,11 +1660,7 @@ class _RegionLocationScreenState extends State<RegionLocationScreen> {
                     ScrollViewKeyboardDismissBehavior.onDrag,
                 slivers: [
                   SliverToBoxAdapter(child: header()),
-                  SliverToBoxAdapter(
-                    child: bodyShell(
-                      child: locationCard(),
-                    ),
-                  ),
+                  SliverToBoxAdapter(child: bodyShell(child: locationCard())),
                 ],
               ),
             ),

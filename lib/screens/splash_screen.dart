@@ -101,7 +101,7 @@ class _StartupSplashState extends State<StartupSplash>
       );
       unawaited(
         precacheImage(
-          const AssetImage('assets/images/auth_caraga_header.jpg'),
+          const AssetImage('assets/images/isdalink_main_header.png'),
           context,
         ),
       );

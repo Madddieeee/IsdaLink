@@ -9,7 +9,8 @@ class NotificationCenterScreen extends StatefulWidget {
   const NotificationCenterScreen({super.key});
 
   @override
-  State<NotificationCenterScreen> createState() => _NotificationCenterScreenState();
+  State<NotificationCenterScreen> createState() =>
+      _NotificationCenterScreenState();
 }
 
 class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
@@ -35,7 +36,9 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Notifications could not be updated. Please try again.'),
+            content: Text(
+              'Notifications could not be updated. Please try again.',
+            ),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -126,7 +129,9 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
                             Padding(
                               padding: EdgeInsets.symmetric(vertical: 90),
                               child: Center(
-                                child: CircularProgressIndicator(strokeWidth: 2.4),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.4,
+                                ),
                               ),
                             ),
                           ],
@@ -142,8 +147,8 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
                       );
                       final effectiveCategory =
                           !isSupplier && selectedCategory == 'stock'
-                              ? null
-                              : selectedCategory;
+                          ? null
+                          : selectedCategory;
                       final unreadCount = service.unreadCount(all);
                       final orderCount = all
                           .where(
@@ -160,19 +165,21 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
                       final accountCount = all
                           .where(
                             (document) =>
-                                service.categoryOf(document.data()) == 'account',
+                                service.categoryOf(document.data()) ==
+                                'account',
                           )
                           .length;
 
                       var visible = unreadOnly
                           ? all
-                              .where(
-                                (document) => document.data()['isRead'] != true,
-                              )
-                              .toList()
-                          : List<QueryDocumentSnapshot<Map<String, dynamic>>>.from(
-                              all,
-                            );
+                                .where(
+                                  (document) =>
+                                      document.data()['isRead'] != true,
+                                )
+                                .toList()
+                          : List<
+                              QueryDocumentSnapshot<Map<String, dynamic>>
+                            >.from(all);
 
                       if (effectiveCategory != null) {
                         visible = visible
@@ -305,7 +312,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
         fit: StackFit.expand,
         children: [
           Image.asset(
-            'assets/images/order_center_caraga_header.png',
+            'assets/images/isdalink_main_header.png',
             fit: BoxFit.cover,
             alignment: Alignment.center,
             errorBuilder: (_, _, _) => const DecoratedBox(
@@ -346,7 +353,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
                         child: ColorFiltered(
                           colorFilter: const ColorFilter.mode(
                             Colors.white,
-                            BlendMode.srcIn,
+                            BlendMode.dst,
                           ),
                           child: Image.asset(
                             'assets/images/isdalink_logo.png',
@@ -823,9 +830,7 @@ class _NotificationCard extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: unread
-                  ? const Color(0xFFCBE9F7)
-                  : const Color(0xFFDDE8EF),
+              color: unread ? const Color(0xFFCBE9F7) : const Color(0xFFDDE8EF),
             ),
           ),
           child: Row(
@@ -954,9 +959,7 @@ class _NotificationCard extends StatelessWidget {
       );
     }
 
-    if (status == 'rejected' ||
-        status == 'declined' ||
-        status == 'cancelled') {
+    if (status == 'rejected' || status == 'declined' || status == 'cancelled') {
       return const _NotificationAppearance(
         icon: Icons.error_outline_rounded,
         foreground: Color(0xFFD94A3A),
@@ -1001,11 +1004,7 @@ class _NotificationCard extends StatelessWidget {
     }
   }
 
-  static String _value(
-    Map<String, dynamic> data,
-    String key,
-    String fallback,
-  ) {
+  static String _value(Map<String, dynamic> data, String key, String fallback) {
     final value = data[key]?.toString().trim() ?? '';
     return value.isEmpty ? fallback : value;
   }
@@ -1062,10 +1061,7 @@ class _NotificationCard extends StatelessWidget {
 }
 
 class _NotificationAppearance {
-  const _NotificationAppearance({
-    required this.icon,
-    required this.foreground,
-  });
+  const _NotificationAppearance({required this.icon, required this.foreground});
 
   final IconData icon;
   final Color foreground;

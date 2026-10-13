@@ -830,8 +830,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                           reviewText = value;
                         },
                         decoration: InputDecoration(
-                          hintText:
-                              'Optional: tell other vendors about your experience...',
+                          hintText: 'Optional: tell other vendors about your experience...',
                           hintStyle: const TextStyle(
                             color: Color(0xFF9AAEBC),
                             fontSize: 11,
@@ -1114,7 +1113,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
           fit: StackFit.expand,
           children: [
             Image.asset(
-              'assets/images/order_center_caraga_header.png',
+              'assets/images/isdalink_main_header.png',
               fit: BoxFit.cover,
               alignment: Alignment.center,
               errorBuilder: (_, _, _) => const DecoratedBox(
@@ -1156,7 +1155,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                           child: ColorFiltered(
                             colorFilter: const ColorFilter.mode(
                               Colors.white,
-                              BlendMode.srcIn,
+                              BlendMode.dst,
                             ),
                             child: Image.asset(
                               'assets/images/isdalink_logo.png',

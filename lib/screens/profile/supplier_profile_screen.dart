@@ -238,11 +238,6 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
                   'storeName',
                   stringValue(data, 'businessName', 'Fish Supplier'),
                 );
-                final ownerName = stringValue(
-                  data,
-                  'ownerName',
-                  user.displayName ?? 'Supplier owner',
-                );
                 final contactNumber = stringValue(
                   data,
                   'contactNumber',
@@ -362,29 +357,6 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
                                   _ProfileDescriptionRow(text: description),
                                 ],
                               ),
-                              const SizedBox(height: 12),
-                              _ProfileSectionCard(
-                                title: 'Protected Account Details',
-                                subtitle:
-                                    'Owner identity and COD status remain tied to approval',
-                                icon: Icons.shield_outlined,
-                                locked: true,
-                                children: [
-                                  _ProfileInfoRow(
-                                    icon: Icons.person_outline_rounded,
-                                    label: 'Verified owner',
-                                    value: ownerName,
-                                  ),
-                                  const _ProfileInfoRow(
-                                    icon: Icons.payments_outlined,
-                                    label: 'Payment method',
-                                    value: 'COD',
-                                    showDivider: false,
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              const _HybridPolicyNote(),
                             ],
                           ),
                         ),
@@ -743,32 +715,6 @@ class _SupplierProfileTopBar extends StatelessWidget {
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE9F8F2),
-              borderRadius: BorderRadius.circular(99),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.verified_rounded,
-                  color: Color(0xFF1C9B6C),
-                  size: 13,
-                ),
-                SizedBox(width: 4),
-                Text(
-                  'Verified',
-                  style: TextStyle(
-                    color: Color(0xFF147650),
-                    fontSize: 8.5,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
@@ -926,37 +872,6 @@ class _SupplierIdentityCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 13),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
-            ),
-            child: const Row(
-              children: [
-                Icon(
-                  Icons.admin_panel_settings_outlined,
-                  size: 15,
-                  color: Color(0xFFDDF7FF),
-                ),
-                SizedBox(width: 7),
-                Expanded(
-                  child: Text(
-                    'Verified business details stay protected. Storefront details remain easy to maintain.',
-                    style: TextStyle(
-                      color: Color(0xFFE8F8FC),
-                      fontSize: 8.6,
-                      height: 1.3,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
@@ -1040,28 +955,24 @@ class _SupplierProfileActionCard extends StatelessWidget {
             trailingLabel: 'Edit now',
             onTap: onEditPublic,
           ),
-          const SizedBox(height: 9),
-          _ProfileManagementAction(
-            icon: pending
-                ? Icons.hourglass_top_rounded
-                : rejected
-                ? Icons.refresh_rounded
-                : Icons.verified_user_outlined,
-            iconBackground: pending
-                ? const Color(0xFFFFF4DE)
-                : rejected
-                ? const Color(0xFFFFEEEE)
-                : const Color(0xFFF1F4FF),
-            iconColor: pending
-                ? const Color(0xFFAF7516)
-                : rejected
-                ? const Color(0xFFB53A36)
-                : const Color(0xFF5369D8),
-            title: 'Verified Business Details',
-            subtitle: requestSubtitle,
-            trailingLabel: requestLabel,
-            onTap: pending ? null : onRequestVerified,
-          ),
+          if (!pending) ...[
+            const SizedBox(height: 9),
+            _ProfileManagementAction(
+              icon: rejected
+                  ? Icons.refresh_rounded
+                  : Icons.verified_user_outlined,
+              iconBackground: rejected
+                  ? const Color(0xFFFFEEEE)
+                  : const Color(0xFFF1F4FF),
+              iconColor: rejected
+                  ? const Color(0xFFB53A36)
+                  : const Color(0xFF5369D8),
+              title: 'Verified Business Details',
+              subtitle: requestSubtitle,
+              trailingLabel: requestLabel,
+              onTap: onRequestVerified,
+            ),
+          ],
         ],
       ),
     );
@@ -1189,13 +1100,13 @@ class _ChangeRequestStatusCard extends StatelessWidget {
     final approved = status == 'approved';
 
     final title = pending
-        ? 'Pending Admin Review'
+        ? 'Pending review'
         : approved
         ? 'Verified change approved'
         : 'Change request needs revision';
 
     final subtitle = pending
-        ? 'Your current approved profile stays public while Admin reviews the request.'
+        ? 'Your approved profile stays live while the request is reviewed.'
         : approved
         ? 'The approved verified changes are now live in your supplier profile.'
         : adminNote.isEmpty
@@ -1300,18 +1211,19 @@ class _ChangeRequestStatusCard extends StatelessWidget {
           ],
           if (pending && onWithdraw != null) ...[
             const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              height: 38,
+            Align(
+              alignment: Alignment.centerRight,
               child: OutlinedButton.icon(
                 onPressed: onWithdraw,
                 icon: const Icon(Icons.undo_rounded, size: 15),
                 label: const Text(
-                  'Withdraw Pending Request',
+                  'Withdraw request',
                   style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900),
                 ),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: foreground,
+                  minimumSize: const Size(0, 36),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
                   side: BorderSide(color: foreground.withValues(alpha: 0.35)),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -1354,7 +1266,6 @@ class _ProfileSectionCard extends StatelessWidget {
     required this.subtitle,
     required this.icon,
     required this.children,
-    this.locked = false,
   }) : actionLabel = null,
        onAction = null,
        actionDisabled = false;
@@ -1366,7 +1277,6 @@ class _ProfileSectionCard extends StatelessWidget {
   final String? actionLabel;
   final VoidCallback? onAction;
   final bool actionDisabled;
-  final bool locked;
 
   @override
   Widget build(BuildContext context) {
@@ -1378,7 +1288,7 @@ class _ProfileSectionCard extends StatelessWidget {
         border: Border.all(color: const Color(0xFFE0EAF1)),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x0C102C44),
+            color: Color(0x0D102C44),
             blurRadius: 16,
             offset: Offset(0, 7),
           ),
@@ -1390,21 +1300,17 @@ class _ProfileSectionCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 36,
-                height: 36,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
-                  color: locked
-                      ? const Color(0xFFEDF8F3)
-                      : const Color(0xFFEAF7FF),
-                  borderRadius: BorderRadius.circular(12),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFFEAF5FF), Color(0xFFEAF9F7)],
+                  ),
+                  borderRadius: BorderRadius.circular(13),
                 ),
-                child: Icon(
-                  icon,
-                  color: locked
-                      ? const Color(0xFF16845C)
-                      : const Color(0xFF146BFF),
-                  size: 19,
-                ),
+                child: Icon(icon, color: const Color(0xFF087DB6), size: 20),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -1432,9 +1338,7 @@ class _ProfileSectionCard extends StatelessWidget {
                   ],
                 ),
               ),
-              if (locked)
-                const _ProtectedPill()
-              else if (actionLabel != null)
+              if (actionLabel != null)
                 TextButton(
                   onPressed: actionDisabled ? null : onAction,
                   style: TextButton.styleFrom(
@@ -1451,38 +1355,10 @@ class _ProfileSectionCard extends StatelessWidget {
                 ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 11),
+          const Divider(height: 1, color: Color(0xFFEDF2F6)),
+          const SizedBox(height: 2),
           ...children,
-        ],
-      ),
-    );
-  }
-}
-
-class _ProtectedPill extends StatelessWidget {
-  const _ProtectedPill();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEDF8F3),
-        borderRadius: BorderRadius.circular(99),
-      ),
-      child: const Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.lock_rounded, color: Color(0xFF16845C), size: 11),
-          SizedBox(width: 3),
-          Text(
-            'Protected',
-            style: TextStyle(
-              color: Color(0xFF147650),
-              fontSize: 7.8,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
         ],
       ),
     );
@@ -1494,36 +1370,24 @@ class _ProfileInfoRow extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.value,
-    this.showDivider = true,
   });
 
   final IconData icon;
   final String label;
   final String value;
-  final bool showDivider;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 9),
-      decoration: BoxDecoration(
-        border: showDivider
-            ? const Border(bottom: BorderSide(color: Color(0xFFEDF2F6)))
-            : null,
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Color(0xFFEDF2F6))),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 30,
-            height: 30,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF0F7FC),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: const Color(0xFF4D7C9C), size: 16),
-          ),
-          const SizedBox(width: 10),
+          Icon(icon, color: const Color(0xFF6C879A), size: 18),
+          const SizedBox(width: 11),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1563,14 +1427,18 @@ class _ProfileDescriptionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: 9),
+      padding: const EdgeInsets.only(top: 10),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(11),
         decoration: BoxDecoration(
-          color: const Color(0xFFF5FAFD),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFF5FAFD), Color(0xFFF7FBFA)],
+          ),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFE1ECF3)),
+          border: Border.all(color: const Color(0xFFE4EDF3)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1595,40 +1463,6 @@ class _ProfileDescriptionRow extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _HybridPolicyNote extends StatelessWidget {
-  const _HybridPolicyNote();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF8E9),
-        borderRadius: BorderRadius.circular(17),
-        border: Border.all(color: const Color(0xFFF1E2B8)),
-      ),
-      child: const Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.security_rounded, color: Color(0xFF9B721F), size: 18),
-          SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Public storefront photos can be changed anytime from View My Shop without Admin approval. Verified identity, business location, verification photo, and permit changes still require administrator review.',
-              style: TextStyle(
-                color: Color(0xFF745A25),
-                fontSize: 9.4,
-                height: 1.4,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

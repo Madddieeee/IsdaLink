@@ -1,4 +1,5 @@
 import 'dart:ui';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -1896,7 +1897,7 @@ class ProductDetailsScreen extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   Image.asset(
-                    'assets/images/order_center_caraga_header.png',
+                    'assets/images/isdalink_main_header.png',
                     fit: BoxFit.cover,
                     alignment: Alignment.center,
                     filterQuality: FilterQuality.high,
@@ -1915,7 +1916,7 @@ class ProductDetailsScreen extends StatelessWidget {
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
-                        colors: [Color(0x52001E38), Color(0xC500294A)],
+                        colors: [Color(0x5C001E38), Color(0xC900294A)],
                       ),
                     ),
                   ),
@@ -1954,7 +1955,7 @@ class ProductDetailsScreen extends StatelessWidget {
                             ColorFiltered(
                               colorFilter: const ColorFilter.mode(
                                 Colors.white,
-                                BlendMode.srcIn,
+                                BlendMode.dst,
                               ),
                               child: Image.asset(
                                 'assets/images/isdalink_logo.png',

@@ -594,7 +594,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     decoration: const BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(28),
+                      ),
                       boxShadow: [
                         BoxShadow(
                           color: Color(0x3000152A),
@@ -619,7 +621,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           padding: const EdgeInsets.fromLTRB(20, 14, 10, 12),
                           child: Row(
                             children: [
-                              Icon(icon, color: const Color(0xFF0875D1), size: 25),
+                              Icon(
+                                icon,
+                                color: const Color(0xFF0875D1),
+                                size: 25,
+                              ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
@@ -747,12 +753,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 )
                               : ListView.separated(
                                   shrinkWrap: true,
-                                  padding: const EdgeInsets.fromLTRB(12, 6, 12, 18),
-                                  itemCount: filteredOptions.length,
-                                  separatorBuilder: (context, index) => const Divider(
-                                    height: 1,
-                                    color: Color(0xFFEAF0F4),
+                                  padding: const EdgeInsets.fromLTRB(
+                                    12,
+                                    6,
+                                    12,
+                                    18,
                                   ),
+                                  itemCount: filteredOptions.length,
+                                  separatorBuilder: (context, index) =>
+                                      const Divider(
+                                        height: 1,
+                                        color: Color(0xFFEAF0F4),
+                                      ),
                                   itemBuilder: (context, index) {
                                     final option = filteredOptions[index];
                                     final isSelected = option == selectedValue;
@@ -766,7 +778,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                         },
                                         borderRadius: BorderRadius.circular(14),
                                         child: AnimatedContainer(
-                                          duration: const Duration(milliseconds: 150),
+                                          duration: const Duration(
+                                            milliseconds: 150,
+                                          ),
                                           padding: const EdgeInsets.symmetric(
                                             horizontal: 14,
                                             vertical: 12,
@@ -775,7 +789,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                             color: isSelected
                                                 ? const Color(0xFFEAF5FD)
                                                 : Colors.transparent,
-                                            borderRadius: BorderRadius.circular(14),
+                                            borderRadius: BorderRadius.circular(
+                                              14,
+                                            ),
                                             border: Border.all(
                                               color: isSelected
                                                   ? const Color(0xFF8BC8F2)
@@ -786,26 +802,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                             children: [
                                               Expanded(
                                                 child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
                                                   children: [
                                                     Text(
                                                       option,
                                                       style: TextStyle(
-                                                        color: const Color(0xFF102C44),
+                                                        color: const Color(
+                                                          0xFF102C44,
+                                                        ),
                                                         fontSize: 12.5,
                                                         fontWeight: isSelected
                                                             ? FontWeight.w900
                                                             : FontWeight.w800,
                                                       ),
                                                     ),
-                                                    if (optionSubtitleBuilder != null) ...[
+                                                    if (optionSubtitleBuilder !=
+                                                        null) ...[
                                                       const SizedBox(height: 2),
                                                       Text(
-                                                        optionSubtitleBuilder(option),
+                                                        optionSubtitleBuilder(
+                                                          option,
+                                                        ),
                                                         style: const TextStyle(
-                                                          color: Color(0xFF7A90A1),
+                                                          color: Color(
+                                                            0xFF7A90A1,
+                                                          ),
                                                           fontSize: 9.5,
-                                                          fontWeight: FontWeight.w600,
+                                                          fontWeight:
+                                                              FontWeight.w600,
                                                         ),
                                                       ),
                                                     ],
@@ -815,7 +840,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                               Icon(
                                                 isSelected
                                                     ? Icons.check_circle_rounded
-                                                    : Icons.chevron_right_rounded,
+                                                    : Icons
+                                                          .chevron_right_rounded,
                                                 color: isSelected
                                                     ? const Color(0xFF16A77A)
                                                     : const Color(0xFF8A9CA9),
@@ -936,7 +962,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       builder: (dialogContext) {
         return Dialog(
           backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 22,
+            vertical: 24,
+          ),
           child: Container(
             padding: const EdgeInsets.fromLTRB(18, 18, 18, 17),
             decoration: BoxDecoration(
@@ -994,7 +1023,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(height: 14),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 13,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF7FAFC),
                       borderRadius: BorderRadius.circular(18),
@@ -1136,7 +1168,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-
   Future<void> createAccount() async {
     if (isLoading) {
       return;
@@ -1234,9 +1265,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         context,
         PageRouteBuilder<void>(
           transitionDuration: const Duration(milliseconds: 560),
-          pageBuilder: (_, _, _) => RegistrationWelcomeScreen(
-            fullName: fullName,
-          ),
+          pageBuilder: (_, _, _) =>
+              RegistrationWelcomeScreen(fullName: fullName),
           transitionsBuilder: (_, animation, _, child) {
             final curved = CurvedAnimation(
               parent: animation,
@@ -1312,7 +1342,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
   }
 
-
   InputDecoration inputStyle({
     required String label,
     required IconData icon,
@@ -1342,7 +1371,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         fontWeight: FontWeight.w600,
       ),
       prefixIcon: Icon(icon, color: const Color(0xFF0875D1), size: 21),
-      suffixIcon: suffixIcon ??
+      suffixIcon:
+          suffixIcon ??
           (isValid
               ? const Icon(
                   Icons.check_circle_rounded,
@@ -1439,7 +1469,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final isValid = fieldIsValid(fieldKey);
 
     return FormField<String>(
-      key: ValueKey('$label-$value-$selectedProvince-$selectedCity-$currentStep'),
+      key: ValueKey(
+        '$label-$value-$selectedProvince-$selectedCity-$currentStep',
+      ),
       initialValue: value,
       validator: validator,
       autovalidateMode: (stepValidationAttempted || submitted)
@@ -1450,8 +1482,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         final borderColor = hasError
             ? const Color(0xFFE66B62)
             : isValid
-                ? const Color(0xFF8FD7C1)
-                : const Color(0xFFD7E4EC);
+            ? const Color(0xFF8FD7C1)
+            : const Color(0xFFD7E4EC);
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1463,7 +1495,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 borderRadius: BorderRadius.circular(18),
                 child: Ink(
                   height: 62,
-                  padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 11),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 15,
+                    vertical: 11,
+                  ),
                   decoration: BoxDecoration(
                     color: enabled
                         ? const Color(0xFFF3F7FA)
@@ -1571,8 +1606,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final stepLabel = currentStep == 0
         ? 'Personal Details'
         : currentStep == 1
-            ? 'Location'
-            : 'Security';
+        ? 'Location'
+        : 'Security';
 
     return Column(
       children: [
@@ -1664,7 +1699,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
-          met ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+          met
+              ? Icons.check_circle_rounded
+              : Icons.radio_button_unchecked_rounded,
           color: met ? const Color(0xFF16A77A) : const Color(0xFF9EB0BC),
           size: 16,
         ),
@@ -1997,7 +2034,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         }
       } else if (validatePassword(passwordController.text) != null) {
         passwordFocusNode.requestFocus();
-      } else if (validateConfirmPassword(confirmPasswordController.text) != null) {
+      } else if (validateConfirmPassword(confirmPasswordController.text) !=
+          null) {
         confirmPasswordFocusNode.requestFocus();
       }
     }
@@ -2055,7 +2093,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       height: 250,
       decoration: const BoxDecoration(
         image: DecorationImage(
-          image: AssetImage('assets/images/auth_caraga_header.jpg'),
+          image: AssetImage('assets/images/isdalink_main_header.png'),
           fit: BoxFit.cover,
         ),
       ),
@@ -2064,7 +2102,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0x2200192D), Color(0xA8063B5E)],
+            colors: [Color(0x5C001E38), Color(0xC900294A)],
           ),
         ),
         child: SafeArea(
@@ -2103,7 +2141,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ColorFiltered(
                       colorFilter: const ColorFilter.mode(
                         Colors.white,
-                        BlendMode.srcIn,
+                        BlendMode.dst,
                       ),
                       child: Image.asset(
                         'assets/images/isdalink_logo.png',
@@ -2159,8 +2197,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         onPressed: isLoading
             ? null
             : isLastStep
-                ? createAccount
-                : nextStep,
+            ? createAccount
+            : nextStep,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF0875D1),
           foregroundColor: Colors.white,
@@ -2240,7 +2278,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     padding: const EdgeInsets.fromLTRB(18, 20, 18, 22),
                     decoration: const BoxDecoration(
                       color: Color(0xFFF5F8FA),
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(34)),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(34),
+                      ),
                     ),
                     child: Column(
                       children: [
@@ -2270,8 +2310,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   key: formKey,
                                   autovalidateMode:
                                       (stepValidationAttempted || submitted)
-                                          ? AutovalidateMode.onUserInteraction
-                                          : AutovalidateMode.disabled,
+                                      ? AutovalidateMode.onUserInteraction
+                                      : AutovalidateMode.disabled,
                                   child: AnimatedSwitcher(
                                     duration: const Duration(milliseconds: 180),
                                     child: KeyedSubtree(

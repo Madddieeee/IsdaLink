@@ -120,7 +120,7 @@ class _RegistrationWelcomeScreenState extends State<RegistrationWelcomeScreen>
                 fit: StackFit.expand,
                 children: [
                   const Image(
-                    image: AssetImage('assets/images/auth_caraga_header.jpg'),
+                    image: AssetImage('assets/images/isdalink_main_header.png'),
                     fit: BoxFit.cover,
                   ),
                   const DecoratedBox(
@@ -128,12 +128,7 @@ class _RegistrationWelcomeScreenState extends State<RegistrationWelcomeScreen>
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
-                        colors: [
-                          Color(0x58052D47),
-                          Color(0xAA06283D),
-                          Color(0xF503111C),
-                        ],
-                        stops: [0.0, 0.50, 1.0],
+                        colors: [Color(0x5C001E38), Color(0xC900294A)],
                       ),
                     ),
                   ),
@@ -150,7 +145,7 @@ class _RegistrationWelcomeScreenState extends State<RegistrationWelcomeScreen>
                             child: ColorFiltered(
                               colorFilter: const ColorFilter.mode(
                                 Colors.white,
-                                BlendMode.srcIn,
+                                BlendMode.dst,
                               ),
                               child: Image.asset(
                                 'assets/images/isdalink_logo.png',

@@ -787,7 +787,7 @@ class _SupplierVerifiedChangeRequestScreenState
         return;
       }
 
-      showMessage('Verified change request submitted for Admin review.');
+      showMessage('Request submitted for review.');
       Navigator.pop(context);
     } on StateError catch (error) {
       showMessage(error.message.toString(), isError: true);
@@ -848,31 +848,10 @@ class _SupplierVerifiedChangeRequestScreenState
     }
   }
 
-  String currentValue(_VerifiedChangeType type) {
-    switch (type) {
-      case _VerifiedChangeType.storeName:
-        return currentStoreName;
-      case _VerifiedChangeType.businessLocation:
-        return currentLocation;
-      case _VerifiedChangeType.storePhoto:
-        return 'Current verification store photo';
-      case _VerifiedChangeType.businessPermit:
-        return currentPermitNumber.isEmpty
-            ? 'Permit on file'
-            : currentPermitNumber;
-    }
-  }
-
   Widget selectionStep() {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
       children: [
-        _ApprovedStoreHero(
-          storeName: currentStoreName,
-          location: currentLocation,
-          imageUrl: currentStorePhotoUrl,
-        ),
-        const SizedBox(height: 14),
         const _SectionIntro(
           number: '1',
           title: 'What needs to change?',
@@ -889,7 +868,6 @@ class _SupplierVerifiedChangeRequestScreenState
               icon: changeIcon(type),
               title: changeTitle(type),
               subtitle: changeSubtitle(type),
-              currentValue: currentValue(type),
               selected: selected,
               onTap: () {
                 setState(() {
@@ -903,11 +881,6 @@ class _SupplierVerifiedChangeRequestScreenState
             ),
           );
         }),
-        const SizedBox(height: 4),
-        const _SecurityInfoCard(
-          text:
-              'Your current approved profile stays visible to vendors until Admin approves the request.',
-        ),
       ],
     );
   }
@@ -1115,8 +1088,8 @@ class _SupplierVerifiedChangeRequestScreenState
           icon: Icons.chat_bubble_outline_rounded,
           child: TextField(
             controller: reasonController,
-            minLines: 3,
-            maxLines: 5,
+            minLines: 2,
+            maxLines: 3,
             maxLength: 240,
             decoration: _inputDecoration(
               label: 'Reason for request',
@@ -1150,9 +1123,7 @@ class _SupplierVerifiedChangeRequestScreenState
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
       children: [
-        const _ReviewReadyHero(),
         if (hasRequestedDetails) ...[
-          const SizedBox(height: 12),
           _FinalFormCard(
             number: requestedDetailsSectionNumber!.toString(),
             title: 'Requested Changes',
@@ -1229,11 +1200,6 @@ class _SupplierVerifiedChangeRequestScreenState
               ),
             ),
           ),
-        ),
-        const SizedBox(height: 12),
-        const _SecurityInfoCard(
-          text:
-              'Submitting does not change your public profile. Your current approved details stay live until Admin approves this request. Rejection leaves the approved profile unchanged.',
         ),
       ],
     );
@@ -1351,32 +1317,6 @@ class _RequestTopBar extends StatelessWidget {
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFF3DC),
-              borderRadius: BorderRadius.circular(99),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.admin_panel_settings_outlined,
-                  size: 12,
-                  color: Color(0xFFA76F15),
-                ),
-                SizedBox(width: 4),
-                Text(
-                  'Admin review',
-                  style: TextStyle(
-                    color: Color(0xFFA76F15),
-                    fontSize: 7.6,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
@@ -1479,6 +1419,8 @@ class _RequestProgress extends StatelessWidget {
   }
 }
 
+// Kept as a reusable visual option for future profile summaries.
+// ignore: unused_element
 class _ApprovedStoreHero extends StatelessWidget {
   const _ApprovedStoreHero({
     required this.storeName,
@@ -1677,7 +1619,6 @@ class _ChangeSelectionCard extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.subtitle,
-    required this.currentValue,
     required this.selected,
     required this.onTap,
   });
@@ -1685,7 +1626,6 @@ class _ChangeSelectionCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
-  final String currentValue;
   final bool selected;
   final VoidCallback onTap;
 
@@ -1747,17 +1687,6 @@ class _ChangeSelectionCard extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 5),
-                    Text(
-                      currentValue,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFF4F687B),
-                        fontSize: 8.8,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -1810,10 +1739,10 @@ class _FinalFormCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(13),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: const Color(0xFFDDE8F0)),
         boxShadow: const [
           BoxShadow(
@@ -2089,6 +2018,8 @@ class _UploadEvidenceCard extends StatelessWidget {
   }
 }
 
+// Kept as a reusable visual option for future review flows.
+// ignore: unused_element
 class _ReviewReadyHero extends StatelessWidget {
   const _ReviewReadyHero();
 
@@ -2311,6 +2242,8 @@ class _ImageCompareRow extends StatelessWidget {
   }
 }
 
+// Kept as a reusable visual option for security-sensitive notices.
+// ignore: unused_element
 class _SecurityInfoCard extends StatelessWidget {
   const _SecurityInfoCard({required this.text});
 

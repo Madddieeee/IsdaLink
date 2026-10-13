@@ -583,9 +583,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget homePage(BuildContext context) {
     final statusBarHeight = MediaQuery.paddingOf(context).top;
-    final homeHeaderHeight = MediaQuery.sizeOf(context).width <= 400
-        ? 260.0
-        : 276.0;
+    final homeHeaderHeight = statusBarHeight + 178;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4FAFF),
@@ -615,7 +613,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         padding: EdgeInsets.only(top: homeHeaderHeight - 26),
                         child: Container(
                           clipBehavior: Clip.antiAlias,
-                          padding: const EdgeInsets.only(top: 20, bottom: 4),
+                          padding: const EdgeInsets.only(top: 16, bottom: 4),
                           decoration: const BoxDecoration(
                             color: Color(0xFFF4FAFF),
                             borderRadius: BorderRadius.vertical(
@@ -631,6 +629,15 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           child: Column(
                             children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                child: HomeHeaderSearch(
+                                  onTap: () => openHomeSearch(context),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
                               HomeMarketShowcase(
                                 onBrowseSuppliers: () =>
                                     openBrowseSuppliers(context),

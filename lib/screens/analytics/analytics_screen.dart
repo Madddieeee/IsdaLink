@@ -3105,10 +3105,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     return '${value < 0 ? '-' : ''}₱${buffer.toString()}';
   }
 
-  Widget supplierAnalyticsHeader({bool topInsetHandled = false}) {
-    final topPadding = topInsetHandled
-        ? 0.0
-        : MediaQuery.of(context).padding.top;
+  Widget supplierAnalyticsHeader() {
+    final topPadding = MediaQuery.of(context).padding.top;
     final delegate = _SupplierAnalyticsHeaderDelegate(
       topPadding: topPadding,
       onBack: () => Navigator.of(context).maybePop(),
@@ -3117,9 +3115,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
       subtitle: isSupplier
           ? 'Sales, forecasts, and stock planning at a glance.'
           : 'Purchases, forecasts, and restocking at a glance.',
-      backgroundAsset: isSupplier
-          ? 'assets/images/supplier_analytics_header_bg.png'
-          : 'assets/images/vendor_analytics_header_bg.png',
+      backgroundAsset: 'assets/images/isdalink_main_header.png',
     );
 
     // Keep the Supplier Analytics hero as a normal scrollable header, just
@@ -4083,7 +4079,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         physics: const ClampingScrollPhysics(),
         slivers: [
-          supplierAnalyticsHeader(topInsetHandled: !isSupplier),
+          supplierAnalyticsHeader(),
           if (!isSupplier) vendorSectionNavigation(),
           bodySliver,
         ],
@@ -4095,15 +4091,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     if (isSupplier) {
       return child;
     }
-    // Reserve the system inset once, outside the scrollable Vendor content.
-    // SafeArea clears its child's top inset, so the hero and pinned tabs do
-    // not insert it again between the header and filters.
-    return ColoredBox(
-      color: const Color(0xFF0B3454),
-      child: SafeArea(
-        bottom: false,
-        child: ColoredBox(color: const Color(0xFFF4F8FB), child: child),
+    // Match Order Center and Account Center: the hero extends behind the
+    // status bar and includes the system inset in its own total height.
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Color(0xFF06355F),
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
       ),
+      child: ColoredBox(color: const Color(0xFFF4F8FB), child: child),
     );
   }
 
@@ -4203,7 +4199,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
         primary: false,
         physics: const ClampingScrollPhysics(),
         slivers: [
-          supplierAnalyticsHeader(topInsetHandled: !isSupplier),
+          supplierAnalyticsHeader(),
           if (!isSupplier) vendorSectionNavigation(),
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
@@ -4625,7 +4621,7 @@ class _SupplierAnalyticsHeaderDelegate extends SliverPersistentHeaderDelegate {
   double get minExtent => topPadding + 56;
 
   @override
-  double get maxExtent => topPadding + 168;
+  double get maxExtent => topPadding + 178;
 
   @override
   Widget build(
@@ -4636,8 +4632,8 @@ class _SupplierAnalyticsHeaderDelegate extends SliverPersistentHeaderDelegate {
     final range = math.max(1.0, maxExtent - minExtent);
     final progress = (shrinkOffset / range).clamp(0.0, 1.0);
     final expandedOpacity = (1.0 - progress * 1.35).clamp(0.0, 1.0);
-    final titleFontSize = 26.0 - (8.5 * progress);
-    final expandedTitleTop = topPadding + 76.0;
+    final titleFontSize = 29.0 - (11.5 * progress);
+    final expandedTitleTop = topPadding + 90.0;
     final collapsedTitleTop = topPadding + 15.0;
     final titleTop =
         expandedTitleTop + (collapsedTitleTop - expandedTitleTop) * progress;
@@ -4657,7 +4653,7 @@ class _SupplierAnalyticsHeaderDelegate extends SliverPersistentHeaderDelegate {
             Image.asset(
               backgroundAsset,
               fit: BoxFit.cover,
-              alignment: Alignment.centerRight,
+              alignment: Alignment.center,
               errorBuilder: (context, error, stackTrace) => const DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -4677,30 +4673,30 @@ class _SupplierAnalyticsHeaderDelegate extends SliverPersistentHeaderDelegate {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    Color(0x70052C50),
-                    Color(0x63063B66),
-                    Color(0xA006345B),
-                  ],
-                  stops: [0.0, 0.5, 1.0],
+                  colors: [Color(0x5C001E38), Color(0xC900294A)],
                 ),
               ),
             ),
-            // Small Order Center-style body curve. Because the whole hero now
-            // scrolls normally, this curve moves away with it instead of
-            // remaining pinned above the analytics content.
+            // Match the Order Center and Account Center body overlap exactly.
             Positioned(
               left: 0,
               right: 0,
-              bottom: -1,
+              bottom: 0,
               child: IgnorePointer(
                 child: Container(
-                  height: 18,
+                  height: 26,
                   decoration: const BoxDecoration(
                     color: Color(0xFFF4F8FB),
                     borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(30),
+                      top: Radius.circular(32),
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Color(0x1900213D),
+                        blurRadius: 20,
+                        offset: Offset(0, -3),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -4708,23 +4704,27 @@ class _SupplierAnalyticsHeaderDelegate extends SliverPersistentHeaderDelegate {
             Positioned(
               left: 14,
               top: topPadding + 8,
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: onBack,
-                  customBorder: const CircleBorder(),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: const Color(0x33001F3A),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0x66FFFFFF)),
-                    ),
-                    child: const Icon(
-                      Icons.arrow_back_rounded,
-                      color: Colors.white,
-                      size: 24,
+              child: Tooltip(
+                message: 'Back',
+                child: Material(
+                  color: Colors.white.withAlpha(25),
+                  borderRadius: BorderRadius.circular(13),
+                  child: InkWell(
+                    onTap: onBack,
+                    borderRadius: BorderRadius.circular(13),
+                    splashColor: Colors.white.withAlpha(28),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(13),
+                        border: Border.all(color: Colors.white.withAlpha(38)),
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back_rounded,
+                        color: Colors.white,
+                        size: 21,
+                      ),
                     ),
                   ),
                 ),
@@ -4736,12 +4736,12 @@ class _SupplierAnalyticsHeaderDelegate extends SliverPersistentHeaderDelegate {
               child: Opacity(
                 opacity: 1.0 - progress * 0.15,
                 child: SizedBox(
-                  width: 96,
-                  height: 26,
+                  width: 92,
+                  height: 40,
                   child: ColorFiltered(
                     colorFilter: const ColorFilter.mode(
                       Colors.white,
-                      BlendMode.srcIn,
+                      BlendMode.dst,
                     ),
                     child: Image.asset(
                       'assets/images/isdalink_logo.png',
@@ -4772,14 +4772,14 @@ class _SupplierAnalyticsHeaderDelegate extends SliverPersistentHeaderDelegate {
             Positioned(
               left: 20,
               right: 18,
-              top: topPadding + 58,
+              top: topPadding + 75,
               child: Opacity(
                 opacity: expandedOpacity,
                 child: Text(
                   eyebrow,
                   style: const TextStyle(
                     color: Color(0xFFE5F4FF),
-                    fontSize: 9.0,
+                    fontSize: 10.0,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1.8,
                   ),
@@ -4789,7 +4789,7 @@ class _SupplierAnalyticsHeaderDelegate extends SliverPersistentHeaderDelegate {
             Positioned(
               left: 20,
               right: 18,
-              top: topPadding + 108,
+              top: topPadding + 127,
               child: Opacity(
                 opacity: expandedOpacity,
                 child: Text(

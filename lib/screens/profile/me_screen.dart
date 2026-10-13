@@ -818,8 +818,7 @@ class _AccountCenterHeader extends StatelessWidget {
     required this.onManageProfile,
   });
 
-  static const String _coverAsset =
-      'assets/images/order_center_caraga_header.png';
+  static const String _coverAsset = 'assets/images/isdalink_main_header.png';
 
   final String name;
   final String email;
@@ -917,7 +916,7 @@ class _AccountCenterHeader extends StatelessWidget {
                             ColorFiltered(
                               colorFilter: const ColorFilter.mode(
                                 Colors.white,
-                                BlendMode.srcIn,
+                                BlendMode.dst,
                               ),
                               child: Image.asset(
                                 'assets/images/isdalink_logo.png',
@@ -2070,15 +2069,20 @@ class _HeaderCircleButton extends StatelessWidget {
     return Tooltip(
       message: tooltip,
       child: Material(
-        color: Colors.white.withAlpha(24),
-        shape: const CircleBorder(),
+        color: Colors.white.withAlpha(25),
+        borderRadius: BorderRadius.circular(13),
         child: InkWell(
           onTap: onTap,
-          customBorder: const CircleBorder(),
-          child: SizedBox(
-            width: 39,
-            height: 39,
-            child: Icon(icon, color: Colors.white, size: 20),
+          borderRadius: BorderRadius.circular(13),
+          splashColor: Colors.white.withAlpha(28),
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(13),
+              border: Border.all(color: Colors.white.withAlpha(38)),
+            ),
+            child: Icon(icon, color: Colors.white, size: 21),
           ),
         ),
       ),
