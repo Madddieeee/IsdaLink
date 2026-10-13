@@ -1,5 +1,12 @@
 import 'package:isdalink/models/fish_product.dart';
 
+class SupplierNameHistoryEntry {
+  const SupplierNameHistoryEntry({required this.name, this.changedAt});
+
+  final String name;
+  final DateTime? changedAt;
+}
+
 class Supplier {
   final String name;
   final String location;
@@ -11,6 +18,7 @@ class Supplier {
   final String profileImageUrl;
   final String coverImageUrl;
   final DateTime? accountCreatedAt;
+  final List<SupplierNameHistoryEntry> storeNameHistory;
 
   const Supplier({
     required this.name,
@@ -23,6 +31,7 @@ class Supplier {
     this.profileImageUrl = '',
     this.coverImageUrl = '',
     this.accountCreatedAt,
+    this.storeNameHistory = const <SupplierNameHistoryEntry>[],
   });
 
   bool get isNewSupplier {

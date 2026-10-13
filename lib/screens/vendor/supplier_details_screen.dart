@@ -224,35 +224,202 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
   String sortMode = 'latest';
   int selectedTab = 0;
   bool favoriteBusy = false;
-  bool showCompactStoreHeader = false;
 
   @override
   void initState() {
     super.initState();
     storefrontProfileImageUrl = widget.supplier.profileImageUrl.trim();
     storefrontCoverImageUrl = widget.supplier.coverImageUrl.trim();
-    storeScrollController.addListener(handleStoreScroll);
-  }
-
-  void handleStoreScroll() {
-    if (!storeScrollController.hasClients) {
-      return;
-    }
-
-    // The full hero scrolls normally. Once the user starts moving through
-    // the store, a compact identity bar takes over so the large cover does
-    // not permanently consume screen space.
-    final shouldShow = storeScrollController.offset > 72;
-
-    if (shouldShow != showCompactStoreHeader && mounted) {
-      setState(() {
-        showCompactStoreHeader = shouldShow;
-      });
-    }
   }
 
   Supplier get supplier => widget.supplier;
   String? get supplierId => widget.supplierId;
+
+  List<SupplierNameHistoryEntry> nameHistoryFromProfile(
+    Map<String, dynamic> data,
+  ) {
+    final currentName = supplier.name.trim().toLowerCase();
+    final result = <SupplierNameHistoryEntry>[];
+    final seen = <String>{};
+    final rawHistory = data['storeNameHistory'];
+
+    if (rawHistory is List) {
+      for (final rawEntry in rawHistory.reversed) {
+        if (rawEntry is! Map) continue;
+        final entry = Map<String, dynamic>.from(rawEntry);
+        final name = entry['name']?.toString().trim() ?? '';
+        final normalized = name.toLowerCase();
+        final rawDate = entry['changedAt'];
+        final changedAt = rawDate is Timestamp
+            ? rawDate.toDate()
+            : rawDate is DateTime
+            ? rawDate
+            : rawDate is String
+            ? DateTime.tryParse(rawDate)
+            : null;
+        if (name.isEmpty ||
+            normalized == currentName ||
+            !seen.add(normalized)) {
+          continue;
+        }
+        result.add(SupplierNameHistoryEntry(name: name, changedAt: changedAt));
+      }
+    }
+
+    for (final entry in supplier.storeNameHistory) {
+      final normalized = entry.name.trim().toLowerCase();
+      if (normalized.isNotEmpty &&
+          normalized != currentName &&
+          seen.add(normalized)) {
+        result.add(entry);
+      }
+    }
+    return result.take(10).toList(growable: false);
+  }
+
+  String formatHistoryDate(DateTime? date) {
+    if (date == null) return 'Date not recorded';
+    return formatMemberSinceDate(date);
+  }
+
+  Future<void> showStoreNameHistory(
+    List<SupplierNameHistoryEntry> history,
+  ) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => FractionallySizedBox(
+        heightFactor: 0.62,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(18, 10, 18, 18),
+          decoration: const BoxDecoration(
+            color: Color(0xFFF7FAFC),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                width: 42,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFBED0DC),
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Store name history',
+                  style: TextStyle(
+                    color: Color(0xFF102C44),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Names are recorded after an approved store-name change.',
+                  style: TextStyle(
+                    color: Color(0xFF718699),
+                    fontSize: 10.5,
+                    height: 1.35,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: history.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final entry = history[index];
+                    return Container(
+                      padding: const EdgeInsets.all(13),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFE0EBF2)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.history_rounded,
+                            color: Color(0xFF087AC0),
+                          ),
+                          const SizedBox(width: 11),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  entry.name,
+                                  style: const TextStyle(
+                                    color: Color(0xFF173A54),
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Changed on ${formatHistoryDate(entry.changedAt)}',
+                                  style: const TextStyle(
+                                    color: Color(0xFF7B8FA3),
+                                    fontSize: 9.7,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget previousStoreNamesRow() {
+    final uid = supplierId?.trim() ?? '';
+    Widget buildRow(List<SupplierNameHistoryEntry> history) {
+      if (history.isEmpty) return const SizedBox.shrink();
+      return _StoreAboutRow(
+        icon: Icons.history_rounded,
+        label: 'Previously known as',
+        value:
+            '${history.length} previous name${history.length == 1 ? '' : 's'}',
+        onTap: () => showStoreNameHistory(history),
+        trailing: Icons.chevron_right_rounded,
+      );
+    }
+
+    if (uid.isEmpty) return buildRow(supplier.storeNameHistory);
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('supplierProfiles')
+          .doc(uid)
+          .snapshots(),
+      builder: (context, snapshot) => buildRow(
+        snapshot.hasData
+            ? nameHistoryFromProfile(
+                snapshot.data?.data() ?? <String, dynamic>{},
+              )
+            : supplier.storeNameHistory,
+      ),
+    );
+  }
 
   bool get ownerMode {
     if (widget.isOwnerView) {
@@ -856,9 +1023,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
 
   @override
   void dispose() {
-    storeScrollController
-      ..removeListener(handleStoreScroll)
-      ..dispose();
+    storeScrollController.dispose();
     searchController.dispose();
     super.dispose();
   }
@@ -1512,6 +1677,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
                 label: 'Business location',
                 value: supplier.location,
               ),
+              previousStoreNamesRow(),
               _StoreAboutRow(
                 icon: Icons.calendar_month_outlined,
                 label: 'Member since',
@@ -1540,6 +1706,9 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
     );
   }
 
+  // Retained for a possible compact-header variant; the live storefront uses
+  // normal scrolling with no pinned header.
+  // ignore: unused_element
   Widget compactStoreHeaderForState({required bool isFavorite}) {
     final topPadding = MediaQuery.paddingOf(context).top;
     final storeUid = supplierId?.trim() ?? '';
@@ -1712,6 +1881,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
     );
   }
 
+  // ignore: unused_element
   Widget compactStickyStoreHeader() {
     final storeUid = supplierId?.trim() ?? '';
     final canFavorite =
@@ -1865,28 +2035,6 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
               ),
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
-        ),
-
-        // Only the compact bar remains pinned while browsing.
-        Positioned(
-          left: 0,
-          right: 0,
-          top: 0,
-          child: IgnorePointer(
-            ignoring: !showCompactStoreHeader,
-            child: AnimatedSlide(
-              duration: const Duration(milliseconds: 190),
-              curve: Curves.easeOutCubic,
-              offset: showCompactStoreHeader
-                  ? Offset.zero
-                  : const Offset(0, -1),
-              child: AnimatedOpacity(
-                duration: const Duration(milliseconds: 150),
-                opacity: showCompactStoreHeader ? 1 : 0,
-                child: compactStickyStoreHeader(),
-              ),
-            ),
-          ),
         ),
       ],
     );
@@ -2172,58 +2320,70 @@ class _StoreAboutRow extends StatelessWidget {
     required this.label,
     required this.value,
     this.showDivider = true,
+    this.onTap,
+    this.trailing,
   });
 
   final IconData icon;
   final String label;
   final String value;
   final bool showDivider;
+  final VoidCallback? onTap;
+  final IconData? trailing;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 13),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEAF7FD),
-                  borderRadius: BorderRadius.circular(12),
+        InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 13),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEAF7FD),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: const Color(0xFF087AC0), size: 18),
                 ),
-                child: Icon(icon, color: const Color(0xFF087AC0), size: 18),
-              ),
-              const SizedBox(width: 11),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: const TextStyle(
-                        color: Color(0xFF7B8FA3),
-                        fontSize: 9.3,
-                        fontWeight: FontWeight.w700,
+                const SizedBox(width: 11),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: const TextStyle(
+                          color: Color(0xFF7B8FA3),
+                          fontSize: 9.3,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      value.trim().isEmpty ? 'Not provided' : value,
-                      style: const TextStyle(
-                        color: Color(0xFF173A54),
-                        fontSize: 11.6,
-                        height: 1.35,
-                        fontWeight: FontWeight.w800,
+                      const SizedBox(height: 3),
+                      Text(
+                        value.trim().isEmpty ? 'Not provided' : value,
+                        style: const TextStyle(
+                          color: Color(0xFF173A54),
+                          fontSize: 11.6,
+                          height: 1.35,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+                if (trailing != null) ...[
+                  const SizedBox(width: 8),
+                  Icon(trailing, color: const Color(0xFF087AC0), size: 20),
+                ],
+              ],
+            ),
           ),
         ),
         if (showDivider) const Divider(height: 1, color: Color(0xFFE8EFF4)),

@@ -1143,6 +1143,9 @@ service cloud.firestore {
               'storeName',
               'supplierName',
               'businessName',
+              'previousStoreNames',
+              'storeNameHistory',
+              'lastStoreNameChangedAt',
               'storeProvince',
               'storeCityMunicipality',
               'storeAddress',
@@ -1161,6 +1164,20 @@ service cloud.firestore {
                 == requestedChange.get('requestedStoreName', '')
               && request.resource.data.get('businessName', '')
                 == requestedChange.get('requestedStoreName', '')
+              && request.resource.data.get('previousStoreNames', []) is list
+              && request.resource.data.get('previousStoreNames', []).size()
+                <= 10
+              && request.resource.data.get('previousStoreNames', []).hasAny([
+                resource.data.get(
+                  'storeName',
+                  resource.data.get('supplierName', '')
+                )
+              ])
+              && request.resource.data.get('storeNameHistory', []) is list
+              && request.resource.data.get('storeNameHistory', []).size()
+                <= 10
+              && request.resource.data.get('lastStoreNameChangedAt', null)
+                is timestamp
             )
             || (
               !changedFields.hasAny(['Store name'])
@@ -1170,6 +1187,12 @@ service cloud.firestore {
                 == resource.data.get('supplierName', '')
               && request.resource.data.get('businessName', '')
                 == resource.data.get('businessName', '')
+              && request.resource.data.get('previousStoreNames', [])
+                == resource.data.get('previousStoreNames', [])
+              && request.resource.data.get('storeNameHistory', [])
+                == resource.data.get('storeNameHistory', [])
+              && request.resource.data.get('lastStoreNameChangedAt', null)
+                == resource.data.get('lastStoreNameChangedAt', null)
             )
           )
           && (
@@ -1820,6 +1843,8 @@ service cloud.firestore {
       allow create: if validSupplierStockCreate();
 
       allow update: if validSupplierStockUpdate()
+        || validOwnerStockContactSync()
+        || validAdminVerifiedStockIdentityChange()
         || validVendorPurchaseStockUpdate(stockId)
         || validVendorCancellationStockRestore(stockId);
 
@@ -1915,6 +1940,102 @@ service cloud.firestore {
             'lastStockRestoreOrderId'
           ])
           && validStockCoreData(request.resource.data);
+      }
+
+      // When Admin approves a verified store-name or business-location
+      // request, synchronize the denormalized identity kept on every existing
+      // listing. The approved supplier profile remains the source of truth;
+      // product, price, quantity and ownership fields cannot be changed here.
+      function validAdminVerifiedStockIdentityChange() {
+        let supplierId = resource.data.get('supplierId', '');
+        let changed = request.resource.data
+          .diff(resource.data)
+          .affectedKeys();
+        let requestedChange = get(changeRequestPath(supplierId)).data;
+        let changedFields = requestedChange.get('changedFields', []);
+
+        return isAdmin()
+          && supplierId != ''
+          && request.resource.data.get('supplierId', '') == supplierId
+          && exists(changeRequestPath(supplierId))
+          && existsAfter(changeRequestPath(supplierId))
+          && requestedChange.get('status', '') == 'pending'
+          && getAfter(changeRequestPath(supplierId)).data.get('status', '')
+            == 'approved'
+          && getAfter(changeRequestPath(supplierId)).data.get(
+            'reviewedBy',
+            ''
+          ) == currentUid()
+          && existsAfter(supplierPath(supplierId))
+          && getAfter(supplierPath(supplierId)).data.get('status', '')
+            == 'approved'
+          && changed.hasOnly([
+            'supplierName',
+            'supplierLocation',
+            'updatedAt'
+          ])
+          && request.resource.data.get('updatedAt', null) is timestamp
+          && (
+            (
+              changedFields.hasAny(['Store name'])
+              && request.resource.data.get('supplierName', '')
+                == getAfter(supplierPath(supplierId)).data.get(
+                  'supplierName',
+                  ''
+                )
+            )
+            || (
+              !changedFields.hasAny(['Store name'])
+              && request.resource.data.get('supplierName', '')
+                == resource.data.get('supplierName', '')
+            )
+          )
+          && (
+            (
+              changedFields.hasAny(['Business location'])
+              && request.resource.data.get('supplierLocation', '')
+                == getAfter(supplierPath(supplierId)).data.get(
+                  'location',
+                  ''
+                )
+            )
+            || (
+              !changedFields.hasAny(['Business location'])
+              && request.resource.data.get('supplierLocation', '')
+                == resource.data.get('supplierLocation', '')
+            )
+          );
+      }
+
+      // Public contact details can be maintained directly by the approved
+      // supplier. Synchronization is restricted to the contact snapshot and
+      // must exactly match the live approved profile written in the same
+      // atomic batch.
+      function validOwnerStockContactSync() {
+        let supplierId = resource.data.get('supplierId', '');
+        let changed = request.resource.data
+          .diff(resource.data)
+          .affectedKeys();
+
+        return signedIn()
+          && currentUid() == supplierId
+          && request.resource.data.get('supplierId', '') == supplierId
+          && existsAfter(supplierPath(supplierId))
+          && getAfter(supplierPath(supplierId)).data.get('status', '')
+            == 'approved'
+          && changed.hasOnly([
+            'supplierContactNumber',
+            'updatedAt'
+          ])
+          && request.resource.data.get('supplierContactNumber', '')
+            == getAfter(supplierPath(supplierId)).data.get(
+              'phone',
+              getAfter(supplierPath(supplierId)).data.get(
+                'contactNumber',
+                ''
+              )
+            )
+          && request.resource.data.get('updatedAt', null) is timestamp;
       }
 
       function validSupplierStockIdentity(data, supplierId) {

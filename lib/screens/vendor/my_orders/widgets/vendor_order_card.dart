@@ -8,6 +8,7 @@ class VendorOrderCard extends StatefulWidget {
     required this.document,
     required this.onCancelPendingOrder,
     required this.onReviewOrder,
+    required this.onSupplierTap,
     this.initiallyExpanded = false,
     this.highlighted = false,
   });
@@ -15,6 +16,7 @@ class VendorOrderCard extends StatefulWidget {
   final QueryDocumentSnapshot<Map<String, dynamic>> document;
   final VoidCallback onCancelPendingOrder;
   final VoidCallback onReviewOrder;
+  final VoidCallback onSupplierTap;
   final bool initiallyExpanded;
   final bool highlighted;
 
@@ -24,11 +26,13 @@ class VendorOrderCard extends StatefulWidget {
 
 class _VendorOrderCardState extends State<VendorOrderCard> {
   late bool isExpanded;
+  late Future<({String name, String imageUrl})> supplierPresentationFuture;
 
   @override
   void initState() {
     super.initState();
     isExpanded = widget.initiallyExpanded;
+    supplierPresentationFuture = loadSupplierPresentation();
   }
 
   @override
@@ -40,6 +44,131 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
             oldWidget.document.id != widget.document.id)) {
       isExpanded = true;
     }
+
+    if (oldWidget.document.id != widget.document.id) {
+      supplierPresentationFuture = loadSupplierPresentation();
+    }
+  }
+
+  Future<({String name, String imageUrl})> loadSupplierPresentation() async {
+    final data = widget.document.data();
+    final storedName = getString(data, 'supplierName', 'Supplier');
+    var storedImageUrl = '';
+    for (final key in const [
+      'supplierImageUrl',
+      'supplierProfileImageUrl',
+      'storeImageUrl',
+    ]) {
+      final value = (data[key] ?? '').toString().trim();
+      if (hasNetworkImage(value)) {
+        storedImageUrl = value;
+        break;
+      }
+    }
+
+    final supplierId = getString(data, 'supplierId', '').trim();
+    if (supplierId.isEmpty) {
+      return (name: storedName, imageUrl: storedImageUrl);
+    }
+
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('supplierProfiles')
+          .doc(supplierId)
+          .get();
+      final profile = snapshot.data() ?? <String, dynamic>{};
+      final currentName = getString(
+        profile,
+        'supplierName',
+        getString(
+          profile,
+          'storeName',
+          getString(profile, 'businessName', storedName),
+        ),
+      );
+      final currentImageUrl = (profile['profileImageUrl'] ?? '')
+          .toString()
+          .trim();
+      return (
+        name: currentName,
+        imageUrl: hasNetworkImage(currentImageUrl)
+            ? currentImageUrl
+            : storedImageUrl,
+      );
+    } catch (_) {
+      return (name: storedName, imageUrl: storedImageUrl);
+    }
+  }
+
+  Widget supplierPresentation(String fallbackName) {
+    return FutureBuilder<({String name, String imageUrl})>(
+      future: supplierPresentationFuture,
+      builder: (context, snapshot) {
+        final presentation = snapshot.data;
+        final supplierName = presentation?.name.trim().isNotEmpty == true
+            ? presentation!.name.trim()
+            : fallbackName;
+        final imageUrl = presentation?.imageUrl.trim() ?? '';
+
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: widget.onSupplierTap,
+            borderRadius: BorderRadius.circular(10),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Row(
+                children: [
+                  Container(
+                    width: 18,
+                    height: 18,
+                    clipBehavior: Clip.antiAlias,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xFFE8F5FC),
+                      border: Border.all(color: const Color(0xFFC9E4EF)),
+                    ),
+                    child: hasNetworkImage(imageUrl)
+                        ? Image.network(
+                            imageUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => const Icon(
+                              Icons.storefront_outlined,
+                              color: Color(0xFF0875D1),
+                              size: 10,
+                            ),
+                          )
+                        : const Icon(
+                            Icons.storefront_outlined,
+                            color: Color(0xFF0875D1),
+                            size: 10,
+                          ),
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      supplierName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF0875D1),
+                        fontSize: 9.8,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: Color(0xFF0875D1),
+                    size: 15,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   String getString(Map<String, dynamic> data, String key, String fallback) {
@@ -63,9 +192,9 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
   String displayStatus(String status) {
     switch (status.toLowerCase()) {
       case 'pending':
-        return 'Pending Confirmation';
+        return 'Pending';
       case 'accepted':
-        return 'Accepted';
+        return 'To Receive';
       case 'completed':
       case 'delivered':
         return 'Completed';
@@ -152,6 +281,29 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
         return 'This order was marked as refunded.';
       default:
         return 'Track the latest status of this order.';
+    }
+  }
+
+  String statusActionLabel(String status) {
+    if (isExpanded) {
+      return 'Hide order details';
+    }
+
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return 'Waiting for supplier confirmation';
+      case 'accepted':
+        return 'Ready to receive';
+      case 'completed':
+      case 'delivered':
+        return 'View order summary';
+      case 'cancelled':
+      case 'rejected':
+      case 'returned':
+      case 'refunded':
+        return 'View closure details';
+      default:
+        return 'View order details';
     }
   }
 
@@ -246,22 +398,21 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
   Widget statusChip(String status) {
     final color = statusColor(status);
 
-    // Status is informational, not an action. Keep it visually clear without
-    // wrapping it in a pill/card that could be mistaken for a button.
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(statusIcon(status), color: color, size: 12),
-        const SizedBox(width: 4),
-        Text(
-          displayStatus(status),
-          style: TextStyle(
-            color: color,
-            fontSize: 8.9,
-            fontWeight: FontWeight.w900,
-          ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withAlpha(16),
+        borderRadius: BorderRadius.circular(99),
+      ),
+      child: Text(
+        displayStatus(status),
+        maxLines: 1,
+        style: TextStyle(
+          color: color,
+          fontSize: 8.7,
+          fontWeight: FontWeight.w900,
         ),
-      ],
+      ),
     );
   }
 
@@ -329,10 +480,8 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
   }
 
   Widget compactStatusBar(String orderStatus) {
-    final color = statusColor(orderStatus);
-
     return Material(
-      color: color.withAlpha(10),
+      color: const Color(0xFFF7FAFC),
       borderRadius: BorderRadius.circular(15),
       child: InkWell(
         onTap: () {
@@ -345,25 +494,19 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
           padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: color.withAlpha(28)),
+            border: Border.all(color: const Color(0xFFDCE9F1)),
           ),
           child: Row(
             children: [
-              Icon(
-                statusIcon(orderStatus),
-                color: color,
-                size: 20,
-              ),
-              const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  statusMessage(orderStatus),
+                  statusActionLabel(orderStatus),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: Color(0xFF52677A),
+                    color: Color(0xFF526B7D),
                     fontSize: 9.8,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
@@ -373,7 +516,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
                 turns: isExpanded ? 0.5 : 0,
                 child: Icon(
                   Icons.keyboard_arrow_down_rounded,
-                  color: color,
+                  color: const Color(0xFF0875D1),
                   size: 18,
                 ),
               ),
@@ -723,8 +866,6 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
     final orderStatus = getString(data, 'orderStatus', 'Pending');
 
     final reviewSubmitted = data['reviewSubmitted'] == true;
-    final color = statusColor(orderStatus);
-
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -761,12 +902,6 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
               color: Colors.white,
               child: Row(
                 children: [
-                  Icon(
-                    statusIcon(orderStatus),
-                    color: color,
-                    size: 21,
-                  ),
-                  const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -820,28 +955,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
                               ),
                             ),
                             const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.storefront_outlined,
-                                  color: Color(0xFF7B8FA3),
-                                  size: 13,
-                                ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    supplierName,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: Color(0xFF62798B),
-                                      fontSize: 9.8,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
+                            supplierPresentation(supplierName),
                           ],
                         ),
                       ),

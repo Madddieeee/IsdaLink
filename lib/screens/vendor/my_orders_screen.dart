@@ -1,11 +1,18 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:isdalink/config/cloudinary_config.dart';
 import 'package:isdalink/screens/vendor/my_orders/widgets/order_filter_selector.dart';
 import 'package:isdalink/screens/vendor/my_orders/widgets/order_notification_panel.dart';
 import 'package:isdalink/screens/vendor/my_orders/widgets/vendor_order_card.dart';
+import 'package:isdalink/screens/vendor/supplier_details_screen.dart';
 import 'package:isdalink/services/review_service.dart';
+import 'package:isdalink/services/cloudinary_upload_service.dart';
+import 'package:isdalink/services/supplier_browse_service.dart';
 import 'package:isdalink/services/vendor_order_service.dart';
 import 'package:isdalink/utils/order_helpers.dart';
 import 'package:isdalink/utils/app_error_message.dart';
@@ -23,8 +30,68 @@ class MyOrdersScreen extends StatefulWidget {
 class _MyOrdersScreenState extends State<MyOrdersScreen> {
   final VendorOrderService orderService = const VendorOrderService();
   final ReviewService reviewService = const ReviewService();
+  final ImagePicker imagePicker = ImagePicker();
+  final CloudinaryUploadService uploadService = const CloudinaryUploadService();
+  final SupplierBrowseService supplierBrowseService = SupplierBrowseService();
 
   String selectedFilter = 'All';
+
+  Future<void> openSupplierStore(
+    QueryDocumentSnapshot<Map<String, dynamic>> orderDocument,
+  ) async {
+    final supplierId = OrderHelpers.getStringValue(
+      orderDocument.data(),
+      'supplierId',
+      '',
+    ).trim();
+
+    if (supplierId.isEmpty) {
+      showMessage('This supplier store is no longer available.', isError: true);
+      return;
+    }
+
+    try {
+      final profileSnapshot = await FirebaseFirestore.instance
+          .collection('supplierProfiles')
+          .doc(supplierId)
+          .get();
+      final profile = profileSnapshot.data();
+
+      if (!mounted) {
+        return;
+      }
+
+      if (profile == null ||
+          OrderHelpers.getStringValue(profile, 'status', '').toLowerCase() !=
+              'approved') {
+        showMessage(
+          'This supplier store is currently unavailable.',
+          isError: true,
+        );
+        return;
+      }
+
+      final supplier = supplierBrowseService.supplierFromProfile(profile);
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              SupplierDetailsScreen(supplier: supplier, supplierId: supplierId),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      showMessage(
+        AppErrorMessage.from(
+          error,
+          fallback: 'Unable to open this supplier store right now.',
+        ),
+        isError: true,
+      );
+    }
+  }
 
   String statusOf(QueryDocumentSnapshot<Map<String, dynamic>> document) {
     return OrderHelpers.getStringValue(
@@ -276,6 +343,63 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     };
   }
 
+  Future<({String name, String imageUrl})> supplierPresentationForOrder(
+    Map<String, dynamic> data,
+  ) async {
+    final storedName = OrderHelpers.getStringValue(
+      data,
+      'supplierName',
+      'Supplier',
+    );
+    var storedImageUrl = '';
+    for (final key in const [
+      'supplierImageUrl',
+      'supplierProfileImageUrl',
+      'storeImageUrl',
+    ]) {
+      final value = (data[key] ?? '').toString().trim();
+      if (value.startsWith('http://') || value.startsWith('https://')) {
+        storedImageUrl = value;
+        break;
+      }
+    }
+
+    final supplierId = OrderHelpers.getStringValue(data, 'supplierId', '');
+    if (supplierId.trim().isEmpty) {
+      return (name: storedName, imageUrl: storedImageUrl);
+    }
+
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('supplierProfiles')
+          .doc(supplierId.trim())
+          .get();
+      final profile = snapshot.data() ?? <String, dynamic>{};
+      final currentName = OrderHelpers.getStringValue(
+        profile,
+        'supplierName',
+        OrderHelpers.getStringValue(
+          profile,
+          'storeName',
+          OrderHelpers.getStringValue(profile, 'businessName', storedName),
+        ),
+      );
+      final currentImageUrl = (profile['profileImageUrl'] ?? '')
+          .toString()
+          .trim();
+      return (
+        name: currentName,
+        imageUrl:
+            currentImageUrl.startsWith('http://') ||
+                currentImageUrl.startsWith('https://')
+            ? currentImageUrl
+            : storedImageUrl,
+      );
+    } catch (_) {
+      return (name: storedName, imageUrl: storedImageUrl);
+    }
+  }
+
   Future<void> reviewCompletedOrder(
     QueryDocumentSnapshot<Map<String, dynamic>> document,
   ) async {
@@ -294,23 +418,32 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
       'Fish Product',
     );
 
-    final supplierName = OrderHelpers.getStringValue(
-      data,
-      'supplierName',
-      'Supplier',
-    );
-
     final isEditing = data['reviewSubmitted'] == true;
     final initialRating = isEditing ? reviewRatingOf(data) : 0;
     final initialComment = isEditing
         ? OrderHelpers.getStringValue(data, 'reviewComment', '')
         : '';
+    final rawPhotoUrls = data['reviewPhotoUrls'];
+    final initialPhotoUrls = isEditing && rawPhotoUrls is List
+        ? rawPhotoUrls
+              .map((value) => value.toString().trim())
+              .where((value) => value.isNotEmpty)
+              .take(ReviewService.maxReviewPhotos)
+              .toList()
+        : <String>[];
+    final supplierPresentation = await supplierPresentationForOrder(data);
+
+    if (!mounted) {
+      return;
+    }
 
     final result = await showReviewDialog(
       productName: productName,
-      supplierName: supplierName,
+      supplierName: supplierPresentation.name,
+      supplierImageUrl: supplierPresentation.imageUrl,
       initialRating: initialRating,
       initialComment: initialComment,
+      initialPhotoUrls: initialPhotoUrls,
       isEditing: isEditing,
     );
 
@@ -319,7 +452,21 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     }
 
     try {
-      final input = ReviewInput(rating: result.rating, comment: result.comment);
+      final uploadedUrls = <String>[...result.existingPhotoUrls];
+      for (final photo in result.newPhotos) {
+        uploadedUrls.add(
+          await uploadService.uploadImage(
+            photo,
+            folder:
+                '${CloudinaryConfig.reviewPhotoFolder}/${user.uid}/${document.id}',
+          ),
+        );
+      }
+      final input = ReviewInput(
+        rating: result.rating,
+        comment: result.comment,
+        photoUrls: uploadedUrls,
+      );
 
       if (isEditing) {
         await reviewService.updateOrderReview(
@@ -365,12 +512,16 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
   Future<ReviewDialogResult?> showReviewDialog({
     required String productName,
     required String supplierName,
+    required String supplierImageUrl,
     required int initialRating,
     required String initialComment,
+    required List<String> initialPhotoUrls,
     required bool isEditing,
   }) async {
     int selectedRating = initialRating;
     String reviewText = initialComment;
+    final existingPhotoUrls = <String>[...initialPhotoUrls];
+    final newPhotos = <XFile>[];
 
     return showModalBottomSheet<ReviewDialogResult>(
       context: context,
@@ -416,14 +567,6 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                       const SizedBox(height: 16),
                       Row(
                         children: [
-                          Icon(
-                            isEditing
-                                ? Icons.edit_note_rounded
-                                : Icons.star_rounded,
-                            color: const Color(0xFF0875D1),
-                            size: 29,
-                          ),
-                          const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -478,10 +621,34 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                         ),
                         child: Row(
                           children: [
-                            const Icon(
-                              Icons.storefront_rounded,
-                              color: Color(0xFF0875D1),
-                              size: 23,
+                            Container(
+                              width: 42,
+                              height: 42,
+                              clipBehavior: Clip.antiAlias,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: const Color(0xFFDFF2FA),
+                                border: Border.all(
+                                  color: const Color(0xFFC4E1EC),
+                                ),
+                              ),
+                              child:
+                                  supplierImageUrl.startsWith('http://') ||
+                                      supplierImageUrl.startsWith('https://')
+                                  ? Image.network(
+                                      supplierImageUrl,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, _, _) => const Icon(
+                                        Icons.storefront_outlined,
+                                        color: Color(0xFF0875D1),
+                                        size: 20,
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.storefront_outlined,
+                                      color: Color(0xFF0875D1),
+                                      size: 20,
+                                    ),
                             ),
                             const SizedBox(width: 11),
                             Expanded(
@@ -510,25 +677,6 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                                     ),
                                   ),
                                 ],
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE6F7EF),
-                                borderRadius: BorderRadius.circular(99),
-                              ),
-                              child: const Text(
-                                'COMPLETED',
-                                style: TextStyle(
-                                  color: Color(0xFF147D64),
-                                  fontSize: 7.8,
-                                  letterSpacing: 0.45,
-                                  fontWeight: FontWeight.w900,
-                                ),
                               ),
                             ),
                           ],
@@ -586,20 +734,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                           );
                         }),
                       ),
-                      const SizedBox(height: 6),
-                      Center(
-                        child: Text(
-                          selectedRating == 0
-                              ? 'Tap a star to continue'
-                              : '$selectedRating of 5 stars',
-                          style: const TextStyle(
-                            color: Color(0xFF7B8FA3),
-                            fontSize: 9.8,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 14),
                       const Text(
                         'WRITTEN REVIEW',
                         style: TextStyle(
@@ -645,106 +780,138 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.all(11),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF1F6FA),
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        child: const Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(
-                              Icons.info_outline_rounded,
-                              color: Color(0xFF0875D1),
-                              size: 17,
-                            ),
-                            SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Your rating is shown on the supplier profile. You can edit this review later from My Orders.',
-                                style: TextStyle(
-                                  color: Color(0xFF657C8E),
-                                  fontSize: 9.4,
-                                  height: 1.35,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
                       Row(
                         children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () => Navigator.pop(sheetContext),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: const Color(0xFF52677A),
-                                side: const BorderSide(
-                                  color: Color(0xFFC9D8E2),
-                                ),
-                                minimumSize: const Size.fromHeight(50),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                ),
-                              ),
-                              child: const Text(
-                                'Cancel',
-                                style: TextStyle(fontWeight: FontWeight.w900),
+                          const Expanded(
+                            child: Text(
+                              'PHOTOS (OPTIONAL)',
+                              style: TextStyle(
+                                color: Color(0xFF7B8FA3),
+                                fontSize: 8.8,
+                                letterSpacing: 0.65,
+                                fontWeight: FontWeight.w900,
                               ),
                             ),
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            flex: 2,
-                            child: ElevatedButton.icon(
-                              onPressed: canSubmit
-                                  ? () {
-                                      Navigator.pop(
-                                        sheetContext,
-                                        ReviewDialogResult(
-                                          rating: selectedRating,
-                                          comment: reviewText.trim(),
-                                        ),
-                                      );
-                                    }
-                                  : null,
-                              icon: Icon(
-                                isEditing
-                                    ? Icons.save_outlined
-                                    : Icons.send_rounded,
-                                size: 18,
-                              ),
-                              label: Text(
-                                isEditing
-                                    ? 'Save Changes'
-                                    : selectedRating == 0
-                                    ? 'Select a Rating'
-                                    : 'Submit Review',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF0875D1),
-                                disabledBackgroundColor: const Color(
-                                  0xFFDCE7EF,
-                                ),
-                                foregroundColor: Colors.white,
-                                disabledForegroundColor: const Color(
-                                  0xFF7B8FA3,
-                                ),
-                                elevation: canSubmit ? 3 : 0,
-                                minimumSize: const Size.fromHeight(50),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                ),
-                              ),
+                          Text(
+                            '${existingPhotoUrls.length + newPhotos.length}/${ReviewService.maxReviewPhotos}',
+                            style: const TextStyle(
+                              color: Color(0xFF7B8FA3),
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 7),
+                      if (existingPhotoUrls.isNotEmpty || newPhotos.isNotEmpty)
+                        SizedBox(
+                          height: 76,
+                          child: ListView(
+                            scrollDirection: Axis.horizontal,
+                            children: [
+                              ...existingPhotoUrls.map(
+                                (url) => _ReviewPhotoPreview(
+                                  child: Image.network(url, fit: BoxFit.cover),
+                                  onRemove: () {
+                                    setSheetState(() {
+                                      existingPhotoUrls.remove(url);
+                                    });
+                                  },
+                                ),
+                              ),
+                              ...newPhotos.map(
+                                (photo) => _ReviewPhotoPreview(
+                                  child: Image.file(
+                                    File(photo.path),
+                                    fit: BoxFit.cover,
+                                  ),
+                                  onRemove: () {
+                                    setSheetState(() {
+                                      newPhotos.remove(photo);
+                                    });
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      const SizedBox(height: 7),
+                      OutlinedButton.icon(
+                        onPressed:
+                            existingPhotoUrls.length + newPhotos.length >=
+                                ReviewService.maxReviewPhotos
+                            ? null
+                            : () async {
+                                final remaining =
+                                    ReviewService.maxReviewPhotos -
+                                    existingPhotoUrls.length -
+                                    newPhotos.length;
+                                final picked = await imagePicker.pickMultiImage(
+                                  imageQuality: 88,
+                                  maxWidth: 1600,
+                                );
+                                if (picked.isEmpty) return;
+                                setSheetState(() {
+                                  newPhotos.addAll(picked.take(remaining));
+                                });
+                              },
+                        icon: const Icon(Icons.add_photo_alternate_outlined),
+                        label: const Text('Add fish photos'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF0875D1),
+                          side: const BorderSide(color: Color(0xFFBFDDEA)),
+                          minimumSize: const Size.fromHeight(44),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: canSubmit
+                              ? () {
+                                  Navigator.pop(
+                                    sheetContext,
+                                    ReviewDialogResult(
+                                      rating: selectedRating,
+                                      comment: reviewText.trim(),
+                                      existingPhotoUrls: List<String>.from(
+                                        existingPhotoUrls,
+                                      ),
+                                      newPhotos: List<XFile>.from(newPhotos),
+                                    ),
+                                  );
+                                }
+                              : null,
+                          icon: Icon(
+                            isEditing
+                                ? Icons.save_outlined
+                                : Icons.send_rounded,
+                            size: 18,
+                          ),
+                          label: Text(
+                            isEditing
+                                ? 'Save Changes'
+                                : selectedRating == 0
+                                ? 'Select a Rating'
+                                : 'Submit Review',
+                            style: const TextStyle(fontWeight: FontWeight.w900),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF0875D1),
+                            disabledBackgroundColor: const Color(0xFFDCE7EF),
+                            foregroundColor: Colors.white,
+                            disabledForegroundColor: const Color(0xFF7B8FA3),
+                            elevation: canSubmit ? 3 : 0,
+                            minimumSize: const Size.fromHeight(50),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -904,7 +1071,8 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                       _HeaderActionButton(
                         icon: Icons.arrow_back_rounded,
                         tooltip: 'Back',
-                        onTap: widget.onBack ?? () => Navigator.maybePop(context),
+                        onTap:
+                            widget.onBack ?? () => Navigator.maybePop(context),
                       ),
                       const Spacer(),
                       SizedBox(
@@ -1208,6 +1376,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                         onCancelPendingOrder: () =>
                             cancelPendingOrder(document),
                         onReviewOrder: () => reviewCompletedOrder(document),
+                        onSupplierTap: () => openSupplierStore(document),
                       ),
                       if (reviewSubmitted) reviewEditPanel(document),
                     ],
@@ -1276,10 +1445,61 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
 }
 
 class ReviewDialogResult {
-  const ReviewDialogResult({required this.rating, required this.comment});
+  const ReviewDialogResult({
+    required this.rating,
+    required this.comment,
+    required this.existingPhotoUrls,
+    required this.newPhotos,
+  });
 
   final int rating;
   final String comment;
+  final List<String> existingPhotoUrls;
+  final List<XFile> newPhotos;
+}
+
+class _ReviewPhotoPreview extends StatelessWidget {
+  const _ReviewPhotoPreview({required this.child, required this.onRemove});
+
+  final Widget child;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(13),
+            child: SizedBox(width: 76, height: 76, child: child),
+          ),
+          Positioned(
+            right: -4,
+            top: -4,
+            child: Material(
+              color: const Color(0xFFD94A45),
+              shape: const CircleBorder(),
+              child: InkWell(
+                onTap: onRemove,
+                customBorder: const CircleBorder(),
+                child: const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: Icon(
+                    Icons.close_rounded,
+                    color: Colors.white,
+                    size: 15,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _DialogIcon extends StatelessWidget {

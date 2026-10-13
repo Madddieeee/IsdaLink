@@ -137,6 +137,20 @@ class AdminDashboardService {
         .doc(supplierId);
     final userRef = firestore.collection('users').doc(supplierId);
 
+    // Fish-stock documents keep a small supplier identity snapshot so lists
+    // and search can render without an additional profile read. Keep those
+    // snapshots aligned with an approved verified name/location change.
+    final stockSnapshot = await firestore
+        .collection('fishStocks')
+        .where('supplierId', isEqualTo: supplierId)
+        .get();
+
+    if (stockSnapshot.docs.length > 450) {
+      throw StateError(
+        'This supplier has too many saved listings to update safely. Archive old listings before approving this request.',
+      );
+    }
+
     await firestore.runTransaction((transaction) async {
       final requestSnapshot = await transaction.get(requestRef);
       final supplierSnapshot = await transaction.get(supplierRef);
@@ -225,6 +239,59 @@ class AdminDashboardService {
       final requestedLatitude = requestData['requestedStoreLatitude'];
       final requestedLongitude = requestData['requestedStoreLongitude'];
 
+      final currentStoreName = getStringValue(
+        supplierData,
+        'storeName',
+        getStringValue(supplierData, 'supplierName', ''),
+      );
+      final rawPreviousStoreNames = supplierData['previousStoreNames'];
+      final previousStoreNames = rawPreviousStoreNames is List
+          ? rawPreviousStoreNames
+                .map((value) => value.toString().trim())
+                .where((value) => value.isNotEmpty)
+                .toList()
+          : <String>[];
+      final updatedPreviousStoreNames = <String>[
+        ...previousStoreNames.where(
+          (name) => name.toLowerCase() != currentStoreName.toLowerCase(),
+        ),
+        if (changesStoreName &&
+            currentStoreName.isNotEmpty &&
+            currentStoreName.toLowerCase() != requestedStoreName.toLowerCase())
+          currentStoreName,
+      ];
+      final boundedPreviousStoreNames = updatedPreviousStoreNames.length > 10
+          ? updatedPreviousStoreNames.sublist(
+              updatedPreviousStoreNames.length - 10,
+            )
+          : updatedPreviousStoreNames;
+      final rawStoreNameHistory = supplierData['storeNameHistory'];
+      final storeNameHistory = rawStoreNameHistory is List
+          ? rawStoreNameHistory
+                .whereType<Map>()
+                .map((entry) => Map<String, dynamic>.from(entry))
+                .toList()
+          : <Map<String, dynamic>>[];
+      final nameChanged =
+          changesStoreName &&
+          currentStoreName.isNotEmpty &&
+          currentStoreName.toLowerCase() != requestedStoreName.toLowerCase();
+      final updatedStoreNameHistory = <Map<String, dynamic>>[
+        ...storeNameHistory.where(
+          (entry) =>
+              entry['name']?.toString().trim().toLowerCase() !=
+              currentStoreName.toLowerCase(),
+        ),
+        if (nameChanged)
+          <String, dynamic>{
+            'name': currentStoreName,
+            'changedAt': Timestamp.now(),
+          },
+      ];
+      final boundedStoreNameHistory = updatedStoreNameHistory.length > 10
+          ? updatedStoreNameHistory.sublist(updatedStoreNameHistory.length - 10)
+          : updatedStoreNameHistory;
+
       if (changesLocation &&
           (requestedLatitude is! num || requestedLongitude is! num)) {
         throw StateError('The requested business pin is invalid.');
@@ -243,6 +310,9 @@ class AdminDashboardService {
           'storeName': requestedStoreName,
           'supplierName': requestedStoreName,
           'businessName': requestedStoreName,
+          'previousStoreNames': boundedPreviousStoreNames,
+          'storeNameHistory': boundedStoreNameHistory,
+          'lastStoreNameChangedAt': FieldValue.serverTimestamp(),
         },
         if (changesLocation) ...<String, dynamic>{
           'storeProvince': requestedProvince,
@@ -273,6 +343,9 @@ class AdminDashboardService {
           'storeName': requestedStoreName,
           'supplierName': requestedStoreName,
           'businessName': requestedStoreName,
+          'previousStoreNames': boundedPreviousStoreNames,
+          'storeNameHistory': boundedStoreNameHistory,
+          'lastStoreNameChangedAt': FieldValue.serverTimestamp(),
         },
         if (changesLocation) ...<String, dynamic>{
           'storeProvince': requestedProvince,
@@ -291,6 +364,16 @@ class AdminDashboardService {
         'supplierApplication': updatedApplication,
         'updatedAt': FieldValue.serverTimestamp(),
       });
+
+      if (changesStoreName || changesLocation) {
+        for (final stockDocument in stockSnapshot.docs) {
+          transaction.update(stockDocument.reference, <String, dynamic>{
+            if (changesStoreName) 'supplierName': requestedStoreName,
+            if (changesLocation) 'supplierLocation': requestedLocation,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        }
+      }
 
       transaction.update(requestRef, <String, dynamic>{
         'status': 'approved',

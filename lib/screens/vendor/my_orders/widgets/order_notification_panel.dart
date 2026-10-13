@@ -13,6 +13,61 @@ class OrderNotificationPanel extends StatelessWidget {
   final String vendorId;
   final VendorOrderService service;
 
+  Future<String> currentSupplierMessage(
+    Map<String, dynamic> notification,
+    String storedMessage,
+  ) async {
+    final orderId = OrderHelpers.getStringValue(notification, 'orderId', '');
+    if (orderId.isEmpty) {
+      return storedMessage;
+    }
+
+    try {
+      final orderSnapshot = await FirebaseFirestore.instance
+          .collection('orders')
+          .doc(orderId)
+          .get();
+      final order = orderSnapshot.data() ?? <String, dynamic>{};
+      final supplierId = OrderHelpers.getStringValue(order, 'supplierId', '');
+      final storedSupplierName = OrderHelpers.getStringValue(
+        order,
+        'supplierName',
+        '',
+      );
+
+      if (supplierId.isEmpty || storedSupplierName.isEmpty) {
+        return storedMessage;
+      }
+
+      final profileSnapshot = await FirebaseFirestore.instance
+          .collection('supplierProfiles')
+          .doc(supplierId)
+          .get();
+      final profile = profileSnapshot.data() ?? <String, dynamic>{};
+      final currentSupplierName = OrderHelpers.getStringValue(
+        profile,
+        'supplierName',
+        OrderHelpers.getStringValue(
+          profile,
+          'storeName',
+          OrderHelpers.getStringValue(
+            profile,
+            'businessName',
+            storedSupplierName,
+          ),
+        ),
+      );
+
+      if (currentSupplierName == storedSupplierName) {
+        return storedMessage;
+      }
+
+      return storedMessage.replaceAll(storedSupplierName, currentSupplierName);
+    } catch (_) {
+      return storedMessage;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
@@ -129,12 +184,16 @@ class OrderNotificationPanel extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 3),
-                            Text(
-                              message,
-                              style: const TextStyle(
-                                color: Color(0xFF52677A),
-                                fontSize: 11,
-                                height: 1.35,
+                            FutureBuilder<String>(
+                              future: currentSupplierMessage(data, message),
+                              initialData: message,
+                              builder: (context, messageSnapshot) => Text(
+                                messageSnapshot.data ?? message,
+                                style: const TextStyle(
+                                  color: Color(0xFF52677A),
+                                  fontSize: 11,
+                                  height: 1.35,
+                                ),
                               ),
                             ),
                           ],

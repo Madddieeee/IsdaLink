@@ -275,6 +275,51 @@ class SupplierBrowseService {
     return getIntValue(data, 'totalReviews', 0);
   }
 
+  List<SupplierNameHistoryEntry> storeNameHistoryFromProfile(
+    Map<String, dynamic> data,
+  ) {
+    final currentName = supplierNameFromProfile(data).toLowerCase();
+    final entries = <SupplierNameHistoryEntry>[];
+    final seen = <String>{};
+    final rawHistory = data['storeNameHistory'];
+
+    if (rawHistory is List) {
+      for (final rawEntry in rawHistory.reversed) {
+        if (rawEntry is! Map) continue;
+        final entry = Map<String, dynamic>.from(rawEntry);
+        final name = getStringValue(entry, 'name', '');
+        final normalized = name.toLowerCase();
+        if (name.isEmpty ||
+            normalized == currentName ||
+            !seen.add(normalized)) {
+          continue;
+        }
+        entries.add(
+          SupplierNameHistoryEntry(
+            name: name,
+            changedAt: getDateTimeValue(entry['changedAt']),
+          ),
+        );
+      }
+    }
+
+    final rawNames = data['previousStoreNames'];
+    if (rawNames is List) {
+      for (final rawName in rawNames.reversed) {
+        final name = rawName.toString().trim();
+        final normalized = name.toLowerCase();
+        if (name.isEmpty ||
+            normalized == currentName ||
+            !seen.add(normalized)) {
+          continue;
+        }
+        entries.add(SupplierNameHistoryEntry(name: name));
+      }
+    }
+
+    return entries.take(10).toList(growable: false);
+  }
+
   Supplier supplierFromProfile(Map<String, dynamic> data) {
     final application = nestedApplication(data);
 
@@ -322,6 +367,7 @@ class SupplierBrowseService {
         'registeredAt',
         'createdAt',
       ]),
+      storeNameHistory: storeNameHistoryFromProfile(data),
     );
   }
 

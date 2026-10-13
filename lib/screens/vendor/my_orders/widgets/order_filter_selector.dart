@@ -83,36 +83,50 @@ class OrderFilterSelector extends StatelessWidget {
             onTap: () => onFilterSelected(filter),
             borderRadius: BorderRadius.circular(15),
             child: SizedBox(
-              height: 54,
+              height: 44,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 3),
-                child: Column(
+                padding: const EdgeInsets.symmetric(horizontal: 5),
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        filter,
-                        maxLines: 1,
-                        style: TextStyle(
-                          color: selected
-                              ? Colors.white
-                              : const Color(0xFF102C44),
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w900,
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          filter,
+                          maxLines: 1,
+                          style: TextStyle(
+                            color: selected
+                                ? Colors.white
+                                : const Color(0xFF102C44),
+                            fontSize: 10.2,
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 3),
-                    Text(
-                      '$count',
-                      style: TextStyle(
+                    const SizedBox(width: 5),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
                         color: selected
-                            ? const Color(0xFFEAF7FF)
-                            : const Color(0xFF0875D1),
-                        fontSize: 10.5,
-                        height: 1,
-                        fontWeight: FontWeight.w900,
+                            ? Colors.white.withAlpha(35)
+                            : const Color(0xFFEAF4FB),
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                      child: Text(
+                        '$count',
+                        style: TextStyle(
+                          color: selected
+                              ? Colors.white
+                              : const Color(0xFF0875D1),
+                          fontSize: 8.8,
+                          height: 1,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
                     ),
                   ],
@@ -136,7 +150,7 @@ class OrderFilterSelector extends StatelessWidget {
           onTap: () => onFilterSelected(filter),
           borderRadius: BorderRadius.circular(12),
           child: Container(
-            height: 38,
+            height: 34,
             alignment: Alignment.center,
             padding: const EdgeInsets.symmetric(horizontal: 6),
             decoration: BoxDecoration(
@@ -210,11 +224,6 @@ class OrderFilterSelector extends StatelessWidget {
                       padding: const EdgeInsets.fromLTRB(5, 5, 5, 3),
                       child: Row(
                         children: [
-                          activeStatusButton(
-                            filter: 'Active',
-                            label: 'All active',
-                          ),
-                          const SizedBox(width: 6),
                           activeStatusButton(
                             filter: 'Pending',
                             label: 'Pending',

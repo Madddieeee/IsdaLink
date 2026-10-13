@@ -71,7 +71,20 @@ class SupplierProfileService {
       throw StateError('Use 8 to 240 characters for the store description.');
     }
 
-    await supplierProfileRef(uid).update(<String, dynamic>{
+    final firestore = FirebaseFirestore.instance;
+    final stockSnapshot = await firestore
+        .collection('fishStocks')
+        .where('supplierId', isEqualTo: uid)
+        .get();
+
+    if (stockSnapshot.docs.length > 450) {
+      throw StateError(
+        'This store has too many saved listings to update safely. Please contact the administrator.',
+      );
+    }
+
+    final batch = firestore.batch();
+    batch.update(supplierProfileRef(uid), <String, dynamic>{
       'phone': contact,
       'contactNumber': contact,
       'primaryMarketArea': marketArea,
@@ -82,6 +95,15 @@ class SupplierProfileService {
       'supportedUnits': FieldValue.delete(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
+
+    for (final stockDocument in stockSnapshot.docs) {
+      batch.update(stockDocument.reference, <String, dynamic>{
+        'supplierContactNumber': contact,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    }
+
+    await batch.commit();
   }
 
   Future<void> updateStorefrontImage({
