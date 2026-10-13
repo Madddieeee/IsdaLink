@@ -97,7 +97,7 @@ class SupplierOrderCard extends StatelessWidget {
       case 'delivery':
         return 'Delivery note';
       default:
-        return 'Buyer request';
+        return 'Message to supplier';
     }
   }
 
@@ -671,8 +671,7 @@ class SupplierOrderCard extends StatelessWidget {
                       metric(
                         icon: Icons.payments_outlined,
                         label: pendingTawad ? 'TAWAD TOTAL' : 'ORDER TOTAL',
-                        value:
-                            '₱${OrderHelpers.formatNumber(displayedTotal)}',
+                        value: '₱${OrderHelpers.formatNumber(displayedTotal)}',
                         valueColor: const Color(0xFF0875D1),
                       ),
                       const SizedBox(width: 6),

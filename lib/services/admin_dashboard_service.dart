@@ -81,6 +81,20 @@ class AdminDashboardService {
     }).toList();
   }
 
+  List<QueryDocumentSnapshot<Map<String, dynamic>>> rejectedSuppliers(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> suppliers,
+  ) {
+    return suppliers.where((document) {
+      final status = getStringValue(
+        document.data(),
+        'status',
+        'pending',
+      ).toLowerCase();
+
+      return status == 'rejected' || status == 'declined';
+    }).toList();
+  }
+
   List<QueryDocumentSnapshot<Map<String, dynamic>>> pendingChangeRequests(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> requests,
   ) {

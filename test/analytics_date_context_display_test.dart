@@ -100,6 +100,31 @@ void main() {
         },
       );
 
+      testWidgets('$mode $period latest history uses current planning label', (
+        tester,
+      ) async {
+        final latestClosed = monthly
+            ? DateTime.utc(2026, 9)
+            : DateTime.utc(2026, 9, 28);
+        final dynamic screen = AnalyticsScreen(mode: mode).createState();
+        screen.selectedPeriod = period;
+        screen.selectedSupplierPeriodStart = latestClosed;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: screen.supplierDateContext(
+                historyData(latestClosed),
+                now: now,
+              ) as Widget,
+            ),
+          ),
+        );
+        expect(find.text('Current planning'), findsOneWidget);
+        expect(find.text('Planning target: $currentTarget'), findsOneWidget);
+        expect(find.textContaining('Historical forecast target:'), findsNothing);
+        expect(tester.takeException(), isNull);
+      });
+
       testWidgets('$mode $period guidance ignores historical selection', (
         tester,
       ) async {

@@ -120,5 +120,43 @@ Map<String, void Function()> analyticsRecordSetCases({
         'Units preserved',
       );
     },
+    'historical source boundary periods require complete calendar coverage': () {
+      final boundary = history()
+        ..['transactionDateIso'] = monthly ? '2026-03-20' : '2026-03-04'
+        ..['sourceCoverageStartDateIso'] = '2026-03-04'
+        ..['sourceCoverageEndDateIso'] = '2026-10-10';
+      final complete = history()
+        ..['transactionDateIso'] = monthly ? '2026-04-20' : '2026-03-09'
+        ..['sourceCoverageStartDateIso'] = '2026-03-04'
+        ..['sourceCoverageEndDateIso'] = '2026-10-10';
+      final endBoundary = history()
+        ..['transactionDateIso'] = monthly ? '2026-10-02' : '2026-10-06'
+        ..['sourceCoverageStartDateIso'] = '2026-03-04'
+        ..['sourceCoverageEndDateIso'] = '2026-10-10';
+
+      final result = closedAnalyticsRecordSet(
+        [
+          row('start-boundary', boundary),
+          row('complete', complete),
+          row('end-boundary', endBoundary),
+        ],
+        now: DateTime.utc(2026, 11, 10),
+        monthly: monthly,
+      );
+
+      require(
+        result.records.map((record) => record.documentId).toList().join() ==
+            'complete',
+        'Only fully covered source period contributes',
+      );
+    },
+    'historical records without valid source coverage are excluded': () {
+      final missing = history()..remove('sourceCoverageEndDateIso');
+      final reversed = history()
+        ..['sourceCoverageStartDateIso'] = '2026-10-10'
+        ..['sourceCoverageEndDateIso'] = '2026-03-04';
+      final result = resolve([row('missing', missing), row('reversed', reversed)]);
+      require(result.records.isEmpty, 'Coverage must be explicit and valid');
+    },
   };
 }

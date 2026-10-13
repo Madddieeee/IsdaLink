@@ -451,9 +451,7 @@ class SupplierDashboardScreen extends StatelessWidget {
     List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
   ) => dashboardService.pendingOrders(documents);
 
-  Widget dashboardHeaderSliver({
-    required BuildContext context,
-  }) {
+  Widget dashboardHeaderSliver({required BuildContext context}) {
     final topPadding = MediaQuery.paddingOf(context).top;
     const expandedHeight = 184.0;
     const toolbarHeight = 52.0;
@@ -822,7 +820,10 @@ class SupplierDashboardScreen extends StatelessWidget {
               const SizedBox(width: 8),
               if (unread.length > 1)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.11),
                     borderRadius: BorderRadius.circular(99),
@@ -899,7 +900,9 @@ class SupplierDashboardScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      unread.length == 1 ? title : '${unread.length} new stock updates',
+                      unread.length == 1
+                          ? title
+                          : '${unread.length} new stock updates',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -1024,7 +1027,9 @@ class SupplierDashboardScreen extends StatelessWidget {
       builder: (context, constraints) {
         const spacing = 10.0;
         final cardWidth = (constraints.maxWidth - spacing) / 2;
-        final textScale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0);
+        final textScale = MediaQuery.textScalerOf(
+          context,
+        ).scale(1).clamp(1.0, 2.0);
         final cardHeight = 108 + ((textScale - 1) * 36);
 
         return GridView.count(
@@ -1296,9 +1301,7 @@ class SupplierDashboardScreen extends StatelessWidget {
               width: double.infinity,
               decoration: const BoxDecoration(
                 color: Color(0xFFF7FAFC),
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(36),
-                ),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(36)),
                 boxShadow: [
                   BoxShadow(
                     color: Color(0x1800152A),
@@ -1357,9 +1360,9 @@ class SupplierDashboardScreen extends StatelessWidget {
                   if (sortedStocks.isEmpty)
                     const _EmptyStockCard()
                   else
-                    ...sortedStocks.take(4).map(
-                          (doc) => stockCard(doc, context),
-                        ),
+                    ...sortedStocks
+                        .take(4)
+                        .map((doc) => stockCard(doc, context)),
                 ],
               ),
             ),
@@ -1381,9 +1384,7 @@ class SupplierDashboardScreen extends StatelessWidget {
             child: const DecoratedBox(
               decoration: BoxDecoration(
                 color: Color(0xFFF7FAFC),
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(36),
-                ),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(36)),
                 boxShadow: [
                   BoxShadow(
                     color: Color(0x1800152A),
@@ -1534,11 +1535,7 @@ class _StoreActionButton extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      icon,
-                      color: filled ? Colors.white : accent,
-                      size: 17,
-                    ),
+                    Icon(icon, color: filled ? Colors.white : accent, size: 17),
                     const SizedBox(width: 6),
                     Text(
                       label,
@@ -1934,7 +1931,10 @@ class _SectionHeading extends StatelessWidget {
               onTap: onTrailingTap,
               borderRadius: BorderRadius.circular(99),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 7,
+                ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [

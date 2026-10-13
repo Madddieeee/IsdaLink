@@ -2533,13 +2533,13 @@ class ProductDetailsScreen extends StatelessWidget {
         ? 'Manage Product'
         : isOutOfStock
         ? 'Out of Stock'
-        : 'Place COD Order';
+        : 'Review Order';
 
     final primaryIcon = ownerListing
         ? Icons.edit_outlined
         : isOutOfStock
         ? Icons.block_rounded
-        : Icons.shopping_cart_checkout_rounded;
+        : Icons.receipt_long_outlined;
 
     final VoidCallback? primaryAction = ownerListing
         ? () => openManageProducts(context)
@@ -2565,57 +2565,28 @@ class ProductDetailsScreen extends StatelessWidget {
         child: SizedBox(
           height: 52,
           width: double.infinity,
-          child: Row(
-            children: [
-              if (!ownerListing &&
-                  !isOutOfStock &&
-                  stockId.trim().isNotEmpty &&
-                  supplierId.trim().isNotEmpty) ...[
-                OutlinedButton.icon(
-                  onPressed: () => openCheckout(
-                    context,
-                    activeSupplier,
-                    activeProduct,
-                    initialTawad: true,
-                  ),
-                  icon: const Icon(Icons.handshake_outlined, size: 17),
-                  label: const Text('Tawad'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF0875D1),
-                    side: const BorderSide(color: Color(0xFF0875D1)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 9),
-              ],
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: primaryAction,
-                  icon: Icon(primaryIcon, size: 19),
-                  label: Text(
-                    primaryLabel,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 12.2,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF087AC0),
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: const Color(0xFFCAD6E0),
-                    disabledForegroundColor: const Color(0xFF718391),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                  ),
-                ),
+          child: ElevatedButton.icon(
+            onPressed: primaryAction,
+            icon: Icon(primaryIcon, size: 19),
+            label: Text(
+              primaryLabel,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 12.2,
+                fontWeight: FontWeight.w900,
               ),
-            ],
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF087AC0),
+              foregroundColor: Colors.white,
+              disabledBackgroundColor: const Color(0xFFCAD6E0),
+              disabledForegroundColor: const Color(0xFF718391),
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+            ),
           ),
         ),
       ),

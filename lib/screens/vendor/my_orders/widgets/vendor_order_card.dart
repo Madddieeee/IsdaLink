@@ -276,8 +276,8 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
     );
 
     return Container(
-      width: 56,
-      height: 56,
+      width: 52,
+      height: 52,
       decoration: BoxDecoration(
         color: const Color(0xFFE8F8FD),
         borderRadius: BorderRadius.circular(17),
@@ -342,14 +342,18 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
         },
         borderRadius: BorderRadius.circular(15),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(15),
             border: Border.all(color: color.withAlpha(28)),
           ),
           child: Row(
             children: [
-              Icon(statusIcon(orderStatus), color: color, size: 20),
+              Icon(
+                statusIcon(orderStatus),
+                color: color,
+                size: 20,
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -393,7 +397,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
         : const Color(0xFFD32F2F);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
       child: Row(
         children: [
           const Icon(
@@ -538,7 +542,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
     final index = progressIndex(status);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(2, 7, 2, 2),
+      padding: const EdgeInsets.fromLTRB(2, 5, 2, 1),
       child: Row(
         children: [
           progressStep(
@@ -702,16 +706,6 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
     final totalAmount = fulfilledTotalAmount > 0
         ? fulfilledTotalAmount
         : originalTotalAmount;
-    final tawadRequested = data['tawadRequested'] == true;
-    final tawadStatus = getString(
-      data,
-      'tawadStatus',
-      tawadRequested ? 'Pending' : '',
-    );
-    final tawadOfferedUnitPrice = OrderHelpers.getDoubleValue(
-      data,
-      'tawadOfferedUnitPrice',
-    );
 
     final paymentStatus = getString(
       data,
@@ -763,11 +757,15 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
         child: Column(
           children: [
             Container(
-              padding: const EdgeInsets.fromLTRB(14, 12, 14, 11),
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 9),
               color: Colors.white,
               child: Row(
                 children: [
-                  Icon(statusIcon(orderStatus), color: color, size: 21),
+                  Icon(
+                    statusIcon(orderStatus),
+                    color: color,
+                    size: 21,
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
@@ -799,7 +797,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(14, 11, 14, 12),
+              padding: const EdgeInsets.fromLTRB(14, 9, 14, 10),
               child: Column(
                 children: [
                   Row(
@@ -821,7 +819,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 4),
                             Row(
                               children: [
                                 const Icon(
@@ -858,7 +856,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
                             value:
                                 '${OrderHelpers.formatNumber(quantity)} $quantityUnit',
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           compactValue(
                             label: 'Total',
                             value: '₱${formatMoney(totalAmount)}',
@@ -868,42 +866,6 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
                       ),
                     ],
                   ),
-                  if (tawadRequested) ...[
-                    const SizedBox(height: 8),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 9,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEFF8FD),
-                        borderRadius: BorderRadius.circular(13),
-                        border: Border.all(color: const Color(0xFFB7DDF3)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.handshake_outlined,
-                            color: Color(0xFF0875D1),
-                            size: 17,
-                          ),
-                          const SizedBox(width: 7),
-                          Expanded(
-                            child: Text(
-                              'Tawad $tawadStatus · Your offer: '
-                              '₱${formatMoney(tawadOfferedUnitPrice)} per $quantityUnit',
-                              style: const TextStyle(
-                                color: Color(0xFF102C44),
-                                fontSize: 9.2,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
                   if (partialFulfillment) ...[
                     const SizedBox(height: 8),
                     Container(
@@ -982,10 +944,10 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
                       ),
                     ),
                   ],
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   compactStatusBar(orderStatus),
                   if (orderStatus.toLowerCase() == 'pending') ...[
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 3),
                     actionArea(orderStatus, reviewSubmitted),
                   ],
                   AnimatedSize(
@@ -995,7 +957,7 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
                     child: isExpanded
                         ? Column(
                             children: [
-                              const SizedBox(height: 10),
+                              const SizedBox(height: 8),
                               if (isStoppedStatus(orderStatus))
                                 stoppedDetails(orderStatus)
                               else ...[
@@ -1003,11 +965,11 @@ class _VendorOrderCardState extends State<VendorOrderCard> {
                                   paymentStatus: paymentStatus,
                                   orderStatus: orderStatus,
                                 ),
-                                const SizedBox(height: 9),
+                                const SizedBox(height: 7),
                                 compactProgress(orderStatus),
                                 if (isCompletedStatus(orderStatus) &&
                                     !reviewSubmitted) ...[
-                                  const SizedBox(height: 9),
+                                  const SizedBox(height: 7),
                                   actionArea(orderStatus, reviewSubmitted),
                                 ],
                               ],

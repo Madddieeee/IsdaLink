@@ -343,6 +343,111 @@ class ApprovedSupplierCard extends StatelessWidget {
   }
 }
 
+class SupplierRecordCard extends StatelessWidget {
+  const SupplierRecordCard({
+    super.key,
+    required this.document,
+    required this.status,
+    required this.onTap,
+  });
+
+  final QueryDocumentSnapshot<Map<String, dynamic>> document;
+  final String status;
+  final VoidCallback onTap;
+
+  String value(Map<String, dynamic> data, List<String> keys, String fallback) {
+    for (final key in keys) {
+      final text = data[key]?.toString().trim() ?? '';
+      if (text.isNotEmpty) return text;
+    }
+    return fallback;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final data = document.data();
+    final name = value(
+      data,
+      const ['supplierName', 'storeName', 'businessName'],
+      'Supplier',
+    );
+    final owner = value(data, const ['ownerName'], 'Registered user');
+    final location = value(
+      data,
+      const ['storeLocation', 'location'],
+      'Caraga Region',
+    );
+    final photo = value(
+      data,
+      const ['storePhotoUrl', 'profileImageUrl'],
+      '',
+    );
+
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(13),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFE1EAF1)),
+          ),
+          child: Row(
+            children: [
+              SupplierPhotoPreview(
+                imageUrl: photo,
+                size: 46,
+                fallbackColor: const Color(0xFFEAF3FF),
+                iconColor: const Color(0xFF146BFF),
+              ),
+              const SizedBox(width: 11),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF102C44),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      status.toLowerCase() == 'pending' ? owner : location,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF71869A),
+                        fontSize: 11.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              AdminStatusChip(status: status),
+              const SizedBox(width: 5),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: Color(0xFF91A2B1),
+                size: 21,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class VerificationLinkButton extends StatelessWidget {
   const VerificationLinkButton({
     super.key,

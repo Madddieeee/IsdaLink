@@ -8,6 +8,8 @@ Map<String, dynamic> history() => {
   'validationStatus': 'Validated',
   'analyticsEligible': true,
   'transactionDateIso': '2026-09-28',
+  'sourceCoverageStartDateIso': '2026-01-01',
+  'sourceCoverageEndDateIso': '2026-12-31',
   'productName': 'Tamban',
   'quantityFulfilled': 4,
   'quantityOrdered': 6,

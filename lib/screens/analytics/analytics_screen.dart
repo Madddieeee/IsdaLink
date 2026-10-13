@@ -62,6 +62,23 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     });
   }
 
+  /// Applies the requested period immediately. Tapping the already-active
+  /// period resets any historical date so the view returns to current
+  /// planning on the first tap while keeping the selected fish/unit series.
+  void selectAnalyticsPeriod(AnalyticsPeriod period) {
+    void updateSelection() {
+      selectedPeriod = period;
+      selectedSupplierPeriodStart = null;
+      selectedSupplierChartBarIndex = null;
+    }
+
+    if (mounted) {
+      setState(updateSelection);
+    } else {
+      updateSelection();
+    }
+  }
+
   @override
   void dispose() {
     _supplierScrollController.dispose();
@@ -992,24 +1009,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             child: _PeriodButton(
               label: 'Weekly',
               selected: selectedPeriod == AnalyticsPeriod.weekly,
-              onTap: () {
-                setState(() {
-                  selectedPeriod = AnalyticsPeriod.weekly;
-                  selectedSupplierPeriodStart = null;
-                });
-              },
+              onTap: () => selectAnalyticsPeriod(AnalyticsPeriod.weekly),
             ),
           ),
           Expanded(
             child: _PeriodButton(
               label: 'Monthly',
               selected: selectedPeriod == AnalyticsPeriod.monthly,
-              onTap: () {
-                setState(() {
-                  selectedPeriod = AnalyticsPeriod.monthly;
-                  selectedSupplierPeriodStart = null;
-                });
-              },
+              onTap: () => selectAnalyticsPeriod(AnalyticsPeriod.monthly),
             ),
           ),
         ],
@@ -3147,32 +3154,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                   child: _SupplierSegmentButton(
                     label: 'Weekly',
                     selected: selectedPeriod == AnalyticsPeriod.weekly,
-                    onTap: () {
-                      if (selectedPeriod == AnalyticsPeriod.weekly) {
-                        return;
-                      }
-                      setState(() {
-                        selectedPeriod = AnalyticsPeriod.weekly;
-                        selectedSupplierPeriodStart = null;
-                        selectedSupplierChartBarIndex = null;
-                      });
-                    },
+                    onTap: () => selectAnalyticsPeriod(AnalyticsPeriod.weekly),
                   ),
                 ),
                 Expanded(
                   child: _SupplierSegmentButton(
                     label: 'Monthly',
                     selected: selectedPeriod == AnalyticsPeriod.monthly,
-                    onTap: () {
-                      if (selectedPeriod == AnalyticsPeriod.monthly) {
-                        return;
-                      }
-                      setState(() {
-                        selectedPeriod = AnalyticsPeriod.monthly;
-                        selectedSupplierPeriodStart = null;
-                        selectedSupplierChartBarIndex = null;
-                      });
-                    },
+                    onTap: () => selectAnalyticsPeriod(AnalyticsPeriod.monthly),
                   ),
                 ),
               ],

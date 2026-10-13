@@ -31,6 +31,10 @@ service cloud.firestore {
       return /databases/$(database)/documents/orders/$(orderId);
     }
 
+    function tawadEligibilityPath(vendorId, supplierId) {
+      return /databases/$(database)/documents/tawadEligibility/$(vendorId)/suppliers/$(supplierId);
+    }
+
     function reviewPath(orderId) {
       return /databases/$(database)/documents/reviews/$(orderId);
     }
@@ -2116,6 +2120,52 @@ service cloud.firestore {
     }
 
     // ---------------------------------------------------------------------
+    // TAWAD ELIGIBILITY
+    // ---------------------------------------------------------------------
+
+    match /tawadEligibility/{vendorId}/suppliers/{supplierId} {
+      allow read: if isAdmin()
+        || (
+          signedIn()
+          && (currentUid() == vendorId || currentUid() == supplierId)
+        );
+
+      allow create: if validTawadEligibilityCreate(vendorId, supplierId);
+      allow update, delete: if false;
+
+      function validTawadEligibilityCreate(vendorId, supplierId) {
+        let qualifyingOrderId = request.resource.data.get(
+          'qualifyingOrderId',
+          ''
+        );
+        let qualifyingOrder = getAfter(orderPath(qualifyingOrderId)).data;
+
+        return signedIn()
+          && vendorId != supplierId
+          && (currentUid() == vendorId || currentUid() == supplierId)
+          && qualifyingOrderId is string
+          && qualifyingOrderId.size() > 0
+          && existsAfter(orderPath(qualifyingOrderId))
+          && request.resource.data.keys().hasOnly([
+            'vendorId',
+            'supplierId',
+            'qualifyingOrderId',
+            'unlockedAt'
+          ])
+          && request.resource.data.get('vendorId', '') == vendorId
+          && request.resource.data.get('supplierId', '') == supplierId
+          && request.resource.data.get('unlockedAt', null) == request.time
+          && qualifyingOrder.get('vendorId', '') == vendorId
+          && qualifyingOrder.get('supplierId', '') == supplierId
+          && isCompletedOrder(qualifyingOrder)
+          && (
+            qualifyingOrder.get('paymentStatus', '') == 'Paid'
+            || qualifyingOrder.get('paymentStatus', '') == 'paid'
+          );
+      }
+    }
+
+    // ---------------------------------------------------------------------
     // ORDERS
     // ---------------------------------------------------------------------
 
@@ -2176,7 +2226,13 @@ service cloud.firestore {
           && (
             tawadRequested != true
             || (
-              request.resource.data.get('tawadStatus', '') == 'Pending'
+              exists(
+                tawadEligibilityPath(
+                  currentUid(),
+                  request.resource.data.get('supplierId', '')
+                )
+              )
+              && request.resource.data.get('tawadStatus', '') == 'Pending'
               && offeredPrice > 0
               && offeredPrice < listedPrice
             )

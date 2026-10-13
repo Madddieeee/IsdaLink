@@ -2,9 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:isdalink/utils/order_helpers.dart';
 import 'package:isdalink/utils/stock_state.dart';
 import 'package:isdalink/utils/tawad_pricing.dart';
+import 'package:isdalink/services/tawad_eligibility_service.dart';
 
 class SupplierOrderService {
   const SupplierOrderService();
+
+  TawadEligibilityService get tawadEligibilityService =>
+      const TawadEligibilityService();
 
   Stream<QuerySnapshot<Map<String, dynamic>>> ordersStream(String supplierId) {
     return FirebaseFirestore.instance
@@ -170,6 +174,33 @@ class SupplierOrderService {
 
       final orderData = orderSnapshot.data() ?? <String, dynamic>{};
 
+      final normalizedNewStatus = newStatus.toLowerCase();
+      DocumentReference<Map<String, dynamic>>? tawadEligibilityReference;
+      DocumentSnapshot<Map<String, dynamic>>? tawadEligibilitySnapshot;
+
+      if (normalizedNewStatus == 'delivered') {
+        final vendorId = OrderHelpers.getStringValue(
+          orderData,
+          'vendorId',
+          '',
+        ).trim();
+        final supplierId = OrderHelpers.getStringValue(
+          orderData,
+          'supplierId',
+          '',
+        ).trim();
+
+        if (vendorId.isEmpty || supplierId.isEmpty) {
+          throw StateError('This order has incomplete buyer or supplier data.');
+        }
+
+        tawadEligibilityReference = tawadEligibilityService
+            .eligibilityReference(vendorId: vendorId, supplierId: supplierId);
+        tawadEligibilitySnapshot = await transaction.get(
+          tawadEligibilityReference,
+        );
+      }
+
       final currentStatus = OrderHelpers.getStringValue(
         orderData,
         'orderStatus',
@@ -211,7 +242,6 @@ class SupplierOrderService {
           'updatedAt': FieldValue.serverTimestamp(),
         });
       } else {
-        final normalizedNewStatus = newStatus.toLowerCase();
         final delivered = normalizedNewStatus == 'delivered';
 
         if (normalizedNewStatus == 'accepted') {
@@ -279,6 +309,25 @@ class SupplierOrderService {
             if (delivered) 'completedAt': FieldValue.serverTimestamp(),
             if (delivered) 'isReviewEligible': true,
           });
+
+          if (delivered &&
+              tawadEligibilityReference != null &&
+              tawadEligibilitySnapshot?.exists != true) {
+            transaction.set(tawadEligibilityReference, <String, dynamic>{
+              'vendorId': OrderHelpers.getStringValue(
+                orderData,
+                'vendorId',
+                '',
+              ).trim(),
+              'supplierId': OrderHelpers.getStringValue(
+                orderData,
+                'supplierId',
+                '',
+              ).trim(),
+              'qualifyingOrderId': documentId,
+              'unlockedAt': FieldValue.serverTimestamp(),
+            });
+          }
         }
       }
 

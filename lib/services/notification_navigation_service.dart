@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:isdalink/screens/admin/admin_dashboard_screen.dart';
 import 'package:isdalink/screens/admin/supplier_change_request_review_screen.dart';
 import 'package:isdalink/screens/profile/supplier_profile_screen.dart';
+import 'package:isdalink/screens/profile/me_screen.dart';
 import 'package:isdalink/screens/supplier/activation/supplier_activation_screen.dart';
 import 'package:isdalink/screens/supplier/supplier_cod_orders_screen.dart';
 import 'package:isdalink/screens/supplier/supplier_manage_products_screen.dart';
@@ -40,9 +41,9 @@ class NotificationNavigationService {
       return false;
     }
 
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => destination),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => destination));
     return true;
   }
 
@@ -58,9 +59,7 @@ class NotificationNavigationService {
 
     switch (type) {
       case 'new_order':
-        return SupplierCodOrdersScreen(
-          initialOrderId: grouped ? '' : orderId,
-        );
+        return SupplierCodOrdersScreen(initialOrderId: grouped ? '' : orderId);
       case 'order_status':
         return MyOrdersScreen(initialOrderId: grouped ? '' : orderId);
       case 'stock_alert':
@@ -75,10 +74,8 @@ class NotificationNavigationService {
         return const SupplierProfileScreen();
       case 'supplier_application_status':
         return status == 'approved'
-            ? const SupplierProfileScreen()
-            : SupplierActivationScreen(
-                rejectionNotificationId: notificationId,
-              );
+            ? const MeScreen()
+            : SupplierActivationScreen(rejectionNotificationId: notificationId);
       default:
         return null;
     }

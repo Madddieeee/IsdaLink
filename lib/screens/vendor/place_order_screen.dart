@@ -10,6 +10,7 @@ import 'package:isdalink/screens/vendor/my_orders_screen.dart';
 import 'package:isdalink/screens/vendor/place_order/widgets/place_order_cards.dart';
 import 'package:isdalink/screens/vendor/place_order/widgets/place_order_header.dart';
 import 'package:isdalink/services/place_order_service.dart';
+import 'package:isdalink/services/tawad_eligibility_service.dart';
 import 'package:isdalink/utils/app_error_message.dart';
 import 'package:isdalink/utils/tawad_pricing.dart';
 
@@ -37,6 +38,8 @@ class PlaceOrderScreen extends StatefulWidget {
 
 class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
   final PlaceOrderService orderService = const PlaceOrderService();
+  final TawadEligibilityService tawadEligibilityService =
+      const TawadEligibilityService();
   final TextEditingController buyerNameController = TextEditingController();
   final TextEditingController buyerPhoneController = TextEditingController();
   final TextEditingController buyerAddressController = TextEditingController();
@@ -51,6 +54,10 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
   bool isLoadingBuyer = true;
   bool isEditingBuyer = false;
   bool isSavingBuyer = false;
+  bool tawadRequested = false;
+  bool isLoadingTawadEligibility = true;
+  bool canRequestTawad = false;
+  String tawadEligibilityError = '';
   String buyerLoadError = '';
   String buyerProvince = '';
   String buyerLocality = '';
@@ -60,9 +67,8 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
   String savedBuyerPhone = '';
   String savedBuyerAddress = '';
   String supplierStoreImageUrl = '';
-  String supplierRequestType = '';
 
-  bool get isTawadOrder => widget.initialTawad;
+  bool get isTawadOrder => tawadRequested;
   double? get tawadOfferedUnitPrice =>
       TawadPricing.parseOfferedUnitPrice(tawadPriceController.text);
   double get displayedUnitPrice => TawadPricing.pendingDisplayUnitPrice(
@@ -77,30 +83,9 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
       deliveryLatitude != null && deliveryLongitude != null;
 
   bool get hasSupplierRequest =>
-      supplierRequestType.trim().isNotEmpty ||
       supplierRequestController.text.trim().isNotEmpty;
 
-  String get supplierRequestLabel {
-    switch (supplierRequestType.trim()) {
-      case 'handling':
-        return 'Handling request';
-      case 'delivery':
-        return 'Delivery note';
-      default:
-        return 'Buyer request';
-    }
-  }
-
-  String get supplierRequestSummary {
-    final message = supplierRequestController.text.trim();
-    if (message.isEmpty) {
-      return supplierRequestLabel;
-    }
-    if (supplierRequestType.trim().isEmpty) {
-      return message;
-    }
-    return '$supplierRequestLabel — $message';
-  }
+  String get supplierRequestSummary => supplierRequestController.text.trim();
 
   String normalizeAddress(String value) {
     return value
@@ -181,6 +166,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
     tawadPriceController.addListener(handleTawadPriceChanged);
     loadBuyerDetails();
     loadSupplierStoreImage();
+    loadTawadEligibility();
   }
 
   @override
@@ -291,6 +277,54 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
       });
     } catch (_) {
       // Keep the image already carried by the selected supplier card.
+    }
+  }
+
+  Future<void> loadTawadEligibility() async {
+    final user = FirebaseAuth.instance.currentUser;
+    final supplierId = widget.supplierId.trim();
+
+    if (user == null || supplierId.isEmpty) {
+      if (!mounted) return;
+      setState(() {
+        isLoadingTawadEligibility = false;
+        canRequestTawad = false;
+        tawadRequested = false;
+        tawadEligibilityError = user == null
+            ? 'Log in again to check Tawad access.'
+            : 'Tawad access could not be checked for this supplier.';
+      });
+      return;
+    }
+
+    if (mounted) {
+      setState(() {
+        isLoadingTawadEligibility = true;
+        tawadEligibilityError = '';
+      });
+    }
+
+    try {
+      final unlocked = await tawadEligibilityService.unlockFromExistingPurchase(
+        vendorId: user.uid,
+        supplierId: supplierId,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        isLoadingTawadEligibility = false;
+        canRequestTawad = unlocked;
+        tawadRequested = unlocked && widget.initialTawad;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        isLoadingTawadEligibility = false;
+        canRequestTawad = false;
+        tawadRequested = false;
+        tawadEligibilityError =
+            'Tawad access could not be checked. Tap the locked option to retry.';
+      });
     }
   }
 
@@ -602,6 +636,34 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
     if (mounted) setState(() {});
   }
 
+  void selectPriceOption(bool requestTawad) {
+    if (requestTawad && (isLoadingTawadEligibility || !canRequestTawad)) {
+      showMessage(
+        isLoadingTawadEligibility
+            ? 'Checking your Tawad access...'
+            : tawadEligibilityError.isNotEmpty
+            ? tawadEligibilityError
+            : 'Complete your first delivered and paid order from this supplier to unlock Tawad.',
+        isError: tawadEligibilityError.isNotEmpty,
+        isInfo: tawadEligibilityError.isEmpty,
+      );
+
+      if (tawadEligibilityError.isNotEmpty) {
+        loadTawadEligibility();
+      }
+      return;
+    }
+
+    if (requestTawad == tawadRequested) {
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+    setState(() {
+      tawadRequested = requestTawad;
+    });
+  }
+
   void decreaseQuantity() {
     if (quantity > 1) {
       setState(() {
@@ -747,16 +809,56 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
     });
   }
 
-  void showMessage(String message, {bool isError = false}) {
+  void showMessage(
+    String message, {
+    bool isError = false,
+    bool isInfo = false,
+  }) {
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              isError
+                  ? Icons.error_outline_rounded
+                  : isInfo
+                  ? Icons.lock_outline_rounded
+                  : Icons.check_circle_outline_rounded,
+              color: Colors.white,
+              size: 18,
+            ),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Text(
+                message,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11.5,
+                  height: 1.35,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
         backgroundColor: isError
             ? const Color(0xFFD32F2F)
+            : isInfo
+            ? const Color(0xFF174B70)
             : const Color(0xFF2E7D32),
         behavior: SnackBarBehavior.floating,
+        elevation: 4,
+        duration: const Duration(milliseconds: 2400),
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
     );
   }
@@ -922,7 +1024,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                           ),
                           if (hasSupplierRequest)
                             _ConfirmationRow(
-                              label: 'Supplier request',
+                              label: 'Message',
                               value: supplierRequestSummary,
                             ),
                           _DeliveryConfirmationRow(
@@ -1077,6 +1179,14 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
       return;
     }
 
+    if (isTawadOrder && !canRequestTawad) {
+      showMessage(
+        'Complete your first delivered and paid order from this supplier to unlock Tawad.',
+        isError: true,
+      );
+      return;
+    }
+
     if (!validateBuyerDetails()) return;
 
     final profileSaved = await saveVendorDeliveryDetails(
@@ -1108,7 +1218,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
         buyerName: buyerNameController.text.trim(),
         buyerPhone: buyerPhoneController.text.trim(),
         buyerAddress: fullDeliveryAddress,
-        orderRequestType: supplierRequestType.trim(),
+        orderRequestType: '',
         orderRequestMessage: supplierRequestController.text.trim(),
         tawadRequested: isTawadOrder,
         tawadOfferedUnitPrice: tawadOfferedUnitPrice,
@@ -1288,7 +1398,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                   isTawadOrder
                       ? '${widget.product.name} and your exact Tawad offer were sent to ${widget.supplier.name}. The supplier can accept the offered price or decline the whole order.'
                       : hasSupplierRequest
-                      ? '${widget.product.name} and your request were sent to ${widget.supplier.name}. The supplier can review them before accepting or declining the order.'
+                      ? '${widget.product.name} and your message were sent to ${widget.supplier.name}. The supplier can review them before accepting or declining the order.'
                       : '${widget.product.name} was sent to ${widget.supplier.name}. You can follow the supplier response in My Orders.',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
@@ -1323,7 +1433,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                       ),
                       if (hasSupplierRequest)
                         _ConfirmationRow(
-                          label: 'Supplier request',
+                          label: 'Message',
                           value: supplierRequestSummary,
                         ),
                       const Divider(height: 20, color: Color(0xFFDDE8EF)),
@@ -1621,22 +1731,27 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                     onIncrease: increaseQuantity,
                     onEnterQuantity: enterSpecificQuantity,
                   ),
-                  if (isTawadOrder)
-                    TawadOfferCard(
-                      controller: tawadPriceController,
-                      listedUnitPrice: widget.product.price,
-                      quantity: quantity,
-                      quantityUnit: widget.product.quantityUnit,
-                    ),
-                  SupplierRequestCard(
-                    controller: supplierRequestController,
-                    selectedType: supplierRequestType,
-                    onTypeChanged: (value) {
-                      setState(() {
-                        supplierRequestType = value;
-                      });
-                    },
+                  PriceOptionCard(
+                    requestTawad: isTawadOrder,
+                    listedUnitPrice: widget.product.price,
+                    quantityUnit: widget.product.quantityUnit,
+                    tawadAvailable: canRequestTawad,
+                    checkingTawadAccess: isLoadingTawadEligibility,
+                    tawadAccessError: tawadEligibilityError,
+                    onChanged: selectPriceOption,
                   ),
+                  if (isTawadOrder)
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 180),
+                      child: TawadOfferCard(
+                        key: const ValueKey('tawad-offer-card'),
+                        controller: tawadPriceController,
+                        listedUnitPrice: widget.product.price,
+                        quantity: quantity,
+                        quantityUnit: widget.product.quantityUnit,
+                      ),
+                    ),
+                  SupplierRequestCard(controller: supplierRequestController),
                   PaymentDetailsCard(
                     product: widget.product,
                     quantity: quantity,

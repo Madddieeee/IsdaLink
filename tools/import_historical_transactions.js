@@ -632,6 +632,29 @@ function makeBatchId(records, sourceFile) {
   return `transaction-log-${dates[0]}_${dates[dates.length - 1]}-${shortHash}`;
 }
 
+function attachSourceCoverage(records) {
+  if (!Array.isArray(records) || records.length === 0) {
+    throw new Error('Cannot establish source coverage without records.');
+  }
+
+  const dates = records
+    .map((record) => clean(record.transactionDateIso))
+    .sort();
+  const firstDate = dates[0];
+  const lastDate = dates.at(-1);
+
+  if (!firstDate || !lastDate) {
+    throw new Error('Cannot establish source coverage from missing dates.');
+  }
+
+  for (const record of records) {
+    record.sourceCoverageStartDateIso = firstDate;
+    record.sourceCoverageEndDateIso = lastDate;
+  }
+
+  return { firstDate, lastDate };
+}
+
 async function commitInChunks(db, operations, chunkSize = 400) {
   for (let start = 0; start < operations.length; start += chunkSize) {
     const batch = db.batch();
@@ -767,13 +790,7 @@ async function main() {
     );
   }
 
-  const firstDate = records
-    .map((record) => record.transactionDateIso)
-    .sort()[0];
-  const lastDate = records
-    .map((record) => record.transactionDateIso)
-    .sort()
-    .at(-1);
+  const { firstDate, lastDate } = attachSourceCoverage(records);
 
   console.log('');
   console.log('IsdaLink historical import validation');
@@ -783,6 +800,7 @@ async function main() {
   console.log(`Eligible Completed + Validated: ${records.length}`);
   console.log(`Skipped non-eligible rows: ${skippedRows}`);
   console.log(`Date range: ${firstDate} to ${lastDate}`);
+  console.log(`Source coverage boundary: ${firstDate} to ${lastDate}`);
   console.log(`Vendor IDs: ${[...requiredVendorIds].sort().join(', ')}`);
   console.log(`Supplier IDs: ${[...requiredSupplierIds].sort().join(', ')}`);
   console.log('');
@@ -876,6 +894,8 @@ async function main() {
         skippedCount: skippedRows,
         firstTransactionDate: firstDate,
         lastTransactionDate: lastDate,
+        sourceCoverageStartDateIso: firstDate,
+        sourceCoverageEndDateIso: lastDate,
         vendorHistoricalIds: [...requiredVendorIds].sort(),
         supplierHistoricalIds: [...requiredSupplierIds].sort(),
         importedAt: FieldValue.serverTimestamp(),

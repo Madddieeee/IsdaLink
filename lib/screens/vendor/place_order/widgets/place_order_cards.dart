@@ -56,21 +56,11 @@ class CheckoutSectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Container(
-          width: 34,
-          height: 34,
-          decoration: BoxDecoration(
-            color: const Color(0xFFE8F8FD),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: leading == null
-              ? Icon(icon, color: const Color(0xFF0875D1), size: 18)
-              : ClipRRect(
-                  borderRadius: BorderRadius.circular(11),
-                  child: leading,
-                ),
-        ),
-        const SizedBox(width: 10),
+        if (leading == null)
+          Icon(icon, color: const Color(0xFF0875D1), size: 21)
+        else
+          SizedBox(width: 22, height: 22, child: leading),
+        const SizedBox(width: 9),
         Expanded(
           child: Text(
             title,
@@ -812,72 +802,9 @@ class ProductOrderCard extends StatelessWidget {
 }
 
 class SupplierRequestCard extends StatelessWidget {
-  const SupplierRequestCard({
-    super.key,
-    required this.controller,
-    required this.selectedType,
-    required this.onTypeChanged,
-  });
+  const SupplierRequestCard({super.key, required this.controller});
 
   final TextEditingController controller;
-  final String selectedType;
-  final ValueChanged<String> onTypeChanged;
-
-  static const requestTypes = <(String, String, IconData)>[
-    ('handling', 'Handling', Icons.inventory_2_outlined),
-    ('delivery', 'Delivery', Icons.local_shipping_outlined),
-  ];
-
-  Widget requestChip({
-    required String value,
-    required String label,
-    required IconData icon,
-  }) {
-    final selected = selectedType == value;
-
-    return Material(
-      color: selected ? const Color(0xFFE7F5FF) : Colors.white,
-      borderRadius: BorderRadius.circular(99),
-      child: InkWell(
-        onTap: () => onTypeChanged(selected ? '' : value),
-        borderRadius: BorderRadius.circular(99),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(99),
-            border: Border.all(
-              color: selected
-                  ? const Color(0xFF0875D1)
-                  : const Color(0xFFD8E5ED),
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 15,
-                color: selected
-                    ? const Color(0xFF0875D1)
-                    : const Color(0xFF667D8F),
-              ),
-              const SizedBox(width: 5),
-              Text(
-                label,
-                style: TextStyle(
-                  color: selected
-                      ? const Color(0xFF0875D1)
-                      : const Color(0xFF52677A),
-                  fontSize: 9.5,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -892,9 +819,9 @@ class SupplierRequestCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           const Padding(
-            padding: EdgeInsets.only(left: 44),
+            padding: EdgeInsets.only(left: 30),
             child: Text(
-              'Supplier sees this before accepting.',
+              'Add any note or request for the supplier.',
               style: TextStyle(
                 color: Color(0xFF7B8FA3),
                 fontSize: 9.4,
@@ -902,15 +829,6 @@ class SupplierRequestCard extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 7,
-            runSpacing: 7,
-            children: [
-              for (final type in requestTypes)
-                requestChip(value: type.$1, label: type.$2, icon: type.$3),
-            ],
           ),
           const SizedBox(height: 11),
           TextField(
@@ -920,11 +838,7 @@ class SupplierRequestCard extends StatelessWidget {
             maxLength: 180,
             textCapitalization: TextCapitalization.sentences,
             decoration: InputDecoration(
-              hintText: selectedType == 'handling'
-                  ? 'Please pack the fish carefully.'
-                  : selectedType == 'delivery'
-                  ? 'Please call before delivery.'
-                  : 'Write a short message...',
+              hintText: 'Write a message to the supplier...',
               hintStyle: const TextStyle(
                 color: Color(0xFF94A7B5),
                 fontSize: 10.3,
@@ -1061,6 +975,222 @@ class TawadOfferCard extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class PriceOptionCard extends StatelessWidget {
+  const PriceOptionCard({
+    super.key,
+    required this.requestTawad,
+    required this.listedUnitPrice,
+    required this.quantityUnit,
+    required this.tawadAvailable,
+    required this.checkingTawadAccess,
+    this.tawadAccessError = '',
+    required this.onChanged,
+  });
+
+  final bool requestTawad;
+  final double listedUnitPrice;
+  final String quantityUnit;
+  final bool tawadAvailable;
+  final bool checkingTawadAccess;
+  final String tawadAccessError;
+  final ValueChanged<bool> onChanged;
+
+  String money(double value) =>
+      value % 1 == 0 ? value.toStringAsFixed(0) : value.toStringAsFixed(2);
+
+  Widget option({
+    required bool value,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    bool enabled = true,
+  }) {
+    final selected = requestTawad == value;
+
+    return Expanded(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => onChanged(value),
+          borderRadius: BorderRadius.circular(16),
+          child: Ink(
+            padding: const EdgeInsets.fromLTRB(11, 11, 10, 11),
+            decoration: BoxDecoration(
+              color: selected
+                  ? const Color(0xFFE8F6FC)
+                  : !enabled
+                  ? const Color(0xFFF1F4F6)
+                  : const Color(0xFFF7FAFC),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: selected
+                    ? const Color(0xFF0875D1)
+                    : !enabled
+                    ? const Color(0xFFE2E8EC)
+                    : const Color(0xFFDDE8EF),
+                width: selected ? 1.4 : 1,
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  !enabled && value ? Icons.lock_outline_rounded : icon,
+                  color: selected
+                      ? const Color(0xFF0875D1)
+                      : !enabled
+                      ? const Color(0xFF9AABB7)
+                      : const Color(0xFF718797),
+                  size: 19,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          color: selected
+                              ? const Color(0xFF075FAD)
+                              : !enabled
+                              ? const Color(0xFF718391)
+                              : const Color(0xFF102C44),
+                          fontSize: 10.2,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFF718797),
+                          fontSize: 8.2,
+                          height: 1.25,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 3),
+                Icon(
+                  !enabled && value
+                      ? Icons.lock_rounded
+                      : selected
+                      ? Icons.check_circle_rounded
+                      : Icons.radio_button_unchecked_rounded,
+                  color: selected
+                      ? const Color(0xFF0875D1)
+                      : !enabled
+                      ? const Color(0xFF9AABB7)
+                      : const Color(0xFFB4C4CF),
+                  size: 17,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CheckoutCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const CheckoutSectionTitle(
+            icon: Icons.price_change_outlined,
+            title: 'Price Option',
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Use the listed price or ask the supplier to accept a lower price.',
+            style: TextStyle(
+              color: Color(0xFF62798B),
+              fontSize: 9.5,
+              height: 1.35,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 11),
+          Row(
+            children: [
+              option(
+                value: false,
+                icon: Icons.sell_outlined,
+                title: 'Listed Price',
+                subtitle: '₱${money(listedUnitPrice)} / $quantityUnit',
+              ),
+              const SizedBox(width: 8),
+              option(
+                value: true,
+                icon: Icons.handshake_outlined,
+                title: 'Request Tawad',
+                subtitle: checkingTawadAccess
+                    ? 'Checking access...'
+                    : tawadAvailable
+                    ? 'Offer a lower price'
+                    : 'Unlock after first order',
+                enabled: tawadAvailable && !checkingTawadAccess,
+              ),
+            ],
+          ),
+          if (!tawadAvailable || checkingTawadAccess) ...[
+            const SizedBox(height: 9),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F8FA),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  if (checkingTawadAccess)
+                    const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 1.8),
+                    )
+                  else
+                    Icon(
+                      tawadAccessError.isEmpty
+                          ? Icons.lock_outline_rounded
+                          : Icons.refresh_rounded,
+                      color: const Color(0xFF718391),
+                      size: 15,
+                    ),
+                  const SizedBox(width: 7),
+                  Expanded(
+                    child: Text(
+                      checkingTawadAccess
+                          ? 'Checking whether Tawad is unlocked...'
+                          : tawadAccessError.isNotEmpty
+                          ? 'Tap Request Tawad to check again.'
+                          : 'Complete one delivered and paid order from this supplier to unlock Tawad.',
+                      style: const TextStyle(
+                        color: Color(0xFF62798B),
+                        fontSize: 8.8,
+                        height: 1.3,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

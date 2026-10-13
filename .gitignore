@@ -56,3 +56,6 @@ tools/dataset/
 android/.kotlin/
 
 .vscode/
+analytics_source_audit*.json
+debug_fix_backup_*/
+review_photos_backup_*/

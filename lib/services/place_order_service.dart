@@ -4,6 +4,7 @@ import 'package:isdalink/screens/map/caraga_map_defaults.dart';
 import 'package:isdalink/models/fish_product.dart';
 import 'package:isdalink/models/supplier.dart';
 import 'package:isdalink/services/stock_notification_service.dart';
+import 'package:isdalink/services/tawad_eligibility_service.dart';
 import 'package:isdalink/utils/order_helpers.dart';
 import 'package:isdalink/utils/stock_state.dart';
 import 'package:isdalink/utils/tawad_pricing.dart';
@@ -25,6 +26,9 @@ class PlaceOrderService {
 
   StockNotificationService get stockNotificationService =>
       const StockNotificationService();
+
+  TawadEligibilityService get tawadEligibilityService =>
+      const TawadEligibilityService();
 
   String firstNonEmpty(
     Map<String, dynamic> data,
@@ -245,6 +249,21 @@ class PlaceOrderService {
         'supplierId',
         supplierId,
       ).trim();
+
+      if (tawadRequested) {
+        final eligibilityReference = tawadEligibilityService
+            .eligibilityReference(
+              vendorId: user.uid,
+              supplierId: realSupplierId,
+            );
+        final eligibilitySnapshot = await transaction.get(eligibilityReference);
+
+        if (!eligibilitySnapshot.exists) {
+          throw StateError(
+            'Complete your first delivered and paid order from this supplier to unlock Tawad.',
+          );
+        }
+      }
 
       if (realSupplierId.isNotEmpty && realSupplierId == user.uid) {
         throw Exception(

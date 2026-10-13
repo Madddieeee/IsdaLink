@@ -40,6 +40,7 @@ async function seed(pathName, data) {
 }
 
 const buyer = 'tawad-buyer';
+const unlockBuyer = 'tawad-unlock-buyer';
 const supplier = 'tawad-supplier';
 const delivery = {
   latitude: 8.9475,
@@ -130,6 +131,42 @@ async function place(id, offer = 4500) {
   await batch.commit();
 }
 
+async function createEligibility(qualifyingOrderId) {
+  const database = db(buyer);
+  await setDoc(
+    doc(database, 'tawadEligibility', buyer, 'suppliers', supplier),
+    {
+      vendorId: buyer,
+      supplierId: supplier,
+      qualifyingOrderId,
+      unlockedAt: serverTimestamp(),
+    },
+  );
+}
+
+async function deliverAndUnlock() {
+  const database = db(supplier);
+  const batch = writeBatch(database);
+  batch.update(doc(database, 'orders', 'supplier-delivery'), {
+    orderStatus: 'Delivered',
+    paymentStatus: 'Paid',
+    deliveredAt: serverTimestamp(),
+    completedAt: serverTimestamp(),
+    isReviewEligible: true,
+    updatedAt: serverTimestamp(),
+  });
+  batch.set(
+    doc(database, 'tawadEligibility', unlockBuyer, 'suppliers', supplier),
+    {
+      vendorId: unlockBuyer,
+      supplierId: supplier,
+      qualifyingOrderId: 'supplier-delivery',
+      unlockedAt: serverTimestamp(),
+    },
+  );
+  await batch.commit();
+}
+
 async function accept(id, unitPrice = 4500, extra = {}) {
   const database = db(supplier);
   await setDoc(
@@ -197,6 +234,7 @@ async function decline(id, actor = supplier) {
   });
 
   await seed(`users/${buyer}`, { uid: buyer, role: 'vendor' });
+  await seed(`users/${unlockBuyer}`, { uid: unlockBuyer, role: 'vendor' });
   await seed(`users/${supplier}`, {
     uid: supplier,
     role: 'supplier',
@@ -210,9 +248,58 @@ async function decline(id, actor = supplier) {
     phone: '09123456789',
   });
 
-  for (const id of ['accepted', 'wrong-price', 'counter', 'declined', 'withdrawn']) {
+  for (const id of ['locked', 'accepted', 'wrong-price', 'counter', 'declined', 'withdrawn']) {
     await seed(`fishStocks/${id}`, stock(id));
   }
+
+  await seed('orders/qualifying-purchase', {
+    vendorId: buyer,
+    supplierId: supplier,
+    orderStatus: 'Delivered',
+    paymentStatus: 'Paid',
+  });
+  await seed('orders/unpaid-purchase', {
+    vendorId: buyer,
+    supplierId: supplier,
+    orderStatus: 'Delivered',
+    paymentStatus: 'To be paid on delivery',
+  });
+  await seed('orders/supplier-delivery', {
+    vendorId: unlockBuyer,
+    supplierId: supplier,
+    orderStatus: 'Accepted',
+    paymentStatus: 'To be paid on delivery',
+  });
+
+  await check(
+    'New buyer cannot request Tawad before a completed purchase',
+    () => place('locked'),
+    false,
+  );
+  await check(
+    'Delivered but unpaid order cannot unlock Tawad',
+    () => createEligibility('unpaid-purchase'),
+    false,
+  );
+  await check(
+    'Buyer can unlock Tawad from a delivered and paid supplier order',
+    () => createEligibility('qualifying-purchase'),
+    true,
+  );
+  await check(
+    'Supplier delivery records payment and unlocks Tawad atomically',
+    () => deliverAndUnlock(),
+    true,
+  );
+  await check(
+    'Unlocked buyer can read supplier-specific Tawad access',
+    async () => {
+      const referencePath = `tawadEligibility/${unlockBuyer}/suppliers/${supplier}`;
+      const snapshot = await getDoc(doc(db(unlockBuyer), referencePath));
+      if (!snapshot.exists()) throw new Error('Eligibility was not created');
+    },
+    true,
+  );
 
   await check('Tawad creates a real pending order and reserves stock', () => place('accepted'), true);
   await check('Supplier accepts the exact offered price', () => accept('accepted'), true);

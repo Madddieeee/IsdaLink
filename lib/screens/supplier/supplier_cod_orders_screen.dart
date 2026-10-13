@@ -258,9 +258,9 @@ class _SupplierCodOrdersScreenState extends State<SupplierCodOrdersScreen> {
       builder: (dialogContext) {
         return Dialog(
           backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 25),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 30),
           child: Container(
-            padding: const EdgeInsets.fromLTRB(20, 21, 20, 18),
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(25),
@@ -276,36 +276,36 @@ class _SupplierCodOrdersScreenState extends State<SupplierCodOrdersScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 58,
-                  height: 58,
+                  width: 48,
+                  height: 48,
                   decoration: BoxDecoration(
                     color: color.withAlpha(18),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(icon, color: color, size: 31),
+                  child: Icon(icon, color: color, size: 26),
                 ),
-                const SizedBox(height: 13),
+                const SizedBox(height: 11),
                 Text(
                   title,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: Color(0xFF102C44),
-                    fontSize: 17,
+                    fontSize: 15.5,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 5),
                 Text(
                   message,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: Color(0xFF657C8E),
-                    fontSize: 10.8,
-                    height: 1.4,
+                    fontSize: 10.2,
+                    height: 1.35,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 17),
+                const SizedBox(height: 15),
                 Row(
                   children: [
                     Expanded(
@@ -316,14 +316,21 @@ class _SupplierCodOrdersScreenState extends State<SupplierCodOrdersScreen> {
                         style: OutlinedButton.styleFrom(
                           foregroundColor: const Color(0xFF52677A),
                           side: const BorderSide(color: Color(0xFFB9CBD7)),
-                          minimumSize: const Size.fromHeight(47),
+                          minimumSize: const Size.fromHeight(44),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(15),
                           ),
                         ),
-                        child: const Text(
-                          'Go Back',
-                          style: TextStyle(fontWeight: FontWeight.w900),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            destructive ? 'Keep Order' : 'Go Back',
+                            maxLines: 1,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -338,15 +345,22 @@ class _SupplierCodOrdersScreenState extends State<SupplierCodOrdersScreen> {
                               ? const Color(0xFFD94A45)
                               : color,
                           foregroundColor: Colors.white,
-                          minimumSize: const Size.fromHeight(47),
+                          minimumSize: const Size.fromHeight(44),
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(15),
                           ),
                         ),
-                        child: Text(
-                          confirmLabel,
-                          style: const TextStyle(fontWeight: FontWeight.w900),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            confirmLabel,
+                            maxLines: 1,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -394,7 +408,7 @@ class _SupplierCodOrdersScreenState extends State<SupplierCodOrdersScreen> {
       'suki_tawad' => 'Suki / Tawad request',
       'handling' => 'Handling request',
       'delivery' => 'Delivery note',
-      _ => 'Buyer request',
+      _ => 'Message to supplier',
     };
 
     if (requestedQuantity <= 0) {
@@ -734,11 +748,11 @@ class _SupplierCodOrdersScreenState extends State<SupplierCodOrdersScreen> {
       case 'cancelled':
         title = tawadRequested
             ? 'Decline this Tawad offer?'
-            : 'Cancel this COD order?';
+            : 'Cancel this order?';
         message = tawadRequested
-            ? 'Declining closes the whole transaction. The vendor will be notified and all reserved stock will be returned.'
-            : 'The vendor will be notified and any reserved stock will be returned to the supplier inventory.';
-        confirmLabel = tawadRequested ? 'Decline Order' : 'Cancel Order';
+            ? 'This cancels the whole order, returns reserved stock, and notifies the vendor.'
+            : 'This cancels the order, returns reserved stock, and notifies the vendor.';
+        confirmLabel = tawadRequested ? 'Decline Tawad' : 'Cancel Order';
         icon = Icons.cancel_outlined;
         color = const Color(0xFFD94A45);
         destructive = true;

@@ -24,10 +24,11 @@ AnalyticsForecastTarget analyticsForecastTarget({
   if (!selected.isBefore(current)) {
     throw ArgumentError('Historical selection must be a closed period.');
   }
+  final target = monthly
+      ? DateTime.utc(selected.year, selected.month + 1)
+      : selected.add(const Duration(days: 7));
   return AnalyticsForecastTarget(
-    date: monthly
-        ? DateTime.utc(selected.year, selected.month + 1)
-        : selected.add(const Duration(days: 7)),
-    historical: true,
+    date: target,
+    historical: target.isBefore(current),
   );
 }

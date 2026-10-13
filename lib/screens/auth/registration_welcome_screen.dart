@@ -4,10 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:isdalink/screens/home/home_screen.dart';
 
 class RegistrationWelcomeScreen extends StatefulWidget {
-  const RegistrationWelcomeScreen({
-    this.fullName,
-    super.key,
-  });
+  const RegistrationWelcomeScreen({this.fullName, super.key});
 
   final String? fullName;
 
@@ -200,17 +197,17 @@ class _RegistrationWelcomeScreenState extends State<RegistrationWelcomeScreen>
                               ),
                             ),
                           ),
-                          const SizedBox(height: 18),
+                          const SizedBox(height: 16),
                           _reveal(
                             start: 0.28,
                             end: 0.62,
                             child: Text(
-                              'Welcome, $_displayName',
+                              'Welcome aboard,\n$_displayName',
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 32,
-                                height: 1.08,
+                                fontSize: 29,
+                                height: 1.10,
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: -0.5,
                               ),
@@ -221,7 +218,7 @@ class _RegistrationWelcomeScreenState extends State<RegistrationWelcomeScreen>
                             start: 0.38,
                             end: 0.72,
                             child: const Text(
-                              'Your IsdaLink vendor account is ready. Start by finding suppliers and fresh fish stocks in Caraga.',
+                              'Your vendor account is ready. Discover trusted suppliers, fresh fish stocks, and COD ordering across Caraga.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: Color(0xFFD5E4EE),
@@ -236,31 +233,20 @@ class _RegistrationWelcomeScreenState extends State<RegistrationWelcomeScreen>
                             start: 0.55,
                             end: 0.90,
                             y: 9,
-                            child: Container(
+                            child: SizedBox(
                               width: double.infinity,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 18,
-                                vertical: 16,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0x1FFFFFFF),
-                                borderRadius: BorderRadius.circular(24),
-                                border: Border.all(
-                                  color: const Color(0x35FFFFFF),
-                                ),
-                              ),
                               child: const Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   _WelcomeFeature(
                                     icon: Icons.storefront_outlined,
                                     label: 'Suppliers',
                                   ),
+                                  _WelcomeDivider(),
                                   _WelcomeFeature(
                                     icon: Icons.inventory_2_outlined,
                                     label: 'Fish Stocks',
                                   ),
+                                  _WelcomeDivider(),
                                   _WelcomeFeature(
                                     icon: Icons.receipt_long_outlined,
                                     label: 'COD Orders',
@@ -343,6 +329,19 @@ class _WelcomeFeature extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _WelcomeDivider extends StatelessWidget {
+  const _WelcomeDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 1,
+      height: 32,
+      color: Colors.white.withValues(alpha: 0.22),
     );
   }
 }

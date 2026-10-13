@@ -35,6 +35,22 @@ final analyticsTargetCases = <String, void Function()>{
     );
     check(target.historical && target.date == DateTime.utc(2026, 9));
   },
+  'Latest closed week still targets current planning week': () {
+    final target = analyticsForecastTarget(
+      now: DateTime.utc(2026, 10, 9),
+      monthly: false,
+      historicalPeriod: DateTime.utc(2026, 9, 28),
+    );
+    check(!target.historical && target.date == DateTime.utc(2026, 10, 5));
+  },
+  'Latest closed month still targets current planning month': () {
+    final target = analyticsForecastTarget(
+      now: DateTime.utc(2026, 10, 9),
+      monthly: true,
+      historicalPeriod: DateTime.utc(2026, 9),
+    );
+    check(!target.historical && target.date == DateTime.utc(2026, 10));
+  },
   'Weekly business boundary uses UTC+08': () {
     final target = analyticsForecastTarget(
       now: DateTime.utc(2026, 10, 4, 16),

@@ -23,7 +23,7 @@ class AdminDashboardHeader extends StatelessWidget {
   }) {
     return Expanded(
       child: Container(
-        height: 76,
+          height: 68,
         margin: const EdgeInsets.symmetric(horizontal: 4),
         decoration: BoxDecoration(
           color: Colors.white.withAlpha(38),
@@ -33,13 +33,13 @@ class AdminDashboardHeader extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: Colors.white, size: 20),
-            const SizedBox(height: 5),
+            Icon(icon, color: Colors.white, size: 18),
+            const SizedBox(height: 3),
             Text(
               value,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 17,
+                fontSize: 16,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -60,7 +60,7 @@ class AdminDashboardHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 54, 20, 24),
+      padding: const EdgeInsets.fromLTRB(18, 46, 18, 20),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -93,7 +93,7 @@ class AdminDashboardHeader extends StatelessWidget {
                   'Admin Dashboard',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 23,
+                  fontSize: 21,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -125,7 +125,7 @@ class AdminDashboardHeader extends StatelessWidget {
               height: 1.4,
             ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 14),
           Row(
             children: [
               statCard(

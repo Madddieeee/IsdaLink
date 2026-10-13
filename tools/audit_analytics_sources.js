@@ -31,6 +31,7 @@ async function main() {
     'vendorHistoricalId', 'supplierHistoricalId',
     'transactionDateIso', 'transactionDate', 'transaction_date', 'orderDate',
     'createdAt', 'importedAt', 'source', 'sourceFile', 'importBatchId',
+    'sourceCoverageStartDateIso', 'sourceCoverageEndDateIso',
     'analyticsEligible', 'validationStatus', 'orderStatus', 'status',
     'productName', 'quantityUnit', 'quantityFulfilled', 'fulfilledQuantity',
     'quantity', 'fulfilledTotalAmount', 'totalAmount', 'paymentMethod', 'paymentStatus',
