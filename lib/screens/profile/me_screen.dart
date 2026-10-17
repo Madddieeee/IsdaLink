@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:isdalink/config/cloudinary_config.dart';
 import 'package:isdalink/screens/analytics/analytics_screen.dart';
+import 'package:isdalink/screens/profile/about_isdalink_screen.dart';
 import 'package:isdalink/screens/profile/manage_profile_screen.dart';
 import 'package:isdalink/screens/profile/region_location_screen.dart';
 import 'package:isdalink/screens/supplier/post_fish_stock_screen.dart';
@@ -764,9 +765,7 @@ class _MeScreenState extends State<MeScreen> {
                     openScreen(const ManageProfileScreen()),
                 onRegionAndLocation: () =>
                     openScreen(const RegionLocationScreen()),
-                onHelp: () => showMessage(
-                  'Help and support content will be available here.',
-                ),
+                onAbout: () => openScreen(const AboutIsdaLinkScreen()),
                 onLogout: logout,
               ),
             ]),
@@ -834,8 +833,8 @@ class _AccountCenterHeader extends StatelessWidget {
 
   String get accountLabel {
     if (isApprovedSupplier) return 'Approved Supplier';
-    if (isPendingSupplier) return 'Pending Review';
-    if (isRejectedSupplier) return 'Update Required';
+    if (isPendingSupplier) return 'Application Under Review';
+    if (isRejectedSupplier) return 'Application Needs Changes';
     return 'Vendor Account';
   }
 
@@ -847,8 +846,6 @@ class _AccountCenterHeader extends StatelessWidget {
   }
 
   Color get accountColor {
-    if (isPendingSupplier) return const Color(0xFFE76F12);
-    if (isRejectedSupplier) return const Color(0xFFC93636);
     return const Color(0xFF087DD1);
   }
 
@@ -1252,30 +1249,30 @@ class _SupplierUpgradeCard extends StatelessWidget {
   final VoidCallback onTap;
 
   String get title {
-    if (isPending) return 'Supplier application is under review';
-    if (isRejected) return 'Supplier application needs updates';
+    if (isPending) return 'Application under review';
+    if (isRejected) return 'Application needs changes';
     return 'Become an IsdaLink supplier';
   }
 
   String get subtitle {
     if (isPending) {
-      return 'Admin is reviewing your submitted details. Your vendor features remain available while you wait.';
+      return 'Your supplier application is being reviewed. You can keep using your vendor account.';
     }
     if (isRejected) {
-      return 'Review the admin feedback, update the requested details, then resubmit your application.';
+      return 'Check the admin feedback, update your details, and submit again.';
     }
     return 'Create a verified supplier profile to post fish stocks and manage COD orders.';
   }
 
   String get statusLabel {
-    if (isPending) return 'UNDER REVIEW';
-    if (isRejected) return 'ACTION REQUIRED';
-    return 'SUPPLIER ACCESS';
+    if (isPending) return 'Under review';
+    if (isRejected) return 'Needs changes';
+    return 'Supplier access';
   }
 
   String get actionLabel {
-    if (isPending) return 'View status';
-    if (isRejected) return 'Review';
+    if (isPending) return 'View application';
+    if (isRejected) return 'Review application';
     return 'Apply';
   }
 
@@ -1286,15 +1283,13 @@ class _SupplierUpgradeCard extends StatelessWidget {
   }
 
   Color get accent {
-    if (isPending) return const Color(0xFFE77817);
-    if (isRejected) return const Color(0xFFD04B43);
     return const Color(0xFF087DD1);
   }
 
-  Color get softBackground {
-    if (isPending) return const Color(0xFFFFF7EA);
-    if (isRejected) return const Color(0xFFFFF3F2);
-    return const Color(0xFFF2F9FE);
+  Color get statusColor {
+    if (isPending) return const Color(0xFFB66A14);
+    if (isRejected) return const Color(0xFFC84A43);
+    return const Color(0xFF087DD1);
   }
 
   @override
@@ -1388,7 +1383,7 @@ class _SupplierUpgradeCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(24),
         child: Container(
-          padding: const EdgeInsets.all(13),
+          padding: const EdgeInsets.fromLTRB(16, 15, 16, 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(24),
             border: Border.all(color: const Color(0xFFDDEAF2)),
@@ -1400,14 +1395,7 @@ class _SupplierUpgradeCard extends StatelessWidget {
               ),
             ],
           ),
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(14, 13, 14, 12),
-            decoration: BoxDecoration(
-              color: softBackground,
-              borderRadius: BorderRadius.circular(19),
-              border: Border.all(color: accent.withAlpha(38)),
-            ),
-            child: Column(
+          child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
@@ -1417,10 +1405,10 @@ class _SupplierUpgradeCard extends StatelessWidget {
                       width: 46,
                       height: 46,
                       decoration: BoxDecoration(
-                        color: accent.withAlpha(20),
+                        color: const Color(0xFFF0F8FD),
                         borderRadius: BorderRadius.circular(15),
                       ),
-                      child: Icon(icon, color: accent, size: 23),
+                      child: Icon(icon, color: statusColor, size: 23),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -1460,9 +1448,9 @@ class _SupplierUpgradeCard extends StatelessWidget {
                         vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(210),
+                        color: const Color(0xFFF7FAFC),
                         borderRadius: BorderRadius.circular(99),
-                        border: Border.all(color: accent.withAlpha(30)),
+                        border: Border.all(color: const Color(0xFFDDE8EF)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -1471,7 +1459,7 @@ class _SupplierUpgradeCard extends StatelessWidget {
                             width: 6,
                             height: 6,
                             decoration: BoxDecoration(
-                              color: accent,
+                              color: statusColor,
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -1479,7 +1467,7 @@ class _SupplierUpgradeCard extends StatelessWidget {
                           Text(
                             statusLabel,
                             style: TextStyle(
-                              color: accent,
+                              color: statusColor,
                               fontSize: 8.5,
                               letterSpacing: 0.35,
                               fontWeight: FontWeight.w900,
@@ -1521,7 +1509,6 @@ class _SupplierUpgradeCard extends StatelessWidget {
                   ],
                 ),
               ],
-            ),
           ),
         ),
       ),
@@ -1741,13 +1728,13 @@ class _AccountSettingsCard extends StatelessWidget {
   const _AccountSettingsCard({
     required this.onAccountInformation,
     required this.onRegionAndLocation,
-    required this.onHelp,
+    required this.onAbout,
     required this.onLogout,
   });
 
   final VoidCallback onAccountInformation;
   final VoidCallback onRegionAndLocation;
-  final VoidCallback onHelp;
+  final VoidCallback onAbout;
   final VoidCallback onLogout;
 
   @override
@@ -1768,9 +1755,9 @@ class _AccountSettingsCard extends StatelessWidget {
             onTap: onRegionAndLocation,
           ),
           _SettingsTile(
-            icon: Icons.help_outline_rounded,
-            title: 'Help and Support',
-            onTap: onHelp,
+            icon: Icons.info_outline_rounded,
+            title: 'About IsdaLink',
+            onTap: onAbout,
           ),
           _SettingsTile(
             icon: Icons.logout_rounded,

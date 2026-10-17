@@ -13,8 +13,6 @@ class SupplierActivationProgressCard extends StatelessWidget {
   final ValueChanged<int> onStepTap;
 
   static const _blue = Color(0xFF146BFF);
-  static const _navy = Color(0xFF102C44);
-
   @override
   Widget build(BuildContext context) {
     const icons = <IconData>[
@@ -25,8 +23,8 @@ class SupplierActivationProgressCard extends StatelessWidget {
     ];
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 13),
-      padding: const EdgeInsets.fromLTRB(13, 12, 13, 11),
+      margin: const EdgeInsets.only(bottom: 11),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 9),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
@@ -40,17 +38,7 @@ class SupplierActivationProgressCard extends StatelessWidget {
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Application Progress',
-            style: TextStyle(
-              color: _navy,
-              fontSize: 12.5,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 12),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: List.generate(stepTitles.length * 2 - 1, (slot) {
@@ -83,8 +71,8 @@ class SupplierActivationProgressCard extends StatelessWidget {
                     children: [
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 180),
-                        width: 36,
-                        height: 36,
+                        width: 34,
+                        height: 34,
                         decoration: BoxDecoration(
                           color: done || active
                               ? _blue
@@ -188,7 +176,7 @@ class SupplierStepStatusCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Complete required details',
+                  'Before you continue',
                   style: TextStyle(
                     color: Color(0xFF9B510F),
                     fontSize: 10.8,
@@ -198,8 +186,10 @@ class SupplierStepStatusCard extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   missingItems.isEmpty
-                      ? 'Check the information above before continuing.'
-                      : 'Still needed: ${missingItems.join(', ')}.',
+                      ? 'Please check the details above.'
+                      : missingItems.length == 1
+                      ? missingItems.first
+                      : 'Please complete: ${missingItems.join(', ')}.',
                   style: const TextStyle(
                     color: Color(0xFF65717D),
                     fontSize: 9.7,

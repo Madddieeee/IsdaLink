@@ -321,7 +321,10 @@ class ManageProductCard extends StatelessWidget {
                       icon: const Icon(Icons.add_box_outlined, size: 16),
                       label: const Text(
                         'Add Stock',
-                        style: TextStyle(fontSize: 10.2, fontWeight: FontWeight.w900),
+                        style: TextStyle(
+                          fontSize: 10.2,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFE7F8F1),
@@ -344,7 +347,10 @@ class ManageProductCard extends StatelessWidget {
                     icon: const Icon(Icons.edit_outlined, size: 16),
                     label: const Text(
                       'Edit',
-                      style: TextStyle(fontSize: 10.2, fontWeight: FontWeight.w900),
+                      style: TextStyle(
+                        fontSize: 10.2,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF146BFF),

@@ -132,9 +132,7 @@ class _ReadinessItem extends StatelessWidget {
         Text(
           complete ? 'Done' : 'Required',
           style: TextStyle(
-            color: complete
-                ? const Color(0xFF147D64)
-                : const Color(0xFF8BA0B1),
+            color: complete ? const Color(0xFF147D64) : const Color(0xFF8BA0B1),
             fontSize: 8.8,
             fontWeight: FontWeight.w900,
           ),

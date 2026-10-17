@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:isdalink/screens/analytics/supplier_analytics_screen.dart';
 import 'package:isdalink/screens/home/home_screen.dart';
 import 'package:isdalink/screens/supplier/post_fish_stock_screen.dart';
@@ -207,7 +206,8 @@ class SupplierDashboardScreen extends StatelessWidget {
           content: Text(
             AppErrorMessage.from(
               error,
-              fallback: 'Unable to open your supplier store right now. Please try again.',
+              fallback:
+                  'Unable to open your supplier store right now. Please try again.',
             ),
           ),
           behavior: SnackBarBehavior.floating,
@@ -450,30 +450,15 @@ class SupplierDashboardScreen extends StatelessWidget {
     List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
   ) => dashboardService.pendingOrders(documents);
 
-  Widget dashboardHeaderSliver({required BuildContext context}) {
+  Widget dashboardHeader({required BuildContext context}) {
     final topPadding = MediaQuery.paddingOf(context).top;
-    const expandedHeight = 184.0;
+    final expandedHeight = topPadding + 178.0;
     const toolbarHeight = 52.0;
     final collapsedHeight = topPadding + toolbarHeight;
 
-    return SliverAppBar(
-      pinned: false,
-      floating: false,
-      snap: false,
-      stretch: false,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      automaticallyImplyLeading: false,
-      backgroundColor: const Color(0xFF073E69),
-      surfaceTintColor: Colors.transparent,
-      toolbarHeight: toolbarHeight,
-      expandedHeight: expandedHeight,
-      systemOverlayStyle: const SystemUiOverlayStyle(
-        statusBarColor: Color(0xFF073E69),
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
-      ),
-      flexibleSpace: LayoutBuilder(
+    return SizedBox(
+      height: expandedHeight,
+      child: LayoutBuilder(
         builder: (context, constraints) {
           final range = expandedHeight - collapsedHeight;
           final progress = range <= 0
@@ -609,7 +594,7 @@ class SupplierDashboardScreen extends StatelessWidget {
               Positioned(
                 left: 20,
                 right: 20,
-                bottom: 22,
+                bottom: 38,
                 child: IgnorePointer(
                   ignoring: progress < 0.30,
                   child: Opacity(
@@ -1021,9 +1006,9 @@ class SupplierDashboardScreen extends StatelessWidget {
       builder: (context, constraints) {
         const spacing = 10.0;
         final cardWidth = (constraints.maxWidth - spacing) / 2;
-        final textScale = MediaQuery.textScalerOf(context)
-            .scale(1)
-            .clamp(1.0, 2.0);
+        final textScale = MediaQuery.textScalerOf(
+          context,
+        ).scale(1).clamp(1.0, 2.0);
         final cardHeight = 108 + ((textScale - 1) * 36);
 
         return GridView.count(
@@ -1283,83 +1268,93 @@ class SupplierDashboardScreen extends StatelessWidget {
     final hasOutOfStock = alerts.any((doc) => isOutOfStock(doc.data()));
     final unreadProfileChanges = supplierNotificationService
         .unreadProfileChangeNotifications(notifications);
+    final headerHeight = MediaQuery.paddingOf(context).top + 178;
 
     return CustomScrollView(
       physics: const ClampingScrollPhysics(),
       slivers: [
-        dashboardHeaderSliver(context: context),
         SliverToBoxAdapter(
-          child: Container(
-            color: const Color(0xFF0A5B84),
-            child: Container(
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                color: Color(0xFFF7FAFC),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(36)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(0x1800152A),
-                    blurRadius: 22,
-                    offset: Offset(0, -5),
+          child: Stack(
+            children: [
+              dashboardHeader(context: context),
+              Padding(
+                padding: EdgeInsets.only(top: headerHeight - 26),
+                child: Container(
+                  width: double.infinity,
+                  clipBehavior: Clip.antiAlias,
+                  padding: const EdgeInsets.fromLTRB(16, 34, 16, 54),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF7FAFC),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(32),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Color(0x1900213D),
+                        blurRadius: 20,
+                        offset: Offset(0, -3),
+                      ),
+                    ],
                   ),
-                ],
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      summaryMetricsCard(
+                        context: context,
+                        activeListings: activeListings,
+                        activeCod: activeCod,
+                        stockAlerts: alerts.length,
+                      ),
+                      alertPanel(
+                        context: context,
+                        pending: pending,
+                        alerts: alerts,
+                      ),
+                      profileChangeNotificationPanel(
+                        context: context,
+                        notifications: notifications,
+                      ),
+                      storeManagementCard(
+                        context,
+                        profileData: profileData,
+                        unreadProfileChanges: unreadProfileChanges.length,
+                      ),
+                      const _SectionHeading(
+                        title: 'Quick Actions',
+                        subtitle:
+                            'Everything you need for today’s supplier work.',
+                      ),
+                      const SizedBox(height: 11),
+                      toolsGrid(
+                        context: context,
+                        activeCod: activeCod,
+                        stockAlerts: alerts.length,
+                        hasOutOfStock: hasOutOfStock,
+                      ),
+                      const SizedBox(height: 24),
+                      _SectionHeading(
+                        title: 'Current Stock',
+                        subtitle:
+                            'See what needs attention before your next sale.',
+                        trailing: sortedStocks.length > 4
+                            ? 'View all (${sortedStocks.length})'
+                            : '${sortedStocks.length} listing${sortedStocks.length == 1 ? '' : 's'}',
+                        onTrailingTap: sortedStocks.length > 4
+                            ? () => openManageProducts(context)
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
+                      if (sortedStocks.isEmpty)
+                        const _EmptyStockCard()
+                      else
+                        ...sortedStocks
+                            .take(4)
+                            .map((doc) => stockCard(doc, context)),
+                    ],
+                  ),
+                ),
               ),
-              padding: const EdgeInsets.fromLTRB(16, 22, 16, 54),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  summaryMetricsCard(
-                    context: context,
-                    activeListings: activeListings,
-                    activeCod: activeCod,
-                    stockAlerts: alerts.length,
-                  ),
-                  alertPanel(
-                    context: context,
-                    pending: pending,
-                    alerts: alerts,
-                  ),
-                  profileChangeNotificationPanel(
-                    context: context,
-                    notifications: notifications,
-                  ),
-                  storeManagementCard(
-                    context,
-                    profileData: profileData,
-                    unreadProfileChanges: unreadProfileChanges.length,
-                  ),
-                  const _SectionHeading(
-                    title: 'Quick Actions',
-                    subtitle: 'Everything you need for today’s supplier work.',
-                  ),
-                  const SizedBox(height: 11),
-                  toolsGrid(
-                    context: context,
-                    activeCod: activeCod,
-                    stockAlerts: alerts.length,
-                    hasOutOfStock: hasOutOfStock,
-                  ),
-                  const SizedBox(height: 24),
-                  _SectionHeading(
-                    title: 'Current Stock',
-                    subtitle: 'See what needs attention before your next sale.',
-                    trailing: sortedStocks.length > 4
-                        ? 'View all (${sortedStocks.length})'
-                        : '${sortedStocks.length} listing${sortedStocks.length == 1 ? '' : 's'}',
-                    onTrailingTap: sortedStocks.length > 4
-                        ? () => openManageProducts(context)
-                        : null,
-                  ),
-                  const SizedBox(height: 12),
-                  if (sortedStocks.isEmpty)
-                    const _EmptyStockCard()
-                  else
-                    ...sortedStocks
-                        .take(4)
-                        .map((doc) => stockCard(doc, context)),
-                ],
-              ),
-            ),
+            ],
           ),
         ),
       ],
@@ -1367,29 +1362,44 @@ class SupplierDashboardScreen extends StatelessWidget {
   }
 
   Widget loadingBody(BuildContext context) {
+    final headerHeight = MediaQuery.paddingOf(context).top + 178;
+
     return CustomScrollView(
       physics: const NeverScrollableScrollPhysics(),
       slivers: [
-        dashboardHeaderSliver(context: context),
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: Container(
-            color: const Color(0xFF0A5B84),
-            child: const DecoratedBox(
-              decoration: BoxDecoration(
-                color: Color(0xFFF7FAFC),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(36)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(0x1800152A),
-                    blurRadius: 22,
-                    offset: Offset(0, -5),
+        SliverToBoxAdapter(
+          child: SizedBox(
+            height: MediaQuery.sizeOf(context).height,
+            child: Stack(
+              children: [
+                dashboardHeader(context: context),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  top: headerHeight - 26,
+                  bottom: 0,
+                  child: const DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Color(0xFFF7FAFC),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(32),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Color(0x1900213D),
+                          blurRadius: 20,
+                          offset: Offset(0, -3),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF0875D1),
+                      ),
+                    ),
                   ),
-                ],
-              ),
-              child: Center(
-                child: CircularProgressIndicator(color: Color(0xFF0875D1)),
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -1431,7 +1441,8 @@ class SupplierDashboardScreen extends StatelessWidget {
                   child: Text(
                     AppErrorMessage.from(
                       stockSnapshot.error!,
-                      fallback: 'Unable to load your supplier dashboard right now. Please try again.',
+                      fallback:
+                          'Unable to load your supplier dashboard right now. Please try again.',
                     ),
                     textAlign: TextAlign.center,
                     style: const TextStyle(

@@ -65,80 +65,58 @@ class _RejectionNextStep extends StatelessWidget {
 class _RejectedApplicationFeedbackCard extends StatelessWidget {
   const _RejectedApplicationFeedbackCard({
     required this.reason,
-    required this.onViewFeedback,
   });
 
   final String reason;
-  final VoidCallback onViewFeedback;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.fromLTRB(14, 13, 12, 13),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
       decoration: BoxDecoration(
         color: const Color(0xFFFFF7F5),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: const Color(0xFFF1C4BC)),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 38,
-            height: 38,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFE9E5),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.feedback_outlined,
-              color: Color(0xFFD94E42),
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 11),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Admin feedback',
+          const Row(
+            children: [
+              Icon(Icons.info_outline_rounded, color: Color(0xFFD94E42), size: 20),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Application needs changes',
                   style: TextStyle(
                     color: Color(0xFF713B34),
                     fontSize: 12.8,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  reason,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF87554E),
-                    fontSize: 11.2,
-                    height: 1.35,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            reason,
+            style: const TextStyle(
+              color: Color(0xFF87554E),
+              fontSize: 11.2,
+              height: 1.4,
+              fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(width: 8),
-          TextButton(
-            onPressed: onViewFeedback,
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFF087FCB),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
-              minimumSize: const Size(0, 34),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: const Text(
-              'View',
-              style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900),
+          const SizedBox(height: 8),
+          const Text(
+            'Update the requested information, check your details, then submit again.',
+            style: TextStyle(
+              color: Color(0xFF657C8E),
+              fontSize: 9.8,
+              height: 1.35,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -336,7 +314,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
           missing.add('complete verification details');
         }
         if (!confirmedAccuracy) {
-          missing.add('accuracy confirmation');
+          missing.add('Confirm that the information above is correct.');
         }
         break;
     }
@@ -574,8 +552,6 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
       if (mounted) {
         setState(() {});
       }
-
-      await showRejectionFeedbackDialog(activeRejectionReason);
 
       await activationService.markRejectionReasonViewed(
         user: user,
@@ -892,12 +868,24 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
           ),
-          content: Text(
-            message,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-            ),
+          content: Row(
+            children: [
+              Icon(
+                isError ? Icons.error_outline_rounded : Icons.check_circle_outline_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  message,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       );
@@ -1188,7 +1176,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
       storeLongitude = result.longitude;
     });
 
-    showMessage('Business location pin saved.');
+    showMessage('Store location saved.');
   }
 
   Future<ImageSource?> chooseImageSource() {
@@ -1218,7 +1206,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                 ),
                 const SizedBox(height: 14),
                 const Text(
-                  'Choose Photo Source',
+                  'Add a photo',
                   style: TextStyle(
                     color: Color(0xFF102C44),
                     fontSize: 16,
@@ -1317,11 +1305,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
         }
       });
 
-      showMessage(
-        permit
-            ? 'Business permit photo uploaded.'
-            : 'Store verification photo uploaded.',
-      );
+      showMessage(permit ? 'Permit photo added.' : 'Store photo added.');
     } on StateError catch (error) {
       showMessage(error.message.toString(), isError: true);
     } catch (error) {
@@ -1492,7 +1476,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
     return SupplierActivationSectionCard(
       icon: Icons.person_outline_rounded,
       title: 'Owner Information',
-      subtitle: 'Use the account owner’s real contact details for admin review.',
+      subtitle: 'Enter the account owner’s contact details.',
       children: [
         TextField(
           controller: ownerNameController,
@@ -1502,7 +1486,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
           decoration: fieldDecoration(
             label: 'Full Name (as legal name)',
             icon: Icons.person_outline_rounded,
-            helperText: 'Use the legal name of the account owner.',
+            helperText: 'Enter the account owner’s legal name.',
             valid: ownerNameController.text.trim().length >= 2,
           ),
         ),
@@ -1513,7 +1497,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
           decoration: fieldDecoration(
             label: 'Email Address',
             icon: Icons.email_outlined,
-            helperText: 'This is your registered IsdaLink email.',
+            helperText: 'Registered IsdaLink email',
             valid: isValidEmail(emailController.text),
             locked: true,
           ),
@@ -1559,7 +1543,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
     return SupplierActivationSectionCard(
       icon: Icons.storefront_outlined,
       title: 'Store Information',
-      subtitle: 'Tell us about your store and business location in Caraga.',
+      subtitle: 'Add your store name and location.',
       children: [
         TextField(
           controller: businessNameController,
@@ -1569,7 +1553,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
           decoration: fieldDecoration(
             label: 'Business or Store Name',
             icon: Icons.store_outlined,
-            helperText: 'This name will be shown to vendors.',
+            helperText: 'Shown to vendors',
             valid: businessNameController.text.trim().length >= 2,
           ),
         ),
@@ -1581,7 +1565,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
           placeholder: 'Select province',
           onTap: selectProvince,
           onClear: selectedProvince == null ? null : clearProvince,
-          helperText: 'Choose the province where the supplier store is located.',
+          helperText: 'Store province',
         ),
         gap(),
         SupplierSelectionField(
@@ -1593,8 +1577,8 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
               : 'Select city or municipality',
           onTap: selectLocality,
           helperText: selectedProvince == null
-              ? 'Choose a province before selecting the locality.'
-              : 'Choose from the listed localities of $selectedProvince.',
+              ? 'Select a province first.'
+              : 'Store city or municipality',
         ),
         gap(),
         TextField(
@@ -1607,120 +1591,70 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
           decoration: fieldDecoration(
             label: 'Specific Store Address',
             icon: Icons.pin_drop_outlined,
-            helperText: 'Street, barangay, landmark, or market location only.',
+            helperText: 'Street, barangay, landmark, or market',
             valid: storeAddressController.text.trim().length >= 5,
           ),
         ),
         gap(),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: hasPin ? const Color(0xFFEAF8F3) : const Color(0xFFF5F9FC),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: hasPin ? const Color(0xFF8EDBC2) : const Color(0xFFDCE7EF),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+        Material(
+          color: hasPin ? const Color(0xFFEAF8F3) : const Color(0xFFF6FAFD),
+          borderRadius: BorderRadius.circular(17),
+          child: InkWell(
+            onTap: selectBusinessLocationPin,
+            borderRadius: BorderRadius.circular(17),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(17),
+                border: Border.all(
+                  color: hasPin
+                      ? const Color(0xFF8EDBC2)
+                      : const Color(0xFFE1EBF2),
+                ),
+              ),
+              child: Row(
                 children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      hasPin ? Icons.location_on_rounded : Icons.add_location_alt_outlined,
-                      color: const Color(0xFF087FCB),
-                      size: 20,
-                    ),
+                  Icon(
+                    hasPin ? Icons.location_on_rounded : Icons.add_location_alt_outlined,
+                    color: hasPin ? const Color(0xFF147D64) : const Color(0xFF087FCB),
+                    size: 23,
                   ),
-                  const SizedBox(width: 10),
-                  const Expanded(
+                  const SizedBox(width: 11),
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Business Location Pin',
+                        const Text(
+                          'Store Map Location',
                           style: TextStyle(
                             color: Color(0xFF102C44),
-                            fontSize: 11.4,
+                            fontSize: 11.1,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
-                        SizedBox(height: 2),
+                        const SizedBox(height: 2),
                         Text(
-                          'Pin the physical store for vendor reference and admin review.',
-                          style: TextStyle(
+                          hasPin
+                              ? 'Location added${selectedLocality == null ? '' : ' · $selectedLocality'}'
+                              : 'Tap to choose the exact store location',
+                          style: const TextStyle(
                             color: Color(0xFF657C8E),
-                            fontSize: 8.9,
-                            height: 1.3,
+                            fontSize: 9.2,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
                     ),
                   ),
+                  Icon(
+                    hasPin ? Icons.edit_outlined : Icons.chevron_right_rounded,
+                    color: const Color(0xFF087FCB),
+                    size: 20,
+                  ),
                 ],
               ),
-              const SizedBox(height: 9),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(13),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      hasPin ? Icons.check_circle_rounded : Icons.location_searching_rounded,
-                      color: hasPin ? const Color(0xFF147D64) : const Color(0xFF7B8FA3),
-                      size: 17,
-                    ),
-                    const SizedBox(width: 7),
-                    Expanded(
-                      child: Text(
-                        hasPin
-                            ? 'Location pin selected${selectedLocality == null ? '' : ' · $selectedLocality'}'
-                            : 'No business location pin selected.',
-                        style: const TextStyle(
-                          color: Color(0xFF52677A),
-                          fontSize: 9.2,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 9),
-              SizedBox(
-                width: double.infinity,
-                height: 43,
-                child: OutlinedButton.icon(
-                  onPressed: selectBusinessLocationPin,
-                  icon: Icon(
-                    hasPin ? Icons.edit_location_alt_outlined : Icons.map_outlined,
-                    size: 18,
-                  ),
-                  label: Text(
-                    hasPin ? 'Update Map Pin' : 'Choose on Caraga Map',
-                    style: const TextStyle(fontSize: 10.1, fontWeight: FontWeight.w900),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF087FCB),
-                    side: const BorderSide(color: Color(0xFF087FCB)),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
         gap(),
@@ -1732,7 +1666,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
           decoration: fieldDecoration(
             label: 'Primary Market Area',
             icon: Icons.location_searching_rounded,
-            helperText: 'Main market area served by this supplier.',
+            helperText: 'Main area served',
             valid: primaryMarketAreaController.text.trim().length >= 2,
           ),
         ),
@@ -1746,27 +1680,9 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
           decoration: fieldDecoration(
             label: 'Store Description',
             icon: Icons.description_outlined,
-            helperText: 'Briefly describe your fish source, selling setup, and regular stocks.',
+            helperText: 'Describe your fish source and regular stocks.',
             valid: storeDescriptionController.text.trim().length >= 8,
           ),
-        ),
-        const SizedBox(height: 3),
-        const Row(
-          children: [
-            Icon(Icons.info_outline_rounded, size: 15, color: Color(0xFF7B8FA3)),
-            SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                'Selling unit is chosen separately when posting each fish stock.',
-                style: TextStyle(
-                  color: Color(0xFF7B8FA3),
-                  fontSize: 8.9,
-                  height: 1.3,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
         ),
       ],
     );
@@ -1776,7 +1692,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
     return SupplierActivationSectionCard(
       icon: Icons.verified_user_outlined,
       title: 'Business Verification',
-      subtitle: 'Upload the permit and store photo that admin will review.',
+      subtitle: 'Add your permit and a current store photo.',
       children: [
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
@@ -1792,7 +1708,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
               SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'The permit number must match the uploaded business permit photo.',
+                  'The permit number and photo must match.',
                   style: TextStyle(
                     color: Color(0xFF7A5328),
                     fontSize: 9.5,
@@ -1815,14 +1731,14 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
           decoration: fieldDecoration(
             label: 'Business Permit Number',
             icon: Icons.confirmation_number_outlined,
-            helperText: 'Enter the letters, numbers, and hyphens exactly as printed.',
+            helperText: 'Enter it exactly as printed.',
             valid: isValidPermitNumber(businessPermitNumberController.text),
           ),
         ),
         gap(),
         SupplierVerificationPhotoCard(
           title: 'Business Permit Photo',
-          subtitle: 'Upload a clear photo showing the permit number and business name.',
+          subtitle: 'Show the permit number and business name clearly.',
           permit: true,
           localImage: permitImage,
           imageUrl: permitImageUrl,
@@ -1834,7 +1750,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
         gap(),
         SupplierVerificationPhotoCard(
           title: 'Store Verification Photo',
-          subtitle: 'Upload a clear photo of the physical store for admin verification.',
+          subtitle: 'Use a clear, current photo of your store.',
           permit: false,
           localImage: storeImage,
           imageUrl: storeImageUrl,
@@ -1842,32 +1758,6 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
           uploading: isUploadingStorePhoto,
           onUpload: () => pickAndUploadPhoto(permit: false),
           onRemove: () => removePhoto(permit: false),
-        ),
-        const SizedBox(height: 10),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF2F7FF),
-            borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: const Color(0xFFD4E2FF)),
-          ),
-          child: const Row(
-            children: [
-              Icon(Icons.info_outline_rounded, color: Color(0xFF087FCB), size: 18),
-              SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Use readable, current photos. Blurry or mismatched records may be declined.',
-                  style: TextStyle(
-                    color: Color(0xFF52677A),
-                    fontSize: 9.3,
-                    height: 1.32,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
         ),
       ],
     );
@@ -1881,47 +1771,6 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
   Widget reviewStep() {
     return Column(
       children: [
-        Container(
-          width: double.infinity,
-          margin: const EdgeInsets.only(bottom: 11),
-          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF5FAFD),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFDCEBF3)),
-          ),
-          child: const Row(
-            children: [
-              Icon(Icons.fact_check_outlined, color: Color(0xFF087FCB), size: 20),
-              SizedBox(width: 9),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Final Review',
-                      style: TextStyle(
-                        color: Color(0xFF102C44),
-                        fontSize: 11.8,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      'Check your details before submitting. You can still edit any section.',
-                      style: TextStyle(
-                        color: Color(0xFF657C8E),
-                        fontSize: 9.6,
-                        height: 1.3,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
         SupplierReviewSection(
           title: 'Owner Information',
           icon: Icons.person_outline_rounded,
@@ -2003,14 +1852,28 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
               ),
               const SizedBox(width: 4),
               const Expanded(
-                child: Text(
-                  'I confirm that my contact, store, location, permit, and verification details are accurate.',
-                  style: TextStyle(
-                    color: Color(0xFF52677A),
-                    fontSize: 9.7,
-                    height: 1.36,
-                    fontWeight: FontWeight.w700,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Accuracy confirmation',
+                      style: TextStyle(
+                        color: Color(0xFF102C44),
+                        fontSize: 10.4,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'I reviewed the information above and confirm it is correct.',
+                      style: TextStyle(
+                        color: Color(0xFF52677A),
+                        fontSize: 9.5,
+                        height: 1.35,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -2023,7 +1886,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
   Widget submittedStep() {
     return Container(
       width: double.infinity,
-      clipBehavior: Clip.antiAlias,
+      padding: const EdgeInsets.fromLTRB(22, 24, 22, 22),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(25),
@@ -2036,140 +1899,56 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
           ),
         ],
       ),
-      child: Column(
+      child: const Column(
         children: [
-          SizedBox(
-            height: 115,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Image.asset(
-                  'assets/images/supplier_application_header_bg.png',
-                  fit: BoxFit.cover,
-                  alignment: Alignment.center,
-                ),
-                const DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [Color(0x42073B63), Color(0xD90869BA)],
-                    ),
-                  ),
-                ),
-                Center(
-                  child: Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(238),
-                      borderRadius: BorderRadius.circular(22),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x2800152A),
-                          blurRadius: 16,
-                          offset: Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    child: const Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Icon(Icons.mark_email_read_outlined, color: Color(0xFF146BFF), size: 38),
-                        Positioned(
-                          right: 9,
-                          bottom: 10,
-                          child: CircleAvatar(
-                            radius: 10,
-                            backgroundColor: Color(0xFF1DBB8A),
-                            child: Icon(Icons.check_rounded, color: Colors.white, size: 14),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+          CircleAvatar(
+            radius: 31,
+            backgroundColor: Color(0xFFEAF7FB),
+            child: Icon(
+              Icons.hourglass_top_rounded,
+              color: Color(0xFF087FCB),
+              size: 31,
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
-            child: Column(
-              children: [
-                const Text(
-                  'Application Under Review',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Color(0xFF102C44),
-                    fontSize: 17,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Your supplier application has been received and is waiting for admin review. You can keep using your vendor account while you wait.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Color(0xFF657C8E),
-                    fontSize: 10.2,
-                    height: 1.42,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 15),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFF8ED),
-                    borderRadius: BorderRadius.circular(17),
-                    border: Border.all(color: const Color(0xFFFFD4A3)),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.schedule_rounded, color: Color(0xFFE57612), size: 21),
-                      SizedBox(width: 9),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'STATUS',
-                              style: TextStyle(
-                                color: Color(0xFFB95A10),
-                                fontSize: 8.2,
-                                letterSpacing: 0.55,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            SizedBox(height: 2),
-                            Text(
-                              'Pending Admin Review',
-                              style: TextStyle(
-                                color: Color(0xFF7A5328),
-                                fontSize: 10.8,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 13),
-                const Text(
-                  'Supplier tools unlock after approval. We’ll keep this application locked while it is under review so duplicate submissions are avoided.',
+          SizedBox(height: 15),
+          Text(
+            'Application under review',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Color(0xFF102C44),
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          SizedBox(height: 7),
+          Text(
+            'Admin is reviewing your supplier details. You can continue using your vendor account.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Color(0xFF657C8E),
+              fontSize: 10.2,
+              height: 1.42,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.notifications_none_rounded, color: Color(0xFF087FCB), size: 17),
+              SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  'We’ll notify you when a decision is ready.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Color(0xFF52677A),
                     fontSize: 9.5,
-                    height: 1.36,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
@@ -2199,7 +1978,7 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
             onPressed: () => Navigator.pop(context),
             icon: const Icon(Icons.account_circle_outlined, size: 20),
             label: const Text(
-              'Return to Account Center',
+              'Back to Account',
               style: TextStyle(fontSize: 14.2, fontWeight: FontWeight.w900),
             ),
             style: ElevatedButton.styleFrom(
@@ -2289,16 +2068,16 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                 isSubmitting
                     ? 'Submitting...'
                     : uploadsInProgress
-                    ? 'Uploading Photos...'
+                    ? 'Uploading...'
                     : isLoadingProfile
-                    ? 'Loading Application...'
+                    ? 'Loading...'
                     : isReady
                     ? isLastStep
                           ? 'Submit Application'
                           : 'Continue'
                     : isLastStep && reviewDetailsComplete && !confirmedAccuracy
-                    ? 'Confirm Above to Submit'
-                    : 'Complete Required Details',
+                    ? 'Confirm details'
+                    : 'Complete this step',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
@@ -2330,6 +2109,8 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final headerHeight = MediaQuery.paddingOf(context).top + 178;
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -2348,16 +2129,36 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
             controller: scrollController,
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             slivers: [
-              SupplierActivationHeader(
-                currentStep: currentStep,
-                totalSteps: stepTitles.length,
-                submitted: applicationSubmitted,
-                onBack: closeScreen,
-              ),
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 15, 16, 34),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
+              SliverToBoxAdapter(
+                child: Stack(
+                  children: [
+                    SupplierActivationHeader(
+                      currentStep: currentStep,
+                      totalSteps: stepTitles.length,
+                      submitted: applicationSubmitted,
+                      onBack: closeScreen,
+                    ),
+                    Padding(
+                      padding: EdgeInsets.only(top: headerHeight - 26),
+                      child: Container(
+                        width: double.infinity,
+                        clipBehavior: Clip.antiAlias,
+                        padding: const EdgeInsets.fromLTRB(16, 34, 16, 34),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFF4F8FB),
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(32),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Color(0x1900213D),
+                              blurRadius: 20,
+                              offset: Offset(0, -3),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
                     if (!applicationSubmitted)
                       SupplierActivationProgressCard(
                         currentStep: currentStep,
@@ -2372,9 +2173,6 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                         activeRejectionReason.trim().isNotEmpty)
                       _RejectedApplicationFeedbackCard(
                         reason: activeRejectionReason.trim(),
-                        onViewFeedback: () => showRejectionFeedbackDialog(
-                          activeRejectionReason,
-                        ),
                       ),
                     if (isLoadingProfile)
                       const _LoadingCard()
@@ -2392,12 +2190,17 @@ class _SupplierActivationScreenState extends State<SupplierActivationScreen> {
                       ),
                     if (!applicationSubmitted &&
                         !isLoadingProfile &&
+                        currentStep != stepTitles.length - 1 &&
                         !currentStepComplete)
                       SupplierStepStatusCard(
                         complete: currentStepComplete,
                         missingItems: missingRequirements,
                       ),
-                  ]),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

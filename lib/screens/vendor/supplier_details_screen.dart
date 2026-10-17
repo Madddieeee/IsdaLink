@@ -22,12 +22,19 @@ class _SupplierBusinessMapViewer extends StatelessWidget {
   const _SupplierBusinessMapViewer({
     required this.storeName,
     required this.locationLabel,
+    required this.storeImageUrl,
     required this.position,
   });
 
   final String storeName;
   final String locationLabel;
+  final String storeImageUrl;
   final LatLng position;
+
+  bool get hasStoreImage {
+    final value = storeImageUrl.trim();
+    return value.startsWith('http://') || value.startsWith('https://');
+  }
 
   static final LatLngBounds _caragaBounds = LatLngBounds(
     southwest: const LatLng(7.55, 124.65),
@@ -116,10 +123,15 @@ class _SupplierBusinessMapViewer extends StatelessWidget {
                         position: position,
                         draggable: false,
                         infoWindow: InfoWindow(
-                          title: '$storeName Location',
+                          title: '$storeName is here',
                           snippet: locationLabel.isEmpty ? null : locationLabel,
                         ),
                       ),
+                    },
+                    onMapCreated: (controller) async {
+                      await controller.showMarkerInfoWindow(
+                        const MarkerId('supplier_business_location'),
+                      );
                     },
                     myLocationEnabled: false,
                     myLocationButtonEnabled: false,
@@ -153,25 +165,72 @@ class _SupplierBusinessMapViewer extends StatelessWidget {
                             ),
                           ],
                         ),
-                        child: const Row(
+                        child: Row(
                           children: [
-                            Icon(
-                              Icons.open_with_rounded,
-                              color: Color(0xFF146BFF),
-                              size: 18,
-                            ),
-                            SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Drag and zoom the map to explore the area. '
-                                'The supplier business pin remains fixed.',
-                                style: TextStyle(
-                                  color: Color(0xFF52677A),
-                                  fontSize: 9.2,
-                                  height: 1.3,
-                                  fontWeight: FontWeight.w700,
+                            Container(
+                              width: 42,
+                              height: 42,
+                              clipBehavior: Clip.antiAlias,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEAF7FD),
+                                borderRadius: BorderRadius.circular(13),
+                                border: Border.all(
+                                  color: const Color(0xFFD8EAF3),
                                 ),
                               ),
+                              child: hasStoreImage
+                                  ? Image.network(
+                                      storeImageUrl.trim(),
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, _, _) => const Icon(
+                                        Icons.storefront_rounded,
+                                        color: Color(0xFF087AC0),
+                                        size: 19,
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.storefront_rounded,
+                                      color: Color(0xFF087AC0),
+                                      size: 19,
+                                    ),
+                            ),
+                            const SizedBox(width: 9),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '$storeName is here',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: Color(0xFF102C44),
+                                      fontSize: 11.2,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                  if (locationLabel.isNotEmpty) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      locationLabel,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Color(0xFF657C8E),
+                                        fontSize: 9.1,
+                                        height: 1.25,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 7),
+                            const Icon(
+                              Icons.location_on_rounded,
+                              color: Color(0xFFE4483E),
+                              size: 21,
                             ),
                           ],
                         ),
@@ -525,11 +584,9 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
             : null,
         onProfileImageTap: () => openStorefrontImageViewer(
           imageUrl: storefrontProfileImageUrl,
-          title: '${supplier.name} profile photo',
         ),
         onCoverImageTap: () => openStorefrontImageViewer(
           imageUrl: storefrontCoverImageUrl,
-          title: '${supplier.name} cover photo',
         ),
       );
     }
@@ -549,7 +606,6 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
 
   void openStorefrontImageViewer({
     required String imageUrl,
-    required String title,
   }) {
     final value = imageUrl.trim();
     final isNetworkImage =
@@ -559,10 +615,25 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
       return;
     }
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => _StorefrontImageViewer(imageUrl: value, title: title),
+    Navigator.of(context).push(
+      PageRouteBuilder<void>(
+        opaque: false,
+        barrierDismissible: true,
+        barrierColor: Colors.black.withAlpha(145),
+        barrierLabel: 'Close photo',
+        transitionDuration: const Duration(milliseconds: 220),
+        reverseTransitionDuration: const Duration(milliseconds: 180),
+        pageBuilder: (_, animation, secondaryAnimation) =>
+            _StorefrontImageViewer(imageUrl: value),
+        transitionsBuilder: (_, animation, secondaryAnimation, child) {
+          return FadeTransition(
+            opacity: CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutCubic,
+            ),
+            child: child,
+          );
+        },
       ),
     );
   }
@@ -876,6 +947,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
                 builder: (_) => _SupplierBusinessMapViewer(
                   storeName: storeName,
                   locationLabel: locationLabel,
+                  storeImageUrl: storefrontProfileImageUrl,
                   position: position,
                 ),
               ),
@@ -1789,7 +1861,6 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
               onTap: hasProfile
                   ? () => openStorefrontImageViewer(
                       imageUrl: profileUrl,
-                      title: '$storeName profile photo',
                     )
                   : null,
               child: Container(
@@ -1925,11 +1996,7 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
     final width = MediaQuery.sizeOf(context).width;
     final columns = width < 330 ? 1 : 2;
 
-    final hasPublicCover =
-        storefrontCoverImageUrl.trim().startsWith('http://') ||
-        storefrontCoverImageUrl.trim().startsWith('https://');
-    final heroHeight =
-        MediaQuery.paddingOf(context).top + (hasPublicCover ? 246.0 : 224.0);
+    final heroHeight = MediaQuery.paddingOf(context).top + 246.0;
 
     return Stack(
       fit: StackFit.expand,
@@ -2121,86 +2188,119 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
 }
 
 class _StorefrontImageViewer extends StatelessWidget {
-  const _StorefrontImageViewer({required this.imageUrl, required this.title});
+  const _StorefrontImageViewer({required this.imageUrl});
 
   final String imageUrl;
-  final String title;
 
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: Colors.black,
-        body: SafeArea(
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: InteractiveViewer(
-                  minScale: 0.8,
-                  maxScale: 4.0,
-                  child: Center(
+        backgroundColor: Colors.transparent,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => Navigator.pop(context),
+            ),
+            SafeArea(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => Navigator.pop(context),
+                    ),
+                  ),
+                  InteractiveViewer(
+                    minScale: 1,
+                    maxScale: 4,
                     child: Image.network(
                       imageUrl,
                       fit: BoxFit.contain,
                       width: double.infinity,
-                      errorBuilder: (_, _, _) => const Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.broken_image_outlined,
-                            color: Colors.white70,
-                            size: 44,
+                      loadingBuilder: (context, child, progress) {
+                        if (progress == null) return child;
+                        return const SizedBox(
+                          height: 280,
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.4,
+                              color: Colors.white,
+                            ),
                           ),
-                          SizedBox(height: 10),
-                          Text(
-                            'Unable to display this photo.',
-                            style: TextStyle(color: Colors.white70),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                left: 14,
-                right: 14,
-                top: 10,
-                child: Row(
-                  children: [
-                    Material(
-                      color: Colors.black.withAlpha(115),
-                      shape: const CircleBorder(),
-                      child: IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(
-                          Icons.arrow_back_rounded,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          shadows: [
-                            Shadow(color: Colors.black54, blurRadius: 6),
+                        );
+                      },
+                      errorBuilder: (_, _, _) => const SizedBox(
+                        height: 280,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.broken_image_outlined,
+                              color: Colors.white70,
+                              size: 42,
+                            ),
+                            SizedBox(height: 10),
+                            Text(
+                              'This photo could not be displayed.',
+                              style: TextStyle(color: Colors.white70),
+                            ),
                           ],
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  Expanded(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => Navigator.pop(context),
+                      child: Align(
+                        alignment: Alignment.bottomCenter,
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 18),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 9,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withAlpha(24),
+                              borderRadius: BorderRadius.circular(99),
+                              border: Border.all(
+                                color: Colors.white.withAlpha(28),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.pinch_rounded,
+                                  size: 16,
+                                  color: Colors.white.withAlpha(190),
+                                ),
+                                const SizedBox(width: 7),
+                                Text(
+                                  'Pinch to zoom',
+                                  style: TextStyle(
+                                    color: Colors.white.withAlpha(205),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

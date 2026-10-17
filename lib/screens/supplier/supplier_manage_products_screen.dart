@@ -484,24 +484,32 @@ class _SupplierManageProductsScreenState
   }
 
   Widget bodyShell({required Widget child}) {
-    return Container(
-      color: const Color(0xFF0A5B84),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(16, 22, 16, 28),
-        decoration: const BoxDecoration(
-          color: Color(0xFFF7FAFC),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(36)),
-          boxShadow: [
-            BoxShadow(
-              color: Color(0x1800152A),
-              blurRadius: 22,
-              offset: Offset(0, -5),
+    final headerHeight = MediaQuery.paddingOf(context).top + 178;
+
+    return Stack(
+      children: [
+        ManageProductsHeader(onBack: () => Navigator.pop(context)),
+        Padding(
+          padding: EdgeInsets.only(top: headerHeight - 26),
+          child: Container(
+            width: double.infinity,
+            clipBehavior: Clip.antiAlias,
+            padding: const EdgeInsets.fromLTRB(16, 34, 16, 28),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF7FAFC),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+              boxShadow: [
+                BoxShadow(
+                  color: Color(0x1900213D),
+                  blurRadius: 20,
+                  offset: Offset(0, -3),
+                ),
+              ],
             ),
-          ],
+            child: child,
+          ),
         ),
-        child: child,
-      ),
+      ],
     );
   }
 
@@ -716,11 +724,6 @@ class _SupplierManageProductsScreenState
       key: ValueKey('manage-products-$streamRevision'),
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       slivers: [
-        ManageProductsHeader(
-          onBack: () {
-            Navigator.pop(context);
-          },
-        ),
         SliverToBoxAdapter(
           child: bodyShell(
             child: Column(
@@ -731,7 +734,9 @@ class _SupplierManageProductsScreenState
                 if (documents.isEmpty)
                   ManageProductsEmptyCard(onPostStock: openPostStock)
                 else if (visibleDocuments.isEmpty)
-                  ManageProductsFilteredEmptyCard(onClear: clearSearchAndFilters)
+                  ManageProductsFilteredEmptyCard(
+                    onClear: clearSearchAndFilters,
+                  )
                 else
                   ...visibleDocuments.map((document) {
                     return ManageProductCard(
@@ -763,11 +768,6 @@ class _SupplierManageProductsScreenState
     return CustomScrollView(
       physics: const ClampingScrollPhysics(),
       slivers: [
-        ManageProductsHeader(
-          onBack: () {
-            Navigator.pop(context);
-          },
-        ),
         SliverToBoxAdapter(
           child: bodyShell(child: const ManageProductsLoadingCard()),
         ),
@@ -779,11 +779,6 @@ class _SupplierManageProductsScreenState
     return CustomScrollView(
       physics: const ClampingScrollPhysics(),
       slivers: [
-        ManageProductsHeader(
-          onBack: () {
-            Navigator.pop(context);
-          },
-        ),
         SliverToBoxAdapter(
           child: bodyShell(
             child: ManageProductsErrorCard(

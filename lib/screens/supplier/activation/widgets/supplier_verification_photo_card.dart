@@ -211,9 +211,7 @@ class SupplierVerificationPhotoCard
                     size: 18,
                   ),
                   label: Text(
-                    ready
-                        ? 'Change Photo'
-                        : 'Upload Photo',
+                    ready ? 'Replace Photo' : 'Add Photo',
                     style: const TextStyle(
                       fontWeight: FontWeight.w900,
                     ),

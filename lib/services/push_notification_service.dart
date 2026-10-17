@@ -185,10 +185,9 @@ class PushNotificationService {
       return;
     }
 
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
+    messenger.hideCurrentSnackBar();
+    final controller = messenger.showSnackBar(
+      SnackBar(
           content: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -257,8 +256,12 @@ class PushNotificationService {
               unawaited(_handleInteraction(message));
             },
           ),
-        ),
-      );
+      ),
+    );
+
+    // Close foreground alerts after five seconds even when accessibility
+    // settings keep SnackBars with actions visible indefinitely.
+    Timer(const Duration(seconds: 5), controller.close);
   }
 
   Future<void> _handleInteraction(RemoteMessage message) async {

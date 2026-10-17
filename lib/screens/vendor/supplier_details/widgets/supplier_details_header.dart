@@ -387,7 +387,7 @@ class SupplierDetailsHeader extends StatelessWidget {
         builder: (context) {
           // Slightly taller than the compact version so the store identity
           // remains comfortably visible above the curved storefront body.
-          final heroHeight = topPadding + (hasPublicCover ? 246.0 : 224.0);
+          final heroHeight = topPadding + 246.0;
 
           return SizedBox(
             height: heroHeight,
@@ -578,17 +578,12 @@ class _StorefrontFallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Intentionally blank storefront cover. A supplier's application/store
-    // verification photo is not used as public branding. The owner can add a
-    // cover later from View My Shop.
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF0A4F78), Color(0xFF0873A9), Color(0xFF0B88B2)],
-        ),
-      ),
+    // Keep every storefront visually connected to IsdaLink until its owner
+    // uploads a custom cover. Verification photos remain private evidence.
+    return Image.asset(
+      'assets/images/isdalink_main_header.png',
+      fit: BoxFit.cover,
+      alignment: Alignment.center,
     );
   }
 }

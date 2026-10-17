@@ -803,95 +803,103 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
             physics: const ClampingScrollPhysics(),
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             slivers: [
-              PostStockHeader(onBack: handleBack),
               SliverToBoxAdapter(
-                child: Container(
-                  color: const Color(0xFF0A5B84),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.fromLTRB(16, 22, 16, 24),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF7FAFC),
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(36),
+                child: Stack(
+                  children: [
+                    PostStockHeader(onBack: handleBack),
+                    Padding(
+                      padding: EdgeInsets.only(
+                        top: MediaQuery.paddingOf(context).top + 152,
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Color(0x1800152A),
-                          blurRadius: 22,
-                          offset: Offset(0, -5),
+                      child: Container(
+                        width: double.infinity,
+                        clipBehavior: Clip.antiAlias,
+                        padding: const EdgeInsets.fromLTRB(16, 34, 16, 24),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFF7FAFC),
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(32),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Color(0x1900213D),
+                              blurRadius: 20,
+                              offset: Offset(0, -3),
+                            ),
+                          ],
                         ),
-                      ],
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            FishStockProductInformationCard(
+                              productNameController: productNameController,
+                              descriptionController: descriptionController,
+                              categories: categories,
+                              selectedCategory: selectedCategory,
+                              productNameError: productNameError,
+                              descriptionError: descriptionError,
+                              onPreviewChanged: refreshPreview,
+                              onCategoryChanged: (value) {
+                                setState(() {
+                                  selectedCategory = value;
+                                });
+                              },
+                            ),
+                            FishStockImageUploadCard(
+                              selectedImage: selectedImage,
+                              uploadedImageUrl: uploadedImageUrl,
+                              isUploading: isUploadingImage,
+                              errorText: imageError,
+                              onPickImage: pickProductImage,
+                              onRemoveImage: removeProductImage,
+                            ),
+                            FishStockPriceStockCard(
+                              priceController: priceController,
+                              quantityController: quantityController,
+                              lowStockController: lowStockController,
+                              percentageController: percentageController,
+                              units: units,
+                              selectedUnit: selectedUnit,
+                              isCustomPercentage: useCustomPercentage,
+                              priceError: priceError,
+                              quantityError: quantityError,
+                              percentageError: percentageError,
+                              onPreviewChanged: refreshPreview,
+                              onPercentageChanged: calculateSuggestedThreshold,
+                              onCustomPercentageChanged: (value) {
+                                setState(() {
+                                  useCustomPercentage = value;
+                                });
+                              },
+                              onUnitChanged: (value) {
+                                setState(() {
+                                  selectedUnit = value;
+                                });
+                                calculateSuggestedThreshold();
+                              },
+                            ),
+                            FishStockPreviewCard(
+                              productName: productNameController.text,
+                              price: priceController.text,
+                              quantity: quantityController.text,
+                              lowStockLevel: lowStockController.text,
+                              selectedCategory: selectedCategory,
+                              selectedUnit: selectedUnit,
+                              selectedImage: selectedImage,
+                              uploadedImageUrl: uploadedImageUrl,
+                            ),
+                            FishStockInfoCard(
+                              productInformationComplete:
+                                  productInformationComplete,
+                              photoComplete: hasProductImage,
+                              priceAndStockComplete: priceAndStockComplete,
+                              listingReady: listingReady,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        FishStockProductInformationCard(
-                          productNameController: productNameController,
-                          descriptionController: descriptionController,
-                          categories: categories,
-                          selectedCategory: selectedCategory,
-                          productNameError: productNameError,
-                          descriptionError: descriptionError,
-                          onPreviewChanged: refreshPreview,
-                          onCategoryChanged: (value) {
-                            setState(() {
-                              selectedCategory = value;
-                            });
-                          },
-                        ),
-                        FishStockImageUploadCard(
-                          selectedImage: selectedImage,
-                          uploadedImageUrl: uploadedImageUrl,
-                          isUploading: isUploadingImage,
-                          errorText: imageError,
-                          onPickImage: pickProductImage,
-                          onRemoveImage: removeProductImage,
-                        ),
-                        FishStockPriceStockCard(
-                          priceController: priceController,
-                          quantityController: quantityController,
-                          lowStockController: lowStockController,
-                          percentageController: percentageController,
-                          units: units,
-                          selectedUnit: selectedUnit,
-                          isCustomPercentage: useCustomPercentage,
-                          priceError: priceError,
-                          quantityError: quantityError,
-                          percentageError: percentageError,
-                          onPreviewChanged: refreshPreview,
-                          onPercentageChanged: calculateSuggestedThreshold,
-                          onCustomPercentageChanged: (value) {
-                            setState(() {
-                              useCustomPercentage = value;
-                            });
-                          },
-                          onUnitChanged: (value) {
-                            setState(() {
-                              selectedUnit = value;
-                            });
-                            calculateSuggestedThreshold();
-                          },
-                        ),
-                        FishStockPreviewCard(
-                          productName: productNameController.text,
-                          price: priceController.text,
-                          quantity: quantityController.text,
-                          lowStockLevel: lowStockController.text,
-                          selectedCategory: selectedCategory,
-                          selectedUnit: selectedUnit,
-                          selectedImage: selectedImage,
-                          uploadedImageUrl: uploadedImageUrl,
-                        ),
-                        FishStockInfoCard(
-                          productInformationComplete: productInformationComplete,
-                          photoComplete: hasProductImage,
-                          priceAndStockComplete: priceAndStockComplete,
-                          listingReady: listingReady,
-                        ),
-                      ],
-                    ),
-                  ),
+                  ],
                 ),
               ),
             ],

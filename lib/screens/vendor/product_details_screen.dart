@@ -181,8 +181,21 @@ class ProductDetailsScreen extends StatelessWidget {
   }
 
   String coverImageFromData(Map<String, dynamic>? data) {
+    if (data == null) {
+      return supplier.coverImageUrl;
+    }
+
+    // Some legacy supplier profiles copied the verification/profile photo
+    // into coverImageUrl. A cover is public only after the owner explicitly
+    // chooses one, matching Browse Suppliers and the Supplier Dashboard.
+    if (data['coverImageSetByOwner'] != true) {
+      return '';
+    }
+
     final value = getStringValue(data, 'coverImageUrl', '');
-    return value.isNotEmpty ? value : supplier.coverImageUrl;
+    final isNetworkImage =
+        value.startsWith('http://') || value.startsWith('https://');
+    return isNetworkImage ? value : '';
   }
 
   String productImageFromData(Map<String, dynamic>? data) {
