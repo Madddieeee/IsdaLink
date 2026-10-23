@@ -21,6 +21,7 @@ async function main() {
     skip_empty_lines: true,
     bom: true,
     relax_column_count: false,
+    record_delimiter: ['\r\n', '\n'],
     trim: false,
   });
   const clean = (value) => String(value ?? '').trim();
@@ -45,7 +46,7 @@ async function main() {
   const oldNotInNew = [...existingIds].filter((id) => !sourceIds.has(id));
   const newIds = [...sourceIds].filter((id) => !existingIds.has(id));
 
-  console.log('IsdaLink historical import overlap — READ ONLY');
+  console.log('IsdaLink historical import overlap â€” READ ONLY');
   console.log('Firebase project: isdalink-b6744');
   console.log(`CSV eligible transaction IDs: ${sourceIds.size}`);
   console.log(`Existing Firestore historicalTransactions IDs: ${existingIds.size}`);

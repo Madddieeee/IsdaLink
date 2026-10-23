@@ -464,7 +464,7 @@ function canonicalRecord(row, rowNumber, mapping, sourceFile) {
   if (Math.abs(expectedTotal - totalAmount) > 0.01) {
     throw new Error(
       `Row ${rowNumber}: total_amount_php (${totalAmount}) does not equal ` +
-      `quantity_fulfilled × unit_price_php (${expectedTotal}).`,
+      `quantity_fulfilled Ã— unit_price_php (${expectedTotal}).`,
     );
   }
 
@@ -705,6 +705,7 @@ async function main() {
     skip_empty_lines: true,
     bom: true,
     relax_column_count: false,
+    record_delimiter: ['\r\n', '\n'],
     trim: false,
   });
 

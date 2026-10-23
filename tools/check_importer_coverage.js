@@ -20,19 +20,19 @@ const context = vm.createContext({
 vm.runInContext(source.slice(start, end), context);
 
 const records = [
-  { transactionDateIso: '2026-10-10' },
+  { transactionDateIso: '2026-11-07' },
   { transactionDateIso: '2026-03-04' },
   { transactionDateIso: '2026-09-30' },
 ];
 const coverage = context.attachSourceCoverage(records);
 
-if (coverage.firstDate !== '2026-03-04' || coverage.lastDate !== '2026-10-10') {
+if (coverage.firstDate !== '2026-03-04' || coverage.lastDate !== '2026-11-07') {
   throw new Error('Wrong source coverage bounds');
 }
 for (const record of records) {
   if (
     record.sourceCoverageStartDateIso !== '2026-03-04' ||
-    record.sourceCoverageEndDateIso !== '2026-10-10'
+    record.sourceCoverageEndDateIso !== '2026-11-07'
   ) {
     throw new Error('Coverage fields were not attached to every record');
   }
@@ -47,6 +47,6 @@ try {
 if (!rejectedEmpty) throw new Error('Empty coverage was accepted');
 
 console.log(
-  'PASS: importer attaches explicit 2026-03-04 through 2026-10-10 ' +
+  'PASS: importer attaches explicit 2026-03-04 through 2026-11-07 ' +
   'source coverage; no Firestore access or writes.',
 );
