@@ -7,8 +7,8 @@
     "node": ">=22"
   },
   "scripts": {
-    "historical:check": "node import_historical_transactions.js ../dataset/transaction_log_FINAL_VERIFIED.csv historical_id_map.json",
-    "historical:import": "node import_historical_transactions.js ../dataset/transaction_log_FINAL_VERIFIED.csv historical_id_map.json --commit"
+    "historical:check": "node import_historical_transactions.js dataset/IsdaLink_Transaction_Log_THROUGH_20261108_FINAL_DEEP_RECHECKED_READY.csv historical_id_map.json",
+    "historical:import": "node import_historical_transactions.js dataset/IsdaLink_Transaction_Log_THROUGH_20261108_FINAL_DEEP_RECHECKED_READY.csv historical_id_map.json --commit"
   },
   "dependencies": {
     "csv-parse": "^7.0.2",
