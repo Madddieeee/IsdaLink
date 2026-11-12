@@ -67,34 +67,7 @@ class BrowseSuppliersHeader extends StatelessWidget {
                         ),
                       ),
                       const Spacer(),
-                      Container(
-                        height: 42,
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(36),
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(color: Colors.white.withAlpha(72)),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.location_on_rounded,
-                              color: Colors.white,
-                              size: 17,
-                            ),
-                            SizedBox(width: 5),
-                            Text(
-                              'Caraga',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      const SizedBox(width: 42),
                     ],
                   ),
                   const SizedBox(height: 24),

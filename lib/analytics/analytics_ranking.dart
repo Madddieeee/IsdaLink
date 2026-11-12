@@ -33,7 +33,7 @@ int compareAnalyticsRankingSeries(
 
 String analyticsRankingDescription(AnalyticsRankingBasis basis, String unit) {
   const scope =
-      'All included closed-period history. Each fish and unit is separate.';
+      'All included closed-period history. Each product and unit is separate.';
   return switch (basis) {
     AnalyticsRankingBasis.quantity =>
       '$scope Ranked by fulfilled quantity in $unit.',
@@ -51,5 +51,7 @@ String analyticsRankingTitle(
   if (basis == AnalyticsRankingBasis.unavailable) {
     return supplier ? 'Fish Sales by Unit' : 'Fish Purchases by Unit';
   }
-  return supplier ? 'Top Fish Sales by Unit' : 'Top Fish Purchases by Unit';
+  return supplier
+      ? 'Top Seafood Sales by Unit'
+      : 'Top Seafood Purchases by Unit';
 }

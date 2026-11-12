@@ -269,7 +269,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         _AdminHeaderSliver(onLogout: logout),
         SliverToBoxAdapter(
           child: Container(
-            color: const Color(0xFF0A5B84),
+            color: const Color(0xFF00294A),
             child: Container(
               width: double.infinity,
               decoration: const BoxDecoration(

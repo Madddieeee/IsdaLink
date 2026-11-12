@@ -59,3 +59,6 @@ android/.kotlin/
 analytics_source_audit*.json
 debug_fix_backup_*/
 review_photos_backup_*/
+tools/cleanup_non_dataset_accounts_*.json
+tools/update_dataset_account_names_*.json
+tools/update_dataset_supplier_stores_*.json

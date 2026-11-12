@@ -105,7 +105,7 @@ final analyticsRankingCases = <String, void Function()>{
       final text = analyticsRankingDescription(basis, 'kg');
       require(
         text.contains('All included closed-period history') &&
-            text.contains('Each fish and unit is separate'),
+            text.contains('Each product and unit is separate'),
         'Scope',
       );
       require(

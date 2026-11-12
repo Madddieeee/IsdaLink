@@ -1057,9 +1057,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                   ),
                   borderRadius: BorderRadius.circular(13),
                 ),
-                child: Text(
-                  selected?.emoji ?? '🐟',
-                  style: const TextStyle(fontSize: 21),
+                child: _FishSpeciesImage(
+                  productName: selected?.productName,
+                  fallbackEmoji: selected?.emoji ?? '🐟',
+                  size: 34,
                 ),
               ),
               const SizedBox(width: 10),
@@ -1210,7 +1211,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                                 ),
                                 SizedBox(height: 3),
                                 Text(
-                                  'Each fish and unit combination is analyzed separately.',
+                                  'Each product and unit combination is analyzed separately.',
                                   style: TextStyle(
                                     color: Color(0xFF7B8FA3),
                                     fontSize: 10.3,
@@ -1349,11 +1350,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                                               borderRadius:
                                                   BorderRadius.circular(13),
                                             ),
-                                            child: Text(
-                                              product.emoji,
-                                              style: const TextStyle(
-                                                fontSize: 22,
-                                              ),
+                                            child: _FishSpeciesImage(
+                                              productName: product.productName,
+                                              fallbackEmoji: product.emoji,
+                                              size: 35,
                                             ),
                                           ),
                                           const SizedBox(width: 11),
@@ -1678,9 +1678,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                     ),
                   ],
                 ),
-                child: Text(
-                  product.emoji,
-                  style: const TextStyle(fontSize: 22),
+                child: _FishSpeciesImage(
+                  productName: product.productName,
+                  fallbackEmoji: product.emoji,
+                  size: 36,
                 ),
               ),
               const SizedBox(width: 10),
@@ -2495,7 +2496,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
       return const _CompactEmptyState(
         icon: Icons.notifications_none_rounded,
         title: 'No restocking suggestion yet',
-        subtitle: 'Current planning requires recent consecutive closed periods and an accuracy-eligible method. Missing periods are not zero. Review History for past forecasts.',
+        subtitle:
+            'Current planning requires recent consecutive closed periods and an accuracy-eligible method. Missing periods are not zero. Review History for past forecasts.',
       );
     }
 
@@ -2519,9 +2521,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                   color: const Color(0xFFE6F7FC),
                   borderRadius: BorderRadius.circular(13),
                 ),
-                child: Text(
-                  suggestion.emoji,
-                  style: const TextStyle(fontSize: 22),
+                child: _FishSpeciesImage(
+                  productName: suggestion.productName,
+                  fallbackEmoji: suggestion.emoji,
+                  size: 35,
                 ),
               ),
               const SizedBox(width: 10),
@@ -2616,7 +2619,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(13),
                 ),
-                child: Text(alert.emoji, style: const TextStyle(fontSize: 22)),
+                child: _FishSpeciesImage(
+                  productName: alert.productName,
+                  fallbackEmoji: alert.emoji,
+                  size: 35,
+                ),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -2703,7 +2710,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                   ),
                 ),
               if (ranked) const SizedBox(width: 9),
-              Text(product.emoji, style: const TextStyle(fontSize: 21)),
+              _FishSpeciesImage(
+                productName: product.productName,
+                fallbackEmoji: product.emoji,
+                size: 32,
+              ),
               const SizedBox(width: 9),
               Expanded(
                 child: Column(
@@ -2936,7 +2947,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                 const SizedBox(height: 14),
                 sectionCard(
                   title: 'Stock Alerts',
-                  subtitle: 'Current low-stock and out-of-stock listings still require attention.',
+                  subtitle:
+                      'Current low-stock and out-of-stock listings still require attention.',
                   icon: Icons.inventory_2_outlined,
                   iconColor: const Color(0xFFFF7A1A),
                   child: stockAlerts(data.stockAlerts),
@@ -3193,9 +3205,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                           color: const Color(0xFFEAF7FF),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: Text(
-                          selected?.emoji ?? '🐟',
-                          style: const TextStyle(fontSize: 17),
+                        child: _FishSpeciesImage(
+                          productName: selected?.productName,
+                          fallbackEmoji: selected?.emoji ?? '🐟',
+                          size: 25,
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -4286,7 +4299,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               child: _CompactEmptyState(
                 icon: Icons.error_outline_rounded,
                 title: 'Unable to load analytics',
-                subtitle: 'Analytics could not be loaded right now. Refresh and try again.',
+                subtitle:
+                    'Analytics could not be loaded right now. Refresh and try again.',
               ),
             ),
           ),
@@ -5264,6 +5278,80 @@ class RestockingSuggestion {
   final ForecastingMethod selectedMethod;
   final String evaluationNote;
   final DateTime targetDate;
+}
+
+class _FishSpeciesImage extends StatelessWidget {
+  const _FishSpeciesImage({
+    required this.productName,
+    required this.fallbackEmoji,
+    required this.size,
+  });
+
+  static const assetPath = 'assets/images/fish_species_atlas.png';
+
+  final String? productName;
+  final String fallbackEmoji;
+  final double size;
+
+  (int, int)? get atlasCell {
+    final normalized = (productName ?? '').toLowerCase().replaceAll(
+      RegExp(r'[^a-z0-9]'),
+      '',
+    );
+
+    return switch (normalized) {
+      'tilapia' || 'niletilapia' => (0, 0),
+      'bangus' || 'milkfish' => (1, 0),
+      'pijanga' || 'whitegoby' => (2, 0),
+      'tamban' || 'sardine' => (3, 0),
+      'panit' => (0, 1),
+      'pirit' => (1, 1),
+      'bodloy' || 'mackerelscad' => (2, 1),
+      'pasayan' || 'shrimp' || 'prawn' => (3, 1),
+      'yellowfintuna' => (0, 2),
+      'barilis' || 'bariles' => (1, 2),
+      'malasugi' || 'bluemarlin' || 'marlin' => (2, 2),
+      'pawayan' || 'skipjacktuna' => (3, 2),
+      _ => null,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cell = atlasCell;
+    if (cell == null) {
+      return Text(fallbackEmoji, style: TextStyle(fontSize: size * 0.64));
+    }
+
+    final horizontalAlignment = -1 + (cell.$1 * 2 / 3);
+    final verticalAlignment = -1 + cell.$2.toDouble();
+
+    return SizedBox.square(
+      dimension: size,
+      child: ClipRect(
+        child: OverflowBox(
+          alignment: Alignment(horizontalAlignment, verticalAlignment),
+          minWidth: size * 4,
+          maxWidth: size * 4,
+          minHeight: size * 3,
+          maxHeight: size * 3,
+          child: Image.asset(
+            assetPath,
+            width: size * 4,
+            height: size * 3,
+            fit: BoxFit.fill,
+            filterQuality: FilterQuality.medium,
+            errorBuilder: (context, error, stackTrace) => Center(
+              child: Text(
+                fallbackEmoji,
+                style: TextStyle(fontSize: size * 0.64),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _HeaderButton extends StatelessWidget {

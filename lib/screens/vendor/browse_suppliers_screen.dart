@@ -43,10 +43,8 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => SupplierDetailsScreen(
-          supplier: supplier,
-          supplierId: supplierId,
-        ),
+        builder: (_) =>
+            SupplierDetailsScreen(supplier: supplier, supplierId: supplierId),
       ),
     );
   }
@@ -89,7 +87,8 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
   Map<String, List<QueryDocumentSnapshot<Map<String, dynamic>>>> stockMap(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> stocks,
   ) {
-    final result = <String, List<QueryDocumentSnapshot<Map<String, dynamic>>>>{};
+    final result =
+        <String, List<QueryDocumentSnapshot<Map<String, dynamic>>>>{};
 
     for (final stock in stocks) {
       final data = stock.data();
@@ -146,7 +145,8 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
 
   List<QueryDocumentSnapshot<Map<String, dynamic>>> applySort({
     required List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
-    required Map<String, List<QueryDocumentSnapshot<Map<String, dynamic>>>> stocksBySupplier,
+    required Map<String, List<QueryDocumentSnapshot<Map<String, dynamic>>>>
+    stocksBySupplier,
   }) {
     final sorted = [...documents];
 
@@ -160,8 +160,8 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
           final reviewCompare = bSupplier.reviews.compareTo(aSupplier.reviews);
           if (reviewCompare != 0) return reviewCompare;
           return aSupplier.name.toLowerCase().compareTo(
-                bSupplier.name.toLowerCase(),
-              );
+            bSupplier.name.toLowerCase(),
+          );
         });
         break;
       case BrowseSupplierSort.listings:
@@ -201,9 +201,11 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
         break;
       case BrowseSupplierSort.recommended:
         sorted.sort((a, b) {
-          final aStocks = stocksBySupplier[a.id] ??
+          final aStocks =
+              stocksBySupplier[a.id] ??
               <QueryDocumentSnapshot<Map<String, dynamic>>>[];
-          final bStocks = stocksBySupplier[b.id] ??
+          final bStocks =
+              stocksBySupplier[b.id] ??
               <QueryDocumentSnapshot<Map<String, dynamic>>>[];
 
           final availabilityCompare = (bStocks.isNotEmpty ? 1 : 0).compareTo(
@@ -222,14 +224,14 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
           final listingCompare = bStocks.length.compareTo(aStocks.length);
           if (listingCompare != 0) return listingCompare;
 
-          final activityCompare = stockActivityMillis(bStocks).compareTo(
-            stockActivityMillis(aStocks),
-          );
+          final activityCompare = stockActivityMillis(
+            bStocks,
+          ).compareTo(stockActivityMillis(aStocks));
           if (activityCompare != 0) return activityCompare;
 
           return aSupplier.name.toLowerCase().compareTo(
-                bSupplier.name.toLowerCase(),
-              );
+            bSupplier.name.toLowerCase(),
+          );
         });
         break;
     }
@@ -265,95 +267,148 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
         .snapshots();
   }
 
+  Future<void> showBrowseOptions() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Browse options',
+                style: TextStyle(
+                  color: Color(0xFF102C44),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                leading: const Icon(Icons.storefront_rounded),
+                title: const Text('All suppliers'),
+                trailing: selectedTab == BrowseSupplierTab.all
+                    ? const Icon(Icons.check_circle_rounded)
+                    : null,
+                onTap: () {
+                  setState(() => selectedTab = BrowseSupplierTab.all);
+                  Navigator.pop(sheetContext);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.favorite_border_rounded),
+                title: const Text('Favorites'),
+                trailing: selectedTab == BrowseSupplierTab.favorites
+                    ? const Icon(Icons.check_circle_rounded)
+                    : null,
+                onTap: () {
+                  setState(() => selectedTab = BrowseSupplierTab.favorites);
+                  Navigator.pop(sheetContext);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget browseSearchSection({
     required int approvedCount,
     required int listingCount,
   }) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
       child: Column(
         children: [
           Container(
-            height: 50,
+            height: 54,
+            padding: const EdgeInsets.fromLTRB(12, 0, 7, 0),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: const Color(0xFFD9EAF4)),
               boxShadow: const [
                 BoxShadow(
-                  color: Color(0x18003C61),
-                  blurRadius: 18,
-                  offset: Offset(0, 8),
+                  color: Color(0x12063A5A),
+                  blurRadius: 14,
+                  offset: Offset(0, 6),
                 ),
               ],
             ),
-            child: TextField(
-              controller: searchController,
-              onChanged: (value) {
-                setState(() => searchQuery = value);
-              },
-              textInputAction: TextInputAction.search,
-              style: const TextStyle(
-                color: Color(0xFF123A59),
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-              ),
-              decoration: InputDecoration(
-                hintText: 'Search supplier, fish, or location...',
-                hintStyle: const TextStyle(
-                  color: Color(0xFF8BA2B4),
-                  fontSize: 12.0,
-                  fontWeight: FontWeight.w600,
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.search_rounded,
+                  color: Color(0xFF0875D1),
+                  size: 21,
                 ),
-                prefixIcon: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEAF7FB),
-                      borderRadius: BorderRadius.circular(12),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextField(
+                    controller: searchController,
+                    onChanged: (value) => setState(() => searchQuery = value),
+                    textInputAction: TextInputAction.search,
+                    cursorColor: const Color(0xFF0875D1),
+                    style: const TextStyle(
+                      color: Color(0xFF18374E),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
                     ),
-                    child: const Icon(
-                      Icons.search_rounded,
-                      color: Color(0xFF0875D1),
-                      size: 21,
+                    decoration: const InputDecoration(
+                      hintText: 'Search supplier, fish, or location...',
+                      hintStyle: TextStyle(
+                        color: Color(0xFF8296A6),
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
                     ),
                   ),
                 ),
-                suffixIcon: Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: searchController.text.isEmpty
-                      ? Container(
-                          width: 42,
-                          height: 42,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEAF7FB),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.tune_rounded,
-                            color: Color(0xFF0875D1),
-                            size: 21,
-                          ),
-                        )
-                      : IconButton(
-                          tooltip: 'Clear search',
-                          onPressed: () {
-                            searchController.clear();
-                            setState(() => searchQuery = '');
-                          },
-                          icon: const Icon(
-                            Icons.close_rounded,
-                            color: Color(0xFF7890A2),
-                          ),
-                        ),
+                if (searchController.text.isNotEmpty)
+                  IconButton(
+                    tooltip: 'Clear search',
+                    onPressed: () {
+                      searchController.clear();
+                      setState(() => searchQuery = '');
+                    },
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      color: Color(0xFF7890A1),
+                      size: 18,
+                    ),
+                  ),
+                Material(
+                  color: const Color(0xFFEAF7FC),
+                  borderRadius: BorderRadius.circular(11),
+                  child: InkWell(
+                    onTap: showBrowseOptions,
+                    borderRadius: BorderRadius.circular(11),
+                    child: const SizedBox(
+                      width: 38,
+                      height: 38,
+                      child: Icon(
+                        Icons.tune_rounded,
+                        color: Color(0xFF0875D1),
+                        size: 18,
+                      ),
+                    ),
+                  ),
                 ),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 15),
-              ),
+              ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           BrowseSuppliersStatusCards(
             supplierCount: approvedCount,
             listingCount: listingCount,
@@ -408,9 +463,7 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
     );
   }
 
-  Widget filterRow({
-    required int favoriteCount,
-  }) {
+  Widget filterRow() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
       child: Column(
@@ -444,86 +497,83 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerRight,
-            child: PopupMenuButton<BrowseSupplierSort>(
-              tooltip: 'Sort suppliers',
-              initialValue: selectedSort,
-              onSelected: (value) {
-                setState(() => selectedSort = value);
-              },
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
+        ],
+      ),
+    );
+  }
+
+  Widget sortButton() {
+    return PopupMenuButton<BrowseSupplierSort>(
+      tooltip: 'Sort suppliers',
+      initialValue: selectedSort,
+      onSelected: (value) {
+        setState(() => selectedSort = value);
+      },
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      itemBuilder: (context) => BrowseSupplierSort.values
+          .map(
+            (sort) => PopupMenuItem(
+              value: sort,
+              child: Row(
+                children: [
+                  Icon(
+                    sort == selectedSort
+                        ? Icons.check_circle_rounded
+                        : Icons.circle_outlined,
+                    size: 17,
+                    color: const Color(0xFF0875D1),
+                  ),
+                  const SizedBox(width: 9),
+                  Text(
+                    sortLabel(sort),
+                    style: const TextStyle(
+                      color: Color(0xFF173B56),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ),
-              itemBuilder: (context) => BrowseSupplierSort.values
-                  .map(
-                    (sort) => PopupMenuItem(
-                      value: sort,
-                      child: Row(
-                        children: [
-                          Icon(
-                            sort == selectedSort
-                                ? Icons.check_circle_rounded
-                                : Icons.circle_outlined,
-                            size: 17,
-                            color: const Color(0xFF0875D1),
-                          ),
-                          const SizedBox(width: 9),
-                          Text(
-                            sortLabel(sort),
-                            style: const TextStyle(
-                              color: Color(0xFF173B56),
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                  .toList(),
-              child: Container(
-                height: 46,
-                width: 156,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: const Color(0xFFBFE0F2)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.auto_awesome_rounded,
-                      color: Color(0xFF0875D1),
-                      size: 17,
-                    ),
-                    const SizedBox(width: 5),
-                    Flexible(
-                      child: Text(
-                        sortLabel(selectedSort),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFF0875D1),
-                          fontSize: 11.0,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 2),
-                    const Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      color: Color(0xFF0875D1),
-                      size: 17,
-                    ),
-                  ],
+            ),
+          )
+          .toList(),
+      child: Container(
+        height: 42,
+        constraints: const BoxConstraints(minWidth: 128, maxWidth: 154),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFBFE0F2)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.auto_awesome_rounded,
+              color: Color(0xFF0875D1),
+              size: 17,
+            ),
+            const SizedBox(width: 5),
+            Flexible(
+              child: Text(
+                sortLabel(selectedSort),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Color(0xFF0875D1),
+                  fontSize: 11.0,
+                  fontWeight: FontWeight.w900,
                 ),
               ),
             ),
-          ),
-        ],
+            const SizedBox(width: 2),
+            const Icon(
+              Icons.keyboard_arrow_down_rounded,
+              color: Color(0xFF0875D1),
+              size: 17,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -591,7 +641,9 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
           );
 
           return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-            stream: FirebaseFirestore.instance.collection('fishStocks').snapshots(),
+            stream: FirebaseFirestore.instance
+                .collection('fishStocks')
+                .snapshots(),
             builder: (context, stockSnapshot) {
               final stockDocuments = stockSnapshot.data?.docs ?? [];
               final stocksBySupplier = stockMap(stockDocuments);
@@ -615,7 +667,8 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
               return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                 stream: favoriteStream(),
                 builder: (context, favoriteSnapshot) {
-                  final favoriteIds = favoriteSnapshot.data?.docs
+                  final favoriteIds =
+                      favoriteSnapshot.data?.docs
                           .map((document) => document.id)
                           .toSet() ??
                       <String>{};
@@ -639,9 +692,12 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
 
   Widget _buildBody({
     required BuildContext context,
-    required AsyncSnapshot<QuerySnapshot<Map<String, dynamic>>> supplierSnapshot,
-    required List<QueryDocumentSnapshot<Map<String, dynamic>>> approvedDocuments,
-    required Map<String, List<QueryDocumentSnapshot<Map<String, dynamic>>>> stocksBySupplier,
+    required AsyncSnapshot<QuerySnapshot<Map<String, dynamic>>>
+    supplierSnapshot,
+    required List<QueryDocumentSnapshot<Map<String, dynamic>>>
+    approvedDocuments,
+    required Map<String, List<QueryDocumentSnapshot<Map<String, dynamic>>>>
+    stocksBySupplier,
     required int listingCount,
     required Set<String> favoriteIds,
   }) {
@@ -651,7 +707,9 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
     );
 
     final normalizedQuery = searchQuery.trim().toLowerCase();
-    final supplierMatchIds = supplierMatches.map((document) => document.id).toSet();
+    final supplierMatchIds = supplierMatches
+        .map((document) => document.id)
+        .toSet();
 
     final filtered = normalizedQuery.isEmpty
         ? approvedDocuments
@@ -660,12 +718,16 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
               return true;
             }
 
-            final stocks = stocksBySupplier[document.id] ??
+            final stocks =
+                stocksBySupplier[document.id] ??
                 <QueryDocumentSnapshot<Map<String, dynamic>>>[];
 
             return stocks.any((stock) {
               final data = stock.data();
-              final productName = stringValue(data, 'productName').toLowerCase();
+              final productName = stringValue(
+                data,
+                'productName',
+              ).toLowerCase();
               final category = stringValue(data, 'category').toLowerCase();
               return productName.contains(normalizedQuery) ||
                   category.contains(normalizedQuery);
@@ -673,21 +735,18 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
           }).toList();
 
     var visible = selectedTab == BrowseSupplierTab.favorites
-        ? filtered.where((document) => favoriteIds.contains(document.id)).toList()
+        ? filtered
+              .where((document) => favoriteIds.contains(document.id))
+              .toList()
         : [...filtered];
 
-    visible = applySort(
-      documents: visible,
-      stocksBySupplier: stocksBySupplier,
-    );
+    visible = applySort(documents: visible, stocksBySupplier: stocksBySupplier);
 
     return ListView(
       padding: EdgeInsets.zero,
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       children: [
-        BrowseSuppliersHeader(
-          onBack: () => Navigator.pop(context),
-        ),
+        BrowseSuppliersHeader(onBack: () => Navigator.pop(context)),
         Transform.translate(
           offset: const Offset(0, -24),
           child: Container(
@@ -696,120 +755,135 @@ class _BrowseSuppliersScreenState extends State<BrowseSuppliersScreen> {
               borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
             ),
             child: Column(
-            children: [
-              browseSearchSection(
-                approvedCount: approvedDocuments.length,
-                listingCount: listingCount,
-              ),
-              filterRow(favoriteCount: favoriteIds.length),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            selectedTab == BrowseSupplierTab.favorites
-                                ? 'Favorite Suppliers'
-                                : 'All Suppliers',
-                            style: const TextStyle(
-                              color: Color(0xFF102C44),
-                              fontSize: 17,
-                              height: 1,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.3,
+              children: [
+                browseSearchSection(
+                  approvedCount: approvedDocuments.length,
+                  listingCount: listingCount,
+                ),
+                filterRow(),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              selectedTab == BrowseSupplierTab.favorites
+                                  ? 'Favorite Suppliers'
+                                  : 'All Suppliers',
+                              style: const TextStyle(
+                                color: Color(0xFF102C44),
+                                fontSize: 17,
+                                height: 1,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.3,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 5),
-                          Text(
-                            selectedTab == BrowseSupplierTab.favorites
-                                ? '${visible.length} saved supplier${visible.length == 1 ? '' : 's'}.'
-                                : '${approvedDocuments.length} verified suppliers across Caraga.',
-                            style: const TextStyle(
-                              color: Color(0xFF748C9E),
-                              fontSize: 11.0,
-                              fontWeight: FontWeight.w600,
+                            const SizedBox(height: 5),
+                            Text(
+                              selectedTab == BrowseSupplierTab.favorites
+                                  ? '${visible.length} saved supplier${visible.length == 1 ? '' : 's'}.'
+                                  : '${approvedDocuments.length} verified suppliers across Caraga.',
+                              style: const TextStyle(
+                                color: Color(0xFF748C9E),
+                                fontSize: 11.0,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      sortButton(),
+                    ],
+                  ),
+                ),
+                if (supplierSnapshot.hasError)
+                  emptyCard(
+                    icon: Icons.cloud_off_rounded,
+                    title: 'Unable to load suppliers',
+                    subtitle: AppErrorMessage.from(
+                      supplierSnapshot.error!,
+                      fallback: 'Please check your connection and try again.',
+                    ),
+                  )
+                else if (!supplierSnapshot.hasData)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 42),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Color(0xFF0875D1),
                       ),
                     ),
-                  ],
-                ),
-              ),
-        if (supplierSnapshot.hasError)
-          emptyCard(
-            icon: Icons.cloud_off_rounded,
-            title: 'Unable to load suppliers',
-            subtitle: AppErrorMessage.from(
-              supplierSnapshot.error!,
-              fallback: 'Please check your connection and try again.',
-            ),
-          )
-        else if (!supplierSnapshot.hasData)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 42),
-            child: Center(
-              child: CircularProgressIndicator(
-                strokeWidth: 2.5,
-                color: Color(0xFF0875D1),
-              ),
-            ),
-          )
-        else if (approvedDocuments.isEmpty)
-          emptyCard(
-            icon: Icons.storefront_outlined,
-            title: 'No approved suppliers yet',
-            subtitle: 'Approved supplier stores will appear here after verification.',
-          )
-        else if (visible.isEmpty && searchQuery.trim().isNotEmpty)
-          emptyCard(
-            icon: Icons.search_off_rounded,
-            title: 'No matching suppliers',
-            subtitle: 'Try another supplier name, fish product, or Caraga location.',
-          )
-        else if (visible.isEmpty && selectedTab == BrowseSupplierTab.favorites)
-          emptyCard(
-            icon: Icons.favorite_border_rounded,
-            title: 'No favorite suppliers yet',
-            subtitle: 'Tap the heart on a supplier card to save it here for quick access.',
-          )
-        else
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-            child: Column(
-              children: [
-                for (var index = 0; index < visible.length; index++) ...[
-                  Builder(
-                    builder: (context) {
-                      final document = visible[index];
-                      final data = document.data();
-                      final supplier = supplierService.supplierFromProfile(data);
-                      final supplierStocks = stocksBySupplier[document.id] ??
-                          <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+                  )
+                else if (approvedDocuments.isEmpty)
+                  emptyCard(
+                    icon: Icons.storefront_outlined,
+                    title: 'No approved suppliers yet',
+                    subtitle:
+                        'Approved supplier stores will appear here after verification.',
+                  )
+                else if (visible.isEmpty && searchQuery.trim().isNotEmpty)
+                  emptyCard(
+                    icon: Icons.search_off_rounded,
+                    title: 'No matching suppliers',
+                    subtitle:
+                        'Try another supplier name, fish product, or Caraga location.',
+                  )
+                else if (visible.isEmpty &&
+                    selectedTab == BrowseSupplierTab.favorites)
+                  emptyCard(
+                    icon: Icons.favorite_border_rounded,
+                    title: 'No favorite suppliers yet',
+                    subtitle:
+                        'Tap the heart on a supplier card to save it here for quick access.',
+                  )
+                else
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                    child: Column(
+                      children: [
+                        for (
+                          var index = 0;
+                          index < visible.length;
+                          index++
+                        ) ...[
+                          Builder(
+                            builder: (context) {
+                              final document = visible[index];
+                              final data = document.data();
+                              final supplier = supplierService
+                                  .supplierFromProfile(data);
+                              final supplierStocks =
+                                  stocksBySupplier[document.id] ??
+                                  <
+                                    QueryDocumentSnapshot<Map<String, dynamic>>
+                                  >[];
 
-                      return SupplierProfileCard(
-                        supplier: supplier,
-                        supplierId: document.id,
-                        imageUrl: supplierImageUrl(data),
-                        availableListingCount: supplierStocks.length,
-                        productNames: productNamesFor(supplierStocks),
-                        onTap: () => openSupplierDetails(
-                          context: context,
-                          supplierId: document.id,
-                          data: data,
-                        ),
-                      );
-                    },
+                              return SupplierProfileCard(
+                                supplier: supplier,
+                                supplierId: document.id,
+                                imageUrl: supplierImageUrl(data),
+                                availableListingCount: supplierStocks.length,
+                                productNames: productNamesFor(supplierStocks),
+                                onTap: () => openSupplierDetails(
+                                  context: context,
+                                  supplierId: document.id,
+                                  data: data,
+                                ),
+                              );
+                            },
+                          ),
+                          if (index != visible.length - 1)
+                            const SizedBox(height: 12),
+                        ],
+                      ],
+                    ),
                   ),
-                  if (index != visible.length - 1) const SizedBox(height: 12),
-                ],
-              ],
-            ),
-          ),
               ],
             ),
           ),

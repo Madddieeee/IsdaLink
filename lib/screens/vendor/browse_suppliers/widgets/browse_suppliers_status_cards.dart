@@ -14,11 +14,8 @@ Widget _listingFishIconBuilder(BuildContext context) {
     width: 17,
     height: 17,
     fit: BoxFit.contain,
-    errorBuilder: (_, _, _) => const Icon(
-      Icons.set_meal_rounded,
-      color: Color(0xFF0875D1),
-      size: 17,
-    ),
+    errorBuilder: (_, _, _) =>
+        const Icon(Icons.set_meal_rounded, color: Color(0xFF0875D1), size: 17),
   );
 }
 
@@ -48,9 +45,6 @@ class BrowseSuppliersStatusCards extends StatelessWidget {
           child: _BrowseStatusCard(
             value: '$supplierCount',
             label: 'Suppliers',
-            iconBackground: const Color(0xFFE8F5FC),
-            markerColor: const Color(0xFF1FAF78),
-            markerIcon: Icons.verified_rounded,
             iconBuilder: _supplierIconBuilder,
           ),
         ),
@@ -59,9 +53,6 @@ class BrowseSuppliersStatusCards extends StatelessWidget {
           child: _BrowseStatusCard(
             value: '$listingCount',
             label: 'Listings',
-            iconBackground: const Color(0xFFEAF5FD),
-            markerColor: const Color(0xFF39A7D8),
-            markerIcon: Icons.list_alt_rounded,
             iconBuilder: _listingFishIconBuilder,
           ),
         ),
@@ -70,9 +61,6 @@ class BrowseSuppliersStatusCards extends StatelessWidget {
           child: _BrowseStatusCard(
             value: 'COD',
             label: 'Payment',
-            iconBackground: Color(0xFFFFF4DB),
-            markerColor: Color(0xFFF3B33D),
-            markerIcon: Icons.local_shipping_rounded,
             iconBuilder: _paymentIconBuilder,
           ),
         ),
@@ -86,17 +74,11 @@ class _BrowseStatusCard extends StatelessWidget {
     required this.value,
     required this.label,
     required this.iconBuilder,
-    required this.iconBackground,
-    required this.markerColor,
-    required this.markerIcon,
   });
 
   final String value;
   final String label;
   final WidgetBuilder iconBuilder;
-  final Color iconBackground;
-  final Color markerColor;
-  final IconData markerIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -119,41 +101,9 @@ class _BrowseStatusCard extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           SizedBox(
-            width: 36,
-            height: 33,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Positioned(
-                  left: 0,
-                  top: 0,
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: iconBackground,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    alignment: Alignment.center,
-                    child: iconBuilder(context),
-                  ),
-                ),
-                Positioned(
-                  right: -1,
-                  bottom: -1,
-                  child: Container(
-                    width: 16,
-                    height: 16,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFFE4EEF5)),
-                    ),
-                    child: Icon(markerIcon, color: markerColor, size: 10),
-                  ),
-                ),
-              ],
-            ),
+            width: 32,
+            height: 28,
+            child: Center(child: iconBuilder(context)),
           ),
           const SizedBox(height: 4),
           FittedBox(

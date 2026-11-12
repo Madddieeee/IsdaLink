@@ -2190,27 +2190,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Widget buildActionButtons() {
     final isLastStep = currentStep == 2;
+    final canGoBack = currentStep > 0;
 
-    return SizedBox(
-      height: 52,
-      child: ElevatedButton(
-        onPressed: isLoading
-            ? null
-            : isLastStep
-            ? createAccount
-            : nextStep,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF0875D1),
-          foregroundColor: Colors.white,
-          disabledBackgroundColor: const Color(0xFFB9CBD7),
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(17),
-          ),
-        ),
+    final primaryButton = ElevatedButton(
+      onPressed: isLoading
+          ? null
+          : isLastStep
+          ? createAccount
+          : nextStep,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF0875D1),
+        foregroundColor: Colors.white,
+        disabledBackgroundColor: const Color(0xFFB9CBD7),
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(17)),
+      ),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
         child: isLoading && isLastStep
             ? const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   SizedBox(
                     width: 18,
@@ -2220,7 +2220,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       strokeWidth: 2.2,
                     ),
                   ),
-                  SizedBox(width: 9),
+                  SizedBox(width: 8),
                   Text(
                     'Creating Account...',
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
@@ -2228,7 +2228,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ],
               )
             : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     isLastStep ? 'Create Account' : 'Continue',
@@ -2237,10 +2237,43 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  const Icon(Icons.arrow_forward_rounded, size: 20),
+                  const SizedBox(width: 6),
+                  const Icon(Icons.arrow_forward_rounded, size: 19),
                 ],
               ),
+      ),
+    );
+
+    if (!canGoBack) {
+      return SizedBox(height: 52, child: primaryButton);
+    }
+
+    return SizedBox(
+      height: 52,
+      child: Row(
+        children: [
+          Expanded(
+            flex: 4,
+            child: OutlinedButton.icon(
+              onPressed: isLoading ? null : previousStep,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF0875D1),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                side: const BorderSide(color: Color(0xFFB8D7EC), width: 1.2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(17),
+                ),
+              ),
+              icon: const Icon(Icons.arrow_back_rounded, size: 19),
+              label: const Text(
+                'Back',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(flex: 6, child: primaryButton),
+        ],
       ),
     );
   }
@@ -2258,114 +2291,127 @@ class _RegisterScreenState extends State<RegisterScreen> {
         systemNavigationBarColor: Colors.white,
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
-      child: Scaffold(
-        resizeToAvoidBottomInset: true,
-        backgroundColor: const Color(0xFFF5F8FA),
-        body: GestureDetector(
-          onTap: () => FocusScope.of(context).unfocus(),
-          child: SingleChildScrollView(
-            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            padding: EdgeInsets.only(
-              bottom: keyboardOpen ? 12 : mediaQuery.padding.bottom + 8,
-            ),
-            child: Column(
-              children: [
-                buildHeader(),
-                Transform.translate(
-                  offset: const Offset(0, -26),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.fromLTRB(18, 20, 18, 22),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF5F8FA),
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(34),
+      child: PopScope<Object?>(
+        canPop: currentStep == 0 && !isLoading,
+        onPopInvokedWithResult: (didPop, result) {
+          if (!didPop && currentStep > 0) {
+            previousStep();
+          }
+        },
+        child: Scaffold(
+          resizeToAvoidBottomInset: true,
+          backgroundColor: const Color(0xFFF5F8FA),
+          body: GestureDetector(
+            onTap: () => FocusScope.of(context).unfocus(),
+            child: SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: EdgeInsets.only(
+                bottom: keyboardOpen ? 12 : mediaQuery.padding.bottom + 8,
+              ),
+              child: Column(
+                children: [
+                  buildHeader(),
+                  Transform.translate(
+                    offset: const Offset(0, -26),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.fromLTRB(18, 20, 18, 22),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFF5F8FA),
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(34),
+                        ),
                       ),
-                    ),
-                    child: Column(
-                      children: [
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.fromLTRB(17, 16, 17, 18),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(color: const Color(0xFFE0EAF0)),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Color(0x1000152A),
-                                blurRadius: 16,
-                                offset: Offset(0, 7),
+                      child: Column(
+                        children: [
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.fromLTRB(17, 16, 17, 18),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: const Color(0xFFE0EAF0),
                               ),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              buildStepProgress(),
-                              const SizedBox(height: 17),
-                              buildRegistrationError(),
-                              AutofillGroup(
-                                child: Form(
-                                  key: formKey,
-                                  autovalidateMode:
-                                      (stepValidationAttempted || submitted)
-                                      ? AutovalidateMode.onUserInteraction
-                                      : AutovalidateMode.disabled,
-                                  child: AnimatedSwitcher(
-                                    duration: const Duration(milliseconds: 180),
-                                    child: KeyedSubtree(
-                                      key: ValueKey(currentStep),
-                                      child: buildStepBody(),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0x1000152A),
+                                  blurRadius: 16,
+                                  offset: Offset(0, 7),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                buildStepProgress(),
+                                const SizedBox(height: 17),
+                                buildRegistrationError(),
+                                AutofillGroup(
+                                  child: Form(
+                                    key: formKey,
+                                    autovalidateMode:
+                                        (stepValidationAttempted || submitted)
+                                        ? AutovalidateMode.onUserInteraction
+                                        : AutovalidateMode.disabled,
+                                    child: AnimatedSwitcher(
+                                      duration: const Duration(
+                                        milliseconds: 180,
+                                      ),
+                                      child: KeyedSubtree(
+                                        key: ValueKey(currentStep),
+                                        child: buildStepBody(),
+                                      ),
                                     ),
                                   ),
                                 ),
+                                const SizedBox(height: 18),
+                                buildActionButtons(),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text(
+                                'Already have an account? ',
+                                style: TextStyle(
+                                  color: Color(0xFF647C8F),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
-                              const SizedBox(height: 18),
-                              buildActionButtons(),
+                              TextButton(
+                                onPressed: isLoading
+                                    ? null
+                                    : () => Navigator.pop(context),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: const Color(0xFF0875D1),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 2,
+                                    vertical: 4,
+                                  ),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: const Text(
+                                  'Log In',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
-                        ),
-                        const SizedBox(height: 14),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text(
-                              'Already have an account? ',
-                              style: TextStyle(
-                                color: Color(0xFF647C8F),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: isLoading
-                                  ? null
-                                  : () => Navigator.pop(context),
-                              style: TextButton.styleFrom(
-                                foregroundColor: const Color(0xFF0875D1),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 2,
-                                  vertical: 4,
-                                ),
-                                minimumSize: Size.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              child: const Text(
-                                'Log In',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
