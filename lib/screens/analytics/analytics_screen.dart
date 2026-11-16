@@ -23,6 +23,10 @@ enum AnalyticsPeriod { weekly, monthly }
 
 enum SupplierAnalyticsTab { summary, accuracy, guidance, products }
 
+enum AnalyticsGuidanceView { currentPlanning, history }
+
+enum AnalyticsProductScope { overall, weekly, monthly }
+
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({
     super.key,
@@ -45,8 +49,35 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   SupplierAnalyticsTab selectedSupplierTab = SupplierAnalyticsTab.summary;
   String? selectedSeriesKey;
   DateTime? selectedSupplierPeriodStart;
+  AnalyticsGuidanceView selectedGuidanceView =
+      AnalyticsGuidanceView.currentPlanning;
+  DateTime? selectedGuidancePeriodStart;
+  AnalyticsProductScope selectedProductScope = AnalyticsProductScope.overall;
+  DateTime? selectedProductPeriodStart;
   int? selectedSupplierChartBarIndex;
   final ScrollController _supplierScrollController = ScrollController();
+  String? _analyticsStreamUid;
+  AnalyticsMode? _analyticsStreamMode;
+  Stream<QuerySnapshot<Map<String, dynamic>>>? _ordersAnalyticsStream;
+  Stream<QuerySnapshot<Map<String, dynamic>>>? _historyAnalyticsStream;
+  Stream<QuerySnapshot<Map<String, dynamic>>>? _stocksAnalyticsStream;
+  Object? _analyticsDataCacheKey;
+  AnalyticsData? _analyticsDataCache;
+
+  void _ensureAnalyticsStreams(String uid) {
+    if (_analyticsStreamUid == uid &&
+        _analyticsStreamMode == widget.mode &&
+        _ordersAnalyticsStream != null &&
+        _historyAnalyticsStream != null &&
+        (!isSupplier || _stocksAnalyticsStream != null)) {
+      return;
+    }
+    _analyticsStreamUid = uid;
+    _analyticsStreamMode = widget.mode;
+    _ordersAnalyticsStream = ordersStream(uid);
+    _historyAnalyticsStream = historicalTransactionsStream(uid);
+    _stocksAnalyticsStream = isSupplier ? supplierStocksStream(uid) : null;
+  }
 
   void _scrollSupplierToTop() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -69,6 +100,33 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     void updateSelection() {
       selectedPeriod = period;
       selectedSupplierPeriodStart = null;
+      selectedGuidancePeriodStart = null;
+      selectedSupplierChartBarIndex = null;
+    }
+
+    if (mounted) {
+      setState(updateSelection);
+    } else {
+      updateSelection();
+    }
+  }
+
+  /// Changes fish/unit without silently changing the selected historical
+  /// period. If that period does not exist for the new series, use its latest
+  /// recorded period instead of jumping to current planning.
+  void selectAnalyticsSeries(AnalyticsData data, String seriesKey) {
+    void updateSelection() {
+      selectedSeriesKey = seriesKey;
+      final selectedPoints = data.productSeries[seriesKey] ?? const [];
+      final requestedPeriod = selectedSupplierPeriodStart;
+      if (requestedPeriod != null &&
+          !selectedPoints.any(
+            (point) => sameAnalyticsPeriod(point.date, requestedPeriod),
+          )) {
+        selectedSupplierPeriodStart = selectedPoints.isEmpty
+            ? null
+            : selectedPoints.last.date;
+      }
       selectedSupplierChartBarIndex = null;
     }
 
@@ -393,6 +451,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
       productSeries[entry.key] = points;
     }
 
+    final availablePeriods = productSeries.values
+        .expand((points) => points.map((point) => periodStart(point.date)))
+        .toSet()
+        .toList()
+      ..sort();
+    final guidanceHistoricalPeriod =
+        selectedGuidancePeriodStart ??
+        (availablePeriods.isEmpty ? null : availablePeriods.last);
+
     ProductSummary? selectedProduct;
 
     if (products.isNotEmpty) {
@@ -453,6 +520,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
       totalAmount: totals.knownAmount,
       hasCompleteAmounts: totals.hasCompleteAmounts,
       products: products,
+      productSeries: productSeries,
+      availablePeriods: availablePeriods,
       selectedProduct: selectedProduct,
       selectedPoints: selectedPoints,
       rankingBasis: rankingBasis,
@@ -466,9 +535,41 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
         products: products,
         productSeries: productSeries,
         now: analyticsNow,
+        historicalPeriod:
+            selectedGuidanceView == AnalyticsGuidanceView.history
+            ? guidanceHistoricalPeriod
+            : null,
       ),
       stockAlerts: buildStockAlerts(stocks),
     );
+  }
+
+  AnalyticsData _cachedAnalyticsData({
+    required QuerySnapshot<Map<String, dynamic>> orders,
+    required QuerySnapshot<Map<String, dynamic>> history,
+    QuerySnapshot<Map<String, dynamic>>? stocks,
+  }) {
+    final key = (
+      identityHashCode(orders),
+      identityHashCode(history),
+      stocks == null ? 0 : identityHashCode(stocks),
+      selectedPeriod,
+      selectedSeriesKey,
+      selectedSupplierPeriodStart,
+      selectedGuidanceView,
+      selectedGuidancePeriodStart,
+    );
+    if (_analyticsDataCacheKey == key && _analyticsDataCache != null) {
+      return _analyticsDataCache!;
+    }
+    final data = buildAnalyticsData(
+      orders: orders.docs,
+      historicalTransactions: history.docs,
+      stocks: stocks?.docs ?? const [],
+    );
+    _analyticsDataCacheKey = key;
+    _analyticsDataCache = data;
+    return data;
   }
 
   AnalyticsForecastTarget targetForPoints(
@@ -567,6 +668,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     required List<ProductSummary> products,
     required Map<String, List<PeriodPoint>> productSeries,
     DateTime? now,
+    DateTime? historicalPeriod,
   }) {
     final suggestions = <RestockingSuggestion>[];
 
@@ -576,17 +678,21 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
       final target = analyticsForecastTarget(
         now: now ?? DateTime.now(),
         monthly: selectedPeriod == AnalyticsPeriod.monthly,
+        historicalPeriod: historicalPeriod,
       );
+      final modelPoints = points
+          .where((point) => point.date.isBefore(target.date))
+          .toList();
       final simple = simpleMovingAverageForTarget(
-        precedingPoints: points,
+        precedingPoints: modelPoints,
         targetDate: target.date,
       );
       final seasonal = seasonalMovingAverageForTarget(
-        precedingPoints: points,
+        precedingPoints: modelPoints,
         targetDate: target.date,
       );
       final comparison = evaluateMethods(
-        points,
+        modelPoints,
         simpleForecast: simple,
         seasonalForecast: seasonal,
       );
@@ -1414,11 +1520,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
       return;
     }
 
-    setState(() {
-      selectedSeriesKey = selected;
-      selectedSupplierPeriodStart = null;
-      selectedSupplierChartBarIndex = null;
-    });
+    selectAnalyticsSeries(data, selected);
   }
 
   Widget analyticsFilters(AnalyticsData data) {
@@ -2491,13 +2593,19 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     );
   }
 
-  Widget suggestions(List<RestockingSuggestion> suggestions) {
+  Widget suggestions(
+    List<RestockingSuggestion> suggestions, {
+    bool historical = false,
+  }) {
     if (suggestions.isEmpty) {
-      return const _CompactEmptyState(
+      return _CompactEmptyState(
         icon: Icons.notifications_none_rounded,
-        title: 'No restocking suggestion yet',
-        subtitle:
-            'Current planning requires recent consecutive closed periods and an accuracy-eligible method. Missing periods are not zero. Review History for past forecasts.',
+        title: historical
+            ? 'No historical estimate for this period'
+            : 'No restocking suggestion yet',
+        subtitle: historical
+            ? 'The selected target does not have enough preceding consecutive periods and accuracy evidence. Missing periods are not treated as zero.'
+            : 'Current planning requires recent consecutive closed periods and an accuracy-eligible method. Missing periods are not zero. Review History for past forecasts.',
       );
     }
 
@@ -2947,8 +3055,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                 const SizedBox(height: 14),
                 sectionCard(
                   title: 'Stock Alerts',
-                  subtitle:
-                      'Current low-stock and out-of-stock listings still require attention.',
+                  subtitle: 'Current low-stock and out-of-stock listings still require attention.',
                   icon: Icons.inventory_2_outlined,
                   iconColor: const Color(0xFFFF7A1A),
                   child: stockAlerts(data.stockAlerts),
@@ -3655,6 +3762,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     final selection = snapshot.selectedMethod;
     final unit = supplierUnitLabel(product?.quantityUnit ?? 'unit');
     final targetDate = target.date;
+    final activityNoun = isSupplier ? 'sales' : 'purchases';
+    final currentActivityNoun = isSupplier ? 'sales' : 'purchase';
+    final recommendationLabel = isSupplier
+        ? 'stock recommendation'
+        : 'restocking recommendation';
 
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 13),
@@ -3676,31 +3788,51 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           Row(
             children: [
               Container(
-                width: 46,
-                height: 46,
+                width: 54,
+                height: 54,
+                alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: const Color(0xFFEAF8EF),
                   borderRadius: BorderRadius.circular(15),
                 ),
-                child: const Icon(
-                  Icons.bar_chart_rounded,
-                  color: Color(0xFF079447),
-                  size: 26,
-                ),
+                child: product == null
+                    ? const Icon(
+                        Icons.bar_chart_rounded,
+                        color: Color(0xFF079447),
+                        size: 26,
+                      )
+                    : _FishSpeciesImage(
+                        productName: product.productName,
+                        fallbackEmoji: product.emoji,
+                        size: 46,
+                      ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (product != null) ...[
+                      Text(
+                        product.productName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFF102C44),
+                          fontSize: 15.2,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 1),
+                    ],
                     Text(
                       target.historical
-                          ? 'Historical forecast'
-                          : 'Current $periodNoun forecast',
+                          ? 'Estimated $activityNoun for the next $periodNoun'
+                          : 'Current $periodNoun $currentActivityNoun estimate',
                       style: const TextStyle(
-                        color: Color(0xFF0B2470),
-                        fontSize: 15.2,
-                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF5871A1),
+                        fontSize: 11.2,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -3763,7 +3895,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           Text(
             selection.hasSelection && product != null
                 ? target.historical
-                      ? 'Estimate after the selected historical period; not current planning advice.'
+                      ? isSupplier
+                            ? 'Using earlier completed sales, IsdaLink estimated that ${formatForecastEstimate(selection.forecast)} $unit of ${product.productName} would be sold during this period. This is a past estimate for review, not today\'s $recommendationLabel.'
+                            : 'Using earlier completed purchases, IsdaLink estimated that you would purchase ${formatForecastEstimate(selection.forecast)} $unit of ${product.productName} during this period. This is a past estimate for review, not today\'s $recommendationLabel.'
                       : 'Estimated ${isSupplier ? 'sales' : 'purchases'} for ${supplierPeriodRange(targetDate)}. Use as planning guidance only.'
                 : !data.simpleForecast.hasValue &&
                       !data.seasonalForecast.hasValue
@@ -3917,6 +4051,227 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     );
   }
 
+  DateTime? _selectedAvailablePeriod(
+    AnalyticsData data,
+    DateTime? requested,
+  ) {
+    if (data.availablePeriods.isEmpty) return null;
+    if (requested != null) {
+      for (final date in data.availablePeriods) {
+        if (sameAnalyticsPeriod(date, requested)) return date;
+      }
+    }
+    return data.availablePeriods.last;
+  }
+
+  void _moveAvailablePeriod({
+    required AnalyticsData data,
+    required DateTime? selected,
+    required int offset,
+    required ValueChanged<DateTime> onSelected,
+  }) {
+    final current = _selectedAvailablePeriod(data, selected);
+    if (current == null) return;
+    final index = data.availablePeriods.indexWhere(
+      (date) => sameAnalyticsPeriod(date, current),
+    );
+    final target = index + offset;
+    if (target < 0 || target >= data.availablePeriods.length) return;
+    onSelected(data.availablePeriods[target]);
+  }
+
+  Widget _availablePeriodNavigation({
+    required AnalyticsData data,
+    required DateTime? selected,
+    required ValueChanged<DateTime> onSelected,
+  }) {
+    final date = _selectedAvailablePeriod(data, selected);
+    final index = date == null
+        ? -1
+        : data.availablePeriods.indexWhere(
+            (item) => sameAnalyticsPeriod(item, date),
+          );
+    return Row(
+      children: [
+        _SupplierCircleButton(
+          icon: Icons.chevron_left_rounded,
+          enabled: index > 0,
+          onTap: () => _moveAvailablePeriod(
+            data: data,
+            selected: selected,
+            offset: -1,
+            onSelected: onSelected,
+          ),
+        ),
+        const SizedBox(width: 7),
+        Expanded(
+          child: Container(
+            height: 42,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FBFD),
+              borderRadius: BorderRadius.circular(21),
+              border: Border.all(color: const Color(0xFFE0EAF1)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.calendar_month_outlined,
+                  color: Color(0xFF0877D8),
+                  size: 20,
+                ),
+                const SizedBox(width: 7),
+                Flexible(
+                  child: Text(
+                    date == null
+                        ? 'No completed period'
+                        : supplierPeriodRange(date),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFF0B2470),
+                      fontSize: 12.2,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 7),
+        _SupplierCircleButton(
+          icon: Icons.chevron_right_rounded,
+          enabled: index >= 0 && index < data.availablePeriods.length - 1,
+          onTap: () => _moveAvailablePeriod(
+            data: data,
+            selected: selected,
+            offset: 1,
+            onSelected: onSelected,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget guidanceControlPanel(AnalyticsData data) {
+    final historical =
+        selectedGuidanceView == AnalyticsGuidanceView.history;
+    final selectedHistory = _selectedAvailablePeriod(
+      data,
+      selectedGuidancePeriodStart,
+    );
+    final target = analyticsForecastTarget(
+      now: DateTime.now(),
+      monthly: selectedPeriod == AnalyticsPeriod.monthly,
+      historicalPeriod: historical ? selectedHistory : null,
+    );
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFE3ECF2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '1. Forecast period',
+            style: TextStyle(
+              color: Color(0xFF5871A1),
+              fontSize: 10.5,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          supplierSummaryFilters(data, includeFish: false),
+          const SizedBox(height: 9),
+          const Divider(height: 1, color: Color(0xFFEDF2F6)),
+          const SizedBox(height: 9),
+          const Text(
+            '2. Guidance view',
+            style: TextStyle(
+              color: Color(0xFF5871A1),
+              fontSize: 10.5,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            height: 42,
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FBFD),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFE0EAF1)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _SupplierSegmentButton(
+                    label: 'Current Planning',
+                    selected: !historical,
+                    onTap: () => setState(() {
+                      selectedGuidanceView =
+                          AnalyticsGuidanceView.currentPlanning;
+                    }),
+                  ),
+                ),
+                Expanded(
+                  child: _SupplierSegmentButton(
+                    label: 'Historical Review',
+                    selected: historical,
+                    onTap: () => setState(() {
+                      selectedGuidanceView = AnalyticsGuidanceView.history;
+                      selectedGuidancePeriodStart ??= selectedHistory;
+                    }),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            historical ? 'Historical guidance' : 'Current planning',
+            style: const TextStyle(
+              color: Color(0xFF0877D8),
+              fontSize: 11.5,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            historical && selectedHistory != null
+                ? 'Selected history: ${supplierPeriodRange(selectedHistory)}'
+                : 'All fish · each quantity unit kept separate',
+            style: const TextStyle(color: Color(0xFF5871A1), fontSize: 11.5),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${historical ? 'Historical forecast target' : 'Planning target'}: ${supplierPeriodRange(target.date)}',
+            style: const TextStyle(
+              color: Color(0xFF17346F),
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          if (historical) ...[
+            const SizedBox(height: 10),
+            _availablePeriodNavigation(
+              data: data,
+              selected: selectedGuidancePeriodStart,
+              onSelected: (date) => setState(() {
+                selectedGuidancePeriodStart = date;
+              }),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget supplierSummaryTab(AnalyticsData data) {
     return SliverPadding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 18),
@@ -4027,26 +4382,31 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   }
 
   Widget supplierGuidanceTab(AnalyticsData data) {
+    final historical =
+        selectedGuidanceView == AnalyticsGuidanceView.history;
     return SliverPadding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 18),
       sliver: SliverList(
         delegate: SliverChildListDelegate([
-          supplierControlPanel(data, currentPlanningOnly: true),
+          guidanceControlPanel(data),
           const SizedBox(height: 10),
           sectionCard(
-            title: 'Restocking Guidance',
-            subtitle: isSupplier
+            title: historical ? 'Historical Guidance' : 'Restocking Guidance',
+            subtitle: historical
+                ? 'Historical estimates for review; not current planning advice.'
+                : isSupplier
                 ? 'Current $periodNoun sales estimates; decision support only.'
                 : 'Current $periodNoun purchase estimates; decision support only.',
             icon: Icons.assignment_outlined,
             compact: true,
-            child: suggestions(data.suggestions),
+            child: suggestions(data.suggestions, historical: historical),
           ),
           if (isSupplier)
             sectionCard(
               title: 'Stock Alerts',
-              subtitle:
-                  'Low-stock and out-of-stock items that may need attention.',
+              subtitle: historical
+                  ? 'Current inventory alerts; these do not change with historical guidance.'
+                  : 'Low-stock and out-of-stock items that may need attention.',
               icon: Icons.inventory_2_outlined,
               iconColor: const Color(0xFFFF7A1A),
               compact: true,
@@ -4058,21 +4418,166 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   }
 
   Widget supplierProductsTab(AnalyticsData data) {
+    final periodProducts = _productsForSelectedScope(data);
+    final rankingBasis = analyticsRankingBasis(periodProducts);
+    final selectedDate = _selectedAvailablePeriod(
+      data,
+      selectedProductPeriodStart,
+    );
+    final isOverall = selectedProductScope == AnalyticsProductScope.overall;
+    final unit = periodProducts.isEmpty
+        ? 'the recorded unit'
+        : isSupplier
+        ? supplierUnitLabel(periodProducts.first.quantityUnit)
+        : periodProducts.first.quantityUnit;
     return SliverPadding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 18),
       sliver: SliverList(
         delegate: SliverChildListDelegate([
+          _productScopeControl(data),
+          const SizedBox(height: 10),
           sectionCard(
             title: analyticsRankingTitle(
-              analyticsRankingBasis(data.products),
+              rankingBasis,
               supplier: isSupplier,
             ),
-            subtitle: data.rankingBasis,
+            subtitle: isOverall
+                ? data.rankingBasis
+                : _periodRankingDescription(
+                    rankingBasis,
+                    unit,
+                    selectedDate,
+                  ),
             icon: Icons.inventory_2_outlined,
             compact: true,
-            child: topProducts(data.products),
+            child: periodProducts.isEmpty
+                ? const _CompactEmptyState(
+                    icon: Icons.inventory_2_outlined,
+                    title: 'No product sales in this period',
+                    subtitle:
+                        'Choose another completed week or month to view its product ranking.',
+                  )
+                : topProducts(periodProducts),
           ),
         ]),
+      ),
+    );
+  }
+
+  List<ProductSummary> _productsForSelectedScope(AnalyticsData data) {
+    if (selectedProductScope == AnalyticsProductScope.overall) {
+      return data.products;
+    }
+    final selectedDate = _selectedAvailablePeriod(
+      data,
+      selectedProductPeriodStart,
+    );
+    if (selectedDate == null) return const [];
+    final result = <ProductSummary>[];
+    for (final product in data.products) {
+      final points = data.productSeries[product.seriesKey] ?? const [];
+      final point = pointForAnalyticsPeriod(points, selectedDate);
+      if (point == null) continue;
+      result.add(
+        ProductSummary(
+          seriesKey: product.seriesKey,
+          productName: product.productName,
+          quantityUnit: product.quantityUnit,
+          emoji: product.emoji,
+          quantity: point.quantity,
+          amount: point.amount,
+          transactionCount: point.transactionCount,
+          hasCompleteAmounts: point.hasCompleteAmounts,
+        ),
+      );
+    }
+    final basis = analyticsRankingBasis(result);
+    result.sort((a, b) => compareAnalyticsRankingSeries(a, b, basis));
+    return result;
+  }
+
+  String _periodRankingDescription(
+    AnalyticsRankingBasis basis,
+    String unit,
+    DateTime? selectedDate,
+  ) {
+    if (selectedDate == null) return 'No completed period selected.';
+    final periodLabel = selectedProductScope == AnalyticsProductScope.weekly
+        ? 'week'
+        : 'month';
+    final ranking = switch (basis) {
+      AnalyticsRankingBasis.quantity =>
+        'Ranked by fulfilled quantity in $unit.',
+      AnalyticsRankingBasis.amount =>
+        'Ranked by transaction amount across different units.',
+      AnalyticsRankingBasis.unavailable =>
+        'Amounts are incomplete; listed by name, not ranked.',
+    };
+    return 'Selected $periodLabel: ${supplierPeriodRange(selectedDate)}. '
+        'Each product and unit is separate. $ranking';
+  }
+
+  Widget _productScopeControl(AnalyticsData data) {
+    void selectScope(AnalyticsProductScope scope) {
+      setState(() {
+        selectedProductScope = scope;
+        selectedProductPeriodStart = null;
+        if (scope == AnalyticsProductScope.weekly) {
+          selectedPeriod = AnalyticsPeriod.weekly;
+        } else if (scope == AnalyticsProductScope.monthly) {
+          selectedPeriod = AnalyticsPeriod.monthly;
+        }
+        selectedSupplierPeriodStart = null;
+        selectedGuidancePeriodStart = null;
+      });
+    }
+
+    final overall = selectedProductScope == AnalyticsProductScope.overall;
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFE3ECF2)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            height: 44,
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FBFD),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFE0EAF1)),
+            ),
+            child: Row(
+              children: [
+                for (final item in const [
+                  (AnalyticsProductScope.overall, 'Overall'),
+                  (AnalyticsProductScope.weekly, 'Weekly'),
+                  (AnalyticsProductScope.monthly, 'Monthly'),
+                ])
+                  Expanded(
+                    child: _SupplierSegmentButton(
+                      label: item.$2,
+                      selected: selectedProductScope == item.$1,
+                      onTap: () => selectScope(item.$1),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          if (!overall) ...[
+            const SizedBox(height: 10),
+            _availablePeriodNavigation(
+              data: data,
+              selected: selectedProductPeriodStart,
+              onSelected: (date) => setState(() {
+                selectedProductPeriodStart = date;
+              }),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -4299,8 +4804,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               child: _CompactEmptyState(
                 icon: Icons.error_outline_rounded,
                 title: 'Unable to load analytics',
-                subtitle:
-                    'Analytics could not be loaded right now. Refresh and try again.',
+                subtitle: 'Analytics could not be loaded right now. Refresh and try again.',
               ),
             ),
           ),
@@ -4360,11 +4864,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
       );
     }
 
+    _ensureAnalyticsStreams(user.uid);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF4F8FB),
       bottomNavigationBar: isSupplier ? supplierBottomNavigation() : null,
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream: ordersStream(user.uid),
+        stream: _ordersAnalyticsStream,
         builder: (context, orderSnapshot) {
           if (orderSnapshot.hasError) {
             return errorBody(orderSnapshot.error!);
@@ -4375,7 +4881,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           }
 
           return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-            stream: historicalTransactionsStream(user.uid),
+            stream: _historyAnalyticsStream,
             builder: (context, historicalSnapshot) {
               if (historicalSnapshot.hasError) {
                 return errorBody(historicalSnapshot.error!);
@@ -4386,17 +4892,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               }
 
               if (!isSupplier) {
-                final data = buildAnalyticsData(
-                  orders: orderSnapshot.data!.docs,
-                  historicalTransactions: historicalSnapshot.data!.docs,
-                  stocks: const [],
+                final data = _cachedAnalyticsData(
+                  orders: orderSnapshot.data!,
+                  history: historicalSnapshot.data!,
                 );
 
                 return analyticsContent(data);
               }
 
               return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                stream: supplierStocksStream(user.uid),
+                stream: _stocksAnalyticsStream,
                 builder: (context, stockSnapshot) {
                   if (stockSnapshot.hasError) {
                     return errorBody(stockSnapshot.error!);
@@ -4406,10 +4911,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                     return loadingBody();
                   }
 
-                  final data = buildAnalyticsData(
-                    orders: orderSnapshot.data!.docs,
-                    historicalTransactions: historicalSnapshot.data!.docs,
-                    stocks: stockSnapshot.data!.docs,
+                  final data = _cachedAnalyticsData(
+                    orders: orderSnapshot.data!,
+                    history: historicalSnapshot.data!,
+                    stocks: stockSnapshot.data!,
                   );
 
                   return analyticsContent(data);
@@ -5128,6 +5633,8 @@ class AnalyticsData {
     required this.historicalTransactions,
     required this.totalAmount,
     required this.products,
+    this.productSeries = const {},
+    this.availablePeriods = const [],
     required this.selectedProduct,
     required this.selectedPoints,
     required this.rankingBasis,
@@ -5148,6 +5655,8 @@ class AnalyticsData {
   final bool hasCompleteAmounts;
   final double totalAmount;
   final List<ProductSummary> products;
+  final Map<String, List<PeriodPoint>> productSeries;
+  final List<DateTime> availablePeriods;
   final ProductSummary? selectedProduct;
   final List<PeriodPoint> selectedPoints;
   final String rankingBasis;
@@ -5171,6 +5680,8 @@ class AnalyticsData {
       historicalTransactions: 0,
       totalAmount: 0,
       products: const [],
+      productSeries: const {},
+      availablePeriods: const [],
       selectedProduct: null,
       selectedPoints: const [],
       rankingBasis: '',
@@ -5294,10 +5805,9 @@ class _FishSpeciesImage extends StatelessWidget {
   final double size;
 
   (int, int)? get atlasCell {
-    final normalized = (productName ?? '').toLowerCase().replaceAll(
-      RegExp(r'[^a-z0-9]'),
-      '',
-    );
+    final normalized = (productName ?? '')
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]'), '');
 
     return switch (normalized) {
       'tilapia' || 'niletilapia' => (0, 0),

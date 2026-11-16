@@ -705,51 +705,48 @@ class _PostFishStockScreenState extends State<PostFishStockScreen> {
                   ),
                 ),
                 const SizedBox(height: 17),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () {
-                          Navigator.pop(dialogContext);
-                          clearForm();
-                        },
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF146BFF),
-                          side: const BorderSide(color: Color(0xFF9BD6FF)),
-                          minimumSize: const Size.fromHeight(48),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                        ),
-                        child: const Text(
-                          'Post Another',
-                          style: TextStyle(fontWeight: FontWeight.w900),
-                        ),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(dialogContext);
+                      allowRoutePop();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF146BFF),
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size.fromHeight(50),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(dialogContext);
-                          allowRoutePop();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF146BFF),
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size.fromHeight(48),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                        ),
-                        child: const Text(
-                          'Dashboard',
-                          style: TextStyle(fontWeight: FontWeight.w900),
-                        ),
-                      ),
+                    child: const Text(
+                      'Go to Dashboard',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontWeight: FontWeight.w900),
                     ),
-                  ],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(dialogContext);
+                    clearForm();
+                  },
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF146BFF),
+                    minimumSize: const Size.fromHeight(44),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: const Text(
+                    'Post another stock',
+                    maxLines: 1,
+                    style: TextStyle(fontWeight: FontWeight.w900),
+                  ),
                 ),
               ],
             ),
